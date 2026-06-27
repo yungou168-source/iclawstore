@@ -1,0 +1,610 @@
+// Prisma Schema for ClawHub MySQL Migration
+// Based on Convex schema.ts
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// Core Tables - User & Authentication
+// ============================================
+
+model users {
+  id                        String    @id @default(cuid())
+  name                      String?
+  image                     String?
+  email                     String?   @unique
+  emailVerificationTime     DateTime?
+  phone                     String?   @unique
+  phoneVerificationTime     DateTime?
+  isAnonymous               Boolean   @default(false)
+  handle                    String?   @unique
+  displayName               String?
+  bio                       String?
+  role                      String?   @default("user") // admin, moderator, user
+  githubCreatedAt           DateTime?
+  githubFetchedAt           DateTime?
+  githubProfileSyncedAt     DateTime?
+  trustedPublisher          Boolean   @default(false)
+  publishedSkills           Int       @default(0)
+  totalStars                Int       @default(0)
+  totalDownloads            Int       @default(0)
+  personalPublisherId       String?
+  requiresModerationAt      DateTime?
+  requiresModerationReason  String?
+  deactivatedAt             DateTime?
+  purgedAt                  DateTime?
+  deletedAt                 DateTime?
+  banReason                 String?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  // Relations
+  ownedSkills               skills[]         @relation("SkillOwner")
+  ownedPublishers           publishers[]      @relation("PublisherOwner")
+  publishedPackages         packages[]        @relation("PackageOwner")
+  comments                 comments[]
+  stars                    stars[]
+  skillReports              skillReports[]
+  skillAppeals              skillAppeals[]
+  apiTokens                apiTokens[]
+
+  @@index("handle")
+  @@index("email")
+  @@index("phone")
+}
+
+// ============================================
+// Publisher (User/Org) Tables
+// ============================================
+
+model publishers {
+  id                  String    @id @default(cuid())
+  kind                String    @default("user") // user, org
+  handle              String    @unique
+  displayName         String
+  bio                 String?
+  image               String?
+  linkedUserId        String?
+  trustedPublisher    Boolean   @default(false)
+  publishedSkills     Int       @default(0)
+  publishedPackages   Int       @default(0)
+  totalInstalls       Int       @default(0)
+  totalDownloads      Int       @default(0)
+  totalStars          Int       @default(0)
+  skillTotalInstalls  Int       @default(0)
+  skillTotalDownloads Int       @default(0)
+  skillTotalStars     Int       @default(0)
+  deactivatedAt       DateTime?
+  deletedAt           DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  // Relations
+  owner               users?    @relation("PublisherOwner", fields: [linkedUserId], references: [id])
+  members             publisherMembers[]
+  skills              skills[]
+  packages            packages[]
+  officialPublishers   officialPublishers[]
+
+  @@index("handle")
+  @@index("linkedUserId")
+  @@index("kind")
+}
+
+model publisherMembers {
+  id          String   @id @default(cuid())
+  publisherId String
+  userId      String
+  role        String   @default("publisher") // owner, admin, publisher
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  publisher   publishers @relation(fields: [publisherId], references: [id], onDelete: Cascade)
+  user        users      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([publisherId, userId])
+  @@index("publisherId")
+  @@index("userId")
+}
+
+model officialPublishers {
+  id           String   @id @default(cuid())
+  publisherId  String   @unique
+  reason       String?
+  createdById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  publisher    publishers @relation(fields: [publisherId], references: [id], onDelete: Cascade)
+
+  @@index("publisherId")
+}
+
+// ============================================
+// Skills Tables
+// ============================================
+
+model skills {
+  id                       String    @id @default(cuid())
+  slug                     String
+  displayName              String
+  summary                  String?
+  icon                     String?
+  resourceId               String?
+  ownerUserId              String
+  ownerPublisherId         String?
+  canonicalSkillId         String?
+  forkOfSkillId            String?
+  forkOfKind               String?   // fork, duplicate
+  forkOfVersion            String?
+  forkOfAt                 DateTime?
+  installKind              String?   // github
+  githubSourceId           String?
+  githubPath               String?
+  githubHasSkillCard       Boolean?
+  githubCurrentCommit      String?
+  githubCurrentContentHash String?
+  githubCurrentStatus      String?   // present, missing, unknown
+  githubCurrentCheckedAt   DateTime?
+  githubScanStatus         String?   // clean, suspicious, malicious, pending, failed
+  githubRemovedAt          DateTime?
+  latestVersionId          String?
+  latestVersionSummary     Json?
+  tags                     Json?
+  capabilityTags           String[]
+  softDeletedAt            DateTime?
+  moderationStatus         String?   // active, hidden, removed
+  moderationNotes          String?
+  moderationReason         String?
+  moderationVerdict        String?   // clean, suspicious, malicious
+  moderationReasonCodes    String[]
+  moderationEvidence       Json?
+  moderationSummary        String?
+  moderationEngineVersion  String?
+  moderationEvaluatedAt    DateTime?
+  manualOverride           Json?
+  quality                  Json?
+  isSuspicious             Boolean?
+  moderationFlags          String[]
+  lastReviewedAt           DateTime?
+  scanLastCheckedAt        DateTime?
+  scanCheckCount           Int?
+  hiddenAt                 DateTime?
+  hiddenBy                 String?
+  unpublishedSlugReservedUntil DateTime?
+  unpublishedSlugReleasedAt     DateTime?
+  unpublishedOriginalSlug       String?
+  reportCount              Int       @default(0)
+  lastReportedAt           DateTime?
+  batch                    String?
+  
+  // Stats (canonical fields)
+  statsDownloads           Int       @default(0)
+  statsStars               Int       @default(0)
+  statsInstallsCurrent     Int       @default(0)
+  statsInstallsAllTime     Int       @default(0)
+  statsVersions            Int       @default(0)
+  statsComments            Int       @default(0)
+  
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  // Relations
+  owner                    users      @relation("SkillOwner", fields: [ownerUserId], references: [id])
+  publisher                publishers? @relation(fields: [ownerPublisherId], references: [id])
+  canonicalSkill           skills?     @relation("SkillCanonical", fields: [canonicalSkillId], references: [id])
+  forks                    skills[]    @relation("SkillCanonical")
+  versions                 skillVersions[]
+  comments                 comments[]
+  stars                    stars[]
+  skillBadges              skillBadges[]
+  skillReports             skillReports[]
+  skillAppeals             skillAppeals[]
+  skillEmbeddings          skillEmbeddings[]
+
+  @@unique([ownerUserId, slug])
+  @@index("ownerPublisherId")
+  @@index("slug")
+  @@index("statsDownloads")
+  @@index("statsStars")
+  @@index("statsInstallsAllTime")
+  @@index("softDeletedAt")
+  @@index("moderationStatus")
+}
+
+model skillVersions {
+  id                       String    @id @default(cuid())
+  skillId                  String
+  version                  String
+  fingerprint              String?
+  sourceProvenance         Json?
+  changelog                String    @default("")
+  changelogSource          String?   // auto, user
+  icon                     String?
+  files                    Json      // Array of file objects
+  parsed                   Json
+  createdBy                String
+  createdAt                DateTime  @default(now())
+  clawScanNote             String?
+  clawScanNoteUpdatedAt    DateTime?
+  softDeletedAt            DateTime?
+  sha256hash               String?
+  vtAnalysis               Json?
+  skillSpectorAnalysis     Json?
+  llmAnalysis              Json?
+  capabilityTags           String[]
+  depRegistryAnalysis      Json?
+  depRegistryScanStatus    String?
+  staticScan               Json?
+  apiKeyRequired           Boolean?
+
+  // Relations
+  skill                    skills    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  creator                  users      @relation(fields: [createdBy], references: [id])
+
+  @@unique([skillId, version])
+  @@index("skillId")
+  @@index("sha256hash")
+}
+
+model skillEmbeddings {
+  id                 String   @id @default(cuid())
+  skillId            String
+  versionId          String
+  ownerId            String
+  ownerPublisherId   String?
+  embedding          Float[]
+  isLatest           Boolean  @default(true)
+  isApproved         Boolean  @default(true)
+  visibility         String   @default("public")
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  skill              skills   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@index("skillId")
+  @@index("versionId")
+}
+
+model skillBadges {
+  id       String   @id @default(cuid())
+  skillId  String
+  kind     String   // highlighted, official, deprecated, redactionApproved
+  byUserId String
+  at       DateTime @default(now())
+
+  skill    skills   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  user     users    @relation(fields: [byUserId], references: [id])
+
+  @@unique([skillId, kind])
+  @@index("skillId")
+  @@index("kind")
+}
+
+// ============================================
+// Comments & Stars
+// ============================================
+
+model comments {
+  id                   String    @id @default(cuid())
+  skillId              String
+  userId               String
+  body                 String
+  reportCount          Int       @default(0)
+  lastReportedAt       DateTime?
+  scamScanVerdict      String?   // not_scam, likely_scam, certain_scam
+  scamScanConfidence   String?   // low, medium, high
+  scamScanExplanation  String?
+  scamScanEvidence     String[]
+  scamScanModel        String?
+  scamScanCheckedAt    DateTime?
+  scamBanTriggeredAt   DateTime?
+  createdAt            DateTime  @default(now())
+  softDeletedAt        DateTime?
+  deletedBy            String?
+
+  skill                skills    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  user                 users     @relation(fields: [userId], references: [id])
+  reports              commentReports[]
+
+  @@index("skillId")
+  @@index("userId")
+}
+
+model commentReports {
+  id        String   @id @default(cuid())
+  commentId String
+  skillId   String
+  userId    String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  comment   comments @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index("commentId")
+  @@index("skillId")
+  @@index("userId")
+}
+
+model stars {
+  id        String   @id @default(cuid())
+  skillId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  skill     skills   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  user      users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([skillId, userId])
+  @@index("skillId")
+  @@index("userId")
+}
+
+// ============================================
+// Reports & Appeals
+// ============================================
+
+model skillReports {
+  id            String    @id @default(cuid())
+  skillId       String
+  skillVersionId String?
+  version       String?
+  userId        String
+  reason        String?
+  status        String?    @default("open") // open, confirmed, dismissed, triaged
+  triagedAt     DateTime?
+  triagedBy     String?
+  triageNote    String?
+  actionTaken   String?   // none, hide
+  createdAt     DateTime  @default(now())
+
+  skill         skills    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  reporter      users     @relation(fields: [userId], references: [id])
+
+  @@index("skillId")
+  @@index("userId")
+  @@index("status")
+}
+
+model skillAppeals {
+  id            String    @id @default(cuid())
+  skillId       String
+  skillVersionId String?
+  version       String?
+  userId        String
+  message       String
+  status        String    @default("open") // open, accepted, rejected
+  resolvedAt    DateTime?
+  resolvedBy    String?
+  resolutionNote String?
+  actionTaken   String?   // none, restore
+  createdAt     DateTime  @default(now())
+
+  skill         skills    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  user          users     @relation(fields: [userId], references: [id])
+
+  @@index("skillId")
+  @@index("userId")
+  @@index("status")
+}
+
+// ============================================
+// Packages (OpenClaw)
+// ============================================
+
+model packages {
+  id                    String    @id @default(cuid())
+  name                  String
+  normalizedName        String    @unique
+  displayName           String
+  summary               String?
+  ownerUserId           String
+  ownerPublisherId      String?
+  family                String    @default("skill") // skill, code-plugin, bundle-plugin
+  channel               String    @default("community") // official, community, private
+  isOfficial            Boolean   @default(false)
+  runtimeId             String?
+  sourceRepo            String?
+  latestReleaseId       String?
+  latestVersionSummary  Json?
+  tags                  Json?
+  capabilityTags        String[]
+  executesCode          Boolean?
+  compatibility         Json?
+  capabilities          Json?
+  verification          Json?
+  scanStatus            String    @default("pending") // clean, suspicious, malicious, pending, not-run
+  stats                 Json
+  reportCount           Int       @default(0)
+  lastReportedAt        DateTime?
+  softDeletedAt         DateTime?
+  softDeletedReason     String?
+  softDeletedBy         String?
+  softDeletedByRole     String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  owner                 users      @relation("PackageOwner", fields: [ownerUserId], references: [id])
+  publisher             publishers? @relation(fields: [ownerPublisherId], references: [id])
+  releases              packageReleases[]
+
+  @@index("normalizedName")
+  @@index("ownerUserId")
+  @@index("ownerPublisherId")
+  @@index("family")
+  @@index("channel")
+}
+
+model packageReleases {
+  id                      String    @id @default(cuid())
+  packageId               String
+  version                 String
+  changelog               String    @default("")
+  summary                 String?
+  distTags                String[]
+  files                   Json
+  integritySha256         String
+  artifactKind            String?   // legacy-zip, npm-pack
+  clawpackStorageId       String?
+  clawpackSha256          String?
+  clawpackSize            Int?
+  clawpackFormat          String?
+  npmIntegrity            String?
+  npmShasum               String?
+  npmTarballName          String?
+  npmUnpackedSize         Int?
+  npmFileCount            Int?
+  extractedPackageJson    Json?
+  extractedPluginManifest Json?
+  normalizedBundleManifest Json?
+  compatibility           Json?
+  capabilities            Json?
+  runtimeId               String?
+  sourceRepo              String?
+  verification            Json?
+  sha256hash              String?
+  vtAnalysis              Json?
+  skillSpectorAnalysis     Json?
+  llmAnalysis             Json?
+  staticScan              Json?
+  manualModeration        Json?
+  source                  Json?
+  createdBy               String
+  publishActor            Json
+  createdAt               DateTime  @default(now())
+  clawScanNote            String?
+  clawScanNoteUpdatedAt   DateTime?
+  softDeletedAt           DateTime?
+
+  package                 packages  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, version])
+  @@index("packageId")
+}
+
+// ============================================
+// Stats & Events
+// ============================================
+
+model skillDailyStats {
+  id        String   @id @default(cuid())
+  skillId   String
+  day       DateTime @db.Date
+  downloads Int      @default(0)
+  installs  Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  skill     skills   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([skillId, day])
+  @@index("day")
+}
+
+model skillStatEvents {
+  id          String    @id @default(cuid())
+  skillId     String
+  kind        String    // download, star, unstar, comment, uncomment, install_new, etc.
+  delta       Json?
+  occurredAt  DateTime  @default(now())
+  processedAt DateTime?
+
+  skill       skills    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@index("processedAt")
+  @@index("skillId")
+}
+
+model globalStats {
+  id                 String   @id @default(cuid())
+  key                String   @unique
+  activeSkillsCount  Int      @default(0)
+  updatedAt          DateTime @updatedAt
+}
+
+// ============================================
+// API Tokens
+// ============================================
+
+model apiTokens {
+  id          String    @id @default(cuid())
+  userId      String
+  label       String
+  prefix      String
+  tokenHash   String    @unique
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+
+  user        users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index("userId")
+}
+
+// ============================================
+// Rate Limiting
+// ============================================
+
+model rateLimits {
+  id          String   @id @default(cuid())
+  key         String
+  windowStart DateTime
+  shard       Int?
+  count       Int      @default(0)
+  limit       Int
+  updatedAt   DateTime @updatedAt
+
+  @@unique([key, windowStart])
+  @@index("key")
+}
+
+// ============================================
+// Reserved Slugs & Handles
+// ============================================
+
+model reservedSlugs {
+  id                  String   @id @default(cuid())
+  slug                String   @unique
+  originalOwnerUserId String
+  deletedAt           DateTime @default(now())
+  expiresAt           DateTime
+  reason              String?
+  releasedAt          DateTime?
+
+  @@index("slug")
+  @@index("expiresAt")
+}
+
+model reservedHandles {
+  id                  String   @id @default(cuid())
+  handle              String   @unique
+  rightfulOwnerUserId String
+  reason              String?
+  releasedAt          DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index("handle")
+}
+
+// ============================================
+// Audit Logs
+// ============================================
+
+model auditLogs {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  action      String
+  targetType  String
+  targetId    String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index("actorUserId")
+  @@index([targetType, targetId])
+}

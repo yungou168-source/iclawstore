@@ -3,9 +3,9 @@
  */
 
 import { FastifyInstance } from "fastify";
-import { prisma } from "../index.js";
 
 export async function skillsRoutes(fastify: FastifyInstance) {
+  const prisma = fastify.prisma;
   // 获取所有技能
   fastify.get("/", async (request, reply) => {
     const { page = "1", limit = "20", sort = "downloads" } = request.query as any;

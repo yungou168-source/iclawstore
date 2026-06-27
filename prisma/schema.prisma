@@ -48,15 +48,18 @@ model users {
   ownedSkills               skills[]         @relation("SkillOwner")
   ownedPublishers           publishers[]      @relation("PublisherOwner")
   publishedPackages         packages[]        @relation("PackageOwner")
-  comments                 comments[]
-  stars                    stars[]
+  comments                  comments[]
+  stars                     stars[]
   skillReports              skillReports[]
   skillAppeals              skillAppeals[]
-  apiTokens                apiTokens[]
+  apiTokens                 apiTokens[]
+  publisherMemberships      publisherMembers[]
+  createdSkillVersions      skillVersions[]
+  createdBadges             skillBadges[]
 
-  @@index("handle")
-  @@index("email")
-  @@index("phone")
+  @@index([handle])
+  @@index([email])
+  @@index([phone])
 }
 
 // ============================================
@@ -92,9 +95,9 @@ model publishers {
   packages            packages[]
   officialPublishers   officialPublishers[]
 
-  @@index("handle")
-  @@index("linkedUserId")
-  @@index("kind")
+  @@index([handle])
+  @@index([linkedUserId])
+  @@index([kind])
 }
 
 model publisherMembers {
@@ -109,8 +112,8 @@ model publisherMembers {
   user        users      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([publisherId, userId])
-  @@index("publisherId")
-  @@index("userId")
+  @@index([publisherId])
+  @@index([userId])
 }
 
 model officialPublishers {
@@ -123,7 +126,7 @@ model officialPublishers {
 
   publisher    publishers @relation(fields: [publisherId], references: [id], onDelete: Cascade)
 
-  @@index("publisherId")
+  @@index([publisherId])
 }
 
 // ============================================
@@ -157,13 +160,13 @@ model skills {
   latestVersionId          String?
   latestVersionSummary     Json?
   tags                     Json?
-  capabilityTags           String[]
+  capabilityTags           Json?     // Array of strings stored as JSON
   softDeletedAt            DateTime?
   moderationStatus         String?   // active, hidden, removed
   moderationNotes          String?
   moderationReason         String?
   moderationVerdict        String?   // clean, suspicious, malicious
-  moderationReasonCodes    String[]
+  moderationReasonCodes    Json?     // Array of strings stored as JSON
   moderationEvidence       Json?
   moderationSummary        String?
   moderationEngineVersion  String?
@@ -171,7 +174,7 @@ model skills {
   manualOverride           Json?
   quality                  Json?
   isSuspicious             Boolean?
-  moderationFlags          String[]
+  moderationFlags          Json?     // Array of strings stored as JSON
   lastReviewedAt           DateTime?
   scanLastCheckedAt        DateTime?
   scanCheckCount           Int?
@@ -207,15 +210,17 @@ model skills {
   skillReports             skillReports[]
   skillAppeals             skillAppeals[]
   skillEmbeddings          skillEmbeddings[]
+  dailyStats               skillDailyStats[]
+  statEvents               skillStatEvents[]
 
   @@unique([ownerUserId, slug])
-  @@index("ownerPublisherId")
-  @@index("slug")
-  @@index("statsDownloads")
-  @@index("statsStars")
-  @@index("statsInstallsAllTime")
-  @@index("softDeletedAt")
-  @@index("moderationStatus")
+  @@index([ownerPublisherId])
+  @@index([slug])
+  @@index([statsDownloads])
+  @@index([statsStars])
+  @@index([statsInstallsAllTime])
+  @@index([softDeletedAt])
+  @@index([moderationStatus])
 }
 
 model skillVersions {
@@ -238,7 +243,7 @@ model skillVersions {
   vtAnalysis               Json?
   skillSpectorAnalysis     Json?
   llmAnalysis              Json?
-  capabilityTags           String[]
+  capabilityTags           Json?     // Array of strings stored as JSON
   depRegistryAnalysis      Json?
   depRegistryScanStatus    String?
   staticScan               Json?
@@ -249,8 +254,8 @@ model skillVersions {
   creator                  users      @relation(fields: [createdBy], references: [id])
 
   @@unique([skillId, version])
-  @@index("skillId")
-  @@index("sha256hash")
+  @@index([skillId])
+  @@index([sha256hash])
 }
 
 model skillEmbeddings {
@@ -259,7 +264,7 @@ model skillEmbeddings {
   versionId          String
   ownerId            String
   ownerPublisherId   String?
-  embedding          Float[]
+  embedding          Json     // Array of floats stored as JSON
   isLatest           Boolean  @default(true)
   isApproved         Boolean  @default(true)
   visibility         String   @default("public")
@@ -268,8 +273,8 @@ model skillEmbeddings {
   // Relations
   skill              skills   @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
-  @@index("skillId")
-  @@index("versionId")
+  @@index([skillId])
+  @@index([versionId])
 }
 
 model skillBadges {
@@ -283,8 +288,8 @@ model skillBadges {
   user     users    @relation(fields: [byUserId], references: [id])
 
   @@unique([skillId, kind])
-  @@index("skillId")
-  @@index("kind")
+  @@index([skillId])
+  @@index([kind])
 }
 
 // ============================================
@@ -301,7 +306,7 @@ model comments {
   scamScanVerdict      String?   // not_scam, likely_scam, certain_scam
   scamScanConfidence   String?   // low, medium, high
   scamScanExplanation  String?
-  scamScanEvidence     String[]
+  scamScanEvidence     Json?     // Array of strings stored as JSON
   scamScanModel        String?
   scamScanCheckedAt    DateTime?
   scamBanTriggeredAt   DateTime?
@@ -313,8 +318,8 @@ model comments {
   user                 users     @relation(fields: [userId], references: [id])
   reports              commentReports[]
 
-  @@index("skillId")
-  @@index("userId")
+  @@index([skillId])
+  @@index([userId])
 }
 
 model commentReports {
@@ -327,9 +332,9 @@ model commentReports {
 
   comment   comments @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
-  @@index("commentId")
-  @@index("skillId")
-  @@index("userId")
+  @@index([commentId])
+  @@index([skillId])
+  @@index([userId])
 }
 
 model stars {
@@ -342,8 +347,8 @@ model stars {
   user      users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([skillId, userId])
-  @@index("skillId")
-  @@index("userId")
+  @@index([skillId])
+  @@index([userId])
 }
 
 // ============================================
@@ -367,9 +372,9 @@ model skillReports {
   skill         skills    @relation(fields: [skillId], references: [id], onDelete: Cascade)
   reporter      users     @relation(fields: [userId], references: [id])
 
-  @@index("skillId")
-  @@index("userId")
-  @@index("status")
+  @@index([skillId])
+  @@index([userId])
+  @@index([status])
 }
 
 model skillAppeals {
@@ -389,9 +394,9 @@ model skillAppeals {
   skill         skills    @relation(fields: [skillId], references: [id], onDelete: Cascade)
   user          users     @relation(fields: [userId], references: [id])
 
-  @@index("skillId")
-  @@index("userId")
-  @@index("status")
+  @@index([skillId])
+  @@index([userId])
+  @@index([status])
 }
 
 // ============================================
@@ -414,7 +419,7 @@ model packages {
   latestReleaseId       String?
   latestVersionSummary  Json?
   tags                  Json?
-  capabilityTags        String[]
+  capabilityTags        Json?     // Array of strings stored as JSON
   executesCode          Boolean?
   compatibility         Json?
   capabilities          Json?
@@ -434,11 +439,11 @@ model packages {
   publisher             publishers? @relation(fields: [ownerPublisherId], references: [id])
   releases              packageReleases[]
 
-  @@index("normalizedName")
-  @@index("ownerUserId")
-  @@index("ownerPublisherId")
-  @@index("family")
-  @@index("channel")
+  @@index([normalizedName])
+  @@index([ownerUserId])
+  @@index([ownerPublisherId])
+  @@index([family])
+  @@index([channel])
 }
 
 model packageReleases {
@@ -447,7 +452,7 @@ model packageReleases {
   version                 String
   changelog               String    @default("")
   summary                 String?
-  distTags                String[]
+  distTags                Json?     // Array of strings stored as JSON
   files                   Json
   integritySha256         String
   artifactKind            String?   // legacy-zip, npm-pack
@@ -485,7 +490,7 @@ model packageReleases {
   package                 packages  @relation(fields: [packageId], references: [id], onDelete: Cascade)
 
   @@unique([packageId, version])
-  @@index("packageId")
+  @@index([packageId])
 }
 
 // ============================================
@@ -503,7 +508,7 @@ model skillDailyStats {
   skill     skills   @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
   @@unique([skillId, day])
-  @@index("day")
+  @@index([day])
 }
 
 model skillStatEvents {
@@ -516,8 +521,8 @@ model skillStatEvents {
 
   skill       skills    @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
-  @@index("processedAt")
-  @@index("skillId")
+  @@index([processedAt])
+  @@index([skillId])
 }
 
 model globalStats {
@@ -543,7 +548,7 @@ model apiTokens {
 
   user        users     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index("userId")
+  @@index([userId])
 }
 
 // ============================================
@@ -560,7 +565,7 @@ model rateLimits {
   updatedAt   DateTime @updatedAt
 
   @@unique([key, windowStart])
-  @@index("key")
+  @@index([key])
 }
 
 // ============================================
@@ -576,8 +581,8 @@ model reservedSlugs {
   reason              String?
   releasedAt          DateTime?
 
-  @@index("slug")
-  @@index("expiresAt")
+  @@index([slug])
+  @@index([expiresAt])
 }
 
 model reservedHandles {
@@ -589,7 +594,7 @@ model reservedHandles {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  @@index("handle")
+  @@index([handle])
 }
 
 // ============================================
@@ -605,6 +610,6 @@ model auditLogs {
   metadata    Json?
   createdAt   DateTime @default(now())
 
-  @@index("actorUserId")
+  @@index([actorUserId])
   @@index([targetType, targetId])
 }

@@ -1,0 +1,97 @@
+[
+  {
+    "_creationTime": 1782486556099.2822,
+    "_id": "j979ak35wptn89qbxe36qm1keh89cqh6",
+    "action": "publisher.personal.create",
+    "actorUserId": "vn7abbqqx3tz5wpdb4dqb3zr2189ctb3",
+    "createdAt": 1782486556099,
+    "metadata": {
+      "changedFields": [
+        "handle",
+        "displayName",
+        "linkedUserId"
+      ],
+      "created": true,
+      "memberCreated": true,
+      "next": {
+        "bio": null,
+        "deactivatedAt": null,
+        "deletedAt": null,
+        "displayName": "yungou168-source",
+        "handle": "yungou168-source",
+        "image": "https://avatars.githubusercontent.com/u/229869375?v=4",
+        "linkedUserId": "vn7abbqqx3tz5wpdb4dqb3zr2189ctb3",
+        "trustedPublisher": null
+      },
+      "personalPublisherLinked": true,
+      "previous": null,
+      "source": "publisher.ensure_personal_internal",
+      "userId": "vn7abbqqx3tz5wpdb4dqb3zr2189ctb3"
+    },
+    "targetId": "qd76ep1r0bfksx6ezqprjyt9mn89d89d",
+    "targetType": "publisher"
+  },
+  {
+    "_creationTime": 1782486556750.45,
+    "_id": "j973brc8enqzs3mqntja3fd0bn89c5k5",
+    "action": "user.profile.sync",
+    "actorUserId": "vn7abbqqx3tz5wpdb4dqb3zr2189ctb3",
+    "createdAt": 1782486556750,
+    "metadata": {
+      "next": {
+        "displayName": "iClawStore",
+        "handle": null,
+        "image": "https://avatars.githubusercontent.com/u/229869375?v=4",
+        "name": "yungou168-source"
+      },
+      "previous": {
+        "displayName": null,
+        "handle": null,
+        "image": "https://avatars.githubusercontent.com/u/229869375?v=4",
+        "name": "yungou168-source"
+      },
+      "source": "github"
+    },
+    "targetId": "vn7abbqqx3tz5wpdb4dqb3zr2189ctb3",
+    "targetType": "user"
+  },
+  {
+    "_creationTime": 1782486556750.4512,
+    "_id": "j97abycvf7pwrqze77ydeg02ds89ceka",
+    "action": "publisher.personal.sync",
+    "actorUserId": "vn7abbqqx3tz5wpdb4dqb3zr2189ctb3",
+    "createdAt": 1782486556750,
+    "metadata": {
+      "changedFields": [
+        "displayName"
+      ],
+      "created": false,
+      "memberCreated": false,
+      "next": {
+        "bio": null,
+        "deactivatedAt": null,
+        "deletedAt": null,
+        "displayName": "iClawStore",
+        "handle": "yungou168-source",
+        "image": "https://avatars.githubusercontent.com/u/229869375?v=4",
+        "linkedUserId": "vn7abbqqx3tz5wpdb4dqb3zr2189ctb3",
+        "trustedPublisher": null
+      },
+      "personalPublisherLinked": false,
+      "previous": {
+        "bio": null,
+        "deactivatedAt": null,
+        "deletedAt": null,
+        "displayName": "yungou168-source",
+        "handle": "yungou168-source",
+        "image": "https://avatars.githubusercontent.com/u/229869375?v=4",
+        "linkedUserId": "vn7abbqqx3tz5wpdb4dqb3zr2189ctb3",
+        "trustedPublisher": null
+      },
+      "source": "user.profile.sync",
+      "userId": "vn7abbqqx3tz5wpdb4dqb3zr2189ctb3"
+    },
+    "targetId": "qd76ep1r0bfksx6ezqprjyt9mn89d89d",
+    "targetType": "publisher"
+  }
+]

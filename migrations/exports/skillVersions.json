@@ -1,0 +1,3337 @@
+[
+  {
+    "_creationTime": 1782487912136.3118,
+    "_id": "t5732972qj7x7wp0n2r8w3ezj189cvqm",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545391700,
+    "createdBy": "vn734yd8q5m4t5jctz1vgzg1hx89b4zm",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-video-frames",
+        "size": 155,
+        "storageId": "kg27grm6kgd6489jmvzprn662989d3gd"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Video Frames",
+        "license": "MIT",
+        "name": "video-frames",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97ds559rtxn02kzxf0gd1hz2n89c1cb",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487912136.313,
+    "_id": "t57e4x33n0wpwpnhrhras4df4989cpj6",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545299849,
+    "createdBy": "vn734yd8q5m4t5jctz1vgzg1hx89b4zm",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-blogwatcher",
+        "size": 152,
+        "storageId": "kg2c4mfty19tjyhh4x7bwrpkj589c8w8"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Blogwatcher",
+        "license": "MIT",
+        "name": "blogwatcher",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t9792vdnds1dqp3m04sfkwa7vd89dkxt",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487912136.3142,
+    "_id": "t575xdt3y35pt4wnpd3y3nfdex89cge8",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545389426,
+    "createdBy": "vn734yd8q5m4t5jctz1vgzg1hx89b4zm",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-trello",
+        "size": 137,
+        "storageId": "kg27379synfvws2cqx7qg226nn89c45e"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Trello",
+        "license": "MIT",
+        "name": "trello",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97374frjqkadg43g8sa8qt6fs89d8dg",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487912136.3154,
+    "_id": "t57dh8qnvr6nekdm5e2n3kwny989c3m5",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769530656679,
+    "createdBy": "vn734yd8q5m4t5jctz1vgzg1hx89b4zm",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-youtube-transcript",
+        "size": 173,
+        "storageId": "kg21afn4w99s5jxrt86qa4b3kx89cbpd"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "YouTube Transcript",
+        "license": "MIT",
+        "name": "youtube-transcript",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t973hk90b91854v6650xj5g5jn89cfd5",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487912136.3167,
+    "_id": "t57c5hw1hnqx84zajbswzpgzjx89dg7g",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769895387151,
+    "createdBy": "vn734yd8q5m4t5jctz1vgzg1hx89b4zm",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-agent-directory",
+        "size": 164,
+        "storageId": "kg25cf4ezms199pxxmjz9dd76h89c0jc"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Agent Directory",
+        "license": "MIT",
+        "name": "agent-directory",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t970sbnmj6ezj5qgdgxmsdnzhs89d5x3",
+    "version": "1.2.0"
+  },
+  {
+    "_creationTime": 1782487923982.8428,
+    "_id": "t574cyjwpwg08xhzt54s82s97s89dm82",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545376535,
+    "createdBy": "vn7c1w4e185tn7rgk0wt9vbq1x89b95c",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-sag",
+        "size": 128,
+        "storageId": "kg23r40gbyc8p897ddwkjy4aqx89d2jh"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Sag",
+        "license": "MIT",
+        "name": "sag",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t976h1yvjb4m32bc6qwap34bj189cr6w",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487923982.844,
+    "_id": "t570a8sefhtv82gfs5ry306wg989c4m1",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769896232617,
+    "createdBy": "vn7c1w4e185tn7rgk0wt9vbq1x89b95c",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-agent-memory",
+        "size": 155,
+        "storageId": "kg2acqfnbrtf9xv2eerr3xtjad89d7qy"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Agent Memory",
+        "license": "MIT",
+        "name": "agent-memory",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97d3pmh6jmwzbr569sjfrjjwx89d2ba",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487923982.8452,
+    "_id": "t574s9kf13k862fwxf03y2yb3d89ddvf",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769463345220,
+    "createdBy": "vn7c1w4e185tn7rgk0wt9vbq1x89b95c",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-clawdbot-security-check",
+        "size": 188,
+        "storageId": "kg22sw920yd75c9h3azs0nk8wh89dhdc"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Clawdbot Security Check",
+        "license": "MIT",
+        "name": "clawdbot-security-check",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t979ggh9c8knv0ps2s5gdvdpfs89dmgt",
+    "version": "2.2.1"
+  },
+  {
+    "_creationTime": 1782487939064.637,
+    "_id": "t574t54hhddczcbvvgw58nm48589cpja",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545365755,
+    "createdBy": "vn76dyrhwvdqaj176d6pt282cd89b0nq",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-openai-whisper",
+        "size": 161,
+        "storageId": "kg20zyrs87xk0vjay81tbgp20h89dvyx"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Openai Whisper",
+        "license": "MIT",
+        "name": "openai-whisper",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97fb1cfa97vyeqjmtp2w43d5189dg32",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487939064.6382,
+    "_id": "t5718qzt9dswf2w66zyge3g8p589c2nx",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545316392,
+    "createdBy": "vn76dyrhwvdqaj176d6pt282cd89b0nq",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-gemini",
+        "size": 137,
+        "storageId": "kg2bzrmqcrfgewjwpcmdb9n80x89c792"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Gemini",
+        "license": "MIT",
+        "name": "gemini",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t970rhjx900a7bptgzaqp29wax89d6t6",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487939064.6394,
+    "_id": "t5711eem586dmmg4cp5gz05rh189dhsm",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769472352291,
+    "createdBy": "vn76dyrhwvdqaj176d6pt282cd89b0nq",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-searxng",
+        "size": 140,
+        "storageId": "kg2dykcr5b2sa9b46wh2y602dn89cskq"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Searxng",
+        "license": "MIT",
+        "name": "searxng",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t970ewz64rhrpzg0kazesm8ts589dc62",
+    "version": "1.0.3"
+  },
+  {
+    "_creationTime": 1782487939064.6406,
+    "_id": "t57877jyye2ve0ahy0bxez41zn89dqch",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769964977628,
+    "createdBy": "vn76dyrhwvdqaj176d6pt282cd89b0nq",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-telegram",
+        "size": 143,
+        "storageId": "kg2952k2qtk0qb1cefh77wrp9x89ctxb"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Telegram",
+        "license": "MIT",
+        "name": "telegram",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t971kjxa2gmeexhcb0zjhkhjt189dt49",
+    "version": "1.0.1"
+  },
+  {
+    "_creationTime": 1782487939064.6418,
+    "_id": "t57fg145mfq4c2adys9fmcebms89d5vn",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770104190626,
+    "createdBy": "vn76dyrhwvdqaj176d6pt282cd89b0nq",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-cellcog",
+        "size": 140,
+        "storageId": "kg22y2b8cfvw2azccwyx6fzbps89dbtq"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Cellcog",
+        "license": "MIT",
+        "name": "cellcog",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t9783e4rehc2nnb9te476v26fd89c1pc",
+    "version": "2.0.15"
+  },
+  {
+    "_creationTime": 1782487944599.4336,
+    "_id": "t57av7fpzvjcwwvweaevhygfjn89cjez",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545381030,
+    "createdBy": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-sonoscli",
+        "size": 143,
+        "storageId": "kg22vtppqxz7j1n1cb3h2knzfs89d5a2"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Sonoscli",
+        "license": "MIT",
+        "name": "sonoscli",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97fbtpeytpg92cyn44zvbvx9x89daz1",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487944599.4348,
+    "_id": "t573pg5qvvvv92j8td5yjsq96589c6at",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545355897,
+    "createdBy": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-mcporter",
+        "size": 143,
+        "storageId": "kg288w16x6h1gnsx4pzrcagxx989cwpz"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Mcporter",
+        "license": "MIT",
+        "name": "mcporter",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97e5f5cevrty6xgvzfd2t0zcn89dav4",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487944599.436,
+    "_id": "t57d5aqzvypkmcbzsqv2edkbf189dyct",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769673454302,
+    "createdBy": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-web-search",
+        "size": 149,
+        "storageId": "kg2ad66tbfdhs8majafqpptmqh89ccr1"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Web Search",
+        "license": "MIT",
+        "name": "web-search",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97ehzkzh09pzzjg6fqsp7sr3s89dxb1",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487944599.4373,
+    "_id": "t577fk3v2d65270m54h0vh82f589ceyj",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769560708311,
+    "createdBy": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-answeroverflow",
+        "size": 163,
+        "storageId": "kg2000j3mm3260905tb576eysd89c4z0"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Answer Overflow",
+        "license": "MIT",
+        "name": "answeroverflow",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97dbm2wg5vg9cdeybnm94ydp189d4xx",
+    "version": "1.0.2"
+  },
+  {
+    "_creationTime": 1782487944599.4385,
+    "_id": "t575eqr1rhhpwsmv8v6sypyqb589d3ws",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769692045864,
+    "createdBy": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-git-essentials",
+        "size": 161,
+        "storageId": "kg251d0a5cvr808v3mh4x6y36h89ddaf"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Git Essentials",
+        "license": "MIT",
+        "name": "git-essentials",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97f91pdmwary0p9pr870ekhy589cddj",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487944599.4397,
+    "_id": "t572b9zxt840wsndq0w75vrhs589dx7r",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767689741145,
+    "createdBy": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-news-summary",
+        "size": 155,
+        "storageId": "kg2e1g2brvk14bbd4pttkdt45h89cwsq"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "News Summary",
+        "license": "MIT",
+        "name": "news-summary",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t978jx02wbwzpnqvj4xx6nvjen89c2df",
+    "version": "1.0.1"
+  },
+  {
+    "_creationTime": 1782487944599.441,
+    "_id": "t573rd2jx8cnwe8cqnwx4xpm7x89dzmt",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770221093765,
+    "createdBy": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-multi-search-engine",
+        "size": 176,
+        "storageId": "kg22hjphm04600jqgsmrw4bg5d89dmzj"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Multi Search Engine",
+        "license": "MIT",
+        "name": "multi-search-engine",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t9795fnpmnh7hgv4j96j5ca8b989c1nv",
+    "version": "2.1.2"
+  },
+  {
+    "_creationTime": 1782487944599.4421,
+    "_id": "t578dtfxkjpvybhevt9tx448nh89de4q",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769939473695,
+    "createdBy": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-safe-exec",
+        "size": 146,
+        "storageId": "kg261d94pxz9axf7x1mtcmtwdd89dxn3"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Safe Exec",
+        "license": "MIT",
+        "name": "safe-exec",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97bbxje44xrfvjjdbvdr1fcy989cgb3",
+    "version": "0.3.3"
+  },
+  {
+    "_creationTime": 1782487944599.4434,
+    "_id": "t573k2hgfpfbzzhxrdh079dea589dp8z",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770099681870,
+    "createdBy": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-daily-ai-news-skill",
+        "size": 164,
+        "storageId": "kg22gjw6epms8kpm0w9rrtzj0589cntb"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Daily Ai News",
+        "license": "MIT",
+        "name": "daily-ai-news-skill",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97a0654qqqafhknvxwp0y70cs89csf0",
+    "version": "0.1.0"
+  },
+  {
+    "_creationTime": 1782487944599.4446,
+    "_id": "t57909j9c1tg6prpby0hyfywp989c68s",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770637671264,
+    "createdBy": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-openserv-multi-agent-workflows",
+        "size": 209,
+        "storageId": "kg2cqd50n44da1x77nkr2b29t589ch71"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "OpenServ Multi Agent Workflows",
+        "license": "MIT",
+        "name": "openserv-multi-agent-workflows",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t9799z225b0yb25erb7psmtqcd89ct10",
+    "version": "1.0.1"
+  },
+  {
+    "_creationTime": 1782487958969.4663,
+    "_id": "t5797m2peyry9mabqd2gvdbn6h89cm8w",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545360889,
+    "createdBy": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-notion",
+        "size": 137,
+        "storageId": "kg2c6wdrg6g0ywp9jgmqx18nvd89d3ds"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Notion",
+        "license": "MIT",
+        "name": "notion",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97b0pyhef50a9gmagfvct3cwd89cfnz",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487958969.4675,
+    "_id": "t573wseaqccvz7c22sd2eff28989c70g",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545358090,
+    "createdBy": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-nano-banana-pro",
+        "size": 164,
+        "storageId": "kg2d6pwb4mzmbamq7tdeh1fk1n89cvkj"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Nano Banana Pro",
+        "license": "MIT",
+        "name": "nano-banana-pro",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t979fzh43pae96gffjd1rswpz189c91k",
+    "version": "1.0.1"
+  },
+  {
+    "_creationTime": 1782487958969.4688,
+    "_id": "t57cgqnsmdnjm57b04w45tqe2n89d0zz",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545369355,
+    "createdBy": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-openhue",
+        "size": 140,
+        "storageId": "kg238k0hdc25jqh50bfbmbhw1589cvze"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Openhue",
+        "license": "MIT",
+        "name": "openhue",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t973hkp6bzad0t6zy8cvs5mwa189cs8x",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487958969.47,
+    "_id": "t57fzmdbzemfzwbtb6epqzdsy589d594",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545379576,
+    "createdBy": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-songsee",
+        "size": 140,
+        "storageId": "kg2fr891yj28bg10r4vv5x2e4x89dd00"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Songsee",
+        "license": "MIT",
+        "name": "songsee",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97f41fcdb55dv5x7dsr8tvy3s89cnb2",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487958969.4712,
+    "_id": "t57b2yrkm9jgcbn4vdpjsccmm589czdg",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769629545209,
+    "createdBy": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-proactive-agent",
+        "size": 164,
+        "storageId": "kg2a58nfjekbw0wahmnj5xzz7n89c2qa"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Proactive Agent",
+        "license": "MIT",
+        "name": "proactive-agent",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t970mr3s4kwv35k1dfjq4vp42n89dds2",
+    "version": "3.0.0"
+  },
+  {
+    "_creationTime": 1782487958969.4724,
+    "_id": "t57cd7s4q6g1cymghdjjxae89d89drf7",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770329342455,
+    "createdBy": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-gcalcli-calendar",
+        "size": 193,
+        "storageId": "kg26n95s8pd9dbdykh5r2nq82189dryr"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Google Calendar (via gcalcli)",
+        "license": "MIT",
+        "name": "gcalcli-calendar",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97549ge6cytjemwm3v2b5byzn89chhc",
+    "version": "3.0.0"
+  },
+  {
+    "_creationTime": 1782487958969.4736,
+    "_id": "t574pbtb7jg42m1g0r35amxmr189d3yf",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769919901112,
+    "createdBy": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-youtube-full",
+        "size": 155,
+        "storageId": "kg285ffdc2xn0fg6wjwzcz5nfx89d901"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "youtube-full",
+        "license": "MIT",
+        "name": "youtube-full",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t9704156hvf1evdetem1rxg20n89cs6g",
+    "version": "1.4.1"
+  },
+  {
+    "_creationTime": 1782487958969.4749,
+    "_id": "t57e0y5b9mve6gh069scm34g6h89c3q0",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769554893241,
+    "createdBy": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-polymarket-agent",
+        "size": 167,
+        "storageId": "kg26f56gm1nvnp2pa0ah6sgtk989dnhz"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Polymarket Agent",
+        "license": "MIT",
+        "name": "polymarket-agent",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97fasjafcrbv5sxyj12a33p7d89cfzr",
+    "version": "1.0.1"
+  },
+  {
+    "_creationTime": 1782487958969.476,
+    "_id": "t57b2y576jtx8m1gkgnr9xdcgx89d1cf",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767719074735,
+    "createdBy": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-superdesign",
+        "size": 152,
+        "storageId": "kg207n4m6xrdj8rdvy3vkznr8x89df81"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "SuperDesign",
+        "license": "MIT",
+        "name": "superdesign",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97f2adxk0ct6fxwhdbr9qcp1189c3by",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487958969.4773,
+    "_id": "t57f87vfmgm8td4nzv7ak1qcbd89dtx8",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770484058130,
+    "createdBy": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-ai-ppt-generator",
+        "size": 169,
+        "storageId": "kg26t6bwthk45e69e9txsx3cys89d7k5"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Baidu Wenku AIPPT",
+        "license": "MIT",
+        "name": "ai-ppt-generator",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t974p92nk5by4yh355zcs1zsfx89daxe",
+    "version": "1.1.5"
+  },
+  {
+    "_creationTime": 1782487965347.6636,
+    "_id": "t57cp64tcnsthaxpm5c33056f589cb44",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770380249222,
+    "createdBy": "vn71a32bepfaw5vcnzaq9qnz1d89cr87",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-mineru",
+        "size": 159,
+        "storageId": "kg2crhny7be965d0t9x7hhsv6n89dbys"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "MinerU PDF Parser",
+        "license": "MIT",
+        "name": "mineru",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97c6e00sj166d45vxqj9k5ev989cc95",
+    "version": "1.0.1"
+  },
+  {
+    "_creationTime": 1782487970849.76,
+    "_id": "t574bnfgz0q77827e7s9q97ahd89d9np",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545373660,
+    "createdBy": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-peekaboo",
+        "size": 143,
+        "storageId": "kg24nyev6f1fah524ja4nx9fhh89c9j4"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Peekaboo",
+        "license": "MIT",
+        "name": "peekaboo",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t973v6b7d5rx71bewxdyrw118h89dsgg",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487970849.7612,
+    "_id": "t570h1hht9zasxb10bfdck1r1s89cqnv",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767488226016,
+    "createdBy": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-gifgrep",
+        "size": 140,
+        "storageId": "kg209pj5egfex9tvvrr0y0zrsx89c4kk"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Gifgrep",
+        "license": "MIT",
+        "name": "gifgrep",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t9722z78y0xhyem3rem539rzjn89dab8",
+    "version": "1.0.1"
+  },
+  {
+    "_creationTime": 1782487970849.7625,
+    "_id": "t5752f8qz87sqf0ty90m1awzz589dpq1",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769405231570,
+    "createdBy": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-bluebubbles",
+        "size": 152,
+        "storageId": "kg22kz0bb1spwpdgp8q0p4nrg189cbbe"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Bluebubbles",
+        "license": "MIT",
+        "name": "bluebubbles",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t976gqy3g8knz5a51jm7pg41k589dywe",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487970849.7637,
+    "_id": "t5796mreha2qwb75w36b9ey7k589c4ne",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545301512,
+    "createdBy": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-blucli",
+        "size": 137,
+        "storageId": "kg2dzm94j9k90hzt643gk45j7h89drp6"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Blucli",
+        "license": "MIT",
+        "name": "blucli",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97dy9n7dqbcxg8tqzcppcafyn89c5pc",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487970849.765,
+    "_id": "t57ev3x7mvpjhs4qncpqx2dem189d2xe",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769963234507,
+    "createdBy": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-healthcheck",
+        "size": 152,
+        "storageId": "kg21brfjht8z7te5d284p9ee6d89d5s3"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "healthcheck",
+        "license": "MIT",
+        "name": "healthcheck",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t9705kznjgqby1eakfb8w7w35x89dv1p",
+    "version": "1.0.2"
+  },
+  {
+    "_creationTime": 1782487970849.766,
+    "_id": "t5735d773byq8002knqb53m4w189c3hc",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769327779866,
+    "createdBy": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-youtube-watcher",
+        "size": 164,
+        "storageId": "kg297xyt8tjkypq5c54c2zksns89crm1"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "YouTube Watcher",
+        "license": "MIT",
+        "name": "youtube-watcher",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97c1xndm6jbdvbk8y6trgxd9589czfx",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487970849.7673,
+    "_id": "t579tmv8k4b2cdxjf7f77jzzq189cszh",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769319760427,
+    "createdBy": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-agentmail",
+        "size": 146,
+        "storageId": "kg245b4gcrx59r5sf9dnz49sb989dtcq"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "AgentMail",
+        "license": "MIT",
+        "name": "agentmail",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97cpj4m5canesz6p029s9ddfs89dceq",
+    "version": "1.1.1"
+  },
+  {
+    "_creationTime": 1782487970849.7686,
+    "_id": "t57dy6f4hs9y3yzfcbbfrc3zv189cj1n",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769963734144,
+    "createdBy": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-clawdex",
+        "size": 154,
+        "storageId": "kg28wjyv4ta9nhx2qa91j9hqbn89c5nt"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Clawdex by Koi",
+        "license": "MIT",
+        "name": "clawdex",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t9703120t2trtqs3cswmvayfyd89dy1s",
+    "version": "1.0.2"
+  },
+  {
+    "_creationTime": 1782487970849.7698,
+    "_id": "t57aqha9kghzx07jys8g0sf44d89d814",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769544521483,
+    "createdBy": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-firecrawl-search",
+        "size": 167,
+        "storageId": "kg24exz1x01q4h4fycsehzkymn89d0zd"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Firecrawl Search",
+        "license": "MIT",
+        "name": "firecrawl-search",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97arg243em8ttfa9z5prfq36x89ddzp",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487970849.771,
+    "_id": "t5747ctprhbp39310bppjyt6vd89dhmc",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769524433792,
+    "createdBy": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-notion-skill",
+        "size": 143,
+        "storageId": "kg27ay26cr760qv0rjr4jdxyqh89demf"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Notion",
+        "license": "MIT",
+        "name": "notion-skill",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97a33t9072f7ycp7xef5v000d89cggj",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487976619.811,
+    "_id": "t576nnx40bpg26js9a0vnakhcs89cms8",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545359433,
+    "createdBy": "vn70fmkgkgcyce79r4m5bpkbf189c4cv",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-nano-pdf",
+        "size": 143,
+        "storageId": "kg22wkgnpstrz1sfzpg6dd8h6s89d1qh"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Nano Pdf",
+        "license": "MIT",
+        "name": "nano-pdf",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t976g3pvewkxk21ye7hd8dv80n89cqwm",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487976619.8123,
+    "_id": "t57djteamk8dyg0vqdrnt0hpjs89c5np",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770136427000,
+    "createdBy": "vn70fmkgkgcyce79r4m5bpkbf189c4cv",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-session-logs",
+        "size": 155,
+        "storageId": "kg24stq1grk38drvcck6cyms4s89dxyz"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Session-logs",
+        "license": "MIT",
+        "name": "session-logs",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t9773ysrprgyxmzsgb1e7c66n589d09k",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487976619.8135,
+    "_id": "t57bmrff15skmnf7vmch9tcze589c15a",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545296326,
+    "createdBy": "vn70fmkgkgcyce79r4m5bpkbf189c4cv",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-apple-reminders",
+        "size": 164,
+        "storageId": "kg2bvzyvdzzynmbkm1ewzjvspx89d03c"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Apple Reminders",
+        "license": "MIT",
+        "name": "apple-reminders",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t978qwmg8t344tcvhct6xsw8t189d4ca",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487976619.8147,
+    "_id": "t57apar8c1t3w7xmabfjvm3xws89cpdc",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545298356,
+    "createdBy": "vn70fmkgkgcyce79r4m5bpkbf189c4cv",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-bear-notes",
+        "size": 149,
+        "storageId": "kg292dtwfehadbwaw2jgrajjx989d78f"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Bear Notes",
+        "license": "MIT",
+        "name": "bear-notes",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97bc0nf30r7g39710073802mx89c8xw",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487976619.816,
+    "_id": "t573pz4d92j4pyat0mfcfk9zq989c0r4",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769702331506,
+    "createdBy": "vn70fmkgkgcyce79r4m5bpkbf189c4cv",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-prompt-guard",
+        "size": 155,
+        "storageId": "kg202411axh8489rvevnps47vs89c0p0"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Prompt Guard",
+        "license": "MIT",
+        "name": "prompt-guard",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97csgt666vg1qf38def79p7hh89c3h3",
+    "version": "3.6.1"
+  },
+  {
+    "_creationTime": 1782487976619.8171,
+    "_id": "t5777py1vg12phmyq7xzvbvh8d89c5cv",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769398410293,
+    "createdBy": "vn70fmkgkgcyce79r4m5bpkbf189c4cv",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-youtube-summarizer",
+        "size": 173,
+        "storageId": "kg20w2jb4d9rsyjakxecmc9vkh89dz7w"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "YouTube Summarizer",
+        "license": "MIT",
+        "name": "youtube-summarizer",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t973gxe2h0c51aqyeg112p0bhh89d0y5",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487976619.8184,
+    "_id": "t571bsqhqdexyv9fr57pwgywe989d4t1",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770021074275,
+    "createdBy": "vn70fmkgkgcyce79r4m5bpkbf189c4cv",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-gmail",
+        "size": 134,
+        "storageId": "kg2bzktekp09tsmfqsz45mc0xn89dkac"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Gmail",
+        "license": "MIT",
+        "name": "gmail",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97cbdbzc2rpdp2g6gxjjsxnzs89cm6q",
+    "version": "1.0.8"
+  },
+  {
+    "_creationTime": 1782487976619.8196,
+    "_id": "t57ezmhr5fbcx5k43qgjha2tb189chwc",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769725661232,
+    "createdBy": "vn70fmkgkgcyce79r4m5bpkbf189c4cv",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-antigravity-image-gen",
+        "size": 194,
+        "storageId": "kg2dphc1hyfx26z05nhzthjk0h89cjww"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Antigravity Image Generator",
+        "license": "MIT",
+        "name": "antigravity-image-gen",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97e6gxjbmtreqjw5n2x4fg7kn89dntb",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487983664.8489,
+    "_id": "t579drx9ete6fxqbehmy45qyth89ca28",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769481215958,
+    "createdBy": "vn7epces79g4j429xw9xc6d13d89dvvm",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-clawdbot-filesystem",
+        "size": 180,
+        "storageId": "kg277k4e4xh6a4en1e633aev4n89d675"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Filesystem Management",
+        "license": "MIT",
+        "name": "clawdbot-filesystem",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t970a8bs2hnb06zeeb7vkph93989dwy0",
+    "version": "1.0.2"
+  },
+  {
+    "_creationTime": 1782487983664.85,
+    "_id": "t574ymq0dz09capfng72awggg589c9nh",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769680455625,
+    "createdBy": "vn7epces79g4j429xw9xc6d13d89dvvm",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-imap-smtp-email",
+        "size": 164,
+        "storageId": "kg22x16xehc19zymxbwkg28xwh89dv9a"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "imap-smtp-email",
+        "license": "MIT",
+        "name": "imap-smtp-email",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97bc9ynbpw400sf8je9gd1w7n89cs7m",
+    "version": "0.0.16"
+  },
+  {
+    "_creationTime": 1782487983664.8513,
+    "_id": "t57a382bprcgkwnmtgtwkpsxe589ctmc",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769842400221,
+    "createdBy": "vn7epces79g4j429xw9xc6d13d89dvvm",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-memory-manager",
+        "size": 161,
+        "storageId": "kg20ttah5wm20m51ggy9jmp0ks89dfgh"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Memory Manager",
+        "license": "MIT",
+        "name": "memory-manager",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97cycyp1p0v94n748r6p8pp3s89cb0b",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487983664.8525,
+    "_id": "t579x45j3g70pfxcnqnjff7dpx89c93n",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769935067126,
+    "createdBy": "vn7epces79g4j429xw9xc6d13d89dvvm",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-api-gateway",
+        "size": 152,
+        "storageId": "kg22jq28cm63fa0qs83ggh563h89d6dm"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "API Gateway",
+        "license": "MIT",
+        "name": "api-gateway",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t971edbtzw5q9p3k14ffcfv4ns89c0r0",
+    "version": "1.0.125"
+  },
+  {
+    "_creationTime": 1782487983664.8538,
+    "_id": "t5752v16aczk59ztn4jgh9csh189dtez",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769147666544,
+    "createdBy": "vn7epces79g4j429xw9xc6d13d89dvvm",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-crypto-price",
+        "size": 155,
+        "storageId": "kg2650sbsm2ej2rye0t8zbzetx89c84z"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Crypto Price",
+        "license": "MIT",
+        "name": "crypto-price",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t973wb60f1f13vfb9twzrvzza589dcax",
+    "version": "0.2.2"
+  },
+  {
+    "_creationTime": 1782487990871.8862,
+    "_id": "t571y2vch2yp0wzkcsdpkezpb989dpsg",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769032854381,
+    "createdBy": "vn7ajxnaqhcee76jg88g5prr6589cz4m",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-agent-browser-clawdbot",
+        "size": 167,
+        "storageId": "kg2f7czxv61awhwfr149tvs9px89dz7k"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Agent Browser",
+        "license": "MIT",
+        "name": "agent-browser-clawdbot",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97b6p831zxnfay6k0ebpvxms589cgpx",
+    "version": "0.1.0"
+  },
+  {
+    "_creationTime": 1782487990871.8875,
+    "_id": "t57a81azgz0b2n7bae0v2pgb4589ckva",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770118289003,
+    "createdBy": "vn7ajxnaqhcee76jg88g5prr6589cz4m",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-diagram-generator",
+        "size": 170,
+        "storageId": "kg2982tvrc4291xv2xgbm6er2n89dt6d"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "diagram-generator",
+        "license": "MIT",
+        "name": "diagram-generator",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t977yjc0kr2kf1bba3wdxwhc7d89d5wa",
+    "version": "1.1.6"
+  },
+  {
+    "_creationTime": 1782487990871.8887,
+    "_id": "t579f360vxf1aqn4v4cppze2vd89dctf",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770379660987,
+    "createdBy": "vn7ajxnaqhcee76jg88g5prr6589cz4m",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-moltrade",
+        "size": 143,
+        "storageId": "kg2enbvd1wymeyvay9adpytvsd89dhnf"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "moltrade",
+        "license": "MIT",
+        "name": "moltrade",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t979ths2v1fx7ahwwe2asjx0w989cq0k",
+    "version": "1.0.8"
+  },
+  {
+    "_creationTime": 1782487996485.4636,
+    "_id": "t572drq4xsef3m2pfyzgadg6hh89cq9c",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545394459,
+    "createdBy": "vn70h8w2fdrp9gbjcdzjqn8tx989d9tw",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-weather",
+        "size": 140,
+        "storageId": "kg27er6vxyv4xkqwxxd58cd6th89cfar"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Weather",
+        "license": "MIT",
+        "name": "weather",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t975qwz0anb0x91ebhgega7jbs89dpz8",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782487996485.4648,
+    "_id": "t572t5pmavhsjs9w3604vhc36d89dw7z",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769847855729,
+    "createdBy": "vn70h8w2fdrp9gbjcdzjqn8tx989d9tw",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-pdf",
+        "size": 128,
+        "storageId": "kg2021g75sk3a1mepsx3yh821189dbyp"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Pdf",
+        "license": "MIT",
+        "name": "pdf",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t970h24mtxzb8s1m4dt40p626x89dwsc",
+    "version": "0.1.0"
+  },
+  {
+    "_creationTime": 1782487996485.466,
+    "_id": "t574nwrmfd793gsqrnw6vaj0s189c1k2",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769644119080,
+    "createdBy": "vn70h8w2fdrp9gbjcdzjqn8tx989d9tw",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-exa-web-search-free",
+        "size": 180,
+        "storageId": "kg235gykdbkv91nxadz6n25hj589d6r1"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Exa Web Search (Free)",
+        "license": "MIT",
+        "name": "exa-web-search-free",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97dry25d01w8jxzq5nt7qb32x89dxpw",
+    "version": "1.0.1"
+  },
+  {
+    "_creationTime": 1782487996485.4673,
+    "_id": "t57bvnbf3khvgm3gyv6r6m8qr989dv8f",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769388231012,
+    "createdBy": "vn70h8w2fdrp9gbjcdzjqn8tx989d9tw",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-browser-use",
+        "size": 152,
+        "storageId": "kg228hnsyca6nq9388ckwk1s4989cpmn"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Browser Use",
+        "license": "MIT",
+        "name": "browser-use",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t975pjk2nnc7m9w2zhdbz7q4n589cx9t",
+    "version": "2.0.0"
+  },
+  {
+    "_creationTime": 1782487996485.4685,
+    "_id": "t57437vc29v7fbt3rjqqas1f7x89dz1k",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769671384220,
+    "createdBy": "vn70h8w2fdrp9gbjcdzjqn8tx989d9tw",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-stock-market-pro",
+        "size": 167,
+        "storageId": "kg2f8sm5m8wtwfr53tttczyren89cxzp"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Stock Market Pro",
+        "license": "MIT",
+        "name": "stock-market-pro",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t970wdvcrn6sa3deyh3ef6bda989d4k8",
+    "version": "1.2.12"
+  },
+  {
+    "_creationTime": 1782487996485.4697,
+    "_id": "t574ry38s5jnbxptrcggndbdmn89ceek",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1768362931439,
+    "createdBy": "vn70h8w2fdrp9gbjcdzjqn8tx989d9tw",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-context7",
+        "size": 151,
+        "storageId": "kg2b31ec81s1xey932tptxd6an89d1pq"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Context7 MCP",
+        "license": "MIT",
+        "name": "context7",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97471z5rrjqnxy50f67g4f77h89cmc3",
+    "version": "1.0.3"
+  },
+  {
+    "_creationTime": 1782487996485.471,
+    "_id": "t57aa7rmj920c370asprztydgx89cdq8",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769896469487,
+    "createdBy": "vn70h8w2fdrp9gbjcdzjqn8tx989d9tw",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-hippocampus-memory",
+        "size": 159,
+        "storageId": "kg24z378q2s5ppfzt2tpzrn4gh89cs73"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Hippocampus",
+        "license": "MIT",
+        "name": "hippocampus-memory",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97877sfne5v9xknk3v3gnqfd989c8an",
+    "version": "3.8.5"
+  },
+  {
+    "_creationTime": 1782488004338.1301,
+    "_id": "t577j8a4bed2bq21av6w7qhh7x89ckjg",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767632598365,
+    "createdBy": "vn7eqhcmpe1rkjgd6r5z0652ax89cbat",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-self-improving-agent",
+        "size": 179,
+        "storageId": "kg252pxrbd4t651ssajktqms1s89cbv1"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "self-improving agent",
+        "license": "MIT",
+        "name": "self-improving-agent",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t9767a3msz1t3c0pxpyppnaa2x89cjfb",
+    "version": "3.0.24"
+  },
+  {
+    "_creationTime": 1782488004338.1313,
+    "_id": "t577xhtzv9zw0tkby05g571d9h89dabv",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769016558544,
+    "createdBy": "vn7eqhcmpe1rkjgd6r5z0652ax89cbat",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-marketing-mode",
+        "size": 161,
+        "storageId": "kg20zy7cdqbfspcyemaqp708kh89dx6w"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Marketing Mode",
+        "license": "MIT",
+        "name": "marketing-mode",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t977hk9rr3n67tw3066p6bn1nx89cv99",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488004338.1326,
+    "_id": "t578fe0ensyzme7c2tf4qcpw2n89cffb",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769434876997,
+    "createdBy": "vn7eqhcmpe1rkjgd6r5z0652ax89cbat",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-arxiv-watcher",
+        "size": 158,
+        "storageId": "kg231v7p24vdp2z7rmgbthr05989dfvc"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "ArXiv Watcher",
+        "license": "MIT",
+        "name": "arxiv-watcher",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t976y3bryjcep77wnd35ezmf0x89ds8f",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488004338.1338,
+    "_id": "t57bm3tnycattkbta1z2edf5fn89casv",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770653293499,
+    "createdBy": "vn7eqhcmpe1rkjgd6r5z0652ax89cbat",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-git",
+        "size": 128,
+        "storageId": "kg2995jp70tqtety95smqhj1sh89crzm"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Git",
+        "license": "MIT",
+        "name": "git",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t970wbgtjc9k2phk0nkxgdw0cd89c7hg",
+    "version": "1.0.8"
+  },
+  {
+    "_creationTime": 1782488004338.135,
+    "_id": "t57enmy8xvr4cbhh0j554zvwc589cja0",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770341582349,
+    "createdBy": "vn7eqhcmpe1rkjgd6r5z0652ax89cbat",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-automation-workflows",
+        "size": 179,
+        "storageId": "kg208n45ncanekp9y5qne6rdqh89cb7k"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Automation Workflows",
+        "license": "MIT",
+        "name": "automation-workflows",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97eg74dvxzpmr1wq45k6v8ng589dxfj",
+    "version": "0.1.0"
+  },
+  {
+    "_creationTime": 1782488004338.1362,
+    "_id": "t574h547fnmhfz69b6atcv7f4589cep9",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769362342566,
+    "createdBy": "vn7eqhcmpe1rkjgd6r5z0652ax89cbat",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-gogcli",
+        "size": 183,
+        "storageId": "kg24kvykv39rdx6trmrnt8bt2589d3ya"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "gogcli - Google Workspace CLI",
+        "license": "MIT",
+        "name": "gogcli",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t979wst1pfp028jvv129z1gnyh89dcvw",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488012813.402,
+    "_id": "t574pxzhtdq52jc1d0vrpx117d89c3h6",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545344344,
+    "createdBy": "vn715a72sev56wptz7d2tys2g589dtr6",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-github",
+        "size": 137,
+        "storageId": "kg25g8n1vm6shre8s9z5p3etjs89dv1w"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Github",
+        "license": "MIT",
+        "name": "github",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t9721zpdnywjsz524j848r2sj589csew",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488012813.4033,
+    "_id": "t57bvy56n9wq2w6fqxyb4t9ap589cs52",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545368103,
+    "createdBy": "vn715a72sev56wptz7d2tys2g589dtr6",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-openai-whisper-api",
+        "size": 173,
+        "storageId": "kg2agwj1zqk0ktcmt19a034dqs89crx8"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Openai Whisper Api",
+        "license": "MIT",
+        "name": "openai-whisper-api",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97c1gfa1snktc6d65gj7sncys89cre2",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488012813.4045,
+    "_id": "t578t83nqxxfakjbfnzty2n1yd89cdyq",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769231736865,
+    "createdBy": "vn715a72sev56wptz7d2tys2g589dtr6",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-humanizer",
+        "size": 146,
+        "storageId": "kg2ajvdzrxemf6076e7f5pwx3n89dbe2"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Humanizer",
+        "license": "MIT",
+        "name": "humanizer",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97201gm1kspq2p68cybz0pvgh89c6a5",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488012813.4058,
+    "_id": "t577yweqqf5698dtfvve5d258x89d9q1",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770307091925,
+    "createdBy": "vn715a72sev56wptz7d2tys2g589dtr6",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-browser-automation",
+        "size": 173,
+        "storageId": "kg2f0cv2m5x7qb9zx5mpqgpyw989dk43"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Browser Automation",
+        "license": "MIT",
+        "name": "browser-automation",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97407gf3v5sczpkzaatemshh589d1jt",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488012813.407,
+    "_id": "t572kfdtc8z3g1w22atzv8rqkh89c86q",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769979735397,
+    "createdBy": "vn715a72sev56wptz7d2tys2g589dtr6",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-clawdefender",
+        "size": 269,
+        "storageId": "kg20hbw5evc5617tfsdjkjzgz989c612"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "ClawDefender - OpenClaw Security - Prompt injection, rogue skills etc",
+        "license": "MIT",
+        "name": "clawdefender",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t972mp7xa1ph9h1nwwajbrh82189d2hp",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488012813.4082,
+    "_id": "t57d7psycranqzrby4zprfd2y189cf1x",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769445465505,
+    "createdBy": "vn715a72sev56wptz7d2tys2g589dtr6",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-reflect-learn",
+        "size": 146,
+        "storageId": "kg20det0sbx26v2fvs5dn6v6q189ds4t"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Reflect",
+        "license": "MIT",
+        "name": "reflect-learn",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97djzcnq9xxcavf62n2nqxft989dypx",
+    "version": "2.0.0"
+  },
+  {
+    "_creationTime": 1782488012813.4094,
+    "_id": "t57c25vs10xdpq340y1gv5khmn89cxky",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769830399869,
+    "createdBy": "vn715a72sev56wptz7d2tys2g589dtr6",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-cron-mastery",
+        "size": 155,
+        "storageId": "kg2f4mvvb6ajf73hzacsbhbbj989cmh0"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Cron Mastery",
+        "license": "MIT",
+        "name": "cron-mastery",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t9794tmttzbm3h5vxbwqpyng2n89d9th",
+    "version": "1.0.2"
+  },
+  {
+    "_creationTime": 1782488020404.7366,
+    "_id": "t5726f0qjj06x96r3gpa3a4wtn89cytv",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545364210,
+    "createdBy": "vn7bds31m625ea485pn2g8aqpn89cs48",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-openai-image-gen",
+        "size": 167,
+        "storageId": "kg2ft1jhht0xsfhbw8crag14jx89ca91"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Openai Image Gen",
+        "license": "MIT",
+        "name": "openai-image-gen",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97301zvw10d036pvrd1cbah4n89detq",
+    "version": "1.0.1"
+  },
+  {
+    "_creationTime": 1782488020404.7378,
+    "_id": "t57fgzjb797xjvyacabbfavvcs89d734",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545384979,
+    "createdBy": "vn7bds31m625ea485pn2g8aqpn89cs48",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-things-mac",
+        "size": 149,
+        "storageId": "kg2b3qtydnwk2773yd1pppeyg989ds64"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Things Mac",
+        "license": "MIT",
+        "name": "things-mac",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t977b0f7fbv4p5p505ama1a8v189ce8z",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488020404.739,
+    "_id": "t57cds73rwdj2zn34ys499ykth89c8b6",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769611121418,
+    "createdBy": "vn7bds31m625ea485pn2g8aqpn89cs48",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-youtube",
+        "size": 140,
+        "storageId": "kg23csheng93fw07renm4qry7x89da21"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Youtube",
+        "license": "MIT",
+        "name": "youtube",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97ckdnevpw71m12q5kk559yx189cdsz",
+    "version": "1.0.1"
+  },
+  {
+    "_creationTime": 1782488020404.7402,
+    "_id": "t57883y728z4egmmqe200a71b189cv48",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769420683107,
+    "createdBy": "vn7bds31m625ea485pn2g8aqpn89cs48",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-news-aggregator-skill",
+        "size": 182,
+        "storageId": "kg2axfavc9pmg4fr7mfkshw6xh89cfeq"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "News Aggregator Skill",
+        "license": "MIT",
+        "name": "news-aggregator-skill",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t9778y9nf3qk2wffg91xg5r52589dtjc",
+    "version": "0.1.0"
+  },
+  {
+    "_creationTime": 1782488020404.7415,
+    "_id": "t57e3hqrpev9z3e4xcrrprejvn89dd6z",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769911812377,
+    "createdBy": "vn7bds31m625ea485pn2g8aqpn89cs48",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-chromadb-memory",
+        "size": 172,
+        "storageId": "kg2944f69dwejnevamd9mw8wts89cnxx"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Chromadb Memory Pub",
+        "license": "MIT",
+        "name": "chromadb-memory",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97drmh511zjmkfm1bbhswvnpx89csrd",
+    "version": "1.2.1"
+  },
+  {
+    "_creationTime": 1782488026536.5745,
+    "_id": "t57dqveaedk18vrcwd8y8tw29189ck4g",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767667639455,
+    "createdBy": "vn70rwq04ghyzeh8sq870aaj9x89cqnz",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-model-usage",
+        "size": 152,
+        "storageId": "kg207swgys8s9g5yrxt9jknpen89d9mp"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Model Usage",
+        "license": "MIT",
+        "name": "model-usage",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97a6fad9499cxbzrxy78cc1dd89dv5q",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488026536.5757,
+    "_id": "t57fpwvzvnk7kd35tax7m8jzh189dnky",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769867469132,
+    "createdBy": "vn70rwq04ghyzeh8sq870aaj9x89cqnz",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-moltbook-interact",
+        "size": 170,
+        "storageId": "kg27pncv9gcrmvperjvb6n08dn89c4ke"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "moltbook-interact",
+        "license": "MIT",
+        "name": "moltbook-interact",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t9717zdzwchwbzye5kfmtygzwd89cga1",
+    "version": "1.0.1"
+  },
+  {
+    "_creationTime": 1782488026536.577,
+    "_id": "t5756c1tt6fp45mka56hy8yrdn89crj3",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769912401534,
+    "createdBy": "vn70rwq04ghyzeh8sq870aaj9x89cqnz",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-moltguard",
+        "size": 218,
+        "storageId": "kg23p3j0f42ah0204db38s474n89dcba"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "MoltGuard - Security & Antivirus & Guardrails",
+        "license": "MIT",
+        "name": "moltguard",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t9709fjrzx0a1v6wnfaqnw6q5589dcdf",
+    "version": "6.8.15"
+  },
+  {
+    "_creationTime": 1782488032050.0771,
+    "_id": "t577ahbsggdqfh5aax9hngtfs189cpp2",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545346060,
+    "createdBy": "vn748yhtv37mwatd1nbjd9gemh89cp7r",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-gog",
+        "size": 128,
+        "storageId": "kg2bv0z6pcbpprtcyqnctb19d989dyvb"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Gog",
+        "license": "MIT",
+        "name": "gog",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97eyd9f39w9jwbf4xxe1eg37589dpy2",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488032050.0784,
+    "_id": "t57drsn5bnyx4m33x9r0y4ttp189dmcx",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545311074,
+    "createdBy": "vn748yhtv37mwatd1nbjd9gemh89cp7r",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-discord",
+        "size": 140,
+        "storageId": "kg25mjrgqrmdyxd74g8yc3aq7h89dnsf"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Discord",
+        "license": "MIT",
+        "name": "discord",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97fp5hbqd9p0wgcmwx3gkvkzn89c1jb",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488032050.0796,
+    "_id": "t57fknactthwkrjev1fy373n8s89c02h",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767580455544,
+    "createdBy": "vn748yhtv37mwatd1nbjd9gemh89cp7r",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-caldav-calendar",
+        "size": 164,
+        "storageId": "kg287ykd6z8ewt799d105et41n89cmam"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Caldav Calendar",
+        "license": "MIT",
+        "name": "caldav-calendar",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t970yjqhev55rwm1w3vvt5vq9x89cm3e",
+    "version": "1.0.1"
+  },
+  {
+    "_creationTime": 1782488032050.0808,
+    "_id": "t57ey3y65eepydpacqjhv9fa0589dxsy",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1768936491160,
+    "createdBy": "vn748yhtv37mwatd1nbjd9gemh89cp7r",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-browsh",
+        "size": 137,
+        "storageId": "kg2dps1amg58nwb0ky4pn87e7189dm41"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "browsh",
+        "license": "MIT",
+        "name": "browsh",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97eha69cbye5zmjswma5at0s589cz0t",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488032050.082,
+    "_id": "t571s7m8pzsba7ppvx1etfe4t989cynf",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545374981,
+    "createdBy": "vn748yhtv37mwatd1nbjd9gemh89cp7r",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-qmd",
+        "size": 128,
+        "storageId": "kg2f0spqhx0ppn78np3zqm0amn89dp58"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Qmd",
+        "license": "MIT",
+        "name": "qmd",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97ed29mvkpt4menvmg9p43a1n89cpen",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488032050.0833,
+    "_id": "t57agdn6bmsgcy9dh428bpp3cs89dpm4",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770313337350,
+    "createdBy": "vn748yhtv37mwatd1nbjd9gemh89cp7r",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-free-ride",
+        "size": 186,
+        "storageId": "kg20b1bdbwwp9g3j8p5mz0p9q989dkvv"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Free Ride - Unlimited free AI",
+        "license": "MIT",
+        "name": "free-ride",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t979xzpstzntffkb56rmha8cxd89dks0",
+    "version": "1.0.9"
+  },
+  {
+    "_creationTime": 1782488032050.0845,
+    "_id": "t575qjqk2s8j2syty13y608jpd89dhgm",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1768845281114,
+    "createdBy": "vn748yhtv37mwatd1nbjd9gemh89cp7r",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-gemini-deep-research",
+        "size": 179,
+        "storageId": "kg2c8n8mnw9xpfy5jmntd9dmpx89djhz"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Gemini Deep Research",
+        "license": "MIT",
+        "name": "gemini-deep-research",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t971s1tpmh0yayvy2vfqswm3sx89cxyw",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488039892.2266,
+    "_id": "t57fw6m7rf8rythr65z84ssd2x89chem",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545294031,
+    "createdBy": "vn74s21g511w0f51sq80kgkstd89dm98",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-apple-notes",
+        "size": 152,
+        "storageId": "kg20nr7zvnsnsh742vpsmqek3189da4d"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Apple Notes",
+        "license": "MIT",
+        "name": "apple-notes",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97and3720h84af9s315vtread89dh23",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488039892.2278,
+    "_id": "t57e332srzccnd3dtmq4q287t189c0z3",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545315134,
+    "createdBy": "vn74s21g511w0f51sq80kgkstd89dm98",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-food-order",
+        "size": 149,
+        "storageId": "kg274m2ae12a020gwsay75fkkh89cg2c"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Food Order",
+        "license": "MIT",
+        "name": "food-order",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t973fcem5qpappb9c0cqvvzpm989dhbj",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488039892.229,
+    "_id": "t572ks6pv72enagvz2y210a9ss89d827",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770050243398,
+    "createdBy": "vn74s21g511w0f51sq80kgkstd89dm98",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-elite-longterm-memory",
+        "size": 182,
+        "storageId": "kg2bs4nns4d27mxm873apcgjh189d53m"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Elite Longterm Memory",
+        "license": "MIT",
+        "name": "elite-longterm-memory",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t977mce9b94e7cvv8r2fxrbt2n89dsbn",
+    "version": "1.2.2"
+  },
+  {
+    "_creationTime": 1782488039892.2302,
+    "_id": "t571zrmq7nec9frgdhzfqs6y9989depz",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769256726202,
+    "createdBy": "vn74s21g511w0f51sq80kgkstd89dm98",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-thinking-partner",
+        "size": 167,
+        "storageId": "kg21m1v468rkxtqsv40mvkqpf189dwhv"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Thinking Partner",
+        "license": "MIT",
+        "name": "thinking-partner",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t977e5jhp1pbvgk82e8v0z2c9h89ckyt",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488039892.2314,
+    "_id": "t571yrhxagd130w0nz9avtmpvn89dm5m",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767644556460,
+    "createdBy": "vn74s21g511w0f51sq80kgkstd89dm98",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-accli",
+        "size": 160,
+        "storageId": "kg21exx92ef0wmcxsp1paa6wxh89c3rr"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Apple Calendar CLI",
+        "license": "MIT",
+        "name": "accli",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97aa7x1rphy5b7wk10s81h35s89c89s",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488039892.2327,
+    "_id": "t57d7prabzj979qczxd8s4a88d89c9nq",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770637647720,
+    "createdBy": "vn74s21g511w0f51sq80kgkstd89dm98",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-openserv-client",
+        "size": 164,
+        "storageId": "kg2czpdn9x22zk6g54esmvyx3d89d20y"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "OpenServ Client",
+        "license": "MIT",
+        "name": "openserv-client",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97a45er3r9qphg87cbg05tkes89dgd4",
+    "version": "1.0.4"
+  },
+  {
+    "_creationTime": 1782488045867.4,
+    "_id": "t570p0vrsw7dhvg0eebvvw6tb989c6cf",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769942849740,
+    "createdBy": "vn7apv2vsezkazedfa1h4x9g2189cm4q",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-computer-use",
+        "size": 155,
+        "storageId": "kg2f6xs4j6k3kef3bbr9aa8jvn89c5za"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Computer Use",
+        "license": "MIT",
+        "name": "computer-use",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97egbgphw3hynz6y6j56he27589ck7r",
+    "version": "1.2.0"
+  },
+  {
+    "_creationTime": 1782488045867.4011,
+    "_id": "t5763pbyb88rhz392bb80yzrbs89ckjb",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769909754813,
+    "createdBy": "vn7apv2vsezkazedfa1h4x9g2189cm4q",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-google-search",
+        "size": 158,
+        "storageId": "kg25q6k9skza29gpt6maayee2h89c116"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "google-search",
+        "license": "MIT",
+        "name": "google-search",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t9706h2evgw03df498dnqhqk6189dwqe",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488045867.4023,
+    "_id": "t57amjc62bd4y9t3ktb7n6ec3d89cm8x",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770637635509,
+    "createdBy": "vn7apv2vsezkazedfa1h4x9g2189cm4q",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-openserv-agent-sdk",
+        "size": 173,
+        "storageId": "kg24ffep2w3qamy41qcsqnxhhn89d878"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "OpenServ Agent Sdk",
+        "license": "MIT",
+        "name": "openserv-agent-sdk",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t976s4ys0ak5mtzchxbe89ws7h89dz52",
+    "version": "1.0.5"
+  },
+  {
+    "_creationTime": 1782488055145.4766,
+    "_id": "t57avs0k5zcas72qh1ztb1w1kx89d8kn",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545378002,
+    "createdBy": "vn70h33g0yhres6e988x2644x589cad4",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-slack",
+        "size": 134,
+        "storageId": "kg21s7dg6rwc736n98rnhm3dyn89d1gk"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Slack",
+        "license": "MIT",
+        "name": "slack",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t971f29rfae7fdhvy561ktdq7589d2y3",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488055145.4778,
+    "_id": "t5737r2ppnge92ycatjrdw9kbx89dgh6",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770087404160,
+    "createdBy": "vn70h33g0yhres6e988x2644x589cad4",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-openclaw-anything",
+        "size": 430,
+        "storageId": "kg2agpce047bgcanx1zmnddq3d89d6mw"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Comprehensive skill for installing, configuring, and managing the OpenClaw ecosystem (Gateway, Channels, Models, Automation, Nodes, and Deployment)",
+        "license": "MIT",
+        "name": "openclaw-anything",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t972x42rp4z82xssaps68fhq5h89cj6k",
+    "version": "1.0.2"
+  },
+  {
+    "_creationTime": 1782488063684.8584,
+    "_id": "t5770bz9fxrpktvsh6et2a85hx89dkhd",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545348833,
+    "createdBy": "vn7abe78cevzjktcy34tf40q7n89cj4j",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-imsg",
+        "size": 131,
+        "storageId": "kg2bdaakr0gr5df4cmxfdcjysd89d90g"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Imsg",
+        "license": "MIT",
+        "name": "imsg",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t975pjqptsgybgyhvxmwh1y31989dd9e",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488063684.8596,
+    "_id": "t5774wk8kmavd0z0vyvfyx1wsd89cayt",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767667627516,
+    "createdBy": "vn7abe78cevzjktcy34tf40q7n89cj4j",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-1password",
+        "size": 146,
+        "storageId": "kg2ept586x7whcc6vkbezt3r8589cj50"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "1password",
+        "license": "MIT",
+        "name": "1password",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97dex41j6eydf1tde6q228mxs89cm4f",
+    "version": "1.0.1"
+  },
+  {
+    "_creationTime": 1782488063684.8608,
+    "_id": "t5777ba07e4w4a85akrw3n6whx89cqkf",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545306244,
+    "createdBy": "vn7abe78cevzjktcy34tf40q7n89cj4j",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-camsnap",
+        "size": 140,
+        "storageId": "kg23qd3q59kkbc6v3chmp75rds89c225"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Camsnap",
+        "license": "MIT",
+        "name": "camsnap",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97fx3kbv2qh03d8bfcpg4jn3d89csxg",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488063684.862,
+    "_id": "t57ae2aptzf5006n230rt3d4ad89chz0",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1768383975214,
+    "createdBy": "vn7abe78cevzjktcy34tf40q7n89cj4j",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-stock-analysis",
+        "size": 161,
+        "storageId": "kg2fg3xm98zcsf6hw0eh601ffx89dr20"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Stock Analysis",
+        "license": "MIT",
+        "name": "stock-analysis",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t976cb3bg0sx7yg8qv5k93jrbh89d2q6",
+    "version": "6.1.0"
+  },
+  {
+    "_creationTime": 1782488063684.8633,
+    "_id": "t57d9z91nctgwjbrd86ykq0edh89cq5q",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1770159609690,
+    "createdBy": "vn7abe78cevzjktcy34tf40q7n89cj4j",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-autonomous-agent",
+        "size": 181,
+        "storageId": "kg2cgp4498zbmnhzbk8c8b19r189c1kn"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Autonomous Agent Skills",
+        "license": "MIT",
+        "name": "autonomous-agent",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t978d1cgv1q26ypjs1hxfwmcsn89d8ta",
+    "version": "2.1.0"
+  },
+  {
+    "_creationTime": 1782488063684.8645,
+    "_id": "t570e6q35hqe435ggxkjk6jspx89c0p2",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769616159343,
+    "createdBy": "vn7abe78cevzjktcy34tf40q7n89cj4j",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-ui-ux-pro-max",
+        "size": 158,
+        "storageId": "kg2548w5t8hm9rs9sedyg697bs89dcd6"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "UI/UX Pro Max",
+        "license": "MIT",
+        "name": "ui-ux-pro-max",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t977abm3kz1a42qcvmzbc2x2bx89c0pz",
+    "version": "0.1.0"
+  },
+  {
+    "_creationTime": 1782488070904.0654,
+    "_id": "t57b5yydezn3t1skh6e7dhvfws89c3kn",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767545362143,
+    "createdBy": "vn7dmw1a41qg282b0fddq53e1s89cj12",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-obsidian",
+        "size": 143,
+        "storageId": "kg2f604mm2axc7cn9ww9vnkddx89d824"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Obsidian",
+        "license": "MIT",
+        "name": "obsidian",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t97fzghvx3s7wfe2zgkkqerj0989d1np",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488070904.0667,
+    "_id": "t576a4ksken47zd3sv5w365rbh89c8yp",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1769456157744,
+    "createdBy": "vn7dmw1a41qg282b0fddq53e1s89cj12",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-atxp",
+        "size": 131,
+        "storageId": "kg2bez3km4mz6b5dc5fatdt0mh89cjbe"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "ATXP",
+        "license": "MIT",
+        "name": "atxp",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t971hy8tyvcnrewx7q2nmqmya589dqe4",
+    "version": "1.0.0"
+  },
+  {
+    "_creationTime": 1782488070904.0679,
+    "_id": "t572dn6hxr7kcnjqb2v4btve4s89d0qg",
+    "changelog": "Seeded from the public corpus fixture.",
+    "changelogSource": "user",
+    "createdAt": 1767852421167,
+    "createdBy": "vn7dmw1a41qg282b0fddq53e1s89cj12",
+    "files": [
+      {
+        "contentType": "text/markdown",
+        "path": "SKILL.md",
+        "sha256": "public-corpus-todoist",
+        "size": 140,
+        "storageId": "kg2a7nbnv5zzxm2n0h1shb96g589c8c4"
+      }
+    ],
+    "parsed": {
+      "frontmatter": {
+        "created_at": "2026-01-01",
+        "description": "Todoist",
+        "license": "MIT",
+        "name": "todoist",
+        "version": "1.0.0"
+      },
+      "metadata": {}
+    },
+    "skillId": "t979q4grbtqacn8040fq8mqt6n89d1pa",
+    "version": "0.2.1"
+  }
+]

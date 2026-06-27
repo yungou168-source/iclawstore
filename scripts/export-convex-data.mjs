@@ -2,26 +2,16 @@
 /**
  * Convex Data Export Script
  * 
- * 导出 Convex 数据库中的所有数据为 JSON 格式，
- * 供后续迁移到 MySQL 使用。
- * 
- * 使用方法:
- *   node scripts/export-convex-data.mjs
- * 
- * 依赖:
- *   - Convex CLI
- *   - CONVEX_DEPLOY_KEY 环境变量
+ * 逐表导出数据到 JSON 文件
  */
 
-import { ConvexHttpClient } from "convex/cli.js";
+import { execSync } from "child_process";
 import fs from "fs/promises";
 import path from "path";
 
-// 配置
 const CONVEX_URL = process.env.VITE_CONVEX_URL || "https://cheerful-schnauzer-269.convex.cloud";
 const OUTPUT_DIR = "./migrations/exports";
 
-// 要导出的表
 const TABLES = [
   "users",
   "publishers", 
@@ -48,28 +38,29 @@ const TABLES = [
   "auditLogs",
 ];
 
-async function exportTable(client, tableName) {
-  console.log(`Exporting ${tableName}...`);
+async function exportTable(tableName) {
+  const queryName = `export:export_${tableName}`;
   
   try {
-    // 使用 genericQuery 调用导出的 query 函数
-    const results = await client.query(`export_${tableName}`, {});
+    const output = execSync(`bunx convex run ${queryName}`, {
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
+      timeout: 120000,
+    });
     
-    return {
-      table: tableName,
-      count: results?.length || 0,
-      data: results || [],
-      exportedAt: new Date().toISOString(),
-    };
+    // Parse output - convex run outputs JSON directly
+    let data;
+    try {
+      data = JSON.parse(output);
+    } catch {
+      console.log(`  Warning: Could not parse ${tableName}, saving raw output`);
+      data = output;
+    }
+    
+    return { success: true, data };
   } catch (error) {
-    console.error(`Error exporting ${tableName}:`, error.message);
-    return {
-      table: tableName,
-      count: 0,
-      data: [],
-      error: error.message,
-      exportedAt: new Date().toISOString(),
-    };
+    // If it fails, try to get any output
+    return { success: false, error: error.message };
   }
 }
 
@@ -81,41 +72,43 @@ async function main() {
   console.log(`Output Directory: ${OUTPUT_DIR}`);
   console.log("");
   
-  // 创建输出目录
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
   
-  // 初始化 Convex 客户端
-  const client = new ConvexHttpClient(CONVEX_URL);
-  
-  const results = [];
   const startTime = Date.now();
+  let totalRecords = 0;
   
   for (const table of TABLES) {
-    const result = await exportTable(client, table);
-    results.push(result);
+    process.stdout.write(`Exporting ${table}... `);
     
-    if (result.error) {
-      console.log(`  ❌ Error: ${result.error}`);
+    const result = await exportTable(table);
+    
+    if (result.success) {
+      const records = Array.isArray(result.data) ? result.data : [];
+      const count = records.length;
+      totalRecords += count;
+      
+      console.log(`${count} records`);
+      
+      await fs.writeFile(
+        path.join(OUTPUT_DIR, `${table}.json`),
+        JSON.stringify(records, null, 2)
+      );
     } else {
-      console.log(`  ✅ Exported ${result.count} records`);
+      console.log(`FAILED: ${result.error}`);
+      await fs.writeFile(
+        path.join(OUTPUT_DIR, `${table}.json`),
+        JSON.stringify([], null, 2)
+      );
     }
   }
   
   const elapsed = Date.now() - startTime;
   
-  // 保存导出摘要
   const summary = {
     exportedAt: new Date().toISOString(),
     convexUrl: CONVEX_URL,
-    tablesCount: TABLES.length,
-    totalRecords: results.reduce((sum, r) => sum + r.count, 0),
+    totalRecords,
     elapsedMs: elapsed,
-    tables: results.map(r => ({
-      table: r.table,
-      count: r.count,
-      success: !r.error,
-      error: r.error,
-    })),
   };
   
   await fs.writeFile(
@@ -123,20 +116,10 @@ async function main() {
     JSON.stringify(summary, null, 2)
   );
   
-  // 保存每个表的数据
-  for (const result of results) {
-    if (result.data.length > 0) {
-      await fs.writeFile(
-        path.join(OUTPUT_DIR, `${result.table}.json`),
-        JSON.stringify(result.data, null, 2)
-      );
-    }
-  }
-  
   console.log("");
   console.log("=".repeat(60));
   console.log("Export Complete!");
-  console.log(`Total records: ${summary.totalRecords}`);
+  console.log(`Total records: ${totalRecords}`);
   console.log(`Elapsed time: ${elapsed}ms`);
   console.log(`Output: ${OUTPUT_DIR}/`);
   console.log("=".repeat(60));

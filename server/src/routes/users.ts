@@ -3,9 +3,9 @@
  */
 
 import { FastifyInstance } from "fastify";
-import { prisma } from "../index.js";
 
 export async function usersRoutes(fastify: FastifyInstance) {
+  const prisma = fastify.prisma;
   // 获取用户
   fastify.get<{ Params: { idOrHandle: string } }>("/:idOrHandle", async (request, reply) => {
     const { idOrHandle } = request.params;

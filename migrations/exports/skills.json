@@ -1,0 +1,4763 @@
+[
+  {
+    "_creationTime": 1782487912136.3113,
+    "_id": "t97ds559rtxn02kzxf0gd1hz2n89c1cb",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545391700,
+    "displayName": "Video Frames",
+    "latestVersionId": "t5732972qj7x7wp0n2r8w3ezj189cvqm",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545391700,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7159awsxcaehzth0nwvdves189azct",
+    "ownerUserId": "vn734yd8q5m4t5jctz1vgzg1hx89b4zm",
+    "slug": "video-frames",
+    "stats": {
+      "comments": 0,
+      "downloads": 200,
+      "installsAllTime": 0,
+      "installsCurrent": 0,
+      "stars": 0,
+      "versions": 1
+    },
+    "statsDownloads": 200,
+    "statsInstallsAllTime": 0,
+    "statsInstallsCurrent": 0,
+    "statsStars": 0,
+    "summary": "Extract frames or short clips from videos using ffmpeg.",
+    "tags": {
+      "latest": "t5732972qj7x7wp0n2r8w3ezj189cvqm"
+    },
+    "updatedAt": 1782487912136
+  },
+  {
+    "_creationTime": 1782487912136.3125,
+    "_id": "t9792vdnds1dqp3m04sfkwa7vd89dkxt",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545299849,
+    "displayName": "Blogwatcher",
+    "latestVersionId": "t57e4x33n0wpwpnhrhras4df4989cpj6",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545299849,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7159awsxcaehzth0nwvdves189azct",
+    "ownerUserId": "vn734yd8q5m4t5jctz1vgzg1hx89b4zm",
+    "slug": "blogwatcher",
+    "stats": {
+      "comments": 0,
+      "downloads": 106,
+      "installsAllTime": 106,
+      "installsCurrent": 6,
+      "stars": 26,
+      "versions": 1
+    },
+    "statsDownloads": 106,
+    "statsInstallsAllTime": 106,
+    "statsInstallsCurrent": 6,
+    "statsStars": 26,
+    "summary": "Monitor blogs and RSS/Atom feeds for updates using the blogwatcher CLI.",
+    "tags": {
+      "latest": "t57e4x33n0wpwpnhrhras4df4989cpj6"
+    },
+    "updatedAt": 1782487912136
+  },
+  {
+    "_creationTime": 1782487912136.3137,
+    "_id": "t97374frjqkadg43g8sa8qt6fs89d8dg",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545389426,
+    "displayName": "Trello",
+    "latestVersionId": "t575xdt3y35pt4wnpd3y3nfdex89cge8",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545389426,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7159awsxcaehzth0nwvdves189azct",
+    "ownerUserId": "vn734yd8q5m4t5jctz1vgzg1hx89b4zm",
+    "slug": "trello",
+    "stats": {
+      "comments": 0,
+      "downloads": 248,
+      "installsAllTime": 88,
+      "installsCurrent": 23,
+      "stars": 8,
+      "versions": 1
+    },
+    "statsDownloads": 248,
+    "statsInstallsAllTime": 88,
+    "statsInstallsCurrent": 23,
+    "statsStars": 8,
+    "summary": "Manage Trello boards, lists, and cards via the Trello REST API.",
+    "tags": {
+      "latest": "t575xdt3y35pt4wnpd3y3nfdex89cge8"
+    },
+    "updatedAt": 1782487912136
+  },
+  {
+    "_creationTime": 1782487912136.315,
+    "_id": "t973hk90b91854v6650xj5g5jn89cfd5",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769530656679,
+    "displayName": "YouTube Transcript",
+    "latestVersionId": "t57dh8qnvr6nekdm5e2n3kwny989c3m5",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769530656679,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7159awsxcaehzth0nwvdves189azct",
+    "ownerUserId": "vn734yd8q5m4t5jctz1vgzg1hx89b4zm",
+    "slug": "youtube-transcript",
+    "stats": {
+      "comments": 0,
+      "downloads": 224,
+      "installsAllTime": 64,
+      "installsCurrent": 24,
+      "stars": 24,
+      "versions": 1
+    },
+    "statsDownloads": 224,
+    "statsInstallsAllTime": 64,
+    "statsInstallsCurrent": 24,
+    "statsStars": 24,
+    "summary": "Fetch and summarize YouTube video transcripts. Use when asked to summarize, transcribe, or extract content from YouTube videos. Handles transcript fetching via residential IP proxy to bypass YouTube's cloud IP blocks.",
+    "tags": {
+      "latest": "t57dh8qnvr6nekdm5e2n3kwny989c3m5"
+    },
+    "updatedAt": 1782487912136
+  },
+  {
+    "_creationTime": 1782487912136.3162,
+    "_id": "t970sbnmj6ezj5qgdgxmsdnzhs89d5x3",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769895387151,
+    "displayName": "Agent Directory",
+    "latestVersionId": "t57c5hw1hnqx84zajbswzpgzjx89dg7g",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769895387151,
+      "version": "1.2.0"
+    },
+    "ownerPublisherId": "qd7159awsxcaehzth0nwvdves189azct",
+    "ownerUserId": "vn734yd8q5m4t5jctz1vgzg1hx89b4zm",
+    "slug": "agent-directory",
+    "stats": {
+      "comments": 0,
+      "downloads": 101,
+      "installsAllTime": 21,
+      "installsCurrent": 1,
+      "stars": 21,
+      "versions": 1
+    },
+    "statsDownloads": 101,
+    "statsInstallsAllTime": 21,
+    "statsInstallsCurrent": 1,
+    "statsStars": 21,
+    "summary": "The directory for AI agent services. Discover tools, platforms, and infrastructure built for agents.",
+    "tags": {
+      "latest": "t57c5hw1hnqx84zajbswzpgzjx89dg7g"
+    },
+    "updatedAt": 1782487912136
+  },
+  {
+    "_creationTime": 1782487923982.8423,
+    "_id": "t976h1yvjb4m32bc6qwap34bj189cr6w",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545376535,
+    "displayName": "Sag",
+    "latestVersionId": "t574cyjwpwg08xhzt54s82s97s89dm82",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545376535,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd737tqwkqede89fk3pn45yahx89bvgx",
+    "ownerUserId": "vn7c1w4e185tn7rgk0wt9vbq1x89b95c",
+    "slug": "sag",
+    "stats": {
+      "comments": 0,
+      "downloads": 25,
+      "installsAllTime": 105,
+      "installsCurrent": 0,
+      "stars": 25,
+      "versions": 1
+    },
+    "statsDownloads": 25,
+    "statsInstallsAllTime": 105,
+    "statsInstallsCurrent": 0,
+    "statsStars": 25,
+    "summary": "ElevenLabs text-to-speech with mac-style say UX.",
+    "tags": {
+      "latest": "t574cyjwpwg08xhzt54s82s97s89dm82"
+    },
+    "updatedAt": 1782487923982
+  },
+  {
+    "_creationTime": 1782487923982.8435,
+    "_id": "t97d3pmh6jmwzbr569sjfrjjwx89d2ba",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769896232617,
+    "displayName": "Agent Memory",
+    "latestVersionId": "t570a8sefhtv82gfs5ry306wg989c4m1",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769896232617,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd737tqwkqede89fk3pn45yahx89bvgx",
+    "ownerUserId": "vn7c1w4e185tn7rgk0wt9vbq1x89b95c",
+    "slug": "agent-memory",
+    "stats": {
+      "comments": 0,
+      "downloads": 25,
+      "installsAllTime": 105,
+      "installsCurrent": 0,
+      "stars": 25,
+      "versions": 1
+    },
+    "statsDownloads": 25,
+    "statsInstallsAllTime": 105,
+    "statsInstallsCurrent": 0,
+    "statsStars": 25,
+    "summary": "Persistent memory for AI agents to store facts, learn from actions, recall information, and track entities across sessions.",
+    "tags": {
+      "latest": "t570a8sefhtv82gfs5ry306wg989c4m1"
+    },
+    "updatedAt": 1782487923982
+  },
+  {
+    "_creationTime": 1782487923982.8447,
+    "_id": "t979ggh9c8knv0ps2s5gdvdpfs89dmgt",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769463345220,
+    "displayName": "Clawdbot Security Check",
+    "latestVersionId": "t574s9kf13k862fwxf03y2yb3d89ddvf",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769463345220,
+      "version": "2.2.1"
+    },
+    "ownerPublisherId": "qd737tqwkqede89fk3pn45yahx89bvgx",
+    "ownerUserId": "vn7c1w4e185tn7rgk0wt9vbq1x89b95c",
+    "slug": "clawdbot-security-check",
+    "stats": {
+      "comments": 0,
+      "downloads": 374,
+      "installsAllTime": 54,
+      "installsCurrent": 24,
+      "stars": 14,
+      "versions": 1
+    },
+    "statsDownloads": 374,
+    "statsInstallsAllTime": 54,
+    "statsInstallsCurrent": 24,
+    "statsStars": 14,
+    "summary": "Perform a comprehensive read-only security audit of Clawdbot's own configuration. This is a knowledge-based skill that teaches Clawdbot to identify hardening opportunities across the system. Use when user asks to \"run security check\", \"audit clawdbot\", \"check security hardening\", or \"what vulnerabilities does my Clawdbot have\". This skill uses Clawdbot's internal capabilities and file system access to inspect configuration, detect misconfigurations, and recommend remediations. It is designed to be extensible - new checks can be added by updating this skill's knowledge.",
+    "tags": {
+      "latest": "t574s9kf13k862fwxf03y2yb3d89ddvf"
+    },
+    "updatedAt": 1782487923982
+  },
+  {
+    "_creationTime": 1782487939064.6365,
+    "_id": "t97fb1cfa97vyeqjmtp2w43d5189dg32",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545365755,
+    "displayName": "Openai Whisper",
+    "latestVersionId": "t574t54hhddczcbvvgw58nm48589cpja",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545365755,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd72fn3415qnw7hngs4wdg2ke189b3p8",
+    "ownerUserId": "vn76dyrhwvdqaj176d6pt282cd89b0nq",
+    "slug": "openai-whisper",
+    "stats": {
+      "comments": 0,
+      "downloads": 359,
+      "installsAllTime": 39,
+      "installsCurrent": 9,
+      "stars": 39,
+      "versions": 1
+    },
+    "statsDownloads": 359,
+    "statsInstallsAllTime": 39,
+    "statsInstallsCurrent": 9,
+    "statsStars": 39,
+    "summary": "Local speech-to-text with the Whisper CLI (no API key).",
+    "tags": {
+      "latest": "t574t54hhddczcbvvgw58nm48589cpja"
+    },
+    "updatedAt": 1782487939064
+  },
+  {
+    "_creationTime": 1782487939064.6377,
+    "_id": "t970rhjx900a7bptgzaqp29wax89d6t6",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545316392,
+    "displayName": "Gemini",
+    "latestVersionId": "t5718qzt9dswf2w66zyge3g8p589c2nx",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545316392,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd72fn3415qnw7hngs4wdg2ke189b3p8",
+    "ownerUserId": "vn76dyrhwvdqaj176d6pt282cd89b0nq",
+    "slug": "gemini",
+    "stats": {
+      "comments": 0,
+      "downloads": 213,
+      "installsAllTime": 93,
+      "installsCurrent": 13,
+      "stars": 13,
+      "versions": 1
+    },
+    "statsDownloads": 213,
+    "statsInstallsAllTime": 93,
+    "statsInstallsCurrent": 13,
+    "statsStars": 13,
+    "summary": "Gemini CLI for one-shot Q&A, summaries, and generation.",
+    "tags": {
+      "latest": "t5718qzt9dswf2w66zyge3g8p589c2nx"
+    },
+    "updatedAt": 1782487939064
+  },
+  {
+    "_creationTime": 1782487939064.639,
+    "_id": "t970ewz64rhrpzg0kazesm8ts589dc62",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769472352291,
+    "displayName": "Searxng",
+    "latestVersionId": "t5711eem586dmmg4cp5gz05rh189dhsm",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769472352291,
+      "version": "1.0.3"
+    },
+    "ownerPublisherId": "qd72fn3415qnw7hngs4wdg2ke189b3p8",
+    "ownerUserId": "vn76dyrhwvdqaj176d6pt282cd89b0nq",
+    "slug": "searxng",
+    "stats": {
+      "comments": 0,
+      "downloads": 206,
+      "installsAllTime": 46,
+      "installsCurrent": 6,
+      "stars": 6,
+      "versions": 1
+    },
+    "statsDownloads": 206,
+    "statsInstallsAllTime": 46,
+    "statsInstallsCurrent": 6,
+    "statsStars": 6,
+    "summary": "Privacy-respecting metasearch using your local SearXNG instance. Search the web, images, news, and more without external API dependencies.",
+    "tags": {
+      "latest": "t5711eem586dmmg4cp5gz05rh189dhsm"
+    },
+    "updatedAt": 1782487939064
+  },
+  {
+    "_creationTime": 1782487939064.6401,
+    "_id": "t971kjxa2gmeexhcb0zjhkhjt189dt49",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769964977628,
+    "displayName": "Telegram",
+    "latestVersionId": "t57877jyye2ve0ahy0bxez41zn89dqch",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769964977628,
+      "version": "1.0.1"
+    },
+    "ownerPublisherId": "qd72fn3415qnw7hngs4wdg2ke189b3p8",
+    "ownerUserId": "vn76dyrhwvdqaj176d6pt282cd89b0nq",
+    "slug": "telegram",
+    "stats": {
+      "comments": 0,
+      "downloads": 385,
+      "installsAllTime": 25,
+      "installsCurrent": 10,
+      "stars": 25,
+      "versions": 1
+    },
+    "statsDownloads": 385,
+    "statsInstallsAllTime": 25,
+    "statsInstallsCurrent": 10,
+    "statsStars": 25,
+    "summary": "OpenClaw skill for designing Telegram Bot API workflows and command-driven conversations using direct HTTPS requests (no SDKs).",
+    "tags": {
+      "latest": "t57877jyye2ve0ahy0bxez41zn89dqch"
+    },
+    "updatedAt": 1782487939064
+  },
+  {
+    "_creationTime": 1782487939064.6414,
+    "_id": "t9783e4rehc2nnb9te476v26fd89c1pc",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770104190626,
+    "displayName": "Cellcog",
+    "latestVersionId": "t57fg145mfq4c2adys9fmcebms89d5vn",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770104190626,
+      "version": "2.0.15"
+    },
+    "ownerPublisherId": "qd72fn3415qnw7hngs4wdg2ke189b3p8",
+    "ownerUserId": "vn76dyrhwvdqaj176d6pt282cd89b0nq",
+    "slug": "cellcog",
+    "stats": {
+      "comments": 0,
+      "downloads": 233,
+      "installsAllTime": 33,
+      "installsCurrent": 8,
+      "stars": 33,
+      "versions": 1
+    },
+    "statsDownloads": 233,
+    "statsInstallsAllTime": 33,
+    "statsInstallsCurrent": 8,
+    "statsStars": 33,
+    "summary": "Any-to-any AI sub-agent — research, images, video, audio, music, podcasts, avatars, voice cloning, documents, spreadsheets, dashboards, 3D models, diagrams,...",
+    "tags": {
+      "latest": "t57fg145mfq4c2adys9fmcebms89d5vn"
+    },
+    "updatedAt": 1782487939064
+  },
+  {
+    "_creationTime": 1782487944599.433,
+    "_id": "t97fbtpeytpg92cyn44zvbvx9x89daz1",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545381030,
+    "displayName": "Sonoscli",
+    "latestVersionId": "t57av7fpzvjcwwvweaevhygfjn89cjez",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545381030,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7247rwpyrkm3kr9v77dsrvan89aq4z",
+    "ownerUserId": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "slug": "sonoscli",
+    "stats": {
+      "comments": 0,
+      "downloads": 394,
+      "installsAllTime": 114,
+      "installsCurrent": 19,
+      "stars": 34,
+      "versions": 1
+    },
+    "statsDownloads": 394,
+    "statsInstallsAllTime": 114,
+    "statsInstallsCurrent": 19,
+    "statsStars": 34,
+    "summary": "Control Sonos speakers (discover/status/play/volume/group).",
+    "tags": {
+      "latest": "t57av7fpzvjcwwvweaevhygfjn89cjez"
+    },
+    "updatedAt": 1782487944599
+  },
+  {
+    "_creationTime": 1782487944599.4343,
+    "_id": "t97e5f5cevrty6xgvzfd2t0zcn89dav4",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545355897,
+    "displayName": "Mcporter",
+    "latestVersionId": "t573pg5qvvvv92j8td5yjsq96589c6at",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545355897,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7247rwpyrkm3kr9v77dsrvan89aq4z",
+    "ownerUserId": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "slug": "mcporter",
+    "stats": {
+      "comments": 0,
+      "downloads": 132,
+      "installsAllTime": 52,
+      "installsCurrent": 7,
+      "stars": 12,
+      "versions": 1
+    },
+    "statsDownloads": 132,
+    "statsInstallsAllTime": 52,
+    "statsInstallsCurrent": 7,
+    "statsStars": 12,
+    "summary": "Use the mcporter CLI to list, configure, auth, and call MCP servers/tools directly (HTTP or stdio), including ad-hoc servers, config edits, and CLI/type generation.",
+    "tags": {
+      "latest": "t573pg5qvvvv92j8td5yjsq96589c6at"
+    },
+    "updatedAt": 1782487944599
+  },
+  {
+    "_creationTime": 1782487944599.4355,
+    "_id": "t97ehzkzh09pzzjg6fqsp7sr3s89dxb1",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769673454302,
+    "displayName": "Web Search",
+    "latestVersionId": "t57d5aqzvypkmcbzsqv2edkbf189dyct",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769673454302,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7247rwpyrkm3kr9v77dsrvan89aq4z",
+    "ownerUserId": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "slug": "web-search",
+    "stats": {
+      "comments": 0,
+      "downloads": 161,
+      "installsAllTime": 81,
+      "installsCurrent": 11,
+      "stars": 1,
+      "versions": 1
+    },
+    "statsDownloads": 161,
+    "statsInstallsAllTime": 81,
+    "statsInstallsCurrent": 11,
+    "statsStars": 1,
+    "summary": "This skill should be used when users need to search the web for information, find current content, look up news articles, search for images, or find videos. It uses DuckDuckGo's search API to return results in clean, formatted output (text, markdown, or JSON). Use for research, fact-checking, finding recent information, or gathering web resources.",
+    "tags": {
+      "latest": "t57d5aqzvypkmcbzsqv2edkbf189dyct"
+    },
+    "updatedAt": 1782487944599
+  },
+  {
+    "_creationTime": 1782487944599.4368,
+    "_id": "t97dbm2wg5vg9cdeybnm94ydp189d4xx",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769560708311,
+    "displayName": "Answer Overflow",
+    "latestVersionId": "t577fk3v2d65270m54h0vh82f589ceyj",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769560708311,
+      "version": "1.0.2"
+    },
+    "ownerPublisherId": "qd7247rwpyrkm3kr9v77dsrvan89aq4z",
+    "ownerUserId": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "slug": "answeroverflow",
+    "stats": {
+      "comments": 0,
+      "downloads": 208,
+      "installsAllTime": 88,
+      "installsCurrent": 8,
+      "stars": 8,
+      "versions": 1
+    },
+    "statsDownloads": 208,
+    "statsInstallsAllTime": 88,
+    "statsInstallsCurrent": 8,
+    "statsStars": 8,
+    "summary": "Search indexed Discord community discussions via Answer Overflow. Find solutions to coding problems, library issues, and community Q&A that only exist in Discord conversations.",
+    "tags": {
+      "latest": "t577fk3v2d65270m54h0vh82f589ceyj"
+    },
+    "updatedAt": 1782487944599
+  },
+  {
+    "_creationTime": 1782487944599.438,
+    "_id": "t97f91pdmwary0p9pr870ekhy589cddj",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769692045864,
+    "displayName": "Git Essentials",
+    "latestVersionId": "t575eqr1rhhpwsmv8v6sypyqb589d3ws",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769692045864,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7247rwpyrkm3kr9v77dsrvan89aq4z",
+    "ownerUserId": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "slug": "git-essentials",
+    "stats": {
+      "comments": 0,
+      "downloads": 96,
+      "installsAllTime": 56,
+      "installsCurrent": 21,
+      "stars": 16,
+      "versions": 1
+    },
+    "statsDownloads": 96,
+    "statsInstallsAllTime": 56,
+    "statsInstallsCurrent": 21,
+    "statsStars": 16,
+    "summary": "Essential Git commands and workflows for version control, branching, and collaboration.",
+    "tags": {
+      "latest": "t575eqr1rhhpwsmv8v6sypyqb589d3ws"
+    },
+    "updatedAt": 1782487944599
+  },
+  {
+    "_creationTime": 1782487944599.4392,
+    "_id": "t978jx02wbwzpnqvj4xx6nvjen89c2df",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767689741145,
+    "displayName": "News Summary",
+    "latestVersionId": "t572b9zxt840wsndq0w75vrhs589dx7r",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767689741145,
+      "version": "1.0.1"
+    },
+    "ownerPublisherId": "qd7247rwpyrkm3kr9v77dsrvan89aq4z",
+    "ownerUserId": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "slug": "news-summary",
+    "stats": {
+      "comments": 0,
+      "downloads": 28,
+      "installsAllTime": 28,
+      "installsCurrent": 3,
+      "stars": 28,
+      "versions": 1
+    },
+    "statsDownloads": 28,
+    "statsInstallsAllTime": 28,
+    "statsInstallsCurrent": 3,
+    "statsStars": 28,
+    "summary": "This skill should be used when the user asks for news updates, daily briefings, or what's happening in the world. Fetches news from trusted international RSS feeds and can create voice summaries.",
+    "tags": {
+      "latest": "t572b9zxt840wsndq0w75vrhs589dx7r"
+    },
+    "updatedAt": 1782487944599
+  },
+  {
+    "_creationTime": 1782487944599.4404,
+    "_id": "t9795fnpmnh7hgv4j96j5ca8b989c1nv",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770221093765,
+    "displayName": "Multi Search Engine",
+    "latestVersionId": "t573rd2jx8cnwe8cqnwx4xpm7x89dzmt",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770221093765,
+      "version": "2.1.2"
+    },
+    "ownerPublisherId": "qd7247rwpyrkm3kr9v77dsrvan89aq4z",
+    "ownerUserId": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "slug": "multi-search-engine",
+    "stats": {
+      "comments": 0,
+      "downloads": 195,
+      "installsAllTime": 35,
+      "installsCurrent": 20,
+      "stars": 35,
+      "versions": 1
+    },
+    "statsDownloads": 195,
+    "statsInstallsAllTime": 35,
+    "statsInstallsCurrent": 20,
+    "statsStars": 35,
+    "summary": "Multi search engine integration with 16 engines (7 CN + 9 Global). Supports advanced search operators, time filters, site search, privacy engines, and Wolfra...",
+    "tags": {
+      "latest": "t573rd2jx8cnwe8cqnwx4xpm7x89dzmt"
+    },
+    "updatedAt": 1782487944599
+  },
+  {
+    "_creationTime": 1782487944599.4417,
+    "_id": "t97bbxje44xrfvjjdbvdr1fcy989cgb3",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769939473695,
+    "displayName": "Safe Exec",
+    "latestVersionId": "t578dtfxkjpvybhevt9tx448nh89de4q",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769939473695,
+      "version": "0.3.3"
+    },
+    "ownerPublisherId": "qd7247rwpyrkm3kr9v77dsrvan89aq4z",
+    "ownerUserId": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "slug": "safe-exec",
+    "stats": {
+      "comments": 0,
+      "downloads": 97,
+      "installsAllTime": 97,
+      "installsCurrent": 22,
+      "stars": 17,
+      "versions": 1
+    },
+    "statsDownloads": 97,
+    "statsInstallsAllTime": 97,
+    "statsInstallsCurrent": 22,
+    "statsStars": 17,
+    "summary": "Safe command execution for OpenClaw Agents with automatic danger pattern detection, risk assessment, user approval workflow, and audit logging. Use when agen...",
+    "tags": {
+      "latest": "t578dtfxkjpvybhevt9tx448nh89de4q"
+    },
+    "updatedAt": 1782487944599
+  },
+  {
+    "_creationTime": 1782487944599.4429,
+    "_id": "t97a0654qqqafhknvxwp0y70cs89csf0",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770099681870,
+    "displayName": "Daily Ai News",
+    "latestVersionId": "t573k2hgfpfbzzhxrdh079dea589dp8z",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770099681870,
+      "version": "0.1.0"
+    },
+    "ownerPublisherId": "qd7247rwpyrkm3kr9v77dsrvan89aq4z",
+    "ownerUserId": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "slug": "daily-ai-news-skill",
+    "stats": {
+      "comments": 0,
+      "downloads": 296,
+      "installsAllTime": 56,
+      "installsCurrent": 21,
+      "stars": 16,
+      "versions": 1
+    },
+    "statsDownloads": 296,
+    "statsInstallsAllTime": 56,
+    "statsInstallsCurrent": 21,
+    "statsStars": 16,
+    "summary": "Aggregates and summarizes the latest AI news from multiple sources including AI news websites and web search. Provides concise news briefs with direct links to original articles. Activates when user asks for 'today's AI news', 'AI updates', 'latest AI developments', or mentions wanting a 'daily AI briefing'.",
+    "tags": {
+      "latest": "t573k2hgfpfbzzhxrdh079dea589dp8z"
+    },
+    "updatedAt": 1782487944599
+  },
+  {
+    "_creationTime": 1782487944599.444,
+    "_id": "t9799z225b0yb25erb7psmtqcd89ct10",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770637671264,
+    "displayName": "OpenServ Multi Agent Workflows",
+    "latestVersionId": "t57909j9c1tg6prpby0hyfywp989c68s",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770637671264,
+      "version": "1.0.1"
+    },
+    "ownerPublisherId": "qd7247rwpyrkm3kr9v77dsrvan89aq4z",
+    "ownerUserId": "vn7f8p1fjvmbrw4btkzc0nb46n89ag56",
+    "slug": "openserv-multi-agent-workflows",
+    "stats": {
+      "comments": 0,
+      "downloads": 331,
+      "installsAllTime": 11,
+      "installsCurrent": 6,
+      "stars": 11,
+      "versions": 1
+    },
+    "statsDownloads": 331,
+    "statsInstallsAllTime": 11,
+    "statsInstallsCurrent": 6,
+    "statsStars": 11,
+    "summary": "Multi-agent workflow examples to work together on the OpenServ Platform. Covers agent discovery, multi-agent workspaces, task dependencies, and workflow orch...",
+    "tags": {
+      "latest": "t57909j9c1tg6prpby0hyfywp989c68s"
+    },
+    "updatedAt": 1782487944599
+  },
+  {
+    "_creationTime": 1782487958969.4658,
+    "_id": "t97b0pyhef50a9gmagfvct3cwd89cfnz",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545360889,
+    "displayName": "Notion",
+    "latestVersionId": "t5797m2peyry9mabqd2gvdbn6h89cm8w",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545360889,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd73vy5d85r856185ab2pg90ws89dxnp",
+    "ownerUserId": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "slug": "notion",
+    "stats": {
+      "comments": 0,
+      "downloads": 53,
+      "installsAllTime": 93,
+      "installsCurrent": 3,
+      "stars": 13,
+      "versions": 1
+    },
+    "statsDownloads": 53,
+    "statsInstallsAllTime": 93,
+    "statsInstallsCurrent": 3,
+    "statsStars": 13,
+    "summary": "Notion API for creating and managing pages, databases, and blocks.",
+    "tags": {
+      "latest": "t5797m2peyry9mabqd2gvdbn6h89cm8w"
+    },
+    "updatedAt": 1782487958969
+  },
+  {
+    "_creationTime": 1782487958969.467,
+    "_id": "t979fzh43pae96gffjd1rswpz189c91k",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545358090,
+    "displayName": "Nano Banana Pro",
+    "latestVersionId": "t573wseaqccvz7c22sd2eff28989c70g",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545358090,
+      "version": "1.0.1"
+    },
+    "ownerPublisherId": "qd73vy5d85r856185ab2pg90ws89dxnp",
+    "ownerUserId": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "slug": "nano-banana-pro",
+    "stats": {
+      "comments": 0,
+      "downloads": 270,
+      "installsAllTime": 30,
+      "installsCurrent": 20,
+      "stars": 30,
+      "versions": 1
+    },
+    "statsDownloads": 270,
+    "statsInstallsAllTime": 30,
+    "statsInstallsCurrent": 20,
+    "statsStars": 30,
+    "summary": "Generate/edit images with Nano Banana Pro (Gemini 3 Pro Image). Use for image create/modify requests incl. edits. Supports text-to-image + image-to-image; 1K/2K/4K; use --input-image.",
+    "tags": {
+      "latest": "t573wseaqccvz7c22sd2eff28989c70g"
+    },
+    "updatedAt": 1782487958969
+  },
+  {
+    "_creationTime": 1782487958969.4683,
+    "_id": "t973hkp6bzad0t6zy8cvs5mwa189cs8x",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545369355,
+    "displayName": "Openhue",
+    "latestVersionId": "t57cgqnsmdnjm57b04w45tqe2n89d0zz",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545369355,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd73vy5d85r856185ab2pg90ws89dxnp",
+    "ownerUserId": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "slug": "openhue",
+    "stats": {
+      "comments": 0,
+      "downloads": 398,
+      "installsAllTime": 118,
+      "installsCurrent": 23,
+      "stars": 38,
+      "versions": 1
+    },
+    "statsDownloads": 398,
+    "statsInstallsAllTime": 118,
+    "statsInstallsCurrent": 23,
+    "statsStars": 38,
+    "summary": "Control Philips Hue lights/scenes via the OpenHue CLI.",
+    "tags": {
+      "latest": "t57cgqnsmdnjm57b04w45tqe2n89d0zz"
+    },
+    "updatedAt": 1782487958969
+  },
+  {
+    "_creationTime": 1782487958969.4695,
+    "_id": "t97f41fcdb55dv5x7dsr8tvy3s89cnb2",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545379576,
+    "displayName": "Songsee",
+    "latestVersionId": "t57fzmdbzemfzwbtb6epqzdsy589d594",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545379576,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd73vy5d85r856185ab2pg90ws89dxnp",
+    "ownerUserId": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "slug": "songsee",
+    "stats": {
+      "comments": 0,
+      "downloads": 302,
+      "installsAllTime": 102,
+      "installsCurrent": 2,
+      "stars": 22,
+      "versions": 1
+    },
+    "statsDownloads": 302,
+    "statsInstallsAllTime": 102,
+    "statsInstallsCurrent": 2,
+    "statsStars": 22,
+    "summary": "Generate spectrograms and feature-panel visualizations from audio with the songsee CLI.",
+    "tags": {
+      "latest": "t57fzmdbzemfzwbtb6epqzdsy589d594"
+    },
+    "updatedAt": 1782487958969
+  },
+  {
+    "_creationTime": 1782487958969.4707,
+    "_id": "t970mr3s4kwv35k1dfjq4vp42n89dds2",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769629545209,
+    "displayName": "Proactive Agent",
+    "latestVersionId": "t57b2yrkm9jgcbn4vdpjsccmm589czdg",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769629545209,
+      "version": "3.0.0"
+    },
+    "ownerPublisherId": "qd73vy5d85r856185ab2pg90ws89dxnp",
+    "ownerUserId": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "slug": "proactive-agent",
+    "stats": {
+      "comments": 0,
+      "downloads": 187,
+      "installsAllTime": 67,
+      "installsCurrent": 12,
+      "stars": 27,
+      "versions": 1
+    },
+    "statsDownloads": 187,
+    "statsInstallsAllTime": 67,
+    "statsInstallsCurrent": 12,
+    "statsStars": 27,
+    "summary": "Transform AI agents from task-followers into proactive partners that anticipate needs and continuously improve. Now with WAL Protocol, Working Buffer, Autonomous Crons, and battle-tested patterns. Part of the Hal Stack 🦞",
+    "tags": {
+      "latest": "t57b2yrkm9jgcbn4vdpjsccmm589czdg"
+    },
+    "updatedAt": 1782487958969
+  },
+  {
+    "_creationTime": 1782487958969.472,
+    "_id": "t97549ge6cytjemwm3v2b5byzn89chhc",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770329342455,
+    "displayName": "Google Calendar (via gcalcli)",
+    "latestVersionId": "t57cd7s4q6g1cymghdjjxae89d89drf7",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770329342455,
+      "version": "3.0.0"
+    },
+    "ownerPublisherId": "qd73vy5d85r856185ab2pg90ws89dxnp",
+    "ownerUserId": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "slug": "gcalcli-calendar",
+    "stats": {
+      "comments": 0,
+      "downloads": 2,
+      "installsAllTime": 82,
+      "installsCurrent": 2,
+      "stars": 2,
+      "versions": 1
+    },
+    "statsDownloads": 2,
+    "statsInstallsAllTime": 82,
+    "statsInstallsCurrent": 2,
+    "statsStars": 2,
+    "summary": "Google Calendar via gcalcli: today-only agenda by default, bounded meaning-first lookup via agenda scans, and fast create/delete with verification--optimized for low tool calls and minimal output.",
+    "tags": {
+      "latest": "t57cd7s4q6g1cymghdjjxae89d89drf7"
+    },
+    "updatedAt": 1782487958969
+  },
+  {
+    "_creationTime": 1782487958969.4731,
+    "_id": "t9704156hvf1evdetem1rxg20n89cs6g",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769919901112,
+    "displayName": "youtube-full",
+    "latestVersionId": "t574pbtb7jg42m1g0r35amxmr189d3yf",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769919901112,
+      "version": "1.4.1"
+    },
+    "ownerPublisherId": "qd73vy5d85r856185ab2pg90ws89dxnp",
+    "ownerUserId": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "slug": "youtube-full",
+    "stats": {
+      "comments": 0,
+      "downloads": 345,
+      "installsAllTime": 105,
+      "installsCurrent": 20,
+      "stars": 25,
+      "versions": 1
+    },
+    "statsDownloads": 345,
+    "statsInstallsAllTime": 105,
+    "statsInstallsCurrent": 20,
+    "statsStars": 25,
+    "summary": "Use when YouTube is or could be relevant — even if not mentioned: pasted video/channel/playlist links, video IDs, @handles, creator lookups, video summaries,...",
+    "tags": {
+      "latest": "t574pbtb7jg42m1g0r35amxmr189d3yf"
+    },
+    "updatedAt": 1782487958969
+  },
+  {
+    "_creationTime": 1782487958969.4744,
+    "_id": "t97fasjafcrbv5sxyj12a33p7d89cfzr",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769554893241,
+    "displayName": "Polymarket Agent",
+    "latestVersionId": "t57e0y5b9mve6gh069scm34g6h89c3q0",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769554893241,
+      "version": "1.0.1"
+    },
+    "ownerPublisherId": "qd73vy5d85r856185ab2pg90ws89dxnp",
+    "ownerUserId": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "slug": "polymarket-agent",
+    "stats": {
+      "comments": 0,
+      "downloads": 16,
+      "installsAllTime": 16,
+      "installsCurrent": 16,
+      "stars": 16,
+      "versions": 1
+    },
+    "statsDownloads": 16,
+    "statsInstallsAllTime": 16,
+    "statsInstallsCurrent": 16,
+    "statsStars": 16,
+    "summary": "Autonomous prediction market agent - analyzes markets, researches news, and identifies trading opportunities",
+    "tags": {
+      "latest": "t57e0y5b9mve6gh069scm34g6h89c3q0"
+    },
+    "updatedAt": 1782487958969
+  },
+  {
+    "_creationTime": 1782487958969.4756,
+    "_id": "t97f2adxk0ct6fxwhdbr9qcp1189c3by",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767719074735,
+    "displayName": "SuperDesign",
+    "latestVersionId": "t57b2y576jtx8m1gkgnr9xdcgx89d1cf",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767719074735,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd73vy5d85r856185ab2pg90ws89dxnp",
+    "ownerUserId": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "slug": "superdesign",
+    "stats": {
+      "comments": 0,
+      "downloads": 393,
+      "installsAllTime": 113,
+      "installsCurrent": 18,
+      "stars": 33,
+      "versions": 1
+    },
+    "statsDownloads": 393,
+    "statsInstallsAllTime": 113,
+    "statsInstallsCurrent": 18,
+    "statsStars": 33,
+    "summary": "Expert frontend design guidelines for creating beautiful, modern UIs. Use when building landing pages, dashboards, or any user interface.",
+    "tags": {
+      "latest": "t57b2y576jtx8m1gkgnr9xdcgx89d1cf"
+    },
+    "updatedAt": 1782487958969
+  },
+  {
+    "_creationTime": 1782487958969.4768,
+    "_id": "t974p92nk5by4yh355zcs1zsfx89daxe",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770484058130,
+    "displayName": "Baidu Wenku AIPPT",
+    "latestVersionId": "t57f87vfmgm8td4nzv7ak1qcbd89dtx8",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770484058130,
+      "version": "1.1.5"
+    },
+    "ownerPublisherId": "qd73vy5d85r856185ab2pg90ws89dxnp",
+    "ownerUserId": "vn79zfn59yxz1rnj9t8m5tpjdh89dtj4",
+    "slug": "ai-ppt-generator",
+    "stats": {
+      "comments": 0,
+      "downloads": 229,
+      "installsAllTime": 29,
+      "installsCurrent": 4,
+      "stars": 29,
+      "versions": 1
+    },
+    "statsDownloads": 229,
+    "statsInstallsAllTime": 29,
+    "statsInstallsCurrent": 4,
+    "statsStars": 29,
+    "summary": "Generate PPT with Baidu Wenku AI. Smart template selection based on content.",
+    "tags": {
+      "latest": "t57f87vfmgm8td4nzv7ak1qcbd89dtx8"
+    },
+    "updatedAt": 1782487958969
+  },
+  {
+    "_creationTime": 1782487965347.663,
+    "_id": "t97c6e00sj166d45vxqj9k5ev989cc95",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770380249222,
+    "displayName": "MinerU PDF Parser",
+    "latestVersionId": "t57cp64tcnsthaxpm5c33056f589cb44",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770380249222,
+      "version": "1.0.1"
+    },
+    "ownerPublisherId": "qd751e6chgtxhcehsek8kw044s89dwq7",
+    "ownerUserId": "vn71a32bepfaw5vcnzaq9qnz1d89cr87",
+    "slug": "mineru",
+    "stats": {
+      "comments": 0,
+      "downloads": 86,
+      "installsAllTime": 86,
+      "installsCurrent": 11,
+      "stars": 6,
+      "versions": 1
+    },
+    "statsDownloads": 86,
+    "statsInstallsAllTime": 86,
+    "statsInstallsCurrent": 11,
+    "statsStars": 6,
+    "summary": "用 MinerU API 解析 PDF/Word/PPT/图片为 Markdown，支持公式、表格、OCR。适用于论文解析、文档提取。",
+    "tags": {
+      "latest": "t57cp64tcnsthaxpm5c33056f589cb44"
+    },
+    "updatedAt": 1782487965347
+  },
+  {
+    "_creationTime": 1782487970849.7595,
+    "_id": "t973v6b7d5rx71bewxdyrw118h89dsgg",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545373660,
+    "displayName": "Peekaboo",
+    "latestVersionId": "t574bnfgz0q77827e7s9q97ahd89d9np",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545373660,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd748t02djv9nx2ja8h7z9461d89dhzf",
+    "ownerUserId": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "slug": "peekaboo",
+    "stats": {
+      "comments": 0,
+      "downloads": 124,
+      "installsAllTime": 84,
+      "installsCurrent": 24,
+      "stars": 4,
+      "versions": 1
+    },
+    "statsDownloads": 124,
+    "statsInstallsAllTime": 84,
+    "statsInstallsCurrent": 24,
+    "statsStars": 4,
+    "summary": "Capture and automate macOS UI with the Peekaboo CLI.",
+    "tags": {
+      "latest": "t574bnfgz0q77827e7s9q97ahd89d9np"
+    },
+    "updatedAt": 1782487970849
+  },
+  {
+    "_creationTime": 1782487970849.7607,
+    "_id": "t9722z78y0xhyem3rem539rzjn89dab8",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767488226016,
+    "displayName": "Gifgrep",
+    "latestVersionId": "t570h1hht9zasxb10bfdck1r1s89cqnv",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767488226016,
+      "version": "1.0.1"
+    },
+    "ownerPublisherId": "qd748t02djv9nx2ja8h7z9461d89dhzf",
+    "ownerUserId": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "slug": "gifgrep",
+    "stats": {
+      "comments": 0,
+      "downloads": 298,
+      "installsAllTime": 58,
+      "installsCurrent": 23,
+      "stars": 18,
+      "versions": 1
+    },
+    "statsDownloads": 298,
+    "statsInstallsAllTime": 58,
+    "statsInstallsCurrent": 23,
+    "statsStars": 18,
+    "summary": "Search GIF providers with CLI/TUI, download results, and extract stills/sheets.",
+    "tags": {
+      "latest": "t570h1hht9zasxb10bfdck1r1s89cqnv"
+    },
+    "updatedAt": 1782487970849
+  },
+  {
+    "_creationTime": 1782487970849.762,
+    "_id": "t976gqy3g8knz5a51jm7pg41k589dywe",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769405231570,
+    "displayName": "Bluebubbles",
+    "latestVersionId": "t5752f8qz87sqf0ty90m1awzz589dpq1",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769405231570,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd748t02djv9nx2ja8h7z9461d89dhzf",
+    "ownerUserId": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "slug": "bluebubbles",
+    "stats": {
+      "comments": 0,
+      "downloads": 221,
+      "installsAllTime": 61,
+      "installsCurrent": 21,
+      "stars": 21,
+      "versions": 1
+    },
+    "statsDownloads": 221,
+    "statsInstallsAllTime": 61,
+    "statsInstallsCurrent": 21,
+    "statsStars": 21,
+    "summary": "Build or update the BlueBubbles external channel plugin for Clawdbot (extension package, REST send/probe, webhook inbound).",
+    "tags": {
+      "latest": "t5752f8qz87sqf0ty90m1awzz589dpq1"
+    },
+    "updatedAt": 1782487970849
+  },
+  {
+    "_creationTime": 1782487970849.7632,
+    "_id": "t97dy9n7dqbcxg8tqzcppcafyn89c5pc",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545301512,
+    "displayName": "Blucli",
+    "latestVersionId": "t5796mreha2qwb75w36b9ey7k589c4ne",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545301512,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd748t02djv9nx2ja8h7z9461d89dhzf",
+    "ownerUserId": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "slug": "blucli",
+    "stats": {
+      "comments": 0,
+      "downloads": 5,
+      "installsAllTime": 5,
+      "installsCurrent": 5,
+      "stars": 5,
+      "versions": 1
+    },
+    "statsDownloads": 5,
+    "statsInstallsAllTime": 5,
+    "statsInstallsCurrent": 5,
+    "statsStars": 5,
+    "summary": "BluOS CLI (blu) for discovery, playback, grouping, and volume.",
+    "tags": {
+      "latest": "t5796mreha2qwb75w36b9ey7k589c4ne"
+    },
+    "updatedAt": 1782487970849
+  },
+  {
+    "_creationTime": 1782487970849.7644,
+    "_id": "t9705kznjgqby1eakfb8w7w35x89dv1p",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769963234507,
+    "displayName": "healthcheck",
+    "latestVersionId": "t57ev3x7mvpjhs4qncpqx2dem189d2xe",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769963234507,
+      "version": "1.0.2"
+    },
+    "ownerPublisherId": "qd748t02djv9nx2ja8h7z9461d89dhzf",
+    "ownerUserId": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "slug": "healthcheck",
+    "stats": {
+      "comments": 0,
+      "downloads": 124,
+      "installsAllTime": 4,
+      "installsCurrent": 24,
+      "stars": 4,
+      "versions": 1
+    },
+    "statsDownloads": 124,
+    "statsInstallsAllTime": 4,
+    "statsInstallsCurrent": 24,
+    "statsStars": 4,
+    "summary": "Track water and sleep with JSON file storage",
+    "tags": {
+      "latest": "t57ev3x7mvpjhs4qncpqx2dem189d2xe"
+    },
+    "updatedAt": 1782487970849
+  },
+  {
+    "_creationTime": 1782487970849.7656,
+    "_id": "t97c1xndm6jbdvbk8y6trgxd9589czfx",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769327779866,
+    "displayName": "YouTube Watcher",
+    "latestVersionId": "t5735d773byq8002knqb53m4w189c3hc",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769327779866,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd748t02djv9nx2ja8h7z9461d89dhzf",
+    "ownerUserId": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "slug": "youtube-watcher",
+    "stats": {
+      "comments": 0,
+      "downloads": 226,
+      "installsAllTime": 26,
+      "installsCurrent": 1,
+      "stars": 26,
+      "versions": 1
+    },
+    "statsDownloads": 226,
+    "statsInstallsAllTime": 26,
+    "statsInstallsCurrent": 1,
+    "statsStars": 26,
+    "summary": "Fetch and read transcripts from YouTube videos. Use when you need to summarize a video, answer questions about its content, or extract information from it.",
+    "tags": {
+      "latest": "t5735d773byq8002knqb53m4w189c3hc"
+    },
+    "updatedAt": 1782487970849
+  },
+  {
+    "_creationTime": 1782487970849.7668,
+    "_id": "t97cpj4m5canesz6p029s9ddfs89dceq",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769319760427,
+    "displayName": "AgentMail",
+    "latestVersionId": "t579tmv8k4b2cdxjf7f77jzzq189cszh",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769319760427,
+      "version": "1.1.1"
+    },
+    "ownerPublisherId": "qd748t02djv9nx2ja8h7z9461d89dhzf",
+    "ownerUserId": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "slug": "agentmail",
+    "stats": {
+      "comments": 0,
+      "downloads": 108,
+      "installsAllTime": 68,
+      "installsCurrent": 8,
+      "stars": 28,
+      "versions": 1
+    },
+    "statsDownloads": 108,
+    "statsInstallsAllTime": 68,
+    "statsInstallsCurrent": 8,
+    "statsStars": 28,
+    "summary": "API-first email platform designed for AI agents. Create and manage dedicated email inboxes, send and receive emails programmatically, and handle email-based workflows with webhooks and real-time events. Use when you need to set up agent email identity, send emails from agents, handle incoming email workflows, or replace traditional email providers like Gmail with agent-friendly infrastructure.",
+    "tags": {
+      "latest": "t579tmv8k4b2cdxjf7f77jzzq189cszh"
+    },
+    "updatedAt": 1782487970849
+  },
+  {
+    "_creationTime": 1782487970849.768,
+    "_id": "t9703120t2trtqs3cswmvayfyd89dy1s",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769963734144,
+    "displayName": "Clawdex by Koi",
+    "latestVersionId": "t57dy6f4hs9y3yzfcbbfrc3zv189cj1n",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769963734144,
+      "version": "1.0.2"
+    },
+    "ownerPublisherId": "qd748t02djv9nx2ja8h7z9461d89dhzf",
+    "ownerUserId": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "slug": "clawdex",
+    "stats": {
+      "comments": 0,
+      "downloads": 328,
+      "installsAllTime": 48,
+      "installsCurrent": 3,
+      "stars": 8,
+      "versions": 1
+    },
+    "statsDownloads": 328,
+    "statsInstallsAllTime": 48,
+    "statsInstallsCurrent": 3,
+    "statsStars": 8,
+    "summary": "Security check for ClawHub skills powered by Koi. Query the Clawdex API before installing any skill to verify it's safe.",
+    "tags": {
+      "latest": "t57dy6f4hs9y3yzfcbbfrc3zv189cj1n"
+    },
+    "updatedAt": 1782487970849
+  },
+  {
+    "_creationTime": 1782487970849.7693,
+    "_id": "t97arg243em8ttfa9z5prfq36x89ddzp",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769544521483,
+    "displayName": "Firecrawl Search",
+    "latestVersionId": "t57aqha9kghzx07jys8g0sf44d89d814",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769544521483,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd748t02djv9nx2ja8h7z9461d89dhzf",
+    "ownerUserId": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "slug": "firecrawl-search",
+    "stats": {
+      "comments": 0,
+      "downloads": 308,
+      "installsAllTime": 28,
+      "installsCurrent": 8,
+      "stars": 28,
+      "versions": 1
+    },
+    "statsDownloads": 308,
+    "statsInstallsAllTime": 28,
+    "statsInstallsCurrent": 8,
+    "statsStars": 28,
+    "summary": "Web search and scraping via Firecrawl API. Use when you need to search the web, scrape websites (including JS-heavy pages), crawl entire sites, or extract structured data from web pages. Requires FIRECRAWL_API_KEY environment variable.",
+    "tags": {
+      "latest": "t57aqha9kghzx07jys8g0sf44d89d814"
+    },
+    "updatedAt": 1782487970849
+  },
+  {
+    "_creationTime": 1782487970849.7705,
+    "_id": "t97a33t9072f7ycp7xef5v000d89cggj",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769524433792,
+    "displayName": "Notion",
+    "latestVersionId": "t5747ctprhbp39310bppjyt6vd89dhmc",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769524433792,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd748t02djv9nx2ja8h7z9461d89dhzf",
+    "ownerUserId": "vn79m204xwmdtb3dxt941kee2s89dddp",
+    "slug": "notion-skill",
+    "stats": {
+      "comments": 0,
+      "downloads": 249,
+      "installsAllTime": 89,
+      "installsCurrent": 24,
+      "stars": 9,
+      "versions": 1
+    },
+    "statsDownloads": 249,
+    "statsInstallsAllTime": 89,
+    "statsInstallsCurrent": 24,
+    "statsStars": 9,
+    "summary": "Work with Notion pages and databases via the official Notion API.",
+    "tags": {
+      "latest": "t5747ctprhbp39310bppjyt6vd89dhmc"
+    },
+    "updatedAt": 1782487970849
+  },
+  {
+    "_creationTime": 1782487976619.8105,
+    "_id": "t976g3pvewkxk21ye7hd8dv80n89cqwm",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545359433,
+    "displayName": "Nano Pdf",
+    "latestVersionId": "t576nnx40bpg26js9a0vnakhcs89cms8",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545359433,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7djmjrqgmqrenkbgpjbqsed989dsax",
+    "ownerUserId": "vn70fmkgkgcyce79r4m5bpkbf189c4cv",
+    "slug": "nano-pdf",
+    "stats": {
+      "comments": 0,
+      "downloads": 137,
+      "installsAllTime": 17,
+      "installsCurrent": 12,
+      "stars": 17,
+      "versions": 1
+    },
+    "statsDownloads": 137,
+    "statsInstallsAllTime": 17,
+    "statsInstallsCurrent": 12,
+    "statsStars": 17,
+    "summary": "Edit PDFs with natural-language instructions using the nano-pdf CLI.",
+    "tags": {
+      "latest": "t576nnx40bpg26js9a0vnakhcs89cms8"
+    },
+    "updatedAt": 1782487976619
+  },
+  {
+    "_creationTime": 1782487976619.8118,
+    "_id": "t9773ysrprgyxmzsgb1e7c66n589d09k",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770136427000,
+    "displayName": "Session-logs",
+    "latestVersionId": "t57djteamk8dyg0vqdrnt0hpjs89c5np",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770136427000,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7djmjrqgmqrenkbgpjbqsed989dsax",
+    "ownerUserId": "vn70fmkgkgcyce79r4m5bpkbf189c4cv",
+    "slug": "session-logs",
+    "stats": {
+      "comments": 0,
+      "downloads": 326,
+      "installsAllTime": 6,
+      "installsCurrent": 1,
+      "stars": 6,
+      "versions": 1
+    },
+    "statsDownloads": 326,
+    "statsInstallsAllTime": 6,
+    "statsInstallsCurrent": 1,
+    "statsStars": 6,
+    "summary": "Search and analyze your own session logs (older/parent conversations) using jq.",
+    "tags": {
+      "latest": "t57djteamk8dyg0vqdrnt0hpjs89c5np"
+    },
+    "updatedAt": 1782487976619
+  },
+  {
+    "_creationTime": 1782487976619.813,
+    "_id": "t978qwmg8t344tcvhct6xsw8t189d4ca",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545296326,
+    "displayName": "Apple Reminders",
+    "latestVersionId": "t57bmrff15skmnf7vmch9tcze589c15a",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545296326,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7djmjrqgmqrenkbgpjbqsed989dsax",
+    "ownerUserId": "vn70fmkgkgcyce79r4m5bpkbf189c4cv",
+    "slug": "apple-reminders",
+    "stats": {
+      "comments": 0,
+      "downloads": 366,
+      "installsAllTime": 6,
+      "installsCurrent": 16,
+      "stars": 6,
+      "versions": 1
+    },
+    "statsDownloads": 366,
+    "statsInstallsAllTime": 6,
+    "statsInstallsCurrent": 16,
+    "statsStars": 6,
+    "summary": "Manage Apple Reminders via the `remindctl` CLI on macOS (list, add, edit, complete, delete). Supports lists, date filters, and JSON/plain output.",
+    "tags": {
+      "latest": "t57bmrff15skmnf7vmch9tcze589c15a"
+    },
+    "updatedAt": 1782487976619
+  },
+  {
+    "_creationTime": 1782487976619.8142,
+    "_id": "t97bc0nf30r7g39710073802mx89c8xw",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545298356,
+    "displayName": "Bear Notes",
+    "latestVersionId": "t57apar8c1t3w7xmabfjvm3xws89cpdc",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545298356,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7djmjrqgmqrenkbgpjbqsed989dsax",
+    "ownerUserId": "vn70fmkgkgcyce79r4m5bpkbf189c4cv",
+    "slug": "bear-notes",
+    "stats": {
+      "comments": 0,
+      "downloads": 168,
+      "installsAllTime": 48,
+      "installsCurrent": 18,
+      "stars": 8,
+      "versions": 1
+    },
+    "statsDownloads": 168,
+    "statsInstallsAllTime": 48,
+    "statsInstallsCurrent": 18,
+    "statsStars": 8,
+    "summary": "Create, search, and manage Bear notes via grizzly CLI.",
+    "tags": {
+      "latest": "t57apar8c1t3w7xmabfjvm3xws89cpdc"
+    },
+    "updatedAt": 1782487976619
+  },
+  {
+    "_creationTime": 1782487976619.8154,
+    "_id": "t97csgt666vg1qf38def79p7hh89c3h3",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769702331506,
+    "displayName": "Prompt Guard",
+    "latestVersionId": "t573pz4d92j4pyat0mfcfk9zq989c0r4",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769702331506,
+      "version": "3.6.1"
+    },
+    "ownerPublisherId": "qd7djmjrqgmqrenkbgpjbqsed989dsax",
+    "ownerUserId": "vn70fmkgkgcyce79r4m5bpkbf189c4cv",
+    "slug": "prompt-guard",
+    "stats": {
+      "comments": 0,
+      "downloads": 348,
+      "installsAllTime": 68,
+      "installsCurrent": 23,
+      "stars": 28,
+      "versions": 1
+    },
+    "statsDownloads": 348,
+    "statsInstallsAllTime": 68,
+    "statsInstallsCurrent": 23,
+    "statsStars": 28,
+    "summary": "650+ pattern AI agent security defense covering prompt injection, supply chain injection, memory poisoning, action gate bypass, unicode steganography, cascad...",
+    "tags": {
+      "latest": "t573pz4d92j4pyat0mfcfk9zq989c0r4"
+    },
+    "updatedAt": 1782487976619
+  },
+  {
+    "_creationTime": 1782487976619.8167,
+    "_id": "t973gxe2h0c51aqyeg112p0bhh89d0y5",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769398410293,
+    "displayName": "YouTube Summarizer",
+    "latestVersionId": "t5777py1vg12phmyq7xzvbvh8d89c5cv",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769398410293,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7djmjrqgmqrenkbgpjbqsed989dsax",
+    "ownerUserId": "vn70fmkgkgcyce79r4m5bpkbf189c4cv",
+    "slug": "youtube-summarizer",
+    "stats": {
+      "comments": 0,
+      "downloads": 363,
+      "installsAllTime": 3,
+      "installsCurrent": 13,
+      "stars": 3,
+      "versions": 1
+    },
+    "statsDownloads": 363,
+    "statsInstallsAllTime": 3,
+    "statsInstallsCurrent": 13,
+    "statsStars": 3,
+    "summary": "Automatically fetch YouTube video transcripts, generate structured summaries, and send full transcripts to messaging platforms. Detects YouTube URLs and provides metadata, key insights, and downloadable transcripts.",
+    "tags": {
+      "latest": "t5777py1vg12phmyq7xzvbvh8d89c5cv"
+    },
+    "updatedAt": 1782487976619
+  },
+  {
+    "_creationTime": 1782487976619.8179,
+    "_id": "t97cbdbzc2rpdp2g6gxjjsxnzs89cm6q",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770021074275,
+    "displayName": "Gmail",
+    "latestVersionId": "t571bsqhqdexyv9fr57pwgywe989d4t1",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770021074275,
+      "version": "1.0.8"
+    },
+    "ownerPublisherId": "qd7djmjrqgmqrenkbgpjbqsed989dsax",
+    "ownerUserId": "vn70fmkgkgcyce79r4m5bpkbf189c4cv",
+    "slug": "gmail",
+    "stats": {
+      "comments": 0,
+      "downloads": 62,
+      "installsAllTime": 102,
+      "installsCurrent": 12,
+      "stars": 22,
+      "versions": 1
+    },
+    "statsDownloads": 62,
+    "statsInstallsAllTime": 102,
+    "statsInstallsCurrent": 12,
+    "statsStars": 22,
+    "summary": "Gmail API integration with managed OAuth. Read, send, and manage emails, threads, labels, and drafts. Use this skill when users want to interact with Gmail....",
+    "tags": {
+      "latest": "t571bsqhqdexyv9fr57pwgywe989d4t1"
+    },
+    "updatedAt": 1782487976619
+  },
+  {
+    "_creationTime": 1782487976619.819,
+    "_id": "t97e6gxjbmtreqjw5n2x4fg7kn89dntb",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769725661232,
+    "displayName": "Antigravity Image Generator",
+    "latestVersionId": "t57ezmhr5fbcx5k43qgjha2tb189chwc",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769725661232,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7djmjrqgmqrenkbgpjbqsed989dsax",
+    "ownerUserId": "vn70fmkgkgcyce79r4m5bpkbf189c4cv",
+    "slug": "antigravity-image-gen",
+    "stats": {
+      "comments": 0,
+      "downloads": 301,
+      "installsAllTime": 101,
+      "installsCurrent": 1,
+      "stars": 21,
+      "versions": 1
+    },
+    "statsDownloads": 301,
+    "statsInstallsAllTime": 101,
+    "statsInstallsCurrent": 1,
+    "statsStars": 21,
+    "summary": "Generate images using the internal Google Antigravity API (Gemini 3 Pro Image). High quality, native generation without browser automation.",
+    "tags": {
+      "latest": "t57ezmhr5fbcx5k43qgjha2tb189chwc"
+    },
+    "updatedAt": 1782487976619
+  },
+  {
+    "_creationTime": 1782487983664.8484,
+    "_id": "t970a8bs2hnb06zeeb7vkph93989dwy0",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769481215958,
+    "displayName": "Filesystem Management",
+    "latestVersionId": "t579drx9ete6fxqbehmy45qyth89ca28",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769481215958,
+      "version": "1.0.2"
+    },
+    "ownerPublisherId": "qd7762db7hr2tqwpnp7wv1wrt589dqb7",
+    "ownerUserId": "vn7epces79g4j429xw9xc6d13d89dvvm",
+    "slug": "clawdbot-filesystem",
+    "stats": {
+      "comments": 0,
+      "downloads": 294,
+      "installsAllTime": 14,
+      "installsCurrent": 19,
+      "stars": 14,
+      "versions": 1
+    },
+    "statsDownloads": 294,
+    "statsInstallsAllTime": 14,
+    "statsInstallsCurrent": 19,
+    "statsStars": 14,
+    "summary": "Advanced filesystem operations - listing, searching, batch processing, and directory analysis for Clawdbot",
+    "tags": {
+      "latest": "t579drx9ete6fxqbehmy45qyth89ca28"
+    },
+    "updatedAt": 1782487983664
+  },
+  {
+    "_creationTime": 1782487983664.8496,
+    "_id": "t97bc9ynbpw400sf8je9gd1w7n89cs7m",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769680455625,
+    "displayName": "imap-smtp-email",
+    "latestVersionId": "t574ymq0dz09capfng72awggg589c9nh",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769680455625,
+      "version": "0.0.16"
+    },
+    "ownerPublisherId": "qd7762db7hr2tqwpnp7wv1wrt589dqb7",
+    "ownerUserId": "vn7epces79g4j429xw9xc6d13d89dvvm",
+    "slug": "imap-smtp-email",
+    "stats": {
+      "comments": 0,
+      "downloads": 303,
+      "installsAllTime": 23,
+      "installsCurrent": 3,
+      "stars": 23,
+      "versions": 1
+    },
+    "statsDownloads": 303,
+    "statsInstallsAllTime": 23,
+    "statsInstallsCurrent": 3,
+    "statsStars": 23,
+    "summary": "Read and send email via IMAP/SMTP. Check for new/unread messages, fetch content, search mailboxes, mark as read/unread, and send emails with attachments. Sup...",
+    "tags": {
+      "latest": "t574ymq0dz09capfng72awggg589c9nh"
+    },
+    "updatedAt": 1782487983664
+  },
+  {
+    "_creationTime": 1782487983664.8508,
+    "_id": "t97cycyp1p0v94n748r6p8pp3s89cb0b",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769842400221,
+    "displayName": "Memory Manager",
+    "latestVersionId": "t57a382bprcgkwnmtgtwkpsxe589ctmc",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769842400221,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7762db7hr2tqwpnp7wv1wrt589dqb7",
+    "ownerUserId": "vn7epces79g4j429xw9xc6d13d89dvvm",
+    "slug": "memory-manager",
+    "stats": {
+      "comments": 0,
+      "downloads": 1,
+      "installsAllTime": 1,
+      "installsCurrent": 1,
+      "stars": 1,
+      "versions": 1
+    },
+    "statsDownloads": 1,
+    "statsInstallsAllTime": 1,
+    "statsInstallsCurrent": 1,
+    "statsStars": 1,
+    "summary": "Local memory management for agents. Compression detection, auto-snapshots, and semantic search. Use when agents need to detect compression risk before memory loss, save context snapshots, search historical memories, or track memory usage patterns. Never lose context again.",
+    "tags": {
+      "latest": "t57a382bprcgkwnmtgtwkpsxe589ctmc"
+    },
+    "updatedAt": 1782487983664
+  },
+  {
+    "_creationTime": 1782487983664.852,
+    "_id": "t971edbtzw5q9p3k14ffcfv4ns89c0r0",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769935067126,
+    "displayName": "API Gateway",
+    "latestVersionId": "t579x45j3g70pfxcnqnjff7dpx89c93n",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769935067126,
+      "version": "1.0.125"
+    },
+    "ownerPublisherId": "qd7762db7hr2tqwpnp7wv1wrt589dqb7",
+    "ownerUserId": "vn7epces79g4j429xw9xc6d13d89dvvm",
+    "slug": "api-gateway",
+    "stats": {
+      "comments": 0,
+      "downloads": 81,
+      "installsAllTime": 81,
+      "installsCurrent": 6,
+      "stars": 1,
+      "versions": 1
+    },
+    "statsDownloads": 81,
+    "statsInstallsAllTime": 81,
+    "statsInstallsCurrent": 6,
+    "statsStars": 1,
+    "summary": "Connect to external services through Maton-managed API routes.\nUse this skill only after the user names the target app, account, and task.",
+    "tags": {
+      "latest": "t579x45j3g70pfxcnqnjff7dpx89c93n"
+    },
+    "updatedAt": 1782487983664
+  },
+  {
+    "_creationTime": 1782487983664.8533,
+    "_id": "t973wb60f1f13vfb9twzrvzza589dcax",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769147666544,
+    "displayName": "Crypto Price",
+    "latestVersionId": "t5752v16aczk59ztn4jgh9csh189dtez",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769147666544,
+      "version": "0.2.2"
+    },
+    "ownerPublisherId": "qd7762db7hr2tqwpnp7wv1wrt589dqb7",
+    "ownerUserId": "vn7epces79g4j429xw9xc6d13d89dvvm",
+    "slug": "crypto-price",
+    "stats": {
+      "comments": 0,
+      "downloads": 29,
+      "installsAllTime": 109,
+      "installsCurrent": 4,
+      "stars": 29,
+      "versions": 1
+    },
+    "statsDownloads": 29,
+    "statsInstallsAllTime": 109,
+    "statsInstallsCurrent": 4,
+    "statsStars": 29,
+    "summary": "Get cryptocurrency token price and generate candlestick charts via CoinGecko API or Hyperliquid API. Use when user asks for token price, crypto price, price chart, or cryptocurrency market data.",
+    "tags": {
+      "latest": "t5752v16aczk59ztn4jgh9csh189dtez"
+    },
+    "updatedAt": 1782487983664
+  },
+  {
+    "_creationTime": 1782487990871.8857,
+    "_id": "t97b6p831zxnfay6k0ebpvxms589cgpx",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769032854381,
+    "displayName": "Agent Browser",
+    "latestVersionId": "t571y2vch2yp0wzkcsdpkezpb989dpsg",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769032854381,
+      "version": "0.1.0"
+    },
+    "ownerPublisherId": "qd7f80fwy0cwsjsqb0x9e1r08189c9v1",
+    "ownerUserId": "vn7ajxnaqhcee76jg88g5prr6589cz4m",
+    "slug": "agent-browser-clawdbot",
+    "stats": {
+      "comments": 0,
+      "downloads": 63,
+      "installsAllTime": 23,
+      "installsCurrent": 13,
+      "stars": 23,
+      "versions": 1
+    },
+    "statsDownloads": 63,
+    "statsInstallsAllTime": 23,
+    "statsInstallsCurrent": 13,
+    "statsStars": 23,
+    "summary": "Headless browser automation CLI optimized for AI agents with accessibility tree snapshots and ref-based element selection",
+    "tags": {
+      "latest": "t571y2vch2yp0wzkcsdpkezpb989dpsg"
+    },
+    "updatedAt": 1782487990871
+  },
+  {
+    "_creationTime": 1782487990871.887,
+    "_id": "t977yjc0kr2kf1bba3wdxwhc7d89d5wa",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770118289003,
+    "displayName": "diagram-generator",
+    "latestVersionId": "t57a81azgz0b2n7bae0v2pgb4589ckva",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770118289003,
+      "version": "1.1.6"
+    },
+    "ownerPublisherId": "qd7f80fwy0cwsjsqb0x9e1r08189c9v1",
+    "ownerUserId": "vn7ajxnaqhcee76jg88g5prr6589cz4m",
+    "slug": "diagram-generator",
+    "stats": {
+      "comments": 0,
+      "downloads": 297,
+      "installsAllTime": 57,
+      "installsCurrent": 22,
+      "stars": 17,
+      "versions": 1
+    },
+    "statsDownloads": 297,
+    "statsInstallsAllTime": 57,
+    "statsInstallsCurrent": 22,
+    "statsStars": 17,
+    "summary": "Generate and edit diagrams with the mcp-diagram-generator MCP server. Use this skill for new diagrams, existing .drawio/.mmd/.excalidraw edits, network topol...",
+    "tags": {
+      "latest": "t57a81azgz0b2n7bae0v2pgb4589ckva"
+    },
+    "updatedAt": 1782487990871
+  },
+  {
+    "_creationTime": 1782487990871.8882,
+    "_id": "t979ths2v1fx7ahwwe2asjx0w989cq0k",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770379660987,
+    "displayName": "moltrade",
+    "latestVersionId": "t579f360vxf1aqn4v4cppze2vd89dctf",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770379660987,
+      "version": "1.0.8"
+    },
+    "ownerPublisherId": "qd7f80fwy0cwsjsqb0x9e1r08189c9v1",
+    "ownerUserId": "vn7ajxnaqhcee76jg88g5prr6589cz4m",
+    "slug": "moltrade",
+    "stats": {
+      "comments": 0,
+      "downloads": 10,
+      "installsAllTime": 90,
+      "installsCurrent": 10,
+      "stars": 10,
+      "versions": 1
+    },
+    "statsDownloads": 10,
+    "statsInstallsAllTime": 90,
+    "statsInstallsCurrent": 10,
+    "statsStars": 10,
+    "summary": "Operate the Moltrade trading bot (config, backtest, test-mode runs, Nostr signal broadcast, exchange adapters, strategy integration) in OpenClaw.",
+    "tags": {
+      "latest": "t579f360vxf1aqn4v4cppze2vd89dctf"
+    },
+    "updatedAt": 1782487990871
+  },
+  {
+    "_creationTime": 1782487996485.4631,
+    "_id": "t975qwz0anb0x91ebhgega7jbs89dpz8",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545394459,
+    "displayName": "Weather",
+    "latestVersionId": "t572drq4xsef3m2pfyzgadg6hh89cq9c",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545394459,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7b0n33v6p5j3gjyv5j6epepd89dwvr",
+    "ownerUserId": "vn70h8w2fdrp9gbjcdzjqn8tx989d9tw",
+    "slug": "weather",
+    "stats": {
+      "comments": 0,
+      "downloads": 372,
+      "installsAllTime": 52,
+      "installsCurrent": 22,
+      "stars": 12,
+      "versions": 1
+    },
+    "statsDownloads": 372,
+    "statsInstallsAllTime": 52,
+    "statsInstallsCurrent": 22,
+    "statsStars": 12,
+    "summary": "Get current weather and forecasts (no API key required).",
+    "tags": {
+      "latest": "t572drq4xsef3m2pfyzgadg6hh89cq9c"
+    },
+    "updatedAt": 1782487996485
+  },
+  {
+    "_creationTime": 1782487996485.4644,
+    "_id": "t970h24mtxzb8s1m4dt40p626x89dwsc",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769847855729,
+    "displayName": "Pdf",
+    "latestVersionId": "t572t5pmavhsjs9w3604vhc36d89dw7z",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769847855729,
+      "version": "0.1.0"
+    },
+    "ownerPublisherId": "qd7b0n33v6p5j3gjyv5j6epepd89dwvr",
+    "ownerUserId": "vn70h8w2fdrp9gbjcdzjqn8tx989d9tw",
+    "slug": "pdf",
+    "stats": {
+      "comments": 0,
+      "downloads": 34,
+      "installsAllTime": 74,
+      "installsCurrent": 9,
+      "stars": 34,
+      "versions": 1
+    },
+    "statsDownloads": 34,
+    "statsInstallsAllTime": 74,
+    "statsInstallsCurrent": 9,
+    "statsStars": 34,
+    "summary": "Comprehensive PDF manipulation toolkit for extracting text and tables, creating new PDFs, merging/splitting documents, and handling forms. When Claude needs to fill in a PDF form or programmatically process, generate, or analyze PDF documents at scale.",
+    "tags": {
+      "latest": "t572t5pmavhsjs9w3604vhc36d89dw7z"
+    },
+    "updatedAt": 1782487996485
+  },
+  {
+    "_creationTime": 1782487996485.4656,
+    "_id": "t97dry25d01w8jxzq5nt7qb32x89dxpw",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769644119080,
+    "displayName": "Exa Web Search (Free)",
+    "latestVersionId": "t574nwrmfd793gsqrnw6vaj0s189c1k2",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769644119080,
+      "version": "1.0.1"
+    },
+    "ownerPublisherId": "qd7b0n33v6p5j3gjyv5j6epepd89dwvr",
+    "ownerUserId": "vn70h8w2fdrp9gbjcdzjqn8tx989d9tw",
+    "slug": "exa-web-search-free",
+    "stats": {
+      "comments": 0,
+      "downloads": 153,
+      "installsAllTime": 33,
+      "installsCurrent": 3,
+      "stars": 33,
+      "versions": 1
+    },
+    "statsDownloads": 153,
+    "statsInstallsAllTime": 33,
+    "statsInstallsCurrent": 3,
+    "statsStars": 33,
+    "summary": "Free AI search via Exa MCP. Web search for news/info, code search for docs/examples from GitHub/StackOverflow, company research for business intel. No API key needed.",
+    "tags": {
+      "latest": "t574nwrmfd793gsqrnw6vaj0s189c1k2"
+    },
+    "updatedAt": 1782487996485
+  },
+  {
+    "_creationTime": 1782487996485.4668,
+    "_id": "t975pjk2nnc7m9w2zhdbz7q4n589cx9t",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769388231012,
+    "displayName": "Browser Use",
+    "latestVersionId": "t57bvnbf3khvgm3gyv6r6m8qr989dv8f",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769388231012,
+      "version": "2.0.0"
+    },
+    "ownerPublisherId": "qd7b0n33v6p5j3gjyv5j6epepd89dwvr",
+    "ownerUserId": "vn70h8w2fdrp9gbjcdzjqn8tx989d9tw",
+    "slug": "browser-use",
+    "stats": {
+      "comments": 0,
+      "downloads": 194,
+      "installsAllTime": 114,
+      "installsCurrent": 19,
+      "stars": 34,
+      "versions": 1
+    },
+    "statsDownloads": 194,
+    "statsInstallsAllTime": 114,
+    "statsInstallsCurrent": 19,
+    "statsStars": 34,
+    "summary": "Automates browser interactions for web testing, form filling, screenshots, and data extraction. Use when the user needs to navigate websites, interact with w...",
+    "tags": {
+      "latest": "t57bvnbf3khvgm3gyv6r6m8qr989dv8f"
+    },
+    "updatedAt": 1782487996485
+  },
+  {
+    "_creationTime": 1782487996485.468,
+    "_id": "t970wdvcrn6sa3deyh3ef6bda989d4k8",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769671384220,
+    "displayName": "Stock Market Pro",
+    "latestVersionId": "t57437vc29v7fbt3rjqqas1f7x89dz1k",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769671384220,
+      "version": "1.2.12"
+    },
+    "ownerPublisherId": "qd7b0n33v6p5j3gjyv5j6epepd89dwvr",
+    "ownerUserId": "vn70h8w2fdrp9gbjcdzjqn8tx989d9tw",
+    "slug": "stock-market-pro",
+    "stats": {
+      "comments": 0,
+      "downloads": 115,
+      "installsAllTime": 115,
+      "installsCurrent": 15,
+      "stars": 35,
+      "versions": 1
+    },
+    "statsDownloads": 115,
+    "statsInstallsAllTime": 115,
+    "statsInstallsCurrent": 15,
+    "statsStars": 35,
+    "summary": "Yahoo Finance (yfinance) powered stock analysis skill: quotes, fundamentals, ASCII trends, high-resolution charts (RSI/MACD/BB/VWAP/ATR), plus optional web a...",
+    "tags": {
+      "latest": "t57437vc29v7fbt3rjqqas1f7x89dz1k"
+    },
+    "updatedAt": 1782487996485
+  },
+  {
+    "_creationTime": 1782487996485.4692,
+    "_id": "t97471z5rrjqnxy50f67g4f77h89cmc3",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1768362931439,
+    "displayName": "Context7 MCP",
+    "latestVersionId": "t574ry38s5jnbxptrcggndbdmn89ceek",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1768362931439,
+      "version": "1.0.3"
+    },
+    "ownerPublisherId": "qd7b0n33v6p5j3gjyv5j6epepd89dwvr",
+    "ownerUserId": "vn70h8w2fdrp9gbjcdzjqn8tx989d9tw",
+    "slug": "context7",
+    "stats": {
+      "comments": 0,
+      "downloads": 216,
+      "installsAllTime": 96,
+      "installsCurrent": 16,
+      "stars": 16,
+      "versions": 1
+    },
+    "statsDownloads": 216,
+    "statsInstallsAllTime": 96,
+    "statsInstallsCurrent": 16,
+    "statsStars": 16,
+    "summary": "Context7 MCP - Intelligent documentation search and context for any library",
+    "tags": {
+      "latest": "t574ry38s5jnbxptrcggndbdmn89ceek"
+    },
+    "updatedAt": 1782487996485
+  },
+  {
+    "_creationTime": 1782487996485.4705,
+    "_id": "t97877sfne5v9xknk3v3gnqfd989c8an",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769896469487,
+    "displayName": "Hippocampus",
+    "latestVersionId": "t57aa7rmj920c370asprztydgx89cdq8",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769896469487,
+      "version": "3.8.5"
+    },
+    "ownerPublisherId": "qd7b0n33v6p5j3gjyv5j6epepd89dwvr",
+    "ownerUserId": "vn70h8w2fdrp9gbjcdzjqn8tx989d9tw",
+    "slug": "hippocampus-memory",
+    "stats": {
+      "comments": 0,
+      "downloads": 161,
+      "installsAllTime": 1,
+      "installsCurrent": 11,
+      "stars": 1,
+      "versions": 1
+    },
+    "statsDownloads": 161,
+    "statsInstallsAllTime": 1,
+    "statsInstallsCurrent": 11,
+    "statsStars": 1,
+    "summary": "Persistent memory system for AI agents. Automatic encoding, decay, and semantic reinforcement — just like the hippocampus in your brain. Based on Stanford Generative Agents (Park et al., 2023).",
+    "tags": {
+      "latest": "t57aa7rmj920c370asprztydgx89cdq8"
+    },
+    "updatedAt": 1782487996485
+  },
+  {
+    "_creationTime": 1782488004338.1296,
+    "_id": "t9767a3msz1t3c0pxpyppnaa2x89cjfb",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767632598365,
+    "displayName": "self-improving agent",
+    "latestVersionId": "t577j8a4bed2bq21av6w7qhh7x89ckjg",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767632598365,
+      "version": "3.0.24"
+    },
+    "ownerPublisherId": "qd79egsgjkfegbp3fk8bqexmcn89c7xa",
+    "ownerUserId": "vn7eqhcmpe1rkjgd6r5z0652ax89cbat",
+    "slug": "self-improving-agent",
+    "stats": {
+      "comments": 0,
+      "downloads": 332,
+      "installsAllTime": 52,
+      "installsCurrent": 7,
+      "stars": 12,
+      "versions": 1
+    },
+    "statsDownloads": 332,
+    "statsInstallsAllTime": 52,
+    "statsInstallsCurrent": 7,
+    "statsStars": 12,
+    "summary": "A skill where the agent logs it's own findings for self-improvement",
+    "tags": {
+      "latest": "t577j8a4bed2bq21av6w7qhh7x89ckjg"
+    },
+    "updatedAt": 1782488004338
+  },
+  {
+    "_creationTime": 1782488004338.1309,
+    "_id": "t977hk9rr3n67tw3066p6bn1nx89cv99",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769016558544,
+    "displayName": "Marketing Mode",
+    "latestVersionId": "t577xhtzv9zw0tkby05g571d9h89dabv",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769016558544,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd79egsgjkfegbp3fk8bqexmcn89c7xa",
+    "ownerUserId": "vn7eqhcmpe1rkjgd6r5z0652ax89cbat",
+    "slug": "marketing-mode",
+    "stats": {
+      "comments": 0,
+      "downloads": 314,
+      "installsAllTime": 74,
+      "installsCurrent": 14,
+      "stars": 34,
+      "versions": 1
+    },
+    "statsDownloads": 314,
+    "statsInstallsAllTime": 74,
+    "statsInstallsCurrent": 14,
+    "statsStars": 34,
+    "summary": "Marketing Mode combines 23 comprehensive marketing skills covering strategy, psychology, content, SEO, conversion optimization, and paid growth. Use when users need marketing strategy, copywriting, SEO help, conversion optimization, paid advertising, or any marketing tactic.",
+    "tags": {
+      "latest": "t577xhtzv9zw0tkby05g571d9h89dabv"
+    },
+    "updatedAt": 1782488004338
+  },
+  {
+    "_creationTime": 1782488004338.132,
+    "_id": "t976y3bryjcep77wnd35ezmf0x89ds8f",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769434876997,
+    "displayName": "ArXiv Watcher",
+    "latestVersionId": "t578fe0ensyzme7c2tf4qcpw2n89cffb",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769434876997,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd79egsgjkfegbp3fk8bqexmcn89c7xa",
+    "ownerUserId": "vn7eqhcmpe1rkjgd6r5z0652ax89cbat",
+    "slug": "arxiv-watcher",
+    "stats": {
+      "comments": 0,
+      "downloads": 83,
+      "installsAllTime": 43,
+      "installsCurrent": 8,
+      "stars": 3,
+      "versions": 1
+    },
+    "statsDownloads": 83,
+    "statsInstallsAllTime": 43,
+    "statsInstallsCurrent": 8,
+    "statsStars": 3,
+    "summary": "Search and summarize papers from ArXiv. Use when the user asks for the latest research, specific topics on ArXiv, or a daily summary of AI papers.",
+    "tags": {
+      "latest": "t578fe0ensyzme7c2tf4qcpw2n89cffb"
+    },
+    "updatedAt": 1782488004338
+  },
+  {
+    "_creationTime": 1782488004338.1333,
+    "_id": "t970wbgtjc9k2phk0nkxgdw0cd89c7hg",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770653293499,
+    "displayName": "Git",
+    "latestVersionId": "t57bm3tnycattkbta1z2edf5fn89casv",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770653293499,
+      "version": "1.0.8"
+    },
+    "ownerPublisherId": "qd79egsgjkfegbp3fk8bqexmcn89c7xa",
+    "ownerUserId": "vn7eqhcmpe1rkjgd6r5z0652ax89cbat",
+    "slug": "git",
+    "stats": {
+      "comments": 0,
+      "downloads": 354,
+      "installsAllTime": 114,
+      "installsCurrent": 4,
+      "stars": 34,
+      "versions": 1
+    },
+    "statsDownloads": 354,
+    "statsInstallsAllTime": 114,
+    "statsInstallsCurrent": 4,
+    "statsStars": 34,
+    "summary": "Git commits, branches, rebases, merges, conflict resolution, history recovery, team workflows, and the commands needed for safe day-to-day version control. U...",
+    "tags": {
+      "latest": "t57bm3tnycattkbta1z2edf5fn89casv"
+    },
+    "updatedAt": 1782488004338
+  },
+  {
+    "_creationTime": 1782488004338.1345,
+    "_id": "t97eg74dvxzpmr1wq45k6v8ng589dxfj",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770341582349,
+    "displayName": "Automation Workflows",
+    "latestVersionId": "t57enmy8xvr4cbhh0j554zvwc589cja0",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770341582349,
+      "version": "0.1.0"
+    },
+    "ownerPublisherId": "qd79egsgjkfegbp3fk8bqexmcn89c7xa",
+    "ownerUserId": "vn7eqhcmpe1rkjgd6r5z0652ax89cbat",
+    "slug": "automation-workflows",
+    "stats": {
+      "comments": 0,
+      "downloads": 350,
+      "installsAllTime": 70,
+      "installsCurrent": 0,
+      "stars": 30,
+      "versions": 1
+    },
+    "statsDownloads": 350,
+    "statsInstallsAllTime": 70,
+    "statsInstallsCurrent": 0,
+    "statsStars": 30,
+    "summary": "Design and implement automation workflows to save time and scale operations as a solopreneur. Use when identifying repetitive tasks to automate, building workflows across tools, setting up triggers and actions, or optimizing existing automations. Covers automation opportunity identification, workflow design, tool selection (Zapier, Make, n8n), testing, and maintenance. Trigger on \"automate\", \"automation\", \"workflow automation\", \"save time\", \"reduce manual work\", \"automate my business\", \"no-code automation\".",
+    "tags": {
+      "latest": "t57enmy8xvr4cbhh0j554zvwc589cja0"
+    },
+    "updatedAt": 1782488004338
+  },
+  {
+    "_creationTime": 1782488004338.1357,
+    "_id": "t979wst1pfp028jvv129z1gnyh89dcvw",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769362342566,
+    "displayName": "gogcli - Google Workspace CLI",
+    "latestVersionId": "t574h547fnmhfz69b6atcv7f4589cep9",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769362342566,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd79egsgjkfegbp3fk8bqexmcn89c7xa",
+    "ownerUserId": "vn7eqhcmpe1rkjgd6r5z0652ax89cbat",
+    "slug": "gogcli",
+    "stats": {
+      "comments": 0,
+      "downloads": 49,
+      "installsAllTime": 89,
+      "installsCurrent": 24,
+      "stars": 9,
+      "versions": 1
+    },
+    "statsDownloads": 49,
+    "statsInstallsAllTime": 89,
+    "statsInstallsCurrent": 24,
+    "statsStars": 9,
+    "summary": "Command-line tool to manage Google Workspace services including Gmail, Calendar, Drive, Sheets, Docs, Slides, Contacts, Tasks, People, Groups, and Keep.",
+    "tags": {
+      "latest": "t574h547fnmhfz69b6atcv7f4589cep9"
+    },
+    "updatedAt": 1782488004338
+  },
+  {
+    "_creationTime": 1782488012813.4016,
+    "_id": "t9721zpdnywjsz524j848r2sj589csew",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545344344,
+    "displayName": "Github",
+    "latestVersionId": "t574pxzhtdq52jc1d0vrpx117d89c3h6",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545344344,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7bgwtn6gj9ezyv6zamg6xfph89d2m1",
+    "ownerUserId": "vn715a72sev56wptz7d2tys2g589dtr6",
+    "slug": "github",
+    "stats": {
+      "comments": 0,
+      "downloads": 83,
+      "installsAllTime": 43,
+      "installsCurrent": 8,
+      "stars": 3,
+      "versions": 1
+    },
+    "statsDownloads": 83,
+    "statsInstallsAllTime": 43,
+    "statsInstallsCurrent": 8,
+    "statsStars": 3,
+    "summary": "Interact with GitHub using the `gh` CLI. Use `gh issue`, `gh pr`, `gh run`, and `gh api` for issues, PRs, CI runs, and advanced queries.",
+    "tags": {
+      "latest": "t574pxzhtdq52jc1d0vrpx117d89c3h6"
+    },
+    "updatedAt": 1782488012813
+  },
+  {
+    "_creationTime": 1782488012813.4028,
+    "_id": "t97c1gfa1snktc6d65gj7sncys89cre2",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545368103,
+    "displayName": "Openai Whisper Api",
+    "latestVersionId": "t57bvy56n9wq2w6fqxyb4t9ap589cs52",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545368103,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7bgwtn6gj9ezyv6zamg6xfph89d2m1",
+    "ownerUserId": "vn715a72sev56wptz7d2tys2g589dtr6",
+    "slug": "openai-whisper-api",
+    "stats": {
+      "comments": 0,
+      "downloads": 324,
+      "installsAllTime": 4,
+      "installsCurrent": 24,
+      "stars": 4,
+      "versions": 1
+    },
+    "statsDownloads": 324,
+    "statsInstallsAllTime": 4,
+    "statsInstallsCurrent": 24,
+    "statsStars": 4,
+    "summary": "Transcribe audio via OpenAI Audio Transcriptions API (Whisper).",
+    "tags": {
+      "latest": "t57bvy56n9wq2w6fqxyb4t9ap589cs52"
+    },
+    "updatedAt": 1782488012813
+  },
+  {
+    "_creationTime": 1782488012813.404,
+    "_id": "t97201gm1kspq2p68cybz0pvgh89c6a5",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769231736865,
+    "displayName": "Humanizer",
+    "latestVersionId": "t578t83nqxxfakjbfnzty2n1yd89cdyq",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769231736865,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7bgwtn6gj9ezyv6zamg6xfph89d2m1",
+    "ownerUserId": "vn715a72sev56wptz7d2tys2g589dtr6",
+    "slug": "humanizer",
+    "stats": {
+      "comments": 0,
+      "downloads": 75,
+      "installsAllTime": 75,
+      "installsCurrent": 0,
+      "stars": 35,
+      "versions": 1
+    },
+    "statsDownloads": 75,
+    "statsInstallsAllTime": 75,
+    "statsInstallsCurrent": 0,
+    "statsStars": 35,
+    "summary": "Remove signs of AI-generated writing from text. Use when editing or reviewing\ntext to make it sound more natural and human-written. Based on Wikipedia's\ncomprehensive \"Signs of AI writing\" guide. Detects and fixes patterns including:\ninflated symbolism, promotional language, superficial -ing analyses, vague\nattributions, em dash overuse, rule of three, AI vocabulary words, negative\nparallelisms, and excessive conjunctive phrases.",
+    "tags": {
+      "latest": "t578t83nqxxfakjbfnzty2n1yd89cdyq"
+    },
+    "updatedAt": 1782488012813
+  },
+  {
+    "_creationTime": 1782488012813.4053,
+    "_id": "t97407gf3v5sczpkzaatemshh589d1jt",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770307091925,
+    "displayName": "Browser Automation",
+    "latestVersionId": "t577yweqqf5698dtfvve5d258x89d9q1",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770307091925,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7bgwtn6gj9ezyv6zamg6xfph89d2m1",
+    "ownerUserId": "vn715a72sev56wptz7d2tys2g589dtr6",
+    "slug": "browser-automation",
+    "stats": {
+      "comments": 0,
+      "downloads": 108,
+      "installsAllTime": 68,
+      "installsCurrent": 8,
+      "stars": 28,
+      "versions": 1
+    },
+    "statsDownloads": 108,
+    "statsInstallsAllTime": 68,
+    "statsInstallsCurrent": 8,
+    "statsStars": 28,
+    "summary": "Automate web browser interactions using natural language via CLI commands. Use when the user asks to browse websites, navigate web pages, extract data from websites, take screenshots, fill forms, click buttons, or interact with web applications.",
+    "tags": {
+      "latest": "t577yweqqf5698dtfvve5d258x89d9q1"
+    },
+    "updatedAt": 1782488012813
+  },
+  {
+    "_creationTime": 1782488012813.4065,
+    "_id": "t972mp7xa1ph9h1nwwajbrh82189d2hp",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769979735397,
+    "displayName": "ClawDefender - OpenClaw Security - Prompt injection, rogue skills etc",
+    "latestVersionId": "t572kfdtc8z3g1w22atzv8rqkh89c86q",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769979735397,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7bgwtn6gj9ezyv6zamg6xfph89d2m1",
+    "ownerUserId": "vn715a72sev56wptz7d2tys2g589dtr6",
+    "slug": "clawdefender",
+    "stats": {
+      "comments": 0,
+      "downloads": 146,
+      "installsAllTime": 106,
+      "installsCurrent": 21,
+      "stars": 26,
+      "versions": 1
+    },
+    "statsDownloads": 146,
+    "statsInstallsAllTime": 106,
+    "statsInstallsCurrent": 21,
+    "statsStars": 26,
+    "summary": "Security scanner and input sanitizer for AI agents. Detects prompt injection, command injection, SSRF, credential exfiltration, and path traversal attacks. Use when (1) installing new skills from ClawHub, (2) processing external input like emails, calendar events, Trello cards, or API responses, (3) validating URLs before fetching, (4) running security audits on your workspace. Protects agents from malicious content in untrusted data sources.",
+    "tags": {
+      "latest": "t572kfdtc8z3g1w22atzv8rqkh89c86q"
+    },
+    "updatedAt": 1782488012813
+  },
+  {
+    "_creationTime": 1782488012813.4077,
+    "_id": "t97djzcnq9xxcavf62n2nqxft989dypx",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769445465505,
+    "displayName": "Reflect",
+    "latestVersionId": "t57d7psycranqzrby4zprfd2y189cf1x",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769445465505,
+      "version": "2.0.0"
+    },
+    "ownerPublisherId": "qd7bgwtn6gj9ezyv6zamg6xfph89d2m1",
+    "ownerUserId": "vn715a72sev56wptz7d2tys2g589dtr6",
+    "slug": "reflect-learn",
+    "stats": {
+      "comments": 0,
+      "downloads": 52,
+      "installsAllTime": 92,
+      "installsCurrent": 2,
+      "stars": 12,
+      "versions": 1
+    },
+    "statsDownloads": 52,
+    "statsInstallsAllTime": 92,
+    "statsInstallsCurrent": 2,
+    "statsStars": 12,
+    "summary": "Self-improvement through conversation analysis. Extracts learnings from corrections and success patterns, proposes updates to agent files or creates new skil...",
+    "tags": {
+      "latest": "t57d7psycranqzrby4zprfd2y189cf1x"
+    },
+    "updatedAt": 1782488012813
+  },
+  {
+    "_creationTime": 1782488012813.409,
+    "_id": "t9794tmttzbm3h5vxbwqpyng2n89d9th",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769830399869,
+    "displayName": "Cron Mastery",
+    "latestVersionId": "t57c25vs10xdpq340y1gv5khmn89cxky",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769830399869,
+      "version": "1.0.2"
+    },
+    "ownerPublisherId": "qd7bgwtn6gj9ezyv6zamg6xfph89d2m1",
+    "ownerUserId": "vn715a72sev56wptz7d2tys2g589dtr6",
+    "slug": "cron-mastery",
+    "stats": {
+      "comments": 0,
+      "downloads": 88,
+      "installsAllTime": 48,
+      "installsCurrent": 13,
+      "stars": 8,
+      "versions": 1
+    },
+    "statsDownloads": 88,
+    "statsInstallsAllTime": 48,
+    "statsInstallsCurrent": 13,
+    "statsStars": 8,
+    "summary": "Master OpenClaw's timing systems. Use for scheduling reliable reminders, setting up periodic maintenance (janitor jobs), and understanding when to use Cron v...",
+    "tags": {
+      "latest": "t57c25vs10xdpq340y1gv5khmn89cxky"
+    },
+    "updatedAt": 1782488012813
+  },
+  {
+    "_creationTime": 1782488020404.736,
+    "_id": "t97301zvw10d036pvrd1cbah4n89detq",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545364210,
+    "displayName": "Openai Image Gen",
+    "latestVersionId": "t5726f0qjj06x96r3gpa3a4wtn89cytv",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545364210,
+      "version": "1.0.1"
+    },
+    "ownerPublisherId": "qd72xxy08c0k4nzpby30e0nbah89d146",
+    "ownerUserId": "vn7bds31m625ea485pn2g8aqpn89cs48",
+    "slug": "openai-image-gen",
+    "stats": {
+      "comments": 0,
+      "downloads": 275,
+      "installsAllTime": 115,
+      "installsCurrent": 0,
+      "stars": 35,
+      "versions": 1
+    },
+    "statsDownloads": 275,
+    "statsInstallsAllTime": 115,
+    "statsInstallsCurrent": 0,
+    "statsStars": 35,
+    "summary": "Batch-generate images via OpenAI Images API. Random prompt sampler + `index.html` gallery.",
+    "tags": {
+      "latest": "t5726f0qjj06x96r3gpa3a4wtn89cytv"
+    },
+    "updatedAt": 1782488020404
+  },
+  {
+    "_creationTime": 1782488020404.7373,
+    "_id": "t977b0f7fbv4p5p505ama1a8v189ce8z",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545384979,
+    "displayName": "Things Mac",
+    "latestVersionId": "t57fgzjb797xjvyacabbfavvcs89d734",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545384979,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd72xxy08c0k4nzpby30e0nbah89d146",
+    "ownerUserId": "vn7bds31m625ea485pn2g8aqpn89cs48",
+    "slug": "things-mac",
+    "stats": {
+      "comments": 0,
+      "downloads": 135,
+      "installsAllTime": 55,
+      "installsCurrent": 10,
+      "stars": 15,
+      "versions": 1
+    },
+    "statsDownloads": 135,
+    "statsInstallsAllTime": 55,
+    "statsInstallsCurrent": 10,
+    "statsStars": 15,
+    "summary": "Manage Things 3 via the `things` CLI on macOS (add/update projects+todos via URL scheme; read/search/list from the local Things database). Use when a user asks Clawdbot to add a task to Things, list inbox/today/upcoming, search tasks, or inspect projects/areas/tags.",
+    "tags": {
+      "latest": "t57fgzjb797xjvyacabbfavvcs89d734"
+    },
+    "updatedAt": 1782488020404
+  },
+  {
+    "_creationTime": 1782488020404.7385,
+    "_id": "t97ckdnevpw71m12q5kk559yx189cdsz",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769611121418,
+    "displayName": "Youtube",
+    "latestVersionId": "t57cds73rwdj2zn34ys499ykth89c8b6",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769611121418,
+      "version": "1.0.1"
+    },
+    "ownerPublisherId": "qd72xxy08c0k4nzpby30e0nbah89d146",
+    "ownerUserId": "vn7bds31m625ea485pn2g8aqpn89cs48",
+    "slug": "youtube",
+    "stats": {
+      "comments": 0,
+      "downloads": 51,
+      "installsAllTime": 51,
+      "installsCurrent": 1,
+      "stars": 11,
+      "versions": 1
+    },
+    "statsDownloads": 51,
+    "statsInstallsAllTime": 51,
+    "statsInstallsCurrent": 1,
+    "statsStars": 11,
+    "summary": "Search YouTube videos, get channel info, fetch video details and transcripts using YouTube Data API v3 via MCP server or yt-dlp fallback.",
+    "tags": {
+      "latest": "t57cds73rwdj2zn34ys499ykth89c8b6"
+    },
+    "updatedAt": 1782488020404
+  },
+  {
+    "_creationTime": 1782488020404.7397,
+    "_id": "t9778y9nf3qk2wffg91xg5r52589dtjc",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769420683107,
+    "displayName": "News Aggregator Skill",
+    "latestVersionId": "t57883y728z4egmmqe200a71b189cv48",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769420683107,
+      "version": "0.1.0"
+    },
+    "ownerPublisherId": "qd72xxy08c0k4nzpby30e0nbah89d146",
+    "ownerUserId": "vn7bds31m625ea485pn2g8aqpn89cs48",
+    "slug": "news-aggregator-skill",
+    "stats": {
+      "comments": 0,
+      "downloads": 247,
+      "installsAllTime": 87,
+      "installsCurrent": 22,
+      "stars": 7,
+      "versions": 1
+    },
+    "statsDownloads": 247,
+    "statsInstallsAllTime": 87,
+    "statsInstallsCurrent": 22,
+    "statsStars": 7,
+    "summary": "Comprehensive news aggregator that fetches, filters, and deeply analyzes real-time content from 8 major sources: Hacker News, GitHub Trending, Product Hunt, 36Kr, Tencent News, WallStreetCN, V2EX, and Weibo. Best for 'daily scans', 'tech news briefings', 'finance updates', and 'deep interpretations' of hot topics.",
+    "tags": {
+      "latest": "t57883y728z4egmmqe200a71b189cv48"
+    },
+    "updatedAt": 1782488020404
+  },
+  {
+    "_creationTime": 1782488020404.741,
+    "_id": "t97drmh511zjmkfm1bbhswvnpx89csrd",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769911812377,
+    "displayName": "Chromadb Memory Pub",
+    "latestVersionId": "t57e3hqrpev9z3e4xcrrprejvn89dd6z",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769911812377,
+      "version": "1.2.1"
+    },
+    "ownerPublisherId": "qd72xxy08c0k4nzpby30e0nbah89d146",
+    "ownerUserId": "vn7bds31m625ea485pn2g8aqpn89cs48",
+    "slug": "chromadb-memory",
+    "stats": {
+      "comments": 0,
+      "downloads": 186,
+      "installsAllTime": 106,
+      "installsCurrent": 11,
+      "stars": 26,
+      "versions": 1
+    },
+    "statsDownloads": 186,
+    "statsInstallsAllTime": 106,
+    "statsInstallsCurrent": 11,
+    "statsStars": 26,
+    "summary": "Long-term memory via ChromaDB with local Ollama embeddings. Auto-recall injects relevant context every turn. No cloud APIs required — fully self-hosted.",
+    "tags": {
+      "latest": "t57e3hqrpev9z3e4xcrrprejvn89dd6z"
+    },
+    "updatedAt": 1782488020404
+  },
+  {
+    "_creationTime": 1782488026536.574,
+    "_id": "t97a6fad9499cxbzrxy78cc1dd89dv5q",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767667639455,
+    "displayName": "Model Usage",
+    "latestVersionId": "t57dqveaedk18vrcwd8y8tw29189ck4g",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767667639455,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7bb6sk2b0abby9a3dvt950nd89de61",
+    "ownerUserId": "vn70rwq04ghyzeh8sq870aaj9x89cqnz",
+    "slug": "model-usage",
+    "stats": {
+      "comments": 0,
+      "downloads": 205,
+      "installsAllTime": 45,
+      "installsCurrent": 5,
+      "stars": 5,
+      "versions": 1
+    },
+    "statsDownloads": 205,
+    "statsInstallsAllTime": 45,
+    "statsInstallsCurrent": 5,
+    "statsStars": 5,
+    "summary": "Use CodexBar CLI local cost usage to summarize per-model usage for Codex or Claude, including the current (most recent) model or a full model breakdown. Trigger when asked for model-level usage/cost data from codexbar, or when you need a scriptable per-model summary from codexbar cost JSON.",
+    "tags": {
+      "latest": "t57dqveaedk18vrcwd8y8tw29189ck4g"
+    },
+    "updatedAt": 1782488026536
+  },
+  {
+    "_creationTime": 1782488026536.5752,
+    "_id": "t9717zdzwchwbzye5kfmtygzwd89cga1",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769867469132,
+    "displayName": "moltbook-interact",
+    "latestVersionId": "t57fpwvzvnk7kd35tax7m8jzh189dnky",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769867469132,
+      "version": "1.0.1"
+    },
+    "ownerPublisherId": "qd7bb6sk2b0abby9a3dvt950nd89de61",
+    "ownerUserId": "vn70rwq04ghyzeh8sq870aaj9x89cqnz",
+    "slug": "moltbook-interact",
+    "stats": {
+      "comments": 0,
+      "downloads": 48,
+      "installsAllTime": 8,
+      "installsCurrent": 23,
+      "stars": 8,
+      "versions": 1
+    },
+    "statsDownloads": 48,
+    "statsInstallsAllTime": 8,
+    "statsInstallsCurrent": 23,
+    "statsStars": 8,
+    "summary": "Interact with Moltbook social network for AI agents. Post, reply, browse, and analyze engagement. Use when the user wants to engage with Moltbook, check their feed, reply to posts, or track their activity on the agent social network.",
+    "tags": {
+      "latest": "t57fpwvzvnk7kd35tax7m8jzh189dnky"
+    },
+    "updatedAt": 1782488026536
+  },
+  {
+    "_creationTime": 1782488026536.5764,
+    "_id": "t9709fjrzx0a1v6wnfaqnw6q5589dcdf",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769912401534,
+    "displayName": "MoltGuard - Security & Antivirus & Guardrails",
+    "latestVersionId": "t5756c1tt6fp45mka56hy8yrdn89crj3",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769912401534,
+      "version": "6.8.15"
+    },
+    "ownerPublisherId": "qd7bb6sk2b0abby9a3dvt950nd89de61",
+    "ownerUserId": "vn70rwq04ghyzeh8sq870aaj9x89cqnz",
+    "slug": "moltguard",
+    "stats": {
+      "comments": 0,
+      "downloads": 331,
+      "installsAllTime": 91,
+      "installsCurrent": 6,
+      "stars": 11,
+      "versions": 1
+    },
+    "statsDownloads": 331,
+    "statsInstallsAllTime": 91,
+    "statsInstallsCurrent": 6,
+    "statsStars": 11,
+    "summary": "MoltGuard — OpenClaw security guard by OpenGuardrails. Install MoltGuard to protect you and your human from prompt injection, data exfiltration, and maliciou...",
+    "tags": {
+      "latest": "t5756c1tt6fp45mka56hy8yrdn89crj3"
+    },
+    "updatedAt": 1782488026536
+  },
+  {
+    "_creationTime": 1782488032050.0767,
+    "_id": "t97eyd9f39w9jwbf4xxe1eg37589dpy2",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545346060,
+    "displayName": "Gog",
+    "latestVersionId": "t577ahbsggdqfh5aax9hngtfs189cpp2",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545346060,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd71nsh0q8rfv5df9f5d21qej189d91r",
+    "ownerUserId": "vn748yhtv37mwatd1nbjd9gemh89cp7r",
+    "slug": "gog",
+    "stats": {
+      "comments": 0,
+      "downloads": 127,
+      "installsAllTime": 47,
+      "installsCurrent": 2,
+      "stars": 7,
+      "versions": 1
+    },
+    "statsDownloads": 127,
+    "statsInstallsAllTime": 47,
+    "statsInstallsCurrent": 2,
+    "statsStars": 7,
+    "summary": "Google Workspace CLI for Gmail, Calendar, Drive, Contacts, Sheets, and Docs.",
+    "tags": {
+      "latest": "t577ahbsggdqfh5aax9hngtfs189cpp2"
+    },
+    "updatedAt": 1782488032050
+  },
+  {
+    "_creationTime": 1782488032050.078,
+    "_id": "t97fp5hbqd9p0wgcmwx3gkvkzn89c1jb",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545311074,
+    "displayName": "Discord",
+    "latestVersionId": "t57drsn5bnyx4m33x9r0y4ttp189dmcx",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545311074,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd71nsh0q8rfv5df9f5d21qej189d91r",
+    "ownerUserId": "vn748yhtv37mwatd1nbjd9gemh89cp7r",
+    "slug": "discord",
+    "stats": {
+      "comments": 0,
+      "downloads": 268,
+      "installsAllTime": 108,
+      "installsCurrent": 18,
+      "stars": 28,
+      "versions": 1
+    },
+    "statsDownloads": 268,
+    "statsInstallsAllTime": 108,
+    "statsInstallsCurrent": 18,
+    "statsStars": 28,
+    "summary": "Use when you need to control Discord from Clawdbot via the discord tool: send messages, react, post or upload stickers, upload emojis, run polls, manage threads/pins/search, fetch permissions or member/role/channel info, or handle moderation actions in Discord DMs or channels.",
+    "tags": {
+      "latest": "t57drsn5bnyx4m33x9r0y4ttp189dmcx"
+    },
+    "updatedAt": 1782488032050
+  },
+  {
+    "_creationTime": 1782488032050.079,
+    "_id": "t970yjqhev55rwm1w3vvt5vq9x89cm3e",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767580455544,
+    "displayName": "Caldav Calendar",
+    "latestVersionId": "t57fknactthwkrjev1fy373n8s89c02h",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767580455544,
+      "version": "1.0.1"
+    },
+    "ownerPublisherId": "qd71nsh0q8rfv5df9f5d21qej189d91r",
+    "ownerUserId": "vn748yhtv37mwatd1nbjd9gemh89cp7r",
+    "slug": "caldav-calendar",
+    "stats": {
+      "comments": 0,
+      "downloads": 0,
+      "installsAllTime": 0,
+      "installsCurrent": 0,
+      "stars": 0,
+      "versions": 1
+    },
+    "statsDownloads": 0,
+    "statsInstallsAllTime": 0,
+    "statsInstallsCurrent": 0,
+    "statsStars": 0,
+    "summary": "Sync and query CalDAV calendars (iCloud, Google, Fastmail, Nextcloud, etc.) using vdirsyncer + khal. Works on Linux.",
+    "tags": {
+      "latest": "t57fknactthwkrjev1fy373n8s89c02h"
+    },
+    "updatedAt": 1782488032050
+  },
+  {
+    "_creationTime": 1782488032050.0803,
+    "_id": "t97eha69cbye5zmjswma5at0s589cz0t",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1768936491160,
+    "displayName": "browsh",
+    "latestVersionId": "t57ey3y65eepydpacqjhv9fa0589dxsy",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1768936491160,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd71nsh0q8rfv5df9f5d21qej189d91r",
+    "ownerUserId": "vn748yhtv37mwatd1nbjd9gemh89cp7r",
+    "slug": "browsh",
+    "stats": {
+      "comments": 0,
+      "downloads": 221,
+      "installsAllTime": 61,
+      "installsCurrent": 21,
+      "stars": 21,
+      "versions": 1
+    },
+    "statsDownloads": 221,
+    "statsInstallsAllTime": 61,
+    "statsInstallsCurrent": 21,
+    "statsStars": 21,
+    "summary": "A modern text-based browser. Renders web pages in the terminal using headless Firefox.",
+    "tags": {
+      "latest": "t57ey3y65eepydpacqjhv9fa0589dxsy"
+    },
+    "updatedAt": 1782488032050
+  },
+  {
+    "_creationTime": 1782488032050.0815,
+    "_id": "t97ed29mvkpt4menvmg9p43a1n89cpen",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545374981,
+    "displayName": "Qmd",
+    "latestVersionId": "t571s7m8pzsba7ppvx1etfe4t989cynf",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545374981,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd71nsh0q8rfv5df9f5d21qej189d91r",
+    "ownerUserId": "vn748yhtv37mwatd1nbjd9gemh89cp7r",
+    "slug": "qmd",
+    "stats": {
+      "comments": 0,
+      "downloads": 72,
+      "installsAllTime": 112,
+      "installsCurrent": 22,
+      "stars": 32,
+      "versions": 1
+    },
+    "statsDownloads": 72,
+    "statsInstallsAllTime": 112,
+    "statsInstallsCurrent": 22,
+    "statsStars": 32,
+    "summary": "Local search/indexing CLI (BM25 + vectors + rerank) with MCP mode.",
+    "tags": {
+      "latest": "t571s7m8pzsba7ppvx1etfe4t989cynf"
+    },
+    "updatedAt": 1782488032050
+  },
+  {
+    "_creationTime": 1782488032050.0828,
+    "_id": "t979xzpstzntffkb56rmha8cxd89dks0",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770313337350,
+    "displayName": "Free Ride - Unlimited free AI",
+    "latestVersionId": "t57agdn6bmsgcy9dh428bpp3cs89dpm4",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770313337350,
+      "version": "1.0.9"
+    },
+    "ownerPublisherId": "qd71nsh0q8rfv5df9f5d21qej189d91r",
+    "ownerUserId": "vn748yhtv37mwatd1nbjd9gemh89cp7r",
+    "slug": "free-ride",
+    "stats": {
+      "comments": 0,
+      "downloads": 217,
+      "installsAllTime": 97,
+      "installsCurrent": 17,
+      "stars": 17,
+      "versions": 1
+    },
+    "statsDownloads": 217,
+    "statsInstallsAllTime": 97,
+    "statsInstallsCurrent": 17,
+    "statsStars": 17,
+    "summary": "Manages free AI models from OpenRouter for OpenClaw. Automatically ranks models by quality, configures fallbacks for rate-limit handling, and updates opencla...",
+    "tags": {
+      "latest": "t57agdn6bmsgcy9dh428bpp3cs89dpm4"
+    },
+    "updatedAt": 1782488032050
+  },
+  {
+    "_creationTime": 1782488032050.084,
+    "_id": "t971s1tpmh0yayvy2vfqswm3sx89cxyw",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1768845281114,
+    "displayName": "Gemini Deep Research",
+    "latestVersionId": "t575qjqk2s8j2syty13y608jpd89dhgm",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1768845281114,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd71nsh0q8rfv5df9f5d21qej189d91r",
+    "ownerUserId": "vn748yhtv37mwatd1nbjd9gemh89cp7r",
+    "slug": "gemini-deep-research",
+    "stats": {
+      "comments": 0,
+      "downloads": 164,
+      "installsAllTime": 84,
+      "installsCurrent": 14,
+      "stars": 4,
+      "versions": 1
+    },
+    "statsDownloads": 164,
+    "statsInstallsAllTime": 84,
+    "statsInstallsCurrent": 14,
+    "statsStars": 4,
+    "summary": "Perform complex, long-running research tasks using Gemini Deep Research Agent. Use when asked to research topics requiring multi-source synthesis, competitive analysis, market research, or comprehensive technical investigations that benefit from systematic web search and analysis.",
+    "tags": {
+      "latest": "t575qjqk2s8j2syty13y608jpd89dhgm"
+    },
+    "updatedAt": 1782488032050
+  },
+  {
+    "_creationTime": 1782488039892.226,
+    "_id": "t97and3720h84af9s315vtread89dh23",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545294031,
+    "displayName": "Apple Notes",
+    "latestVersionId": "t57fw6m7rf8rythr65z84ssd2x89chem",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545294031,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7751ft3h5cz6a286e1r0rpkn89d7v8",
+    "ownerUserId": "vn74s21g511w0f51sq80kgkstd89dm98",
+    "slug": "apple-notes",
+    "stats": {
+      "comments": 0,
+      "downloads": 238,
+      "installsAllTime": 118,
+      "installsCurrent": 13,
+      "stars": 38,
+      "versions": 1
+    },
+    "statsDownloads": 238,
+    "statsInstallsAllTime": 118,
+    "statsInstallsCurrent": 13,
+    "statsStars": 38,
+    "summary": "Manage Apple Notes via the `memo` CLI on macOS (create, view, edit, delete, search, move, and export notes). Use when a user asks Clawdbot to add a note, list notes, search notes, or manage note folders.",
+    "tags": {
+      "latest": "t57fw6m7rf8rythr65z84ssd2x89chem"
+    },
+    "updatedAt": 1782488039892
+  },
+  {
+    "_creationTime": 1782488039892.2273,
+    "_id": "t973fcem5qpappb9c0cqvvzpm989dhbj",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545315134,
+    "displayName": "Food Order",
+    "latestVersionId": "t57e332srzccnd3dtmq4q287t189c0z3",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545315134,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7751ft3h5cz6a286e1r0rpkn89d7v8",
+    "ownerUserId": "vn74s21g511w0f51sq80kgkstd89dm98",
+    "slug": "food-order",
+    "stats": {
+      "comments": 0,
+      "downloads": 383,
+      "installsAllTime": 23,
+      "installsCurrent": 8,
+      "stars": 23,
+      "versions": 1
+    },
+    "statsDownloads": 383,
+    "statsInstallsAllTime": 23,
+    "statsInstallsCurrent": 8,
+    "statsStars": 23,
+    "summary": "Reorder Foodora orders + track ETA/status with ordercli. Never confirm without explicit user approval. Triggers: order food, reorder, track ETA.",
+    "tags": {
+      "latest": "t57e332srzccnd3dtmq4q287t189c0z3"
+    },
+    "updatedAt": 1782488039892
+  },
+  {
+    "_creationTime": 1782488039892.2285,
+    "_id": "t977mce9b94e7cvv8r2fxrbt2n89dsbn",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770050243398,
+    "displayName": "Elite Longterm Memory",
+    "latestVersionId": "t572ks6pv72enagvz2y210a9ss89d827",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770050243398,
+      "version": "1.2.2"
+    },
+    "ownerPublisherId": "qd7751ft3h5cz6a286e1r0rpkn89d7v8",
+    "ownerUserId": "vn74s21g511w0f51sq80kgkstd89dm98",
+    "slug": "elite-longterm-memory",
+    "stats": {
+      "comments": 0,
+      "downloads": 268,
+      "installsAllTime": 28,
+      "installsCurrent": 18,
+      "stars": 28,
+      "versions": 1
+    },
+    "statsDownloads": 268,
+    "statsInstallsAllTime": 28,
+    "statsInstallsCurrent": 18,
+    "statsStars": 28,
+    "summary": "Ultimate AI agent memory system for Cursor, Claude, ChatGPT & Copilot. WAL protocol + vector search + git-notes + cloud backup. Never lose context again. Vibe-coding ready.",
+    "tags": {
+      "latest": "t572ks6pv72enagvz2y210a9ss89d827"
+    },
+    "updatedAt": 1782488039892
+  },
+  {
+    "_creationTime": 1782488039892.2297,
+    "_id": "t977e5jhp1pbvgk82e8v0z2c9h89ckyt",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769256726202,
+    "displayName": "Thinking Partner",
+    "latestVersionId": "t571zrmq7nec9frgdhzfqs6y9989depz",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769256726202,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7751ft3h5cz6a286e1r0rpkn89d7v8",
+    "ownerUserId": "vn74s21g511w0f51sq80kgkstd89dm98",
+    "slug": "thinking-partner",
+    "stats": {
+      "comments": 0,
+      "downloads": 27,
+      "installsAllTime": 27,
+      "installsCurrent": 2,
+      "stars": 27,
+      "versions": 1
+    },
+    "statsDownloads": 27,
+    "statsInstallsAllTime": 27,
+    "statsInstallsCurrent": 2,
+    "statsStars": 27,
+    "summary": "Collaborative thinking partner for exploring complex problems through questioning",
+    "tags": {
+      "latest": "t571zrmq7nec9frgdhzfqs6y9989depz"
+    },
+    "updatedAt": 1782488039892
+  },
+  {
+    "_creationTime": 1782488039892.231,
+    "_id": "t97aa7x1rphy5b7wk10s81h35s89c89s",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767644556460,
+    "displayName": "Apple Calendar CLI",
+    "latestVersionId": "t571yrhxagd130w0nz9avtmpvn89dm5m",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767644556460,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7751ft3h5cz6a286e1r0rpkn89d7v8",
+    "ownerUserId": "vn74s21g511w0f51sq80kgkstd89dm98",
+    "slug": "accli",
+    "stats": {
+      "comments": 0,
+      "downloads": 238,
+      "installsAllTime": 118,
+      "installsCurrent": 13,
+      "stars": 38,
+      "versions": 1
+    },
+    "statsDownloads": 238,
+    "statsInstallsAllTime": 118,
+    "statsInstallsCurrent": 13,
+    "statsStars": 38,
+    "summary": "This skill should be used when interacting with Apple Calendar on macOS. Use it for listing calendars, viewing events, creating/updating/deleting calendar events, and checking availability/free-busy times. Triggers on requests like \"check my calendar\", \"schedule a meeting\", \"what's on my schedule\", \"am I free tomorrow\", or any calendar-related operations.",
+    "tags": {
+      "latest": "t571yrhxagd130w0nz9avtmpvn89dm5m"
+    },
+    "updatedAt": 1782488039892
+  },
+  {
+    "_creationTime": 1782488039892.2322,
+    "_id": "t97a45er3r9qphg87cbg05tkes89dgd4",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770637647720,
+    "displayName": "OpenServ Client",
+    "latestVersionId": "t57d7prabzj979qczxd8s4a88d89c9nq",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770637647720,
+      "version": "1.0.4"
+    },
+    "ownerPublisherId": "qd7751ft3h5cz6a286e1r0rpkn89d7v8",
+    "ownerUserId": "vn74s21g511w0f51sq80kgkstd89dm98",
+    "slug": "openserv-client",
+    "stats": {
+      "comments": 0,
+      "downloads": 360,
+      "installsAllTime": 40,
+      "installsCurrent": 10,
+      "stars": 0,
+      "versions": 1
+    },
+    "statsDownloads": 360,
+    "statsInstallsAllTime": 40,
+    "statsInstallsCurrent": 10,
+    "statsStars": 0,
+    "summary": "Complete guide to using @openserv-labs/client for managing agents, workflows, triggers, and tasks on the OpenServ Platform. Covers provisioning, authenticati...",
+    "tags": {
+      "latest": "t57d7prabzj979qczxd8s4a88d89c9nq"
+    },
+    "updatedAt": 1782488039892
+  },
+  {
+    "_creationTime": 1782488045867.3994,
+    "_id": "t97egbgphw3hynz6y6j56he27589ck7r",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769942849740,
+    "displayName": "Computer Use",
+    "latestVersionId": "t570p0vrsw7dhvg0eebvvw6tb989c6cf",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769942849740,
+      "version": "1.2.0"
+    },
+    "ownerPublisherId": "qd7fsc3hj2x20fanxzt3nn5mks89cjyx",
+    "ownerUserId": "vn7apv2vsezkazedfa1h4x9g2189cm4q",
+    "slug": "computer-use",
+    "stats": {
+      "comments": 0,
+      "downloads": 69,
+      "installsAllTime": 29,
+      "installsCurrent": 19,
+      "stars": 29,
+      "versions": 1
+    },
+    "statsDownloads": 69,
+    "statsInstallsAllTime": 29,
+    "statsInstallsCurrent": 19,
+    "statsStars": 29,
+    "summary": "Full desktop computer use for headless Linux servers. Xvfb + XFCE virtual desktop with xdotool automation. 17 actions (click, type, scroll, screenshot, drag,...",
+    "tags": {
+      "latest": "t570p0vrsw7dhvg0eebvvw6tb989c6cf"
+    },
+    "updatedAt": 1782488045867
+  },
+  {
+    "_creationTime": 1782488045867.4006,
+    "_id": "t9706h2evgw03df498dnqhqk6189dwqe",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769909754813,
+    "displayName": "google-search",
+    "latestVersionId": "t5763pbyb88rhz392bb80yzrbs89ckjb",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769909754813,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7fsc3hj2x20fanxzt3nn5mks89cjyx",
+    "ownerUserId": "vn7apv2vsezkazedfa1h4x9g2189cm4q",
+    "slug": "google-search",
+    "stats": {
+      "comments": 0,
+      "downloads": 140,
+      "installsAllTime": 100,
+      "installsCurrent": 15,
+      "stars": 20,
+      "versions": 1
+    },
+    "statsDownloads": 140,
+    "statsInstallsAllTime": 100,
+    "statsInstallsCurrent": 15,
+    "statsStars": 20,
+    "summary": "Search the web using Google Custom Search Engine (PSE). Use this when you need live information, documentation, or to research topics and the built-in web_search is unavailable.",
+    "tags": {
+      "latest": "t5763pbyb88rhz392bb80yzrbs89ckjb"
+    },
+    "updatedAt": 1782488045867
+  },
+  {
+    "_creationTime": 1782488045867.4019,
+    "_id": "t976s4ys0ak5mtzchxbe89ws7h89dz52",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770637635509,
+    "displayName": "OpenServ Agent Sdk",
+    "latestVersionId": "t57amjc62bd4y9t3ktb7n6ec3d89cm8x",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770637635509,
+      "version": "1.0.5"
+    },
+    "ownerPublisherId": "qd7fsc3hj2x20fanxzt3nn5mks89cjyx",
+    "ownerUserId": "vn7apv2vsezkazedfa1h4x9g2189cm4q",
+    "slug": "openserv-agent-sdk",
+    "stats": {
+      "comments": 0,
+      "downloads": 389,
+      "installsAllTime": 69,
+      "installsCurrent": 14,
+      "stars": 29,
+      "versions": 1
+    },
+    "statsDownloads": 389,
+    "statsInstallsAllTime": 69,
+    "statsInstallsCurrent": 14,
+    "statsStars": 29,
+    "summary": "Build and deploy autonomous AI agents using the OpenServ SDK (@openserv-labs/sdk). IMPORTANT - Always read the companion skill openserv-client alongside this...",
+    "tags": {
+      "latest": "t57amjc62bd4y9t3ktb7n6ec3d89cm8x"
+    },
+    "updatedAt": 1782488045867
+  },
+  {
+    "_creationTime": 1782488055145.476,
+    "_id": "t971f29rfae7fdhvy561ktdq7589d2y3",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545378002,
+    "displayName": "Slack",
+    "latestVersionId": "t57avs0k5zcas72qh1ztb1w1kx89d8kn",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545378002,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd7eg86qqt8vq61b4cy87yesm189dvw9",
+    "ownerUserId": "vn70h33g0yhres6e988x2644x589cad4",
+    "slug": "slack",
+    "stats": {
+      "comments": 0,
+      "downloads": 336,
+      "installsAllTime": 16,
+      "installsCurrent": 11,
+      "stars": 16,
+      "versions": 1
+    },
+    "statsDownloads": 336,
+    "statsInstallsAllTime": 16,
+    "statsInstallsCurrent": 11,
+    "statsStars": 16,
+    "summary": "Use when you need to control Slack from Clawdbot via the slack tool, including reacting to messages or pinning/unpinning items in Slack channels or DMs.",
+    "tags": {
+      "latest": "t57avs0k5zcas72qh1ztb1w1kx89d8kn"
+    },
+    "updatedAt": 1782488055145
+  },
+  {
+    "_creationTime": 1782488055145.4773,
+    "_id": "t972x42rp4z82xssaps68fhq5h89cj6k",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770087404160,
+    "displayName": "Comprehensive skill for installing, configuring, and managing the OpenClaw ecosystem (Gateway, Channels, Models, Automation, Nodes, and Deployment)",
+    "latestVersionId": "t5737r2ppnge92ycatjrdw9kbx89dgh6",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770087404160,
+      "version": "1.0.2"
+    },
+    "ownerPublisherId": "qd7eg86qqt8vq61b4cy87yesm189dvw9",
+    "ownerUserId": "vn70h33g0yhres6e988x2644x589cad4",
+    "slug": "openclaw-anything",
+    "stats": {
+      "comments": 0,
+      "downloads": 54,
+      "installsAllTime": 94,
+      "installsCurrent": 4,
+      "stars": 14,
+      "versions": 1
+    },
+    "statsDownloads": 54,
+    "statsInstallsAllTime": 94,
+    "statsInstallsCurrent": 4,
+    "statsStars": 14,
+    "summary": "OpenClaw CLI wrapper — gateway, channels, models, agents, nodes, browser, memory, security, automation.",
+    "tags": {
+      "latest": "t5737r2ppnge92ycatjrdw9kbx89dgh6"
+    },
+    "updatedAt": 1782488055145
+  },
+  {
+    "_creationTime": 1782488063684.858,
+    "_id": "t975pjqptsgybgyhvxmwh1y31989dd9e",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545348833,
+    "displayName": "Imsg",
+    "latestVersionId": "t5770bz9fxrpktvsh6et2a85hx89dkhd",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545348833,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd77z16c0w1z92vxq7ew4b2mwx89d0vc",
+    "ownerUserId": "vn7abe78cevzjktcy34tf40q7n89cj4j",
+    "slug": "imsg",
+    "stats": {
+      "comments": 0,
+      "downloads": 72,
+      "installsAllTime": 72,
+      "installsCurrent": 22,
+      "stars": 32,
+      "versions": 1
+    },
+    "statsDownloads": 72,
+    "statsInstallsAllTime": 72,
+    "statsInstallsCurrent": 22,
+    "statsStars": 32,
+    "summary": "iMessage/SMS CLI for listing chats, history, watch, and sending.",
+    "tags": {
+      "latest": "t5770bz9fxrpktvsh6et2a85hx89dkhd"
+    },
+    "updatedAt": 1782488063684
+  },
+  {
+    "_creationTime": 1782488063684.8591,
+    "_id": "t97dex41j6eydf1tde6q228mxs89cm4f",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767667627516,
+    "displayName": "1password",
+    "latestVersionId": "t5774wk8kmavd0z0vyvfyx1wsd89cayt",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767667627516,
+      "version": "1.0.1"
+    },
+    "ownerPublisherId": "qd77z16c0w1z92vxq7ew4b2mwx89d0vc",
+    "ownerUserId": "vn7abe78cevzjktcy34tf40q7n89cj4j",
+    "slug": "1password",
+    "stats": {
+      "comments": 0,
+      "downloads": 284,
+      "installsAllTime": 4,
+      "installsCurrent": 9,
+      "stars": 4,
+      "versions": 1
+    },
+    "statsDownloads": 284,
+    "statsInstallsAllTime": 4,
+    "statsInstallsCurrent": 9,
+    "statsStars": 4,
+    "summary": "Set up and use 1Password CLI (op). Use when installing the CLI, enabling desktop app integration, signing in (single or multi-account), or reading/injecting/running secrets via op.",
+    "tags": {
+      "latest": "t5774wk8kmavd0z0vyvfyx1wsd89cayt"
+    },
+    "updatedAt": 1782488063684
+  },
+  {
+    "_creationTime": 1782488063684.8604,
+    "_id": "t97fx3kbv2qh03d8bfcpg4jn3d89csxg",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545306244,
+    "displayName": "Camsnap",
+    "latestVersionId": "t5777ba07e4w4a85akrw3n6whx89cqkf",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545306244,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd77z16c0w1z92vxq7ew4b2mwx89d0vc",
+    "ownerUserId": "vn7abe78cevzjktcy34tf40q7n89cj4j",
+    "slug": "camsnap",
+    "stats": {
+      "comments": 0,
+      "downloads": 233,
+      "installsAllTime": 73,
+      "installsCurrent": 8,
+      "stars": 33,
+      "versions": 1
+    },
+    "statsDownloads": 233,
+    "statsInstallsAllTime": 73,
+    "statsInstallsCurrent": 8,
+    "statsStars": 33,
+    "summary": "Capture frames or clips from RTSP/ONVIF cameras.",
+    "tags": {
+      "latest": "t5777ba07e4w4a85akrw3n6whx89cqkf"
+    },
+    "updatedAt": 1782488063684
+  },
+  {
+    "_creationTime": 1782488063684.8616,
+    "_id": "t976cb3bg0sx7yg8qv5k93jrbh89d2q6",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1768383975214,
+    "displayName": "Stock Analysis",
+    "latestVersionId": "t57ae2aptzf5006n230rt3d4ad89chz0",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1768383975214,
+      "version": "6.1.0"
+    },
+    "ownerPublisherId": "qd77z16c0w1z92vxq7ew4b2mwx89d0vc",
+    "ownerUserId": "vn7abe78cevzjktcy34tf40q7n89cj4j",
+    "slug": "stock-analysis",
+    "stats": {
+      "comments": 0,
+      "downloads": 243,
+      "installsAllTime": 83,
+      "installsCurrent": 18,
+      "stars": 3,
+      "versions": 1
+    },
+    "statsDownloads": 243,
+    "statsInstallsAllTime": 83,
+    "statsInstallsCurrent": 18,
+    "statsStars": 3,
+    "summary": "Analyze stocks and cryptocurrencies using Yahoo Finance data. Supports portfolio management, watchlists with alerts, dividend analysis, 8-dimension stock scoring, viral trend detection (Hot Scanner), and rumor/early signal detection. Use for stock analysis, portfolio tracking, earnings reactions, crypto monitoring, trending stocks, or finding rumors before they hit mainstream.",
+    "tags": {
+      "latest": "t57ae2aptzf5006n230rt3d4ad89chz0"
+    },
+    "updatedAt": 1782488063684
+  },
+  {
+    "_creationTime": 1782488063684.8628,
+    "_id": "t978d1cgv1q26ypjs1hxfwmcsn89d8ta",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770159609690,
+    "displayName": "Autonomous Agent Skills",
+    "latestVersionId": "t57d9z91nctgwjbrd86ykq0edh89cq5q",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1770159609690,
+      "version": "2.1.0"
+    },
+    "ownerPublisherId": "qd77z16c0w1z92vxq7ew4b2mwx89d0vc",
+    "ownerUserId": "vn7abe78cevzjktcy34tf40q7n89cj4j",
+    "slug": "autonomous-agent",
+    "stats": {
+      "comments": 0,
+      "downloads": 152,
+      "installsAllTime": 72,
+      "installsCurrent": 2,
+      "stars": 32,
+      "versions": 1
+    },
+    "statsDownloads": 152,
+    "statsInstallsAllTime": 72,
+    "statsInstallsCurrent": 2,
+    "statsStars": 32,
+    "summary": "CornerStone MCP x402 skill for agents. Tools for stock predictions, backtests, bank linking, and agent/borrower scores. Payment-protected MCP tools (run_prediction, run_backtest, link_bank_account, get_agent_reputation_score, get_borrower_score, by-email variants) with x402 flow (Aptos + Base). Skill handles 402 → pay → retry. Wallet attestation for onboarding. For marketplaces where agents download and use skills autonomously.",
+    "tags": {
+      "latest": "t57d9z91nctgwjbrd86ykq0edh89cq5q"
+    },
+    "updatedAt": 1782488063684
+  },
+  {
+    "_creationTime": 1782488063684.864,
+    "_id": "t977abm3kz1a42qcvmzbc2x2bx89c0pz",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769616159343,
+    "displayName": "UI/UX Pro Max",
+    "latestVersionId": "t570e6q35hqe435ggxkjk6jspx89c0p2",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769616159343,
+      "version": "0.1.0"
+    },
+    "ownerPublisherId": "qd77z16c0w1z92vxq7ew4b2mwx89d0vc",
+    "ownerUserId": "vn7abe78cevzjktcy34tf40q7n89cj4j",
+    "slug": "ui-ux-pro-max",
+    "stats": {
+      "comments": 0,
+      "downloads": 387,
+      "installsAllTime": 107,
+      "installsCurrent": 12,
+      "stars": 27,
+      "versions": 1
+    },
+    "statsDownloads": 387,
+    "statsInstallsAllTime": 107,
+    "statsInstallsCurrent": 12,
+    "statsStars": 27,
+    "summary": "UI/UX design intelligence and implementation guidance for building polished interfaces. Use when the user asks for UI design, UX flows, information architecture, visual style direction, design systems/tokens, component specs, copy/microcopy, accessibility, or to generate/critique/refine frontend UI (HTML/CSS/JS, React, Next.js, Vue, Svelte, Tailwind). Includes workflows for (1) generating new UI layouts and styling, (2) improving existing UI/UX, (3) producing design-system tokens and component guidelines, and (4) turning UX recommendations into concrete code changes.",
+    "tags": {
+      "latest": "t570e6q35hqe435ggxkjk6jspx89c0p2"
+    },
+    "updatedAt": 1782488063684
+  },
+  {
+    "_creationTime": 1782488070904.065,
+    "_id": "t97fzghvx3s7wfe2zgkkqerj0989d1np",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545362143,
+    "displayName": "Obsidian",
+    "latestVersionId": "t57b5yydezn3t1skh6e7dhvfws89c3kn",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767545362143,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd73bfx2hbbtep35cehzq14xtx89cgs3",
+    "ownerUserId": "vn7dmw1a41qg282b0fddq53e1s89cj12",
+    "slug": "obsidian",
+    "stats": {
+      "comments": 0,
+      "downloads": 379,
+      "installsAllTime": 19,
+      "installsCurrent": 4,
+      "stars": 19,
+      "versions": 1
+    },
+    "statsDownloads": 379,
+    "statsInstallsAllTime": 19,
+    "statsInstallsCurrent": 4,
+    "statsStars": 19,
+    "summary": "Work with Obsidian vaults (plain Markdown notes) and automate via obsidian-cli.",
+    "tags": {
+      "latest": "t57b5yydezn3t1skh6e7dhvfws89c3kn"
+    },
+    "updatedAt": 1782488070904
+  },
+  {
+    "_creationTime": 1782488070904.0662,
+    "_id": "t971hy8tyvcnrewx7q2nmqmya589dqe4",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769456157744,
+    "displayName": "ATXP",
+    "latestVersionId": "t576a4ksken47zd3sv5w365rbh89c8yp",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1769456157744,
+      "version": "1.0.0"
+    },
+    "ownerPublisherId": "qd73bfx2hbbtep35cehzq14xtx89cgs3",
+    "ownerUserId": "vn7dmw1a41qg282b0fddq53e1s89cj12",
+    "slug": "atxp",
+    "stats": {
+      "comments": 0,
+      "downloads": 235,
+      "installsAllTime": 115,
+      "installsCurrent": 10,
+      "stars": 35,
+      "versions": 1
+    },
+    "statsDownloads": 235,
+    "statsInstallsAllTime": 115,
+    "statsInstallsCurrent": 10,
+    "statsStars": 35,
+    "summary": "Access ATXP paid API tools for web search, AI image generation, music creation, video generation, X/Twitter search, email, and agent account management. Use...",
+    "tags": {
+      "latest": "t576a4ksken47zd3sv5w365rbh89c8yp"
+    },
+    "updatedAt": 1782488070904
+  },
+  {
+    "_creationTime": 1782488070904.0674,
+    "_id": "t979q4grbtqacn8040fq8mqt6n89d1pa",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767852421167,
+    "displayName": "Todoist",
+    "latestVersionId": "t572dn6hxr7kcnjqb2v4btve4s89d0qg",
+    "latestVersionSummary": {
+      "changelog": "Seeded from the public corpus fixture.",
+      "changelogSource": "user",
+      "createdAt": 1767852421167,
+      "version": "0.2.1"
+    },
+    "ownerPublisherId": "qd73bfx2hbbtep35cehzq14xtx89cgs3",
+    "ownerUserId": "vn7dmw1a41qg282b0fddq53e1s89cj12",
+    "slug": "todoist",
+    "stats": {
+      "comments": 0,
+      "downloads": 340,
+      "installsAllTime": 60,
+      "installsCurrent": 15,
+      "stars": 20,
+      "versions": 1
+    },
+    "statsDownloads": 340,
+    "statsInstallsAllTime": 60,
+    "statsInstallsCurrent": 15,
+    "statsStars": 20,
+    "summary": "Manage tasks and projects in Todoist. Use when user asks about tasks, to-dos, reminders, or productivity.",
+    "tags": {
+      "latest": "t572dn6hxr7kcnjqb2v4btve4s89d0qg"
+    },
+    "updatedAt": 1782488070904
+  },
+  {
+    "_creationTime": 1782491673425.226,
+    "_id": "t974jn9ysfyctdyh29n316khvs89c4vt",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770065590361,
+    "displayName": "pr-reviewer",
+    "ownerPublisherId": "qd76n05dcm7n7ttx82r0h1gtjd89bfxq",
+    "ownerUserId": "vn710jxjyhq3m4884f8e2w00hd89b8f9",
+    "slug": "pr-reviewer",
+    "stats": {
+      "comments": 0,
+      "downloads": 160,
+      "installsAllTime": 0,
+      "installsCurrent": 10,
+      "stars": 0,
+      "versions": 0
+    },
+    "statsDownloads": 160,
+    "statsInstallsAllTime": 0,
+    "statsInstallsCurrent": 10,
+    "statsStars": 0,
+    "summary": "Automated GitHub PR code review with diff analysis, lint integration, and structured reports. Use when reviewing pull requests, checking for security issues,...",
+    "tags": {},
+    "updatedAt": 1782491673425
+  },
+  {
+    "_creationTime": 1782491673425.2266,
+    "_id": "t9726e4af8exrn6dp6ngnj352x89caex",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770050502449,
+    "displayName": "Reddit (read only - no auth)",
+    "ownerPublisherId": "qd76n05dcm7n7ttx82r0h1gtjd89bfxq",
+    "ownerUserId": "vn710jxjyhq3m4884f8e2w00hd89b8f9",
+    "slug": "reddit-readonly",
+    "stats": {
+      "comments": 0,
+      "downloads": 81,
+      "installsAllTime": 41,
+      "installsCurrent": 6,
+      "stars": 1,
+      "versions": 0
+    },
+    "statsDownloads": 81,
+    "statsInstallsAllTime": 41,
+    "statsInstallsCurrent": 6,
+    "statsStars": 1,
+    "summary": "Browse and search Reddit in read-only mode using public JSON endpoints. Use when the user asks to browse subreddits, search for posts by topic, inspect comment threads, or build a shortlist of links to review and reply to manually.",
+    "tags": {},
+    "updatedAt": 1782491673425
+  },
+  {
+    "_creationTime": 1782491750424.5664,
+    "_id": "t97cb7t4baxbteyvnd76sfs8qd89d73s",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769568045678,
+    "displayName": "Memory Setup",
+    "ownerPublisherId": "qd76n05dcm7n7ttx82r0h1gtjd89bfxq",
+    "ownerUserId": "vn710jxjyhq3m4884f8e2w00hd89b8f9",
+    "slug": "memory-setup",
+    "stats": {
+      "comments": 0,
+      "downloads": 1,
+      "installsAllTime": 41,
+      "installsCurrent": 1,
+      "stars": 1,
+      "versions": 0
+    },
+    "statsDownloads": 1,
+    "statsInstallsAllTime": 41,
+    "statsInstallsCurrent": 1,
+    "statsStars": 1,
+    "summary": "Enable and configure Moltbot/Clawdbot memory search for persistent context. Use when setting up memory, fixing \"goldfish brain,\" or helping users configure memorySearch in their config. Covers MEMORY.md, daily logs, and vector search setup.",
+    "tags": {},
+    "updatedAt": 1782491750424
+  },
+  {
+    "_creationTime": 1782491750424.567,
+    "_id": "t970c5drvm1nw31ffxrnwq3y4s89d86j",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769502876749,
+    "displayName": "Discord Chat",
+    "ownerPublisherId": "qd76n05dcm7n7ttx82r0h1gtjd89bfxq",
+    "ownerUserId": "vn710jxjyhq3m4884f8e2w00hd89b8f9",
+    "slug": "discord-chat",
+    "stats": {
+      "comments": 0,
+      "downloads": 57,
+      "installsAllTime": 17,
+      "installsCurrent": 7,
+      "stars": 17,
+      "versions": 0
+    },
+    "statsDownloads": 57,
+    "statsInstallsAllTime": 17,
+    "statsInstallsCurrent": 7,
+    "statsStars": 17,
+    "summary": "Send messages, reply to messages, and search message history in Discord channels using the message tool. Use when the user wants to communicate with Discord (send/reply/search messages), check Discord activity, or interact with Discord channels.",
+    "tags": {},
+    "updatedAt": 1782491750424
+  },
+  {
+    "_creationTime": 1782491750424.5674,
+    "_id": "t97d82qve1y449zyhk5zq0rwt589dx63",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770291754419,
+    "displayName": "Baidu web search",
+    "ownerPublisherId": "qd76n05dcm7n7ttx82r0h1gtjd89bfxq",
+    "ownerUserId": "vn710jxjyhq3m4884f8e2w00hd89b8f9",
+    "slug": "baidu-search",
+    "stats": {
+      "comments": 0,
+      "downloads": 186,
+      "installsAllTime": 26,
+      "installsCurrent": 11,
+      "stars": 26,
+      "versions": 0
+    },
+    "statsDownloads": 186,
+    "statsInstallsAllTime": 26,
+    "statsInstallsCurrent": 11,
+    "statsStars": 26,
+    "summary": "Search the web using Baidu AI Search Engine (BDSE). Use for live information, documentation, or research topics.",
+    "tags": {},
+    "updatedAt": 1782491750424
+  },
+  {
+    "_creationTime": 1782491750424.5679,
+    "_id": "t979z8x0mh57y71at0mdefaypx89df58",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770206735426,
+    "displayName": "Tokenoptimizer",
+    "ownerPublisherId": "qd76n05dcm7n7ttx82r0h1gtjd89bfxq",
+    "ownerUserId": "vn710jxjyhq3m4884f8e2w00hd89b8f9",
+    "slug": "token-optimizer",
+    "stats": {
+      "comments": 0,
+      "downloads": 225,
+      "installsAllTime": 25,
+      "installsCurrent": 0,
+      "stars": 25,
+      "versions": 0
+    },
+    "statsDownloads": 225,
+    "statsInstallsAllTime": 25,
+    "statsInstallsCurrent": 0,
+    "statsStars": 25,
+    "summary": "Reduce OpenClaw AI costs by 97%. Haiku model routing, free Ollama heartbeats, prompt caching, and budget controls. Go from $1,500/month to $50/month in 5 min...",
+    "tags": {},
+    "updatedAt": 1782491750424
+  },
+  {
+    "_creationTime": 1782491750424.5684,
+    "_id": "t97b6js3vwb5djf41sqb9jgf1589ccc5",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1768337198656,
+    "displayName": "Cursor CLI Agent",
+    "ownerPublisherId": "qd76n05dcm7n7ttx82r0h1gtjd89bfxq",
+    "ownerUserId": "vn710jxjyhq3m4884f8e2w00hd89b8f9",
+    "slug": "cursor-agent",
+    "stats": {
+      "comments": 0,
+      "downloads": 350,
+      "installsAllTime": 30,
+      "installsCurrent": 0,
+      "stars": 30,
+      "versions": 0
+    },
+    "statsDownloads": 350,
+    "statsInstallsAllTime": 30,
+    "statsInstallsCurrent": 0,
+    "statsStars": 30,
+    "summary": "A comprehensive skill for using the Cursor CLI agent for various software engineering tasks (updated for 2026 features, includes tmux automation guide).",
+    "tags": {},
+    "updatedAt": 1782491750424
+  },
+  {
+    "_creationTime": 1782494685099.9565,
+    "_id": "t971jd6wjmn78n4pxycwqg1wcx89c0hd",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1768099309187,
+    "displayName": "Clawdbot Documentation Expert",
+    "ownerPublisherId": "qd768zj2vf80mtds77hp1ym14h89a11y",
+    "ownerUserId": "vn79e3v8ajs007846pst086bg589aebc",
+    "slug": "clawddocs",
+    "stats": {
+      "comments": 0,
+      "downloads": 16,
+      "installsAllTime": 16,
+      "installsCurrent": 16,
+      "stars": 16,
+      "versions": 0
+    },
+    "statsDownloads": 16,
+    "statsInstallsAllTime": 16,
+    "statsInstallsCurrent": 16,
+    "statsStars": 16,
+    "summary": "Clawdbot documentation expert with decision tree navigation, search scripts, doc fetching, version tracking, and config snippets for all Clawdbot features",
+    "tags": {},
+    "updatedAt": 1782494685100
+  },
+  {
+    "_creationTime": 1782494685099.957,
+    "_id": "t97676j03bc9bhyrws9rn4sw5189c8rd",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769508805216,
+    "displayName": "ByteRover",
+    "ownerPublisherId": "qd768zj2vf80mtds77hp1ym14h89a11y",
+    "ownerUserId": "vn79e3v8ajs007846pst086bg589aebc",
+    "slug": "byterover",
+    "stats": {
+      "comments": 0,
+      "downloads": 174,
+      "installsAllTime": 54,
+      "installsCurrent": 24,
+      "stars": 14,
+      "versions": 0
+    },
+    "statsDownloads": 174,
+    "statsInstallsAllTime": 54,
+    "statsInstallsCurrent": 24,
+    "statsStars": 14,
+    "summary": "You MUST use this for gathering contexts before any work. This is a Knowledge management for AI agents. Use `brv` to store and retrieve project patterns, dec...",
+    "tags": {},
+    "updatedAt": 1782494685100
+  },
+  {
+    "_creationTime": 1782494685099.9575,
+    "_id": "t975r1vxj47tx1y70xp2kpx7sx89cvv9",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767817868261,
+    "displayName": "Yahoo Finance",
+    "ownerPublisherId": "qd768zj2vf80mtds77hp1ym14h89a11y",
+    "ownerUserId": "vn79e3v8ajs007846pst086bg589aebc",
+    "slug": "yahoo-finance",
+    "stats": {
+      "comments": 0,
+      "downloads": 77,
+      "installsAllTime": 77,
+      "installsCurrent": 2,
+      "stars": 37,
+      "versions": 0
+    },
+    "statsDownloads": 77,
+    "statsInstallsAllTime": 77,
+    "statsInstallsCurrent": 2,
+    "statsStars": 37,
+    "summary": "Get stock prices, quotes, fundamentals, earnings, options, dividends, and analyst ratings using Yahoo Finance. Uses yfinance library - no API key required.",
+    "tags": {},
+    "updatedAt": 1782494685100
+  },
+  {
+    "_creationTime": 1782495901064.7012,
+    "_id": "t974b38j5ta23jgy3vy3sp0e7n89cbnx",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769522677376,
+    "displayName": "Skill Creator",
+    "ownerPublisherId": "qd768zj2vf80mtds77hp1ym14h89a11y",
+    "ownerUserId": "vn79e3v8ajs007846pst086bg589aebc",
+    "slug": "skill-creator",
+    "stats": {
+      "comments": 0,
+      "downloads": 336,
+      "installsAllTime": 16,
+      "installsCurrent": 11,
+      "stars": 16,
+      "versions": 0
+    },
+    "statsDownloads": 336,
+    "statsInstallsAllTime": 16,
+    "statsInstallsCurrent": 11,
+    "statsStars": 16,
+    "summary": "Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Claude's capabilities with specialized knowledge, workflows, or tool integrations.",
+    "tags": {},
+    "updatedAt": 1782495901064
+  },
+  {
+    "_creationTime": 1782495901064.7017,
+    "_id": "t978svvbtzytpgbmwcvpt27pbx89c165",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545347454,
+    "displayName": "Goplaces",
+    "ownerPublisherId": "qd768zj2vf80mtds77hp1ym14h89a11y",
+    "ownerUserId": "vn79e3v8ajs007846pst086bg589aebc",
+    "slug": "goplaces",
+    "stats": {
+      "comments": 0,
+      "downloads": 148,
+      "installsAllTime": 28,
+      "installsCurrent": 23,
+      "stars": 28,
+      "versions": 0
+    },
+    "statsDownloads": 148,
+    "statsInstallsAllTime": 28,
+    "statsInstallsCurrent": 23,
+    "statsStars": 28,
+    "summary": "Query Google Places API (New) via the goplaces CLI for text search, place details, resolve, and reviews. Use for human-friendly place lookup or JSON output for scripts.",
+    "tags": {},
+    "updatedAt": 1782495901064
+  },
+  {
+    "_creationTime": 1782495901064.7021,
+    "_id": "t97eazebg6cqr0bav9z3mf24fd89dg81",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769068161418,
+    "displayName": "Polymarket",
+    "ownerPublisherId": "qd768zj2vf80mtds77hp1ym14h89a11y",
+    "ownerUserId": "vn79e3v8ajs007846pst086bg589aebc",
+    "slug": "polymarket",
+    "stats": {
+      "comments": 0,
+      "downloads": 40,
+      "installsAllTime": 80,
+      "installsCurrent": 15,
+      "stars": 0,
+      "versions": 0
+    },
+    "statsDownloads": 40,
+    "statsInstallsAllTime": 80,
+    "statsInstallsCurrent": 15,
+    "statsStars": 0,
+    "summary": "Query and trade on Polymarket prediction markets — check odds, trending markets, search events, view order books, place trades, and manage positions. Now ava...",
+    "tags": {},
+    "updatedAt": 1782495901064
+  },
+  {
+    "_creationTime": 1782495901064.7026,
+    "_id": "t970syv0b3qyfdj5vqgv85jqj189c1e0",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1768634320198,
+    "displayName": "TODO Tracker",
+    "ownerPublisherId": "qd768zj2vf80mtds77hp1ym14h89a11y",
+    "ownerUserId": "vn79e3v8ajs007846pst086bg589aebc",
+    "slug": "todo-tracker",
+    "stats": {
+      "comments": 0,
+      "downloads": 257,
+      "installsAllTime": 57,
+      "installsCurrent": 7,
+      "stars": 17,
+      "versions": 0
+    },
+    "statsDownloads": 257,
+    "statsInstallsAllTime": 57,
+    "statsInstallsCurrent": 7,
+    "statsStars": 17,
+    "summary": "Persistent TODO scratch pad for tracking tasks across sessions. Use when user says \"add to TODO\", \"what's on the TODO\", \"mark X done\", \"show TODO list\", \"remove from TODO\", or asks about pending tasks. Also triggers on heartbeat to remind about stale items.",
+    "tags": {},
+    "updatedAt": 1782495901064
+  },
+  {
+    "_creationTime": 1782495901064.7031,
+    "_id": "t97dd6wj5vzdkb7qmnkwj58y7s89dxyv",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770637663376,
+    "displayName": "OpenServ Launch",
+    "ownerPublisherId": "qd768zj2vf80mtds77hp1ym14h89a11y",
+    "ownerUserId": "vn79e3v8ajs007846pst086bg589aebc",
+    "slug": "openserv-launch",
+    "stats": {
+      "comments": 0,
+      "downloads": 176,
+      "installsAllTime": 96,
+      "installsCurrent": 1,
+      "stars": 16,
+      "versions": 0
+    },
+    "statsDownloads": 176,
+    "statsInstallsAllTime": 96,
+    "statsInstallsCurrent": 1,
+    "statsStars": 16,
+    "summary": "Launch tokens on Base blockchain via the OpenServ Launch API. Creates ERC-20 tokens with Aerodrome concentrated liquidity pools. Use when launching tokens, d...",
+    "tags": {},
+    "updatedAt": 1782495901064
+  },
+  {
+    "_creationTime": 1782497254907.9639,
+    "_id": "t975evn5xv5ztw391ymm76ysb189dhnp",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770158556308,
+    "displayName": "Git Workflows",
+    "ownerPublisherId": "qd71s6wh38a0eesgzdxkfzs63h89bh1z",
+    "ownerUserId": "vn7ctd1majntvbt8f70ya2rtd189b57t",
+    "slug": "git-workflows",
+    "stats": {
+      "comments": 0,
+      "downloads": 185,
+      "installsAllTime": 65,
+      "installsCurrent": 10,
+      "stars": 25,
+      "versions": 0
+    },
+    "statsDownloads": 185,
+    "statsInstallsAllTime": 65,
+    "statsInstallsCurrent": 10,
+    "statsStars": 25,
+    "summary": "Advanced git operations beyond add/commit/push. Use when rebasing, bisecting bugs, using worktrees for parallel development, recovering with reflog, managing subtrees/submodules, resolving merge conflicts, cherry-picking across branches, or working with monorepos.",
+    "tags": {},
+    "updatedAt": 1782497254908
+  },
+  {
+    "_creationTime": 1782497254907.9644,
+    "_id": "t975q1yksa1rpk19f70bkdr98189dyq8",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1768977695120,
+    "displayName": "Model Router",
+    "ownerPublisherId": "qd71s6wh38a0eesgzdxkfzs63h89bh1z",
+    "ownerUserId": "vn7ctd1majntvbt8f70ya2rtd189b57t",
+    "slug": "model-router",
+    "stats": {
+      "comments": 0,
+      "downloads": 349,
+      "installsAllTime": 69,
+      "installsCurrent": 24,
+      "stars": 29,
+      "versions": 0
+    },
+    "statsDownloads": 349,
+    "statsInstallsAllTime": 69,
+    "statsInstallsCurrent": 24,
+    "statsStars": 29,
+    "summary": "A comprehensive AI model routing system that automatically selects the optimal model for any task. Set up multiple AI providers (Anthropic, OpenAI, Gemini, Moonshot, Z.ai, GLM) with secure API key storage, then route tasks to the best model based on task type, complexity, and cost optimization. Includes interactive setup wizard, task classification, and cost-effective delegation patterns. Use when you need \"use X model for this\", \"switch model\", \"optimal model\", \"which model should I use\", or to balance quality vs cost across multiple AI providers.",
+    "tags": {},
+    "updatedAt": 1782497254908
+  },
+  {
+    "_creationTime": 1782497254907.9648,
+    "_id": "t97dg55ge4s2b3amzr8h9bchth89d04p",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1770637656565,
+    "displayName": "OpenServ Ideaboard Api",
+    "ownerPublisherId": "qd71s6wh38a0eesgzdxkfzs63h89bh1z",
+    "ownerUserId": "vn7ctd1majntvbt8f70ya2rtd189b57t",
+    "slug": "openserv-ideaboard-api",
+    "stats": {
+      "comments": 0,
+      "downloads": 287,
+      "installsAllTime": 47,
+      "installsCurrent": 12,
+      "stars": 7,
+      "versions": 0
+    },
+    "statsDownloads": 287,
+    "statsInstallsAllTime": 47,
+    "statsInstallsCurrent": 12,
+    "statsStars": 7,
+    "summary": "Quick-start guide and API overview for the OpenServ Ideaboard - a platform where AI agents can submit ideas, pick up work, collaborate with multiple agents,...",
+    "tags": {},
+    "updatedAt": 1782497254908
+  },
+  {
+    "_creationTime": 1782497537993.8647,
+    "_id": "t97b41jk3q0cym19kx1qvcksa189c414",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767954271328,
+    "displayName": "Himalaya",
+    "ownerPublisherId": "qd71s6wh38a0eesgzdxkfzs63h89bh1z",
+    "ownerUserId": "vn7ctd1majntvbt8f70ya2rtd189b57t",
+    "slug": "himalaya",
+    "stats": {
+      "comments": 0,
+      "downloads": 290,
+      "installsAllTime": 90,
+      "installsCurrent": 15,
+      "stars": 10,
+      "versions": 0
+    },
+    "statsDownloads": 290,
+    "statsInstallsAllTime": 90,
+    "statsInstallsCurrent": 15,
+    "statsStars": 10,
+    "summary": "CLI to manage emails via IMAP/SMTP. Use `himalaya` to list, read, write, reply, forward, search, and organize emails from the terminal. Supports multiple accounts and message composition with MML (MIME Meta Language).",
+    "tags": {},
+    "updatedAt": 1782497537993
+  },
+  {
+    "_creationTime": 1782497537993.8652,
+    "_id": "t978z901xan8ss1embhgsepkcn89dvyg",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545370678,
+    "displayName": "Oracle",
+    "ownerPublisherId": "qd71s6wh38a0eesgzdxkfzs63h89bh1z",
+    "ownerUserId": "vn7ctd1majntvbt8f70ya2rtd189b57t",
+    "slug": "oracle",
+    "stats": {
+      "comments": 0,
+      "downloads": 270,
+      "installsAllTime": 30,
+      "installsCurrent": 20,
+      "stars": 30,
+      "versions": 0
+    },
+    "statsDownloads": 270,
+    "statsInstallsAllTime": 30,
+    "statsInstallsCurrent": 20,
+    "statsStars": 30,
+    "summary": "Use the @steipete/oracle CLI to bundle a prompt plus the right files and get a second-model review (API or browser) for debugging, refactors, design checks, or cross-validation.",
+    "tags": {},
+    "updatedAt": 1782497537993
+  },
+  {
+    "_creationTime": 1782497537993.8657,
+    "_id": "t970qy36q3b6j98ada04sjex8d89dd35",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767545304976,
+    "displayName": "Brave Search",
+    "ownerPublisherId": "qd71s6wh38a0eesgzdxkfzs63h89bh1z",
+    "ownerUserId": "vn7ctd1majntvbt8f70ya2rtd189b57t",
+    "slug": "brave-search",
+    "stats": {
+      "comments": 0,
+      "downloads": 245,
+      "installsAllTime": 45,
+      "installsCurrent": 20,
+      "stars": 5,
+      "versions": 0
+    },
+    "statsDownloads": 245,
+    "statsInstallsAllTime": 45,
+    "statsInstallsCurrent": 20,
+    "statsStars": 5,
+    "summary": "Web search and content extraction via Brave Search API. Use for searching documentation, facts, or any web content. Lightweight, no browser required.",
+    "tags": {},
+    "updatedAt": 1782497537993
+  },
+  {
+    "_creationTime": 1782497537993.8662,
+    "_id": "t970j32va3xntq7wec1y9wr1js89cphq",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1769692040015,
+    "displayName": "Docker Essentials",
+    "ownerPublisherId": "qd71s6wh38a0eesgzdxkfzs63h89bh1z",
+    "ownerUserId": "vn7ctd1majntvbt8f70ya2rtd189b57t",
+    "slug": "docker-essentials",
+    "stats": {
+      "comments": 0,
+      "downloads": 242,
+      "installsAllTime": 42,
+      "installsCurrent": 17,
+      "stars": 2,
+      "versions": 0
+    },
+    "statsDownloads": 242,
+    "statsInstallsAllTime": 42,
+    "statsInstallsCurrent": 17,
+    "statsStars": 2,
+    "summary": "Essential Docker commands and workflows for container management, image operations, and debugging.",
+    "tags": {},
+    "updatedAt": 1782497537993
+  },
+  {
+    "_creationTime": 1782497537993.8667,
+    "_id": "t97fqy7q5hajkmtp2m2a2dn77189d4qx",
+    "badges": {},
+    "batch": "public-corpus-v1",
+    "capabilityTags": [],
+    "createdAt": 1767651965151,
+    "displayName": "Markdown Converter",
+    "ownerPublisherId": "qd71s6wh38a0eesgzdxkfzs63h89bh1z",
+    "ownerUserId": "vn7ctd1majntvbt8f70ya2rtd189b57t",
+    "slug": "markdown-converter",
+    "stats": {
+      "comments": 0,
+      "downloads": 146,
+      "installsAllTime": 66,
+      "installsCurrent": 21,
+      "stars": 26,
+      "versions": 0
+    },
+    "statsDownloads": 146,
+    "statsInstallsAllTime": 66,
+    "statsInstallsCurrent": 21,
+    "statsStars": 26,
+    "summary": "Convert documents and files to Markdown using markitdown. Use when converting PDF, Word (.docx), PowerPoint (.pptx), Excel (.xlsx, .xls), HTML, CSV, JSON, XML, images (with EXIF/OCR), audio (with transcription), ZIP archives, YouTube URLs, or EPubs to Markdown format for LLM processing or text analysis.",
+    "tags": {},
+    "updatedAt": 1782497537993
+  }
+]

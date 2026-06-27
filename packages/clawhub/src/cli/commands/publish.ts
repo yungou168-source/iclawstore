@@ -1,0 +1,214 @@
+import { readFile, readdir, stat } from "node:fs/promises";
+import { basename, join, resolve } from "node:path";
+import semver from "semver";
+import { apiRequestForm } from "../../http.js";
+import { ApiRoutes, ApiV1PublishResponseSchema } from "../../schema/index.js";
+import { listTextFiles } from "../../skills.js";
+import { requireAuthToken } from "../authToken.js";
+import { getRegistry } from "../registry.js";
+import { sanitizeSlug, titleCase } from "../slug.js";
+import type { GlobalOpts } from "../types.js";
+import { createSpinner, fail, formatError } from "../ui.js";
+import { normalizeGitHubRepo } from "./github.js";
+
+export async function cmdPublish(
+  opts: GlobalOpts,
+  folderArg: string,
+  options: {
+    slug?: string;
+    name?: string;
+    owner?: string;
+    version?: string;
+    changelog?: string;
+    tags?: string;
+    forkOf?: string;
+    migrateOwner?: boolean;
+    sourceRepo?: string;
+    sourceCommit?: string;
+    sourceRef?: string;
+    sourcePath?: string;
+  },
+) {
+  const folder = folderArg ? resolve(opts.workdir, folderArg) : null;
+  if (!folder) fail("Path required");
+  const folderStat = await stat(folder).catch(() => null);
+  if (!folderStat || !folderStat.isDirectory()) fail("Path must be a folder");
+  if (await looksLikePluginFolder(folder)) {
+    fail('This looks like a plugin. Use "clawhub package publish <source>" instead.');
+  }
+
+  const token = await requireAuthToken();
+  const registry = await getRegistry(opts, { cache: true });
+
+  const slug = options.slug ?? sanitizeSlug(basename(folder));
+  const displayName = options.name ?? titleCase(basename(folder));
+  const ownerHandle = options.owner?.trim().replace(/^@+/, "");
+  const version = options.version;
+  const changelog = options.changelog ?? "";
+  const tagsValue = options.tags ?? "latest";
+  const tags = tagsValue
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+
+  const forkOfRaw = options.forkOf?.trim();
+  const forkOf = forkOfRaw ? parseForkOf(forkOfRaw) : undefined;
+  const source = buildPublishSource(options);
+
+  if (!slug) fail("--slug required");
+  if (!displayName) fail("--name required");
+  if (!version || !semver.valid(version)) fail("--version must be valid semver");
+
+  const spinner = createSpinner(`Preparing ${slug}@${version}`);
+  try {
+    const filesOnDisk = stripGeneratedSkillCards(
+      await ensureRootManifestFile(folder, await listTextFiles(folder)),
+    );
+    if (filesOnDisk.length === 0) fail("No files found");
+    if (
+      !filesOnDisk.some((file) => {
+        const lower = file.relPath.toLowerCase();
+        return lower === "skill.md" || lower === "skills.md";
+      })
+    ) {
+      fail("SKILL.md required");
+    }
+
+    const form = new FormData();
+    form.set(
+      "payload",
+      JSON.stringify({
+        slug,
+        displayName,
+        ...(ownerHandle ? { ownerHandle } : {}),
+        ...(options.migrateOwner ? { migrateOwner: true } : {}),
+        version,
+        changelog,
+        acceptLicenseTerms: true,
+        tags,
+        ...(source ? { source } : {}),
+        ...(forkOf ? { forkOf } : {}),
+      }),
+    );
+
+    let index = 0;
+    for (const file of filesOnDisk) {
+      index += 1;
+      spinner.text = `Uploading ${file.relPath} (${index}/${filesOnDisk.length})`;
+      const blob = new Blob([Buffer.from(file.bytes)], { type: file.contentType ?? "text/plain" });
+      form.append("files", blob, file.relPath);
+    }
+
+    spinner.text = `Publishing ${slug}@${version}`;
+    const result = await apiRequestForm(
+      registry,
+      { method: "POST", path: ApiRoutes.skills, token, form },
+      ApiV1PublishResponseSchema,
+    );
+
+    spinner.succeed(`OK. Published ${slug}@${version} (${result.versionId})`);
+  } catch (error) {
+    spinner.fail(formatError(error));
+    throw error;
+  }
+}
+
+function stripGeneratedSkillCards(files: Awaited<ReturnType<typeof listTextFiles>>) {
+  return files.filter((file) => file.relPath.trim().toLowerCase() !== "skill-card.md");
+}
+
+async function ensureRootManifestFile(
+  folder: string,
+  files: Awaited<ReturnType<typeof listTextFiles>>,
+) {
+  if (
+    files.some((file) => {
+      const lower = file.relPath.toLowerCase();
+      return lower === "skill.md" || lower === "skills.md";
+    })
+  ) {
+    return files;
+  }
+
+  const entries = await readdir(folder, { withFileTypes: true }).catch(() => []);
+  const manifest = entries.find((entry) => {
+    const lower = entry.name.toLowerCase();
+    return entry.isFile() && (lower === "skill.md" || lower === "skills.md");
+  });
+  if (!manifest) return files;
+
+  return [
+    ...files,
+    {
+      relPath: manifest.name,
+      bytes: new Uint8Array(await readFile(join(folder, manifest.name))),
+      contentType: "text/markdown",
+    },
+  ];
+}
+
+async function looksLikePluginFolder(folder: string) {
+  const checks = [
+    join(folder, "openclaw.plugin.json"),
+    join(folder, "package.json"),
+    join(folder, ".codex-plugin", "plugin.json"),
+    join(folder, ".claude-plugin", "plugin.json"),
+    join(folder, ".cursor-plugin", "plugin.json"),
+  ];
+  const stats = await Promise.all(checks.map((candidate) => stat(candidate).catch(() => null)));
+  if (stats[0]?.isFile() || stats[2]?.isFile() || stats[3]?.isFile() || stats[4]?.isFile()) {
+    return true;
+  }
+  if (!stats[1]?.isFile()) {
+    return false;
+  }
+  try {
+    const raw = JSON.parse(await readFile(checks[1], "utf8")) as { openclaw?: unknown };
+    return Boolean(
+      raw && typeof raw === "object" && raw.openclaw && typeof raw.openclaw === "object",
+    );
+  } catch {
+    return false;
+  }
+}
+
+function parseForkOf(value: string) {
+  const trimmed = value.trim();
+  const [slugRaw, versionRaw] = trimmed.split("@");
+  const slug = (slugRaw ?? "").trim().toLowerCase();
+  if (!slug) fail("--fork-of must be <slug> or <slug@version>");
+  const version = (versionRaw ?? "").trim();
+  if (version && !semver.valid(version)) fail("--fork-of version must be valid semver");
+  return { slug, version: version || undefined };
+}
+
+function buildPublishSource(options: {
+  sourceRepo?: string;
+  sourceCommit?: string;
+  sourceRef?: string;
+  sourcePath?: string;
+}) {
+  const rawRepo = options.sourceRepo?.trim();
+  const commit = options.sourceCommit?.trim();
+  const ref = options.sourceRef?.trim();
+  const path = normalizeSourcePath(options.sourcePath);
+  if (!rawRepo && !commit && !ref && !options.sourcePath?.trim()) return undefined;
+  if (!rawRepo || !commit) fail("--source-repo and --source-commit must be provided together");
+  const repo = normalizeGitHubRepo(rawRepo);
+  if (!repo) fail("--source-repo must be a GitHub repo or URL");
+  return {
+    kind: "github" as const,
+    url: `https://github.com/${repo}`,
+    repo,
+    ref: ref || commit,
+    commit,
+    path,
+    importedAt: Date.now(),
+  };
+}
+
+function normalizeSourcePath(value: string | undefined) {
+  const normalized = (value?.trim() || ".").replaceAll("\\", "/").replace(/^\.\/+/, "");
+  if (!normalized || normalized === ".") return ".";
+  return normalized.replace(/\/+$/, "") || ".";
+}

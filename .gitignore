@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Build outputs
+.output/
+dist/
+build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Convex (will be migrated)
+.convex/
+convex/_generated/
+
+# Temporary files
+*.tmp
+.cache/
+tmp/
+
+# Uploads (if any)
+uploads/
+
+# Backup files
+*.bak
+*.backup
+
+# npm/yarn lock files (optional - use bun.lock.bak if needed)
+# package-lock.json
+# yarn.lock
+
+# Test coverage
+coverage/
+
+# Debug
+.debug/

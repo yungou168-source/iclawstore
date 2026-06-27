@@ -1,0 +1,170 @@
+# `clawhub`
+
+ClawHub CLI — install, update, search, and publish agent skills plus OpenClaw packages.
+
+## Install
+
+```bash
+# From this repo (shortcut script at repo root)
+bun clawhub --help
+
+# Once published to npm
+# npm i -g clawhub
+```
+
+## Auth (publish)
+
+```bash
+clawhub login
+# or
+clawhub auth login
+
+# Remote/headless browser approval
+clawhub login --device
+
+# or (token paste / headless)
+clawhub login --token clh_...
+
+# print the stored token for CI setup
+clawhub token
+```
+
+Notes:
+
+- Browser login opens `https://clawhub.ai/cli/auth` and completes via a loopback callback.
+- Device login prints a one-time code and waits while you approve it at `https://clawhub.ai/cli/device`.
+- Default config path:
+  - macOS: `~/Library/Application Support/clawhub/config.json`
+  - Linux/XDG: `$XDG_CONFIG_HOME/clawhub/config.json` or `~/.config/clawhub/config.json`
+  - Windows: `%APPDATA%\\clawhub\\config.json`
+- Legacy fallback: if `clawhub/config.json` does not exist yet but `clawdhub/config.json` does, the CLI reuses the legacy path.
+- Override via `CLAWHUB_CONFIG_PATH` (legacy `CLAWDHUB_CONFIG_PATH`).
+
+## Examples
+
+```bash
+clawhub search "postgres backups"
+clawhub install my-skill-pack
+clawhub pin bear-notes --reason "scanner-flagged while awaiting moderation"
+clawhub update --all
+clawhub update --all --no-input --force
+clawhub unpin bear-notes
+clawhub skill publish ./my-skill-pack --slug my-skill-pack --name "My Skill Pack" --version 1.2.0 --changelog "Fixes + docs"
+clawhub skill publish ./org-skill --owner openclaw --version 1.2.0 --changelog "Org publish"
+clawhub package explore --family skill
+clawhub package explore --family code-plugin
+clawhub package inspect @openclaw/example-plugin
+clawhub package download @openclaw/example-plugin --tag latest
+clawhub package verify ./example-plugin-1.0.0.tgz --package @openclaw/example-plugin --version 1.0.0
+clawhub package validate ./example-plugin
+clawhub package publish openclaw/example-plugin
+clawhub package publish openclaw/example-plugin@v1.0.0
+clawhub package publish https://github.com/openclaw/example-plugin --dry-run
+clawhub package publish ./example-plugin-1.0.0.tgz --dry-run
+clawhub package publish ./example-plugin
+```
+
+## Publish code plugins
+
+For ClawPack publish, create the npm-pack tarball yourself and upload that
+exact `.tgz`:
+
+```bash
+npm pack
+clawhub package publish ./my-plugin-1.0.0.tgz --family code-plugin --dry-run
+clawhub package publish ./my-plugin-1.0.0.tgz --family code-plugin
+```
+
+For local plugin folders, start with a dry run:
+
+```bash
+clawhub package publish ./my-plugin --family code-plugin --dry-run
+clawhub package publish ./my-plugin --family code-plugin
+```
+
+For code plugins, folder publish builds and uploads a ClawPack artifact from
+the package folder. Bundle-plugin folders still use the extracted-file publish
+path.
+
+Use `clawhub package download` to resolve the published artifact through
+ClawHub's explicit artifact route. ClawPack downloads are verified against npm
+integrity/shasum plus ClawHub SHA-256; legacy package versions still download
+as ZIPs.
+
+`code-plugin` packages must declare these `package.json` fields:
+
+- `openclaw.compat.pluginApi`
+- `openclaw.build.openclawVersion`
+
+Minimal example:
+
+```json
+{
+  "name": "@myorg/openclaw-my-plugin",
+  "version": "1.0.0",
+  "type": "module",
+  "openclaw": {
+    "extensions": ["./index.ts"],
+    "compat": {
+      "pluginApi": ">=2026.3.24-beta.2"
+    },
+    "build": {
+      "openclawVersion": "2026.3.24-beta.2"
+    }
+  }
+}
+```
+
+`package.json.version` does not replace these OpenClaw-specific fields. Add
+`openclaw.compat.minGatewayVersion` and
+`openclaw.build.pluginSdkVersion` when you want richer compatibility metadata,
+but they are not required for publish.
+
+## GitHub Actions
+
+This repo also provides an official reusable workflow for plugin repos:
+
+- [`.github/workflows/package-publish.yml`](../../.github/workflows/package-publish.yml)
+
+Use `dry_run: true` on pull requests and reserve real publishes for trusted events
+such as `workflow_dispatch` or tag pushes with a `CLAWHUB_TOKEN` secret.
+For monorepos, pass `source_path` to publish the plugin package folder, for
+example `source_path: extensions/codex`.
+
+## Maintainers
+
+The `clawhub` npm package is released separately from the ClawHub app deploy.
+
+- Release workflow: [`.github/workflows/clawhub-cli-npm-release.yml`](../../.github/workflows/clawhub-cli-npm-release.yml)
+- Release model: manual-only, stable tags only (`vX.Y.Z`), with a preflight run before the real publish
+- Publish auth: npm trusted publishing through the `npm-release` GitHub environment
+
+## Development
+
+The supported verification flow for this package is package-local:
+
+```bash
+bun run --cwd packages/clawhub test
+bun run --cwd packages/clawhub verify:build
+bun run --cwd packages/clawhub test:artifact
+bun run --cwd packages/clawhub verify
+```
+
+`test` runs source tests only. `test:artifact` builds `dist/` and runs a small smoke suite against the built CLI entrypoint.
+
+## Sync (upload local skills)
+
+```bash
+# Start anywhere; scans workdir first, then legacy Clawdis/Clawd/OpenClaw/Moltbot locations.
+clawhub sync
+
+# Explicit roots + non-interactive dry-run
+clawhub sync --root ../clawdis/skills --all --dry-run
+```
+
+## Defaults
+
+- Site: `https://clawhub.ai` (override via `--site` or `CLAWHUB_SITE`, legacy `CLAWDHUB_SITE`)
+- Registry: discovered from `/.well-known/clawhub.json` on the site (legacy `/.well-known/clawdhub.json`; override via `--registry` or `CLAWHUB_REGISTRY`)
+- Workdir: current directory (falls back to Clawdbot workspace if configured; override via `--workdir` or `CLAWHUB_WORKDIR`)
+- Install dir: `./skills` under workdir (override via `--dir`)

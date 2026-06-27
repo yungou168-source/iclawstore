@@ -1,0 +1,498 @@
+import { useAction } from "convex/react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { api } from "../../../convex/_generated/api";
+import { convexHttp } from "../../convex/client";
+import {
+  ALL_CATEGORY_KEYWORDS,
+  getSkillCategoryByKeyword,
+  getSkillCategoryBySlug,
+  getSkillCategoryForSkill,
+} from "../../lib/categories";
+import { parseDir, parseSort, toListSort, type SortDir, type SortKey } from "./-params";
+import type { SkillListEntry, SkillSearchEntry } from "./-types";
+
+const pageSize = 25;
+
+function isNavigationAbortError(err: unknown) {
+  if (!(err instanceof Error)) return false;
+  return (
+    err.name === "AbortError" || err.message === "Failed to fetch" || err.message === "Load failed"
+  );
+}
+
+export type SkillsView = "grid" | "list";
+type LegacySkillsView = SkillsView | "cards";
+
+export function normalizeSkillsView(value: unknown): SkillsView | undefined {
+  if (value === "list") return "list";
+  if (value === "grid" || value === "cards") return "grid";
+  return undefined;
+}
+
+export type SkillsSearchState = {
+  q?: string;
+  sort?: SortKey;
+  dir?: SortDir;
+  highlighted?: boolean;
+  featured?: boolean;
+  category?: string;
+  tag?: string;
+  view?: LegacySkillsView;
+  focus?: "search";
+};
+
+const SKILL_CAPABILITY_LABELS: Record<string, string> = {
+  crypto: "crypto",
+  "financial-authority": "financial authority",
+  "requires-wallet": "requires wallet",
+  "can-make-purchases": "payments",
+  "can-sign-transactions": "signs transactions",
+  "requires-paid-service": "paid service",
+  "requires-oauth-token": "oauth",
+  "requires-sensitive-credentials": "sensitive credentials",
+  "posts-externally": "external posting",
+};
+
+type SkillsNavigate = (options: {
+  search: (prev: SkillsSearchState) => SkillsSearchState;
+  replace?: boolean;
+}) => void | Promise<void>;
+
+type ListStatus = "loading" | "idle" | "loadingMore" | "done";
+
+export function useSkillsBrowseModel({
+  search,
+  navigate,
+  searchInputRef,
+}: {
+  search: SkillsSearchState;
+  navigate: SkillsNavigate;
+  searchInputRef: RefObject<HTMLInputElement | null>;
+}) {
+  const [query, setQuery] = useState(search.q ?? "");
+  const [searchResults, setSearchResults] = useState<Array<SkillSearchEntry>>([]);
+  const [searchLimit, setSearchLimit] = useState(pageSize);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchRequest = useRef(0);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreInFlightRef = useRef(false);
+  const navigateTimer = useRef<number>(0);
+
+  const view: SkillsView = normalizeSkillsView(search.view) ?? "list";
+  const featuredOnly = search.featured ?? search.highlighted ?? false;
+  const capabilityTag = search.tag;
+  const searchSkills = useAction(api.search.searchSkills);
+
+  const trimmedQuery = useMemo(() => query.trim(), [query]);
+  const legacyQueryCategory = useMemo(() => {
+    if (query === "__other__") return getSkillCategoryBySlug("other");
+    return getSkillCategoryByKeyword(trimmedQuery);
+  }, [query, trimmedQuery]);
+  const urlCategory = useMemo(() => getSkillCategoryBySlug(search.category), [search.category]);
+  const activeCategory = urlCategory ?? legacyQueryCategory;
+  const categoryKeywords =
+    activeCategory && activeCategory.slug !== "other" ? activeCategory.keywords : undefined;
+  const excludeCategoryKeywords =
+    activeCategory?.slug === "other" ? ALL_CATEGORY_KEYWORDS : undefined;
+  const hasQuery = trimmedQuery.length > 0 && (Boolean(urlCategory) || !legacyQueryCategory);
+  const requestedSort = search.sort === "default" ? "recommended" : search.sort;
+  const sort: SortKey =
+    requestedSort === "relevance" && !hasQuery
+      ? "recommended"
+      : requestedSort === "recommended" && hasQuery
+        ? "relevance"
+        : (requestedSort ?? (hasQuery ? "relevance" : "recommended"));
+  const listSort = toListSort(sort);
+  const dir = sort === "relevance" ? "desc" : parseDir(search.dir, sort);
+  const searchKey = hasQuery
+    ? `${trimmedQuery}::${featuredOnly ? "1" : "0"}::${capabilityTag ?? ""}`
+    : "";
+
+  // One-shot paginated fetches (no reactive subscription)
+  const [listResults, setListResults] = useState<SkillListEntry[]>([]);
+  const [listCursor, setListCursor] = useState<string | null>(null);
+  const [listStatus, setListStatus] = useState<ListStatus>("loading");
+  const fetchGeneration = useRef(0);
+
+  const fetchPage = useCallback(
+    async (cursor: string | null, generation: number) => {
+      try {
+        const result = await convexHttp.query(api.skills.listPublicPageV4, {
+          cursor: cursor ?? undefined,
+          numItems: pageSize,
+          ...(listSort ? { sort: listSort } : {}),
+          dir,
+          highlightedOnly: featuredOnly,
+          capabilityTag,
+          categorySlug: activeCategory?.slug,
+          categoryKeywords,
+          excludeCategoryKeywords,
+        });
+        if (generation !== fetchGeneration.current) return;
+        setListResults((prev) => (cursor ? [...prev, ...result.page] : result.page));
+        const canAdvance = result.hasMore && result.nextCursor != null;
+        setListCursor(canAdvance ? result.nextCursor : null);
+        setListStatus(canAdvance ? "idle" : "done");
+      } catch (err) {
+        if (generation !== fetchGeneration.current) return;
+        if (!isNavigationAbortError(err)) {
+          console.error("Failed to fetch skills page:", err);
+        }
+        // Reset to idle so the user can retry via "Load more"
+        setListStatus(cursor ? "idle" : "done");
+      }
+    },
+    [
+      activeCategory?.slug,
+      capabilityTag,
+      categoryKeywords,
+      dir,
+      excludeCategoryKeywords,
+      featuredOnly,
+      listSort,
+    ],
+  );
+
+  // Reset and fetch first page when sort/dir/filters change
+  useEffect(() => {
+    if (hasQuery) {
+      return () => {};
+    }
+    fetchGeneration.current += 1;
+    const generation = fetchGeneration.current;
+    setListResults([]);
+    setListCursor(null);
+    setListStatus("loading");
+    void fetchPage(null, generation);
+    return () => {
+      fetchGeneration.current += 1;
+    };
+  }, [hasQuery, fetchPage]);
+
+  const isLoadingList = listStatus === "loading";
+  const canLoadMoreList = listStatus === "idle";
+  const isLoadingMoreList = listStatus === "loadingMore";
+
+  useEffect(() => {
+    window.clearTimeout(navigateTimer.current);
+    setQuery(search.q ?? "");
+  }, [search.q]);
+
+  useEffect(() => {
+    if (search.focus === "search" && searchInputRef.current) {
+      searchInputRef.current.focus();
+      void navigate({ search: (prev) => ({ ...prev, focus: undefined }), replace: true });
+    }
+  }, [navigate, search.focus, searchInputRef]);
+
+  useEffect(() => {
+    if (!searchKey) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+    setSearchResults([]);
+    setSearchLimit(pageSize);
+  }, [searchKey]);
+
+  useEffect(() => {
+    if (!hasQuery) return () => {};
+    searchRequest.current += 1;
+    const requestId = searchRequest.current;
+    setIsSearching(true);
+    const handle = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const data = (await searchSkills({
+            query: trimmedQuery,
+            highlightedOnly: featuredOnly,
+            capabilityTag,
+            limit: searchLimit,
+          })) as Array<SkillSearchEntry>;
+          if (requestId === searchRequest.current) {
+            setSearchResults(data);
+          }
+        } finally {
+          if (requestId === searchRequest.current) {
+            setIsSearching(false);
+          }
+        }
+      })();
+    }, 220);
+    return () => window.clearTimeout(handle);
+  }, [capabilityTag, hasQuery, featuredOnly, searchLimit, searchSkills, trimmedQuery]);
+
+  const baseItems = useMemo(() => {
+    if (hasQuery) {
+      return searchResults.map((entry) => {
+        // Search paths return `version: null`. Synthesize a minimal stub
+        // so consumers can still render the API-key-required badge.
+        const apiKeyRequired = entry.apiKeyRequired ?? entry.version?.apiKeyRequired;
+        const latestVersion =
+          entry.version != null
+            ? {
+                version: entry.version.version,
+                createdAt: entry.version.createdAt,
+                changelog: entry.version.changelog,
+                changelogSource: entry.version.changelogSource,
+                parsed: entry.version.parsed?.clawdis
+                  ? { clawdis: entry.version.parsed.clawdis }
+                  : undefined,
+                apiKeyRequired,
+              }
+            : apiKeyRequired !== undefined
+              ? {
+                  version: "",
+                  createdAt: 0,
+                  changelog: "",
+                  apiKeyRequired,
+                }
+              : null;
+        return {
+          skill: entry.skill,
+          latestVersion,
+          ownerHandle: entry.ownerHandle ?? null,
+          owner: entry.owner ?? null,
+          searchScore: entry.score,
+        };
+      });
+    }
+    return listResults;
+  }, [hasQuery, listResults, searchResults]);
+
+  const sorted = useMemo(() => {
+    const categoryItems = activeCategory
+      ? baseItems.filter(
+          (entry) => getSkillCategoryForSkill(entry.skill)?.slug === activeCategory.slug,
+        )
+      : baseItems;
+    if (!hasQuery) {
+      return categoryItems;
+    }
+    const multiplier = dir === "asc" ? 1 : -1;
+    const results = [...categoryItems];
+    results.sort((a, b) => {
+      const tieBreak = () => {
+        const updated = (a.skill.updatedAt - b.skill.updatedAt) * multiplier;
+        if (updated !== 0) return updated;
+        return a.skill.slug.localeCompare(b.skill.slug);
+      };
+      switch (sort) {
+        case "relevance":
+          return ((a.searchScore ?? 0) - (b.searchScore ?? 0)) * multiplier;
+        case "downloads":
+          return (a.skill.stats.downloads - b.skill.stats.downloads) * multiplier || tieBreak();
+        case "installs":
+          return (
+            ((a.skill.stats.installsAllTime ?? 0) - (b.skill.stats.installsAllTime ?? 0)) *
+              multiplier || tieBreak()
+          );
+        case "stars":
+          return (a.skill.stats.stars - b.skill.stats.stars) * multiplier || tieBreak();
+        case "updated":
+          return (
+            (a.skill.updatedAt - b.skill.updatedAt) * multiplier ||
+            a.skill.slug.localeCompare(b.skill.slug)
+          );
+        case "name":
+          return (
+            (a.skill.displayName.localeCompare(b.skill.displayName) ||
+              a.skill.slug.localeCompare(b.skill.slug)) * multiplier
+          );
+        default:
+          return (
+            (a.skill.createdAt - b.skill.createdAt) * multiplier ||
+            a.skill.slug.localeCompare(b.skill.slug)
+          );
+      }
+    });
+    return results;
+  }, [activeCategory, baseItems, dir, hasQuery, sort]);
+
+  const isLoadingSkills = hasQuery ? isSearching && searchResults.length === 0 : isLoadingList;
+  const canLoadMore = hasQuery
+    ? !isSearching && searchResults.length === searchLimit && searchResults.length > 0
+    : canLoadMoreList;
+  const isLoadingMore = hasQuery ? isSearching && searchResults.length > 0 : isLoadingMoreList;
+  const canAutoLoad = typeof IntersectionObserver !== "undefined";
+
+  const loadMore = useCallback(() => {
+    if (loadMoreInFlightRef.current || isLoadingMore || !canLoadMore) return;
+    loadMoreInFlightRef.current = true;
+    if (hasQuery) {
+      setSearchLimit((value) => value + pageSize);
+    } else {
+      setListStatus("loadingMore");
+      void fetchPage(listCursor, fetchGeneration.current);
+    }
+  }, [canLoadMore, fetchPage, hasQuery, isLoadingMore, listCursor]);
+
+  useEffect(() => {
+    if (!isLoadingMore) {
+      loadMoreInFlightRef.current = false;
+    }
+  }, [isLoadingMore]);
+
+  useEffect(() => {
+    if (!canLoadMore || typeof IntersectionObserver === "undefined") return () => {};
+    const target = loadMoreRef.current;
+    if (!target) return () => {};
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          observer.disconnect();
+          loadMore();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [canLoadMore, loadMore]);
+
+  useEffect(() => {
+    return () => window.clearTimeout(navigateTimer.current);
+  }, []);
+
+  const onQueryChange = useCallback(
+    (next: string) => {
+      setQuery(next);
+      window.clearTimeout(navigateTimer.current);
+      const trimmed = next.trim();
+      navigateTimer.current = window.setTimeout(() => {
+        void navigate({
+          search: (prev) => {
+            const hadQuery = typeof prev.q === "string" && prev.q.trim().length > 0;
+            const enteringSearch = Boolean(trimmed) && !hadQuery;
+            const usesStaleImplicitDownloadsDefault =
+              prev.sort === "downloads" && prev.dir === undefined && !prev.category;
+            return {
+              ...prev,
+              q: trimmed ? next : undefined,
+              ...(enteringSearch &&
+              (parseSort(prev.sort) === "recommended" || usesStaleImplicitDownloadsDefault)
+                ? { sort: undefined, dir: undefined }
+                : null),
+            };
+          },
+          replace: true,
+        });
+      }, 220);
+    },
+    [navigate],
+  );
+
+  const onToggleFeatured = useCallback(() => {
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        featured: prev.featured || prev.highlighted ? undefined : true,
+        highlighted: undefined,
+      }),
+      replace: true,
+    });
+  }, [navigate]);
+
+  const onClearFilters = useCallback(() => {
+    window.clearTimeout(navigateTimer.current);
+    setQuery("");
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        q: undefined,
+        category: undefined,
+        featured: undefined,
+        highlighted: undefined,
+      }),
+      replace: true,
+    });
+  }, [navigate]);
+
+  const onSortChange = useCallback(
+    (value: string) => {
+      const nextSort = parseSort(value);
+      void navigate({
+        search: (prev) => {
+          const reusePreviousDir =
+            prev.sort !== undefined &&
+            prev.sort !== "recommended" &&
+            prev.sort !== "default" &&
+            prev.sort !== "relevance";
+          return {
+            ...prev,
+            sort: nextSort,
+            dir:
+              nextSort === "recommended" || nextSort === "default"
+                ? undefined
+                : parseDir(reusePreviousDir ? prev.dir : undefined, nextSort),
+          };
+        },
+        replace: true,
+      });
+    },
+    [navigate],
+  );
+
+  const onToggleDir = useCallback(() => {
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        dir: parseDir(prev.dir, sort) === "asc" ? "desc" : "asc",
+      }),
+      replace: true,
+    });
+  }, [navigate, sort]);
+
+  const onToggleView = useCallback(() => {
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        view: normalizeSkillsView(prev.view) === "grid" ? undefined : "grid",
+      }),
+      replace: true,
+    });
+  }, [navigate]);
+
+  const activeFilters: string[] = [];
+  if (featuredOnly) activeFilters.push("featured");
+  if (capabilityTag) activeFilters.push(SKILL_CAPABILITY_LABELS[capabilityTag] ?? capabilityTag);
+
+  const onCapabilityTagChange = useCallback(
+    (value: string) => {
+      void navigate({
+        search: (prev) => ({
+          ...prev,
+          tag: value === "__all__" ? undefined : value,
+        }),
+        replace: true,
+      });
+    },
+    [navigate],
+  );
+
+  return {
+    activeFilters,
+    activeCategory: activeCategory?.slug,
+    capabilityTag,
+    canAutoLoad,
+    canLoadMore,
+    dir,
+    hasQuery,
+    featuredOnly,
+    isLoadingMore,
+    isLoadingSkills,
+    loadMore,
+    loadMoreRef,
+    onCapabilityTagChange,
+    onClearFilters,
+    onQueryChange,
+    onSortChange,
+    onToggleDir,
+    onToggleFeatured,
+    onToggleView,
+    query,
+    sort,
+    sorted,
+    view,
+  };
+}

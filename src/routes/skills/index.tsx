@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
 import { Search } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
-import { api } from "../../../convex/_generated/api";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BrowseSidebar } from "../../components/BrowseSidebar";
 import { SKILL_CATEGORIES } from "../../lib/categories";
 import { useLocale } from "../../lib/i18n/context";
@@ -15,6 +13,7 @@ import {
   useSkillsBrowseModel,
   type SkillsSearchState,
 } from "./-useSkillsBrowseModel";
+import { fastifyApi } from "../../lib/fastifyApi";
 
 const SKILL_CATEGORY_SLUGS = new Set(SKILL_CATEGORIES.map((category) => category.slug));
 
@@ -49,7 +48,17 @@ export function SkillsIndex() {
   const navigate = Route.useNavigate();
   const search = Route.useSearch();
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const totalSkills = useQuery(api.skills.countPublicSkills);
+  const [totalSkills, setTotalSkills] = useState<number | null>(null);
+  
+  // Fetch total skills count
+  useEffect(() => {
+    fastifyApi.getSkills({ limit: 1 }).then((result) => {
+      setTotalSkills(result.pagination.total);
+    }).catch(() => {
+      setTotalSkills(null);
+    });
+  }, []);
+  
   const totalSkillsText = typeof totalSkills === "number" ? formatCompactStat(totalSkills) : null;
   const [sidebarOpen, setSidebarOpen] = useState(false);
 

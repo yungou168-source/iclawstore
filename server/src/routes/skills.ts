@@ -113,7 +113,56 @@ export async function skillsRoutes(fastify: FastifyInstance) {
     
     return { ...skill, starsCount };
   });
-  
+
+  // 按 slug 获取技能
+  fastify.get<{ Params: { slug: string } }>("/slug/:slug", async (request, reply) => {
+    const { slug } = request.params;
+    
+    const skill = await prisma.skills.findFirst({
+      where: { slug, softDeletedAt: null },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            handle: true,
+            displayName: true,
+            image: true,
+          },
+        },
+        publisher: {
+          select: {
+            id: true,
+            handle: true,
+            displayName: true,
+            image: true,
+          },
+        },
+        versions: {
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        },
+        comments: {
+          where: { softDeletedAt: null },
+          include: {
+            user: {
+              select: { id: true, handle: true, displayName: true, image: true },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        },
+      },
+    });
+    
+    if (!skill) {
+      return reply.status(404).send({ error: "Skill not found" });
+    }
+    
+    const starsCount = await prisma.stars.count({ where: { skillId: skill.id } });
+    
+    return { ...skill, starsCount };
+  });
+
   // 创建技能 (需要认证)
   fastify.post("/", {
     onRequest: [fastify.authenticate],

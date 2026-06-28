@@ -1,7 +1,6 @@
-import { useAction } from "convex/react";
 import { useEffect, useRef, useState } from "react";
-import { api } from "../../convex/_generated/api";
 import { fetchPluginCatalog, type PackageListItem } from "./packageApi";
+import { fastifyApi } from "./fastifyApi";
 
 export type UnifiedSearchType = "all" | "skills" | "plugins";
 const MAX_UNIFIED_SEARCH_LIMIT = 100;
@@ -44,7 +43,6 @@ export function useUnifiedSearch(
   activeType: UnifiedSearchType,
   options: UnifiedSearchOptions = {},
 ) {
-  const searchSkills = useAction(api.search.searchSkills);
   const [results, setResults] = useState<UnifiedResult[]>([]);
   const [skillResults, setSkillResults] = useState<UnifiedSkillResult[]>([]);
   const [pluginResults, setPluginResults] = useState<UnifiedPluginResult[]>([]);
@@ -89,10 +87,7 @@ export function useUnifiedSearch(
             [null, null];
 
           if (activeType === "all" || activeType === "skills") {
-            promises[0] = searchSkills({
-              query: trimmed,
-              limit: skillLimit + 1,
-            });
+            promises[0] = fastifyApi.searchSkills(trimmed, skillLimit + 1);
           }
 
           if (activeType === "all" || activeType === "plugins") {
@@ -173,7 +168,7 @@ export function useUnifiedSearch(
       controller.abort();
       window.clearTimeout(handle);
     };
-  }, [query, activeType, searchSkills, debounceMs, enabled, skillLimit, pluginLimit]);
+  }, [query, activeType, debounceMs, enabled, skillLimit, pluginLimit]);
 
   return {
     results,

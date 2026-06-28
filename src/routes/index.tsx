@@ -1,5 +1,4 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useAction, useQuery } from "convex/react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -13,16 +12,15 @@ import {
   Users,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api } from "../../convex/_generated/api";
 import { SoulCard } from "../components/SoulCard";
 import { SoulStatsTripletLine } from "../components/SoulStats";
-import { convexHttp } from "../convex/client";
 import { fetchFeaturedPlugins } from "../lib/featuredCatalog";
 import { FEATURE_SOULS } from "../lib/features";
 import type { PackageListItem } from "../lib/packageApi";
 import type { PublicSkill, PublicSoul, PublicUser } from "../lib/publicUser";
 import { getSiteMode } from "../lib/site";
 import { useLocale } from "../lib/i18n/context";
+import { fastifyApi } from "../lib/fastifyApi";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -201,28 +199,62 @@ function SkillsHome({ locale }: { locale: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    convexHttp
-      .query(api.skills.listHighlightedPublic, { limit: 6 })
+    
+    // Fetch featured/highlighted skills
+    fastifyApi.getSkills({ limit: 6, sort: "downloads" })
       .then((r) => {
-        if (!cancelled) setHighlighted(r as SkillPageEntry[]);
+        if (!cancelled) {
+          const entries = r.skills.map((skill) => ({
+            skill: {
+              _id: skill.id, // Keep _id for compatibility
+              id: skill.id,
+              slug: skill.slug,
+              displayName: skill.displayName,
+              summary: skill.summary,
+              stats: {
+                downloads: skill.statsDownloads,
+                stars: skill.statsStars,
+                installsAllTime: skill.statsInstallsAllTime,
+              },
+            } as unknown as PublicSkill,
+            ownerHandle: skill.owner?.handle ?? null,
+            owner: skill.owner ?? null,
+          }));
+          setHighlighted(entries as SkillPageEntry[]);
+        }
       })
       .catch(() => {});
-    convexHttp
-      .query(api.skills.listPublicPageV4, {
-        numItems: 6,
-        dir: "desc",
-      })
+    
+    // Fetch popular skills
+    fastifyApi.getSkills({ limit: 6, sort: "downloads" })
       .then((r) => {
         if (cancelled) return;
-        const page = Array.isArray(r) ? [] : ((r as { page?: SkillPageEntry[] }).page ?? []);
-        setPopular(page);
+        const entries = r.skills.map((skill) => ({
+          skill: {
+            _id: skill.id,
+            id: skill.id,
+            slug: skill.slug,
+            displayName: skill.displayName,
+            summary: skill.summary,
+            stats: {
+              downloads: skill.statsDownloads,
+              stars: skill.statsStars,
+              installsAllTime: skill.statsInstallsAllTime,
+            },
+          } as unknown as PublicSkill,
+          ownerHandle: skill.owner?.handle ?? null,
+          owner: skill.owner ?? null,
+        }));
+        setPopular(entries as SkillPageEntry[]);
       })
       .catch(() => {});
+      
     fetchFeaturedPlugins(6)
       .then((items) => {
         if (!cancelled) setFeaturedPlugins(items);
       })
       .catch(() => {});
+      
     return () => {
       cancelled = true;
     };
@@ -1043,17 +1075,25 @@ function OnlyCrabsHome({ locale }: { locale: string }) {
     [locale],
   );
   const navigate = Route.useNavigate();
-  const ensureSoulSeeds = useAction(api.seed.ensureSoulSeeds);
-  const latest = (useQuery(api.souls.list, { limit: 12 }) as PublicSoul[]) ?? [];
+  const [latest, setLatest] = useState<PublicSoul[]>([]);
   const [query, setQuery] = useState("");
-  const seedEnsuredRef = useRef(false);
   const trimmedQuery = useMemo(() => query.trim(), [query]);
 
   useEffect(() => {
-    if (seedEnsuredRef.current) return;
-    seedEnsuredRef.current = true;
-    void ensureSoulSeeds({});
-  }, [ensureSoulSeeds]);
+    let cancelled = false;
+    // Souls are fetched via Fastify API
+    fetch("/api/souls")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && Array.isArray(data)) {
+          setLatest(data.slice(0, 12) as PublicSoul[]);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <main>

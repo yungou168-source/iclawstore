@@ -1,7 +1,5 @@
-import { useAction } from "convex/react";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { api } from "../../../convex/_generated/api";
-import { convexHttp } from "../../convex/client";
+import { fastifyApi, type Skill } from "../../lib/fastifyApi";
 import {
   ALL_CATEGORY_KEYWORDS,
   getSkillCategoryByKeyword,
@@ -81,7 +79,6 @@ export function useSkillsBrowseModel({
   const view: SkillsView = normalizeSkillsView(search.view) ?? "list";
   const featuredOnly = search.featured ?? search.highlighted ?? false;
   const capabilityTag = search.tag;
-  const searchSkills = useAction(api.search.searchSkills);
 
   const trimmedQuery = useMemo(() => query.trim(), [query]);
   const legacyQueryCategory = useMemo(() => {
@@ -117,28 +114,45 @@ export function useSkillsBrowseModel({
   const fetchPage = useCallback(
     async (cursor: string | null, generation: number) => {
       try {
-        const result = await convexHttp.query(api.skills.listPublicPageV4, {
-          cursor: cursor ?? undefined,
-          numItems: pageSize,
-          ...(listSort ? { sort: listSort } : {}),
-          dir,
-          highlightedOnly: featuredOnly,
-          capabilityTag,
-          categorySlug: activeCategory?.slug,
-          categoryKeywords,
-          excludeCategoryKeywords,
+        // Use Fastify API instead of Convex
+        const result = await fastifyApi.getSkills({
+          page: cursor ? parseInt(cursor) + 1 : 1,
+          limit: pageSize,
+          sort: listSort as "downloads" | "stars" | "installs" | "created" | "name" | undefined,
         });
+        
         if (generation !== fetchGeneration.current) return;
-        setListResults((prev) => (cursor ? [...prev, ...result.page] : result.page));
-        const canAdvance = result.hasMore && result.nextCursor != null;
-        setListCursor(canAdvance ? result.nextCursor : null);
+        
+        // Transform Fastify response to match expected format
+        const transformedSkills = result.skills.map((skill) => ({
+          skill: {
+            ...skill,
+            // Normalize nested stats to top-level for compatibility
+            stats: {
+              downloads: skill.statsDownloads,
+              stars: skill.statsStars,
+              installsCurrent: skill.statsInstallsCurrent,
+              installsAllTime: skill.statsInstallsAllTime,
+              versions: skill.statsVersions,
+              comments: skill.statsComments,
+            },
+          },
+          latestVersion: skill.latestVersionSummary ? JSON.parse(skill.latestVersionSummary) : null,
+          ownerHandle: skill.owner?.handle ?? null,
+          owner: skill.owner ?? null,
+        }));
+        
+        setListResults((prev) => (cursor ? [...prev, ...transformedSkills] : transformedSkills));
+        
+        // Calculate if there are more pages
+        const canAdvance = result.pagination.page < result.pagination.pages;
+        setListCursor(canAdvance ? String(result.pagination.page) : null);
         setListStatus(canAdvance ? "idle" : "done");
       } catch (err) {
         if (generation !== fetchGeneration.current) return;
         if (!isNavigationAbortError(err)) {
           console.error("Failed to fetch skills page:", err);
         }
-        // Reset to idle so the user can retry via "Load more"
         setListStatus(cursor ? "idle" : "done");
       }
     },
@@ -203,14 +217,31 @@ export function useSkillsBrowseModel({
     const handle = window.setTimeout(() => {
       void (async () => {
         try {
-          const data = (await searchSkills({
-            query: trimmedQuery,
-            highlightedOnly: featuredOnly,
-            capabilityTag,
+          // Use Fastify search API
+          const result = await fastifyApi.search(trimmedQuery, {
             limit: searchLimit,
-          })) as Array<SkillSearchEntry>;
+            sort: "statsDownloads:desc",
+          });
+          
+          // Transform Meilisearch results to SkillSearchEntry format
+          const data = result.hits.map((hit: any) => ({
+            skill: {
+              ...hit,
+              stats: {
+                downloads: hit.statsDownloads ?? 0,
+                stars: hit.statsStars ?? 0,
+                installsAllTime: hit.statsInstallsAllTime ?? 0,
+              },
+            },
+            version: hit.latestVersionSummary ? JSON.parse(hit.latestVersionSummary) : null,
+            ownerHandle: hit.ownerHandle ?? null,
+            owner: hit.owner ?? null,
+            score: hit._rankingScore ?? 0,
+            apiKeyRequired: hit.apiKeyRequired ?? false,
+          }));
+          
           if (requestId === searchRequest.current) {
-            setSearchResults(data);
+            setSearchResults(data as SkillSearchEntry[]);
           }
         } finally {
           if (requestId === searchRequest.current) {
@@ -220,7 +251,7 @@ export function useSkillsBrowseModel({
       })();
     }, 220);
     return () => window.clearTimeout(handle);
-  }, [capabilityTag, hasQuery, featuredOnly, searchLimit, searchSkills, trimmedQuery]);
+  }, [capabilityTag, featuredOnly, hasQuery, searchLimit, trimmedQuery]);
 
   const baseItems = useMemo(() => {
     if (hasQuery) {

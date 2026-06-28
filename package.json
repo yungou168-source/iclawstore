@@ -151,7 +151,6 @@
   "overrides": {
     "dompurify": "3.4.1",
     "next": "16.2.6",
-    "postcss": "8.5.12",
     "ws": "8.20.1"
   },
   "optionalDependencies": {

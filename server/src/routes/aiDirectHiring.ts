@@ -5,6 +5,13 @@ import { encryptCredential } from '../services/credentialVault.js';
 import { listJinshaModels } from '../services/jinshaGateway.js';
 import { AiDirectHiringError, ErrorCodes, errorResponse } from '../services/aiDirectErrors.js';
 import { publishOutboxEvent } from '../utils/outbox.js';
+import { aiDirectCompaniesRoutes } from './aiDirectCompanies.js';
+import { aiDirectOffersRoutes } from './aiDirectOffers.js';
+import { aiDirectEmploymentsRoutes } from './aiDirectEmployments.js';
+import { aiDirectApprovalsRoutes } from './aiDirectApprovals.js';
+import { aiDirectCapabilitiesRoutes } from './aiDirectCapabilities.js';
+import { aiDirectJobsRoutes } from './aiDirectJobs.js';
+import { aiDirectWorkersRoutes } from './aiDirectWorkers.js';
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -1111,4 +1118,19 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
       throw err;
     }
   });
+
+  // ── P2 Routes ───────────────────────────────────────────────────────────────
+  // Companies, Projects, Roles (Agent B / F)
+  await fastify.register(aiDirectCompaniesRoutes);
+  // Offers with state machine (Agent F)
+  await fastify.register(aiDirectOffersRoutes);
+  // Employments with state machine (Agent F)
+  await fastify.register(aiDirectEmploymentsRoutes);
+  // Approvals with state machine (Agent F)
+  await fastify.register(aiDirectApprovalsRoutes);
+  // Capability Grants (Agent F)
+  await fastify.register(aiDirectCapabilitiesRoutes);
+  // P1 Runtime — Job queue + worker heartbeat (Agent G)
+  await fastify.register(aiDirectJobsRoutes);
+  await fastify.register(aiDirectWorkersRoutes);
 }

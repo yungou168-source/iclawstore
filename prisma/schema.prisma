@@ -613,3 +613,381 @@ model auditLogs {
   @@index([actorUserId])
   @@index([targetType, targetId])
 }
+
+// ============================================
+// AI Direct Hiring — MySQL source of truth
+// ============================================
+
+// P0: Model Catalog, Agents, Versions, Run Audits, Credentials, Organizations
+model aiDirectModelCatalog {
+  id              String   @id @db.VarChar(36)
+  modelKey        String   @unique @db.VarChar(255)
+  displayName     String   @db.VarChar(255)
+  status          String   @default("draft") @db.VarChar(32)
+  capabilities    Json?
+  taskProfile     Json?
+  evidenceVersion String?  @db.VarChar(128)
+  evidence        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@map("ai_direct_model_catalog")
+}
+
+model aiDirectAgents {
+  id               String   @id @db.VarChar(36)
+  ownerUserId      String   @db.VarChar(191)
+  ownerPublisherId String?  @db.VarChar(191)
+  name             String   @db.VarChar(120)
+  description      String?  @db.Text
+  status           String   @default("draft") @db.VarChar(32)
+  activeVersionId  String?  @db.VarChar(36)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([ownerUserId])
+  @@index([ownerPublisherId])
+  @@map("ai_direct_agents")
+}
+
+model aiDirectAgentVersions {
+  id              String   @id @db.VarChar(36)
+  agentId         String   @db.VarChar(36)
+  version         Int
+  status          String   @default("draft") @db.VarChar(32)
+  promptSpec      Json
+  modelPolicy     Json
+  executionPolicy Json
+  createdByUserId String   @db.VarChar(191)
+  publishedAt     DateTime?
+  createdAt       DateTime @default(now())
+
+  @@unique([agentId, version])
+  @@index([agentId])
+  @@map("ai_direct_agent_versions")
+}
+
+model aiDirectModelRunAudits {
+  id              String   @id @db.VarChar(36)
+  agentId         String   @db.VarChar(36)
+  agentVersionId  String   @db.VarChar(36)
+  catalogModelId  String   @db.VarChar(36)
+  modelKey        String   @db.VarChar(255)
+  taskType        String?  @db.VarChar(128)
+  status          String   @db.VarChar(32)
+  failureCode     String?  @db.VarChar(128)
+  inputTokens     Int?
+  outputTokens    Int?
+  costMicros      BigInt?
+  latencyMs       Int?
+  routingMetadata Json
+  createdAt       DateTime @default(now())
+
+  @@index([agentId, createdAt])
+  @@map("ai_direct_model_run_audits")
+}
+
+model aiDirectUserCredentials {
+  id         String   @id @db.VarChar(36)
+  userId     String   @db.VarChar(191)
+  provider   String   @default("jinsha-token") @db.VarChar(64)
+  cipherText String   @db.MediumText
+  iv         String   @db.VarChar(64)
+  authTag    String   @db.VarChar(64)
+  keyVersion String   @default("v1") @db.VarChar(32)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  revokedAt  DateTime?
+
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("ai_direct_user_credentials")
+}
+
+model aiDirectOrganizations {
+  id                     String   @id @db.VarChar(36)
+  name                   String   @db.VarChar(160)
+  slug                   String   @unique @db.VarChar(160)
+  ownerUserId            String   @db.VarChar(191)
+  idempotencyKey         String?  @db.VarChar(128)
+  idempotencyFingerprint String?  @db.Char(64)
+  status                 String   @default("active") @db.VarChar(32)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@unique([ownerUserId, idempotencyKey])
+  @@index([ownerUserId])
+  @@index([status, updatedAt])
+  @@map("ai_direct_organizations")
+}
+
+model aiDirectOrganizationMembers {
+  id              String   @id @db.VarChar(36)
+  organizationId  String   @db.VarChar(36)
+  userId          String   @db.VarChar(191)
+  role            String   @default("member") @db.VarChar(32)
+  status          String   @default("active") @db.VarChar(32)
+  createdByUserId String   @db.VarChar(191)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, userId])
+  @@index([userId, status])
+  @@index([organizationId, status])
+  @@map("ai_direct_organization_members")
+}
+
+model aiDirectAuditEvents {
+  id             String   @id @db.VarChar(36)
+  organizationId String?  @db.VarChar(36)
+  actorUserId    String?  @db.VarChar(191)
+  action         String   @db.VarChar(128)
+  targetType     String   @db.VarChar(64)
+  targetId       String   @db.VarChar(191)
+  requestId      String?  @db.VarChar(128)
+  outcome        String   @db.VarChar(32)
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([targetType, targetId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@map("ai_direct_audit_events")
+}
+
+model aiDirectOutboxEvents {
+  id             String    @id @db.VarChar(36)
+  organizationId String?   @db.VarChar(36)
+  aggregateType  String    @db.VarChar(64)
+  aggregateId    String    @db.VarChar(191)
+  eventType      String    @db.VarChar(128)
+  payloadVersion Int       @default(1)
+  payload        Json
+  occurredAt     DateTime  @default(now())
+  status         String    @default("pending") @db.VarChar(32)
+  attempts       Int       @default(0)
+  availableAt    DateTime  @default(now())
+  publishedAt    DateTime?
+  failedAt       DateTime?
+  failureReason  String?   @db.Text
+
+  @@index([status, availableAt])
+  @@index([publishedAt, occurredAt])
+  @@index([aggregateType, aggregateId, occurredAt])
+  @@map("ai_direct_outbox_events")
+}
+
+// P1: Companies, Projects, AgentRoles, CapabilityGrants, Offers, Employments, Approvals, WorkflowRuns
+model aiDirectCompanies {
+  id               String   @id @default(cuid())
+  organizationId   String   @db.VarChar(36)
+  name             String   @db.VarChar(160)
+  slug             String   @unique @db.VarChar(160)
+  status           String   @default("active") @db.VarChar(32)
+  createdByUserId  String   @db.VarChar(191)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, updatedAt])
+  @@map("ai_direct_companies")
+}
+
+model aiDirectProjects {
+  id                 String   @id @default(cuid())
+  companyId          String   @db.VarChar(36)
+  name               String   @db.VarChar(160)
+  slug               String   @db.VarChar(160)
+  status             String   @default("active") @db.VarChar(32)
+  budgetMicros       BigInt?  @default(0)
+  sensitivityLimit   String?  @db.VarChar(64)
+  createdByUserId    String   @db.VarChar(191)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([companyId, slug])
+  @@index([companyId, status, updatedAt])
+  @@map("ai_direct_projects")
+}
+
+model aiDirectAgentRoles {
+  id                    String   @id @default(cuid())
+  companyId             String   @db.VarChar(36)
+  projectId             String?  @db.VarChar(36)
+  name                  String   @db.VarChar(160)
+  responsibilities      Json
+  requiredCapabilities  Json
+  budgetMicros          BigInt?  @default(0)
+  status                String   @default("open") @db.VarChar(32)
+  createdByUserId       String   @db.VarChar(191)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([companyId, status, updatedAt])
+  @@index([projectId, status])
+  @@map("ai_direct_agent_roles")
+}
+
+model aiDirectCapabilityGrants {
+  id               String    @id @default(cuid())
+  subjectType      String    @db.VarChar(32)
+  subjectId        String    @db.VarChar(191)
+  resourceType     String    @db.VarChar(64)
+  resourceId       String    @db.VarChar(191)
+  action           String    @db.VarChar(64)
+  scope            Json?
+  issuedByUserId   String    @db.VarChar(191)
+  issuedAt         DateTime  @default(now())
+  expiresAt        DateTime?
+  revokedAt        DateTime?
+  revokedByUserId  String?   @db.VarChar(191)
+  revokeReason     String?   @db.Text
+
+  @@index([subjectType, subjectId, resourceType, resourceId, revokedAt])
+  @@index([resourceType, resourceId, revokedAt])
+  @@index([revokedAt])
+  @@map("ai_direct_capability_grants")
+}
+
+model aiDirectOffers {
+  id               String    @id @default(cuid())
+  roleId           String    @db.VarChar(36)
+  agentVersionId   String    @db.VarChar(36)
+  companyId        String    @db.VarChar(36)
+  projectId        String?   @db.VarChar(36)
+  status           String    @default("draft") @db.VarChar(32)
+  terms            Json
+  approvalId       String?   @db.VarChar(36)
+  proposedByUserId String    @db.VarChar(191)
+  proposedAt       DateTime  @default(now())
+  expiresAt        DateTime?
+  acceptedAt       DateTime?
+  rejectedAt       DateTime?
+  rejectedReason   String?   @db.Text
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([roleId, agentVersionId, status])
+  @@index([companyId, status, updatedAt])
+  @@index([agentVersionId])
+  @@map("ai_direct_offers")
+}
+
+model aiDirectEmployments {
+  id               String    @id @default(cuid())
+  companyId        String    @db.VarChar(36)
+  agentId          String    @db.VarChar(36)
+  agentVersionId   String    @db.VarChar(36)
+  roleId           String    @db.VarChar(36)
+  projectId        String?   @db.VarChar(36)
+  offerId          String    @db.VarChar(36)
+  status           String    @default("candidate") @db.VarChar(32)
+  startedAt        DateTime?
+  endedAt          DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([companyId, status, updatedAt])
+  @@index([agentId, status])
+  @@index([agentVersionId])
+  @@index([roleId])
+  @@map("ai_direct_employments")
+}
+
+model aiDirectEmploymentEvents {
+  id            String    @id @default(cuid())
+  employmentId  String    @db.VarChar(36)
+  sequence      Int
+  fromStatus    String?   @db.VarChar(32)
+  toStatus      String    @db.VarChar(32)
+  actorUserId   String    @db.VarChar(191)
+  reason        String?   @db.Text
+  approvalId    String?   @db.VarChar(36)
+  metadata      Json?
+  occurredAt    DateTime  @default(now())
+
+  @@unique([employmentId, sequence])
+  @@index([employmentId, occurredAt])
+  @@map("ai_direct_employment_events")
+}
+
+model aiDirectApprovals {
+  id                  String    @id @default(cuid())
+  organizationId      String?   @db.VarChar(36)
+  targetType          String    @db.VarChar(64)
+  targetId            String    @db.VarChar(191)
+  requestedByUserId   String    @db.VarChar(191)
+  approverUserId      String?   @db.VarChar(191)
+  status              String    @default("pending") @db.VarChar(32)
+  decision            String?   @db.VarChar(32)
+  decisionReason     String?   @db.Text
+  expiresAt           DateTime?
+  decidedAt           DateTime?
+  metadata            Json?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([organizationId, status, updatedAt])
+  @@index([targetType, targetId, status])
+  @@index([approverUserId, status, updatedAt])
+  @@map("ai_direct_approvals")
+}
+
+model aiDirectWorkflowRuns {
+  id                      String    @id @default(cuid())
+  organizationId          String?   @db.VarChar(36)
+  employmentId            String?   @db.VarChar(36)
+  agentVersionId          String?   @db.VarChar(36)
+  workflowKey             String    @db.VarChar(128)
+  workflowVersion         String?   @db.VarChar(64)
+  status                  String    @default("queued") @db.VarChar(32)
+  requestedByUserId       String    @db.VarChar(191)
+  approvalId              String?   @db.VarChar(36)
+  requestedModelPolicy    Json?
+  resolvedModelCatalogId   String?   @db.VarChar(36)
+  resolvedModelKey        String?   @db.VarChar(255)
+  modelRunAuditIds        Json?
+  inputSummary            Json?
+  outputIndex             Json?
+  tokenUsage              Json?
+  costMicros              BigInt?
+  latencyMs               Int?
+  failureCode             String?   @db.VarChar(128)
+  failureReason           String?   @db.Text
+  metadata                Json?
+  startedAt               DateTime?
+  finishedAt              DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@index([organizationId, createdAt])
+  @@index([employmentId, createdAt])
+  @@index([status, updatedAt])
+  @@index([requestedByUserId, status, updatedAt])
+  @@map("ai_direct_workflow_runs")
+}
+
+model aiDirectWorkflowRunSteps {
+  id            String    @id @default(cuid())
+  runId         String    @db.VarChar(36)
+  stepKey       String    @db.VarChar(128)
+  sequence      Int
+  status        String    @default("pending") @db.VarChar(32)
+  catalogModelId String?  @db.VarChar(36)
+  modelKey      String?   @db.VarChar(255)
+  inputTokens   Int?
+  outputTokens  Int?
+  costMicros    BigInt?
+  latencyMs     Int?
+  failureCode   String?   @db.VarChar(128)
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  outputSummary Json?
+  metadata      Json?
+  createdAt     DateTime  @default(now())
+
+  @@unique([runId, sequence])
+  @@index([runId, sequence])
+  @@map("ai_direct_workflow_run_steps")
+}

@@ -1,12 +1,17 @@
 # AI 直聘开发进度跟踪(2026-08-01)
 
 > **目的**:给后续 Agent (E、F、...) 和人类维护者一份"现在我们到了哪里、还差什么"的速查表。
-> **当前快照**:本地整合分支 `feature/ai-direct-hire-integrated` commit `09609cf`(2026-08-01 02:05 UTC+8)。
+> **当前快照**:`feature/ai-direct-hire-p1-runtime` commit `8284931`(2026-08-01,含 F + G2 运行中心)。
+> **整体工作完成度**:**约 88%** — 今晚 7 个 Agent 均已完成各自本地交付；剩余为 E/F/G 分支正式整合、迁移与 CI/e2e 验证、部署和 PR。
 > **关联文档**:
-> - `docs/AI_DIRECT_HIRING_BASELINE.md` - 基线
+> - `docs/AI_DIRECT_HIRING_BASELINE.md` - A 基线
 > - `docs/AI_DIRECT_HIRING_P1_BACKEND.md` - B 交付
 > - `docs/AI_DIRECT_HIRING_P0_MOUNT.md` - C 交付
-> - `docs/AI_DIRECT_HIRING_INTEGRATION_REPORT.md` - 整合报告
+> - `docs/AI_DIRECT_HIRING_INTEGRATION_REPORT.md` - D 整合报告
+> - `docs/AI_DIRECT_HIRING_P1_FRONTEND.md` - E 交付(分支 `feature/ai-direct-hire-p1-frontend`)
+> - `docs/AI_DIRECT_HIRING_P2_HIRING.md` - F 交付(分支 `feature/ai-direct-hire-p2-hiring`)
+> - `docs/AI_DIRECT_HIRING_P1_RUNTIME.md` - G2 运行中心交付
+> - `docs/AI_DIRECT_HIRING_FINAL_HANDOFF.md` - H 最终交接
 
 ## 1. 总体进度
 
@@ -15,10 +20,11 @@
 | **基线快照** | ✅ 完成 | `baseline-mysql-migration-2026-08-01` 标签 | A |
 | **P0 挂载(数据库模型 + 核心路由)** | ✅ 完成 | 9 个 P0 模型 + 6 个核心路由 | C |
 | **P1 后端核心(招聘工作流基础设施)** | ✅ 完成 | 18 个 P1 模型 + RBAC + 幂等键 | B |
-| **整合 + 静态检查** | 🟡 部分完成 | 合并成功,`ci:static` 未运行 | D |
-| **P1 前端(老板工作台 + Agent 管理)** | ⏳ 启动中 | - | **E** |
-| **P2 招聘流程 API(Offer/Employment 状态机)** | ⏳ 排队 | - | F |
-| **P1 运行中心(队列 + 产物索引)** | ⏳ 排队 | - | G |
+| **整合 + 静态检查** | 🟡 部分完成 | B/C 已整合,`ci:static` 未运行 | D |
+| **P1 前端(老板工作台 + Agent 管理)** | ✅ 本地完成 | 9 页面 + 1 布局组件 + 2 库文件,约 1800 行 | E |
+| **P2 招聘流程 API(Offer/Employment 状态机)** | ✅ 本地完成 | 25 路由 + 3 状态机 + 5 测试,2852 行 | F |
+| **P1 运行中心(队列 + 产物索引)** | ✅ 精简版完成 | 7 路由 + lease 队列 + 投影 + 2 测试；分支累计约 4126 行 | G2 |
+| **最终文档交接** | ✅ 完成 | 进度、整合报告和最终 handoff | H |
 
 ## 2. 已完成的 P0 路由清单(由 C 交付)
 
@@ -153,20 +159,34 @@
 | `/tmp/wt-baseline` | `feature/baseline-mysql-migration-fix` | 基线(保留) |
 | `/tmp/wt-e-p1frontend` | `feature/ai-direct-hire-p1-frontend` | 🟡 **E 即将创建** |
 
-## 10. 启动 Agent E 的指令
+## 10. 今晚 7 个 Agent 完成情况
 
-接下来的 Agent E 应当:
-1. **基于 `feature/ai-direct-hire-integrated`** 创建 `feature/ai-direct-hire-p1-frontend`
-2. **只添加前端代码**(不修改后端 schema 或后端路由)
-3. **复用 B/C 的 API**(调用 `/api/v1/ai-direct-hiring/...`)
-4. **遵循 TanStack Start 项目规范**(已有大量现有页面可参考)
-5. **做前后端契约自检**:对照 `docs/AI_DIRECT_HIRING_P0_MOUNT.md` 路由清单,确认前端调用的 API 都存在
-6. **不要 `git push`**(本地分支)
-7. **不要执行 `bun run dev` / `bun run build` / `bun test`**(高 IO)
-8. **可以使用 `rg` / `Read` / `Grep` 读源码**(只读)
-9. **完成后写 `docs/AI_DIRECT_HIRING_P1_FRONTEND.md`** 报告
+| Agent | 职责 | 分支 / Commit | 状态 | 报告 |
+|---|---|---|---|---|
+| A | 基线快照 | `feature/baseline-mysql-migration-fix` / `916ce2b` | ✅ 完成 | `AI_DIRECT_HIRING_BASELINE.md` |
+| B | P1 后端核心 | `feature/ai-direct-hire-p1-backend` / `8788b8a` | ✅ 完成 | `AI_DIRECT_HIRING_P1_BACKEND.md` |
+| C | P0 挂载 | `feature/ai-direct-hire-p0-mount` / `d39eaf9` | ✅ 完成 | `AI_DIRECT_HIRING_P0_MOUNT.md` |
+| D | B/C 整合 | `feature/ai-direct-hire-integrated` / `daf41f0` | ✅ 代码整合；⚠️ 未 CI | `AI_DIRECT_HIRING_INTEGRATION_REPORT.md` |
+| E | P1 前端 | `feature/ai-direct-hire-p1-frontend` / `2060975` | ✅ 本地完成 | `AI_DIRECT_HIRING_P1_FRONTEND.md`(分支内) |
+| F | P2 招聘 API | `feature/ai-direct-hire-p2-hiring` / `ddcdead` | ✅ 本地完成 | `AI_DIRECT_HIRING_P2_HIRING.md`(分支内) |
+| G2 | P1 运行中心 | `feature/ai-direct-hire-p1-runtime` / `8284931` | ✅ 精简版完成 | `AI_DIRECT_HIRING_P1_RUNTIME.md` |
+
+## 11. G2 运行中心完成情况
+
+- 新增 7 个路由:4 个 jobs 路由、3 个 worker 路由。
+- 实现 60 秒 lease、≤30 秒 heartbeat、`FOR UPDATE SKIP LOCKED` 并发领取和过期 lease 回收。
+- `JobQueueService` 提供 enqueue/lease/ack/complete/fail/cancel/retry/heartbeat；`RunProjectionService` 提供运行列表和详情投影。
+- F 的状态机与路由已在 G2 分支中作为基线集成；后续业务状态转移可自动调用 `enqueue()` 创建 workflow run 与步骤。
+- G2 自身约 1356 行，G2 分支包含 F 后交付统计约 **4126 行**；2 个测试文件已写但未运行。
+- 延后项:artifact 路由、加权进度估算、worker 池监控、Convex 投影消费和真实 MySQL lease 集成测试。
+
+## 12. 后续集成任务
+
+1. 以 `feature/ai-direct-hire-integrated` 为基线，依次整合 F、E、G；G 已含 F，实际合并时必须避免重复提交。
+2. 将 E/F 分支内报告一并带入最终整合分支，并保持本进度文档和 `AI_DIRECT_HIRING_FINAL_HANDOFF.md` 的交叉引用。
+3. 资源恢复后执行迁移验证、静态检查、单元测试、类型/构建与 e2e；通过后再创建 PR 和部署。
 
 ---
 
-*更新时间: 2026-08-01 02:06 UTC+8*
-*整合 commit: `09609cf`*
+*更新时间: 2026-08-01 03:14 UTC+8*
+*运行中心 commit: `8284931`*

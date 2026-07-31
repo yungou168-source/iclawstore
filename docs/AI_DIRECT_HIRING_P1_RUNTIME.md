@@ -182,7 +182,7 @@ base:   feature/ai-direct-hire-integrated @ daf41f0
 | 1 | `f58a3b4` | `chore: integrate F's P2 routes + services into G baseline` |
 | 2 | `45ef645` | `feat(ai-direct-hiring): P1 runtime center - job queue + projection + jobs/workers routes` |
 | 3 | `e79b78f` | `test(ai-direct-hiring): add jobQueue + jobs/workers schema tests` |
-| 4 | (this commit) | `docs(ai-direct-hiring): P1 runtime center delivery report` |
+| 4 | `8284931` | `docs(ai-direct-hiring): P1 runtime center delivery report` |
 
 ---
 

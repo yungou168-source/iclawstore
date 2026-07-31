@@ -157,7 +157,42 @@ P1 模型覆盖了招聘完整流程:
 3. **没有真实 MySQL 验证**:所有 SQL 迁移是手写的,没有跑过 `prisma migrate deploy`。
 4. **没有 CI 集成**:新增的 9 个 P1 模型 + 1 个新迁移没有 CI 验证。
 
+## 12. 后续 Agent E/F/G2 交付追加
+
+### Agent E — P1 前端
+
+- 分支:`feature/ai-direct-hire-p1-frontend`,commit `2060975`。
+- 交付 9 个页面、`EmployerLayout`、API 客户端和错误码映射,约 1800 行。
+- 独立于新增后端实现:已有 P0 API 可真实调用,公司/项目/Offer 页面在 F 路由可用前采用明确占位与空状态。
+- 报告:`docs/AI_DIRECT_HIRING_P1_FRONTEND.md`(当前位于 E 分支)。
+
+### Agent F — P2 招聘流程 API
+
+- 分支:`feature/ai-direct-hire-p2-hiring`,commit `ddcdead`。
+- 交付 25 个路由、Offer/Employment/Approval 三套状态机、5 个测试文件,共 2852 行。
+- 复用 B 的认证/RBAC/幂等基础与 C 的统一错误、审计/outbox 约定,覆盖 E 列出的 14 项后端需求。
+- 报告:`docs/AI_DIRECT_HIRING_P2_HIRING.md`(当前位于 F 分支)。
+
+### Agent G2 — P1 运行中心
+
+- **路线图**:以 `feature/ai-direct-hire-integrated` (`daf41f0`) 为基线,先集成 F,再实现队列、worker lease、运行投影与 jobs/workers API。
+- **产出**:7 个新路由、`JobQueueService`、`RunProjectionService`、2 个测试文件；G2 自身约 1356 行,分支包含 F 后统计约 **4126 行**。
+- **自动 enqueue 设计**:F 的 Offer/Employment/Approval 状态机承担业务状态合法性与 outbox 事件；状态转移成功后由集成层按事件类型构造 workflow steps 并调用 `JobQueueService.enqueue()`。enqueue 在单事务内写 run、steps、audit 和 outbox；worker 通过 60 秒 lease 与 heartbeat 领取和恢复任务,避免状态机路由直接执行长任务。
+- **延后项**:artifact routes、加权进度估算、worker 池监控、Convex 投影消费者、真实 MySQL lease 集成测试。
+- **报告**:`docs/AI_DIRECT_HIRING_P1_RUNTIME.md`。
+
+### 留给 H / I 的工作
+
+1. 整合 E/F/G 三个分支；注意 G 已包含 F 的代码,应按提交拓扑避免重复 cherry-pick。
+2. 将 E/F 分支内报告带入最终分支,并维护 `specs/ai-direct-hiring-progress.md` 与 `docs/AI_DIRECT_HIRING_FINAL_HANDOFF.md` 的交叉引用。
+3. 在资源允许时验证 Prisma 迁移、静态检查、类型/构建、单元与 e2e 测试。
+4. 检查 worker 入口的网关鉴权和 `ai_direct_company_members` 依赖后,再推送并创建 PR；本轮未 push、未部署。
+
+## 13. 当前整体结论
+
+今晚 A–G2 的本地交付均已形成 commit 和对应报告。功能实现已覆盖基线、P0/P1 后端、前端、招聘状态机及精简运行中心；当前约 **88%** 完成,剩余工作集中在最终分支整合、数据库/CI/e2e 验证、PR 与部署。
+
 ---
 
-*报告生成时间: 2026-08-01 02:05 UTC+8*
-*整合者: 手动操作(原 Agent D 在合并完成后未产出报告,用户选择"只写报告"并由主 agent 手工完成)*
+*报告追加时间: 2026-08-01 03:14 UTC+8*
+*G2 commit: `8284931`*

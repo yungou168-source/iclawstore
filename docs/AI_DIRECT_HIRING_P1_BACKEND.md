@@ -1,5 +1,23 @@
 # AI Direct Hiring P1 Backend Core — Delivery Report
 
+> **后续 Web / 服务器工作包（2026-08-03）**
+>
+> 完整范围、依赖、状态边界和验收统一以 `specs/ai-direct-web-server-roadmap.md` 为准，覆盖：组织/公司管理、Agent publication、候选市场、非支付招聘、面试、运行中心、形象管理、模板发布审核及中央审计。桌面数据边界继续以 `specs/ai-direct-desktop-platform-integration.md` 为准。
+>
+> 服务器模块必须继续按领域拆分：`IdentitySessionModule`、`OrganizationModule`、`CompanyModule`、`WorkforceModule`、`AgentPublicationModule`、`CandidateCatalogModule`、`HiringModule`、`InterviewModule`、`RuntimeModule`、`TemplatePublication/ReviewModule` 和 `AuditModule`。`aiDirectCore.ts` 只聚合模块；禁止重新挂载整个 `aiDirectHiring.ts`。
+>
+> 生产 identity bridge、OIDC discovery/JWKS 与 `ai_direct_auth_identities` 迁移已生效。受保护路由继续 fail-closed：缺失、过期或不受信任的 Bearer token 返回 401；只有由当前 Convex Auth issuer 签发、audience 为 `convex` 的有效 token 才能解析为 AI 直聘用户主体。Web 登录与生产可用仍取决于已启用的认证 provider、Auth 回调路由及真实会话的端到端验证，不能仅因身份桥初始化成功而标记完成。
+
+> **当前生产事实（后续集成更新）**
+>
+> 本文主体是早期 Agent 交付记录，分支、worktree、未迁移、缺表和未验证等描述不再代表当前状态。招聘核心现已由 `server/src/routes/aiDirectCore.ts` 聚合并在 `server/src/index.ts` 挂载；`ai_direct_company_members`、运行队列字段、`requestedByUserId` 和 Employment/Offer 唯一约束均已通过后续加法迁移落地。服务端 TypeScript 零错误，核心定向单测 `47/47`，全新临时 MySQL HTTP e2e `44/44`，生产迁移和烟测均完成。旧 `aiDirectHiring.ts` 因包含延后的 Provider/凭据/Worker 依赖而未挂载，这是有意的模块边界，不是招聘核心阻塞。
+>
+> 当前生产迁移链还包括 `20260802_ai_direct_runtime_contract`、`20260803_ai_direct_employment_offer_unique` 和 `20260804_ai_direct_worker_runtime`。运行时 Dispatcher 与受鉴权 Worker 路由已独立上线。
+>
+> 当前分支已实现后续 Provider runtime：加密凭据、金沙 adapter、单并发 Executor、预算/限流/重试与幂等成本审计。实现通过 `aiDirectCore.ts` 的独立 feature gate 接线，Provider 调用不进入 API 或队列服务。`20260805_ai_direct_provider_runtime` 已于后续生产发布中部署，但执行能力仍未生产启用：没有真实金沙 canary、生产 keyring、`executor.env` 或 Executor 进程，执行 kill switch 保持关闭。
+>
+> 面向最新桌面端的能力状态、数据边界和 API 差距不再由本历史交付报告推导，统一以 `specs/ai-direct-desktop-platform-integration.md` 为准。尤其不得把未挂载的 `aiDirectHiring.ts` 中的 Agent 发布路由视为当前生产能力。
+
 ## Branch & Worktree
 
 - **Branch**: `feature/ai-direct-hire-p1-backend`

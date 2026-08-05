@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">AI直聘</title>
+  <desc id="desc">青绿色圆角方形上的 AI直聘 字标与人才连接节点</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#27C9BD"/>
+      <stop offset="1" stop-color="#089A9D"/>
+    </linearGradient>
+    <linearGradient id="highlight" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="44" y="44" width="936" height="936" rx="218" fill="url(#background)"/>
+  <path d="M102 210C102 130 167 82 247 82h530c80 0 145 48 145 128v118H102V210Z" fill="url(#highlight)"/>
+  <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" opacity=".9">
+    <path d="M770 180v66m-33-33h66" stroke-width="18"/>
+    <circle cx="688" cy="228" r="12" fill="#FFFFFF" stroke="none"/>
+  </g>
+  <text x="512" y="394" text-anchor="middle" fill="#FFFFFF" font-family="Arial, 'Microsoft YaHei', sans-serif" font-size="266" font-weight="800" letter-spacing="-8">AI</text>
+  <path d="M185 470h654" stroke="#FFFFFF" stroke-opacity=".4" stroke-width="12" stroke-linecap="round"/>
+  <text x="512" y="730" text-anchor="middle" fill="#FFFFFF" font-family="'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif" font-size="262" font-weight="800" letter-spacing="-18">直聘</text>
+  <g fill="#CFFFFA" opacity=".9">
+    <circle cx="198" cy="810" r="13"/>
+    <circle cx="244" cy="840" r="8"/>
+    <circle cx="812" cy="810" r="13"/>
+    <circle cx="766" cy="840" r="8"/>
+  </g>
+</svg>

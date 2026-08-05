@@ -95,7 +95,6 @@ async function writeAudit(
 
 async function advanceEmploymentStatus(
   conn: any,
-  pool: any,
   employment: any,
   toStatus: EmploymentStatus,
   event: string,
@@ -110,13 +109,22 @@ async function advanceEmploymentStatus(
     event,
   );
 
+  await synchronizeAppearanceControl(
+    conn,
+    employment,
+    transition.from,
+    transition.to,
+    actorUserId,
+    reqId,
+  );
+
   const updateFields: string[] = ['status = ?', 'updatedAt = NOW()'];
   const updateParams: unknown[] = [toStatus];
 
-  if (event === 'accepted' && !employment.startedAt) {
+  if (toStatus === 'active' && !employment.startedAt) {
     updateFields.push('startedAt = NOW()');
   }
-  if (['terminated', 'offboarding'].includes(event)) {
+  if (toStatus === 'terminated') {
     updateFields.push('endedAt = NOW()');
   }
 
@@ -175,8 +183,8 @@ async function advanceEmploymentStatus(
     },
   });
 
-  // Refetch
-  const [rows] = await pool.query(
+  // Read through the transaction connection so the response reflects the transition.
+  const [rows] = await conn.query(
     `SELECT e.*, r.name AS roleName, c.name AS companyName
      FROM ai_direct_employments e
      JOIN ai_direct_agent_roles r ON r.id = e.roleId
@@ -185,6 +193,109 @@ async function advanceEmploymentStatus(
     [employment.id],
   );
   return (rows as any[])[0];
+}
+
+async function synchronizeAppearanceControl(
+  conn: any,
+  employment: any,
+  fromStatus: EmploymentStatus,
+  toStatus: EmploymentStatus,
+  actorUserId: string,
+  reqId: string,
+): Promise<void> {
+  if (toStatus !== 'accepted' && toStatus !== 'terminated') return;
+
+  // Locking the Agent serializes competing Employments even when no profile row exists yet.
+  const [agentRows] = await conn.query(
+    `SELECT id, ownerUserId FROM ai_direct_agents WHERE id = ? LIMIT 1 FOR UPDATE`,
+    [employment.agentId],
+  );
+  const agent = (agentRows as any[])[0];
+  if (!agent) {
+    throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Employment 对应的 Agent 不存在', 404);
+  }
+  const [profileRows] = await conn.query(
+    `SELECT controllerEmploymentId, controllerCompanyId, revision
+     FROM ai_direct_agent_appearance_profiles
+     WHERE agentId = ? LIMIT 1 FOR UPDATE`,
+    [employment.agentId],
+  );
+  const profile = (profileRows as any[])[0];
+
+  if (toStatus === 'accepted') {
+    if (profile?.controllerEmploymentId && profile.controllerEmploymentId !== employment.id) {
+      throw new AiDirectHiringError(
+        ErrorCodes.APPEARANCE_CONTROL_CONFLICT,
+        '该 Agent 的形象控制权已由另一 Employment 持有',
+        409,
+        {
+          agentId: employment.agentId,
+          controllerEmploymentId: profile.controllerEmploymentId,
+          controllerCompanyId: profile.controllerCompanyId,
+        },
+      );
+    }
+    if (!profile) {
+      await conn.query(
+        `INSERT INTO ai_direct_agent_appearance_profiles
+           (agentId, avatarAssetId, defaultMode, controllerEmploymentId, controllerCompanyId,
+            revision, updatedByUserId, createdAt, updatedAt)
+         VALUES (?, NULL, 'image_2d', ?, ?, 1, ?, NOW(3), NOW(3))`,
+        [employment.agentId, employment.id, employment.companyId, actorUserId],
+      );
+    } else if (!profile.controllerEmploymentId) {
+      await conn.query(
+        `UPDATE ai_direct_agent_appearance_profiles
+         SET controllerEmploymentId = ?, controllerCompanyId = ?, revision = revision + 1,
+             updatedByUserId = ?, updatedAt = NOW(3)
+         WHERE agentId = ?`,
+        [employment.id, employment.companyId, actorUserId, employment.agentId],
+      );
+    } else {
+      return;
+    }
+  } else {
+    if (!profile || profile.controllerEmploymentId !== employment.id) return;
+    await conn.query(
+      `UPDATE ai_direct_agent_appearance_profiles
+       SET controllerEmploymentId = NULL, controllerCompanyId = NULL, revision = revision + 1,
+           updatedByUserId = ?, updatedAt = NOW(3)
+       WHERE agentId = ? AND controllerEmploymentId = ?`,
+      [actorUserId, employment.agentId, employment.id],
+    );
+  }
+
+  const action = toStatus === 'accepted'
+    ? 'agent_appearance.control.transferred.v1'
+    : 'agent_appearance.control.released.v1';
+  await writeAudit(conn, {
+    organizationId: null,
+    actorUserId,
+    action,
+    targetType: 'agent_appearance',
+    targetId: employment.agentId,
+    requestId: reqId,
+    metadata: {
+      employmentId: employment.id,
+      companyId: employment.companyId,
+      fromStatus,
+      toStatus,
+    },
+  });
+  await publishOutboxEvent(conn, {
+    organizationId: null,
+    aggregateType: 'agent_appearance',
+    aggregateId: employment.agentId,
+    eventType: toStatus === 'accepted'
+      ? 'agent_appearance.control.transferred.v1'
+      : 'agent_appearance.control.released.v1',
+    payload: {
+      agentId: employment.agentId,
+      employmentId: employment.id,
+      companyId: employment.companyId,
+      actorUserId,
+    },
+  });
 }
 
 // ─── Routes ────────────────────────────────────────────────────────────────────
@@ -253,6 +364,17 @@ export async function aiDirectEmploymentsRoutes(fastify: FastifyInstance) {
         409,
       );
     }
+    const [existingRows] = await pool.query(
+      `SELECT id FROM ai_direct_employments WHERE offerId = ? LIMIT 1`,
+      [offerId],
+    );
+    if ((existingRows as any[]).length) {
+      throw new AiDirectHiringError(
+        ErrorCodes.DUPLICATE_ENTRY,
+        '该 Offer 已创建 Employment',
+        409,
+      );
+    }
 
     // Get agent info from agentVersionId
     const [versionRows] = await pool.query(
@@ -268,10 +390,9 @@ export async function aiDirectEmploymentsRoutes(fastify: FastifyInstance) {
       await conn.beginTransaction();
 
       await conn.query(
-      await conn.query(
         `INSERT INTO ai_direct_employments
-         (id, companyId, agentId, agentVersionId, roleId, projectId, offerId, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'candidate')`,
+         (id, companyId, agentId, agentVersionId, roleId, projectId, offerId, requestedByUserId, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'candidate')`,
         [
           employmentId,
           offer.companyId,
@@ -280,6 +401,7 @@ export async function aiDirectEmploymentsRoutes(fastify: FastifyInstance) {
           offer.roleId,
           offer.projectId,
           offerId,
+          user.id,
         ],
       );
 
@@ -319,6 +441,13 @@ export async function aiDirectEmploymentsRoutes(fastify: FastifyInstance) {
       return reply.status(201).send({ id: employmentId, status: 'candidate' });
     } catch (err) {
       await conn.rollback();
+      if ((err as { code?: string })?.code === 'ER_DUP_ENTRY') {
+        throw new AiDirectHiringError(
+          ErrorCodes.DUPLICATE_ENTRY,
+          '该 Offer 已创建 Employment',
+          409,
+        );
+      }
       throw err;
     } finally {
       conn.release();
@@ -367,12 +496,23 @@ export async function aiDirectEmploymentsRoutes(fastify: FastifyInstance) {
       throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, `无效的 toStatus: ${toStatus}`);
     }
 
-    const employment = await requireEmploymentScope(pool, id, user.id);
+    // Authorization is checked before acquiring a connection; state validation is repeated under lock.
+    await requireEmploymentScope(pool, id, user.id);
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
+      const [lockedRows] = await conn.query(
+        `SELECT id, companyId, requestedByUserId, agentId, agentVersionId, roleId,
+                projectId, offerId, status, startedAt, endedAt
+         FROM ai_direct_employments WHERE id = ? LIMIT 1 FOR UPDATE`,
+        [id],
+      );
+      const employment = (lockedRows as any[])[0];
+      if (!employment) {
+        throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Employment 不存在', 404);
+      }
       const updated = await advanceEmploymentStatus(
-        conn, pool, employment, toStatus as EmploymentStatus, 'transition',
+        conn, employment, toStatus as EmploymentStatus, 'transition',
         user.id, reqId, approvalId, { reason },
       );
       await conn.commit();

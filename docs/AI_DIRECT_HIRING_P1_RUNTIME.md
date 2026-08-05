@@ -1,5 +1,37 @@
 # AI Direct Hiring P1 Runtime Center — Delivery Report
 
+> **Web 运行中心后续范围（2026-08-03）**
+>
+> Jobs 列表/详情/步骤、取消、终态重试、产物元数据、模型/Token/成本/延迟、失败恢复建议和 runtime metrics 页面，统一按 `specs/ai-direct-web-server-roadmap.md` 的“工作包 F”开发。中央运行审计与导出归“工作包 I”，不塞入 Jobs 路由。
+>
+> Provider Executor 当前未生产启用。Web 必须消费服务器 `runtimeCapabilities` 并显示“执行能力未启用”，不能根据迁移、表、路由或历史 Job 推断 Provider 可执行。即使执行关闭，历史、状态投影、失败、审计和产物元数据页面仍可独立交付。
+
+> **Provider Executor current production boundary (2026-08-03 alignment)**
+>
+> The additive `20260805_ai_direct_provider_runtime` migration is deployed in production, but migration deployment is not Provider execution enablement. Production still has no `executor.env`, keyring, Executor process, or real Jinsha canary; `AI_DIRECT_PROVIDER_RUNTIME_ENABLED` and `PROVIDER_EXECUTION_ENABLED` remain off. The API, Dispatcher, and queue service do not perform Provider network calls. Any older statement below saying that `20260805` is pending is historical and no longer current.
+>
+> The desktop integration baseline is `specs/ai-direct-desktop-platform-integration.md`. Jobs list/detail/cancel/retry and artifact metadata exist, but Jobs are not yet included in `server/openapi/desktop-client-v1.yaml`; remote artifact download remains deferred until a versioned desktop DTO and authorization contract are published.
+
+> **当前实现与生产事实（2026-08-02 更新）**
+>
+> P1 运行闭环已完成并上线：`20260802_ai_direct_runtime_contract` 与 `20260804_ai_direct_worker_runtime` 已部署；`workflowTemplateRegistry` 将 outbox 事件映射为稳定步骤模板，独立 `iclawstore-runtime-dispatcher` 通过短事务和 `FOR UPDATE SKIP LOCKED` 原子创建 workflow run/steps 并发布事件。API 与 Dispatcher 使用相互独立、仅限业务库 DML 的 MySQL 账号，Dispatcher 连接池上限为 2；PM2 进程已启动、稳定并执行 `pm2 save`。上线时生产 outbox 与 workflow run 均为空，没有历史事件需要补消费。
+>
+> 生产数据库连接和 JWT secret 不再写入仓库：API、Dispatcher 和 MySQL 管理凭据分别保存在 `/home/ubuntu/.config/iclawstore/` 的独立文件中，目录权限为 `700`、文件和 PM2 dump 权限为 `600`。API JWT secret 与 MySQL 根密码已轮换，历史根凭据已验证失效；`NODE_ENV=production` 且缺少 `JWT_SECRET` 时 API 必须拒绝启动。Dispatcher 不接收 JWT secret。
+>
+> Worker 路由已由 `aiDirectCoreRoutes` 挂载并采用组织级哈希 token 鉴权，不再信任可伪造的单独 `X-Worker-Id`。lease 领取、heartbeat、过期回收和 complete/fail 均校验组织与当前 lease owner；artifact 元数据与步骤结果在同一事务写入，路径唯一性使用 `(runId, storagePathHash)`。Jobs 与 runtime 管理路由使用用户 JWT 和独立组织 RBAC；organizationless run 仅请求者可见。
+>
+> 发布门禁已通过：服务端 TypeScript 零错误，核心单测 `62/62`；三个全新临时 MySQL 门禁分别覆盖招聘 HTTP、dispatcher 事务/幂等和 worker lease/artifact。迁移前备份为 `/home/ubuntu/backups/iclawstore/production-migrations/iclawstore-before-worker-runtime-20260801T203832Z.sql.gz`，权限受限且 gzip 完整性校验通过。本地 `/health` 为 `200`；本地与公网招聘、Obsidian、Jobs、runtime、worker 未认证访问均为 `401`；公网首页为 `200`，公网 `/health` 因反向代理未暴露仍为 `404`。
+>
+> **Provider Executor 当前分支状态（2026-08-02）**
+>
+> 加密凭据运行时、金沙 OpenAI-compatible adapter、显式 Provider execution descriptor、独立单并发 Executor、heartbeat/lease 续期、超时中止、RPM/TPM token bucket、稳定失败分类/退避、预算预检、catalog 定价成本计算和幂等模型审计已实现。Executor 通过受鉴权 Worker HTTP API lease/heartbeat/complete，不直接提交队列状态；Provider 调用不在 API、Dispatcher 或 `jobQueue.ts` 中执行。步骤完成后 run 返回 `queued`，下一步骤重新按 Worker capability 领取，避免 Provider Executor 越权消费普通生命周期步骤。
+>
+> 当前分支定向与临时 MySQL 测试累计 `34/34` 通过：Executor/成本/HTTP 串联 `6/6`、queue `7/7`、凭据运行时 `10/10`、凭据路由 `2/2`、Provider adapter `6/6`、Worker runtime MySQL `3/3`。本机 HTTP 用例覆盖 Worker API 与金沙 Chat Completions 两侧边界，并确认密钥不进入完成回报；MySQL 用例在全新临时库应用 7 段迁移链后验证 capability-safe 步骤推进、lease 回收与 artifact，临时库已删除。最终 TypeScript 复核因 `MemAvailable` 低于 700 MB 门禁而未启动，这不是编译失败。
+>
+> **这不是生产启用状态。** `20260805_ai_direct_provider_runtime` 尚未部署；仓库外 `executor.env` 与真实 keyring 尚未创建；没有生产 Executor 进程，也没有真实金沙凭据 canary。`AI_DIRECT_PROVIDER_RUNTIME_ENABLED` 与 `PROVIDER_EXECUTION_ENABLED` 默认关闭，未通过低成本 canary 前不得启用。`ecosystem.config.cjs` 仅在受限的 `/home/ubuntu/.config/iclawstore/executor.env` 存在时才包含单实例 Executor 定义。
+>
+> 下方正文是早期交付记录，与本区块冲突时以本区块和实时行为为准。
+
 > **Agent**: G (retry) — P1 Runtime Center (simplified)
 > **Branch**: `feature/ai-direct-hire-p1-runtime`
 > **Base branch**: `feature/ai-direct-hire-integrated` (commit `daf41f0`)

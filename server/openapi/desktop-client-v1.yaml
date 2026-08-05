@@ -1,0 +1,823 @@
+openapi: 3.1.0
+info:
+  title: ClawHub Desktop Client API
+  version: 1.0.0
+  description: |
+    Versioned contract for Agent appearance, account-synchronized desktop sidebar
+    preferences, and the desktop template catalog. Template business data remains
+    local to the desktop client and is never accepted by these APIs.
+servers:
+  - url: https://iclawstore.com
+security:
+  - bearerAuth: []
+tags:
+  - name: Contract
+  - name: Agent Appearance
+  - name: Employments
+  - name: Desktop Sidebar
+  - name: Desktop Templates
+paths:
+  /api/v1/desktop/contract:
+    get:
+      tags: [Contract]
+      summary: Discover the current desktop contract
+      security: []
+      operationId: getDesktopContract
+      responses:
+        '200':
+          description: Contract metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractMetadata'
+  /api/v1/desktop/openapi.yaml:
+    get:
+      tags: [Contract]
+      summary: Download this OpenAPI document
+      security: []
+      operationId: getDesktopOpenApi
+      responses:
+        '200':
+          description: OpenAPI 3.1 YAML
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: string
+  /api/v1/ai-direct-hiring/agents/{agentId}/appearance:
+    parameters:
+      - $ref: '#/components/parameters/AgentId'
+    get:
+      tags: [Agent Appearance]
+      summary: Read Agent appearance and current write authority
+      operationId: getAgentAppearance
+      responses:
+        '200':
+          description: Appearance profile
+          headers:
+            ETag:
+              $ref: '#/components/headers/AppearanceEtag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentAppearance'
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Agent Appearance]
+      summary: Update avatar reference or default presentation mode
+      operationId: updateAgentAppearance
+      parameters:
+        - $ref: '#/components/parameters/AppearanceIfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentAppearancePatch'
+      responses:
+        '200':
+          description: Updated revision
+          headers:
+            ETag:
+              $ref: '#/components/headers/AppearanceEtag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Revision'
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '409': { $ref: '#/components/responses/RevisionConflict' }
+        '428': { $ref: '#/components/responses/PreconditionRequired' }
+  /api/v1/ai-direct-hiring/agents/{agentId}/appearance/assets:
+    post:
+      tags: [Agent Appearance]
+      summary: Upload an Agent appearance asset
+      operationId: uploadAgentAppearanceAsset
+      parameters:
+        - $ref: '#/components/parameters/AgentId'
+        - $ref: '#/components/parameters/AppearanceIfMatch'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [kind, file]
+              properties:
+                kind:
+                  type: string
+                  enum: [avatar, image_2d, model_3d]
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Stored asset
+          headers:
+            ETag:
+              $ref: '#/components/headers/AppearanceEtag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppearanceAsset'
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/AssetTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        '428': { $ref: '#/components/responses/PreconditionRequired' }
+  /api/v1/ai-direct-hiring/agents/{agentId}/appearance/assets/reorder:
+    post:
+      tags: [Agent Appearance]
+      summary: Replace the complete order for one appearance kind
+      operationId: reorderAgentAppearanceAssets
+      parameters:
+        - $ref: '#/components/parameters/AgentId'
+        - $ref: '#/components/parameters/AppearanceIfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [kind, assetIds]
+              properties:
+                kind:
+                  type: string
+                  enum: [image_2d, model_3d]
+                assetIds:
+                  type: array
+                  uniqueItems: true
+                  items: { type: string, format: uuid }
+      responses:
+        '200':
+          description: New order and revision
+          headers:
+            ETag:
+              $ref: '#/components/headers/AppearanceEtag'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [kind, assetIds, revision]
+                properties:
+                  kind: { type: string, enum: [image_2d, model_3d] }
+                  assetIds:
+                    type: array
+                    items: { type: string, format: uuid }
+                  revision: { type: string, pattern: '^[0-9]+$' }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '409': { $ref: '#/components/responses/RevisionConflict' }
+        '428': { $ref: '#/components/responses/PreconditionRequired' }
+  /api/v1/ai-direct-hiring/agents/{agentId}/appearance/assets/{assetId}:
+    delete:
+      tags: [Agent Appearance]
+      summary: Soft-delete an appearance asset
+      operationId: deleteAgentAppearanceAsset
+      parameters:
+        - $ref: '#/components/parameters/AgentId'
+        - $ref: '#/components/parameters/AssetId'
+        - $ref: '#/components/parameters/AppearanceIfMatch'
+      responses:
+        '204': { description: Asset deleted }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '428': { $ref: '#/components/responses/PreconditionRequired' }
+  /api/v1/ai-direct-hiring/appearance-assets/{assetId}/content:
+    get:
+      tags: [Agent Appearance]
+      summary: Stream an active appearance asset
+      operationId: getAgentAppearanceAssetContent
+      parameters:
+        - $ref: '#/components/parameters/AssetId'
+      responses:
+        '200':
+          description: PNG, JPEG, WebP, or self-contained GLB bytes
+          headers:
+            ETag: { schema: { type: string } }
+            X-Content-Type-Options: { schema: { type: string, const: nosniff } }
+          content:
+            image/png: { schema: { type: string, format: binary } }
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/webp: { schema: { type: string, format: binary } }
+            model/gltf-binary: { schema: { type: string, format: binary } }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/ai-direct-hiring/employments/{employmentId}/transition:
+    post:
+      tags: [Employments]
+      summary: Transition Employment and atomically synchronize appearance control
+      description: |
+        Entering accepted acquires the Agent appearance controller in the same
+        MySQL transaction. Entering terminated conditionally releases control
+        only when this Employment is still the controller.
+      operationId: transitionEmployment
+      parameters:
+        - $ref: '#/components/parameters/EmploymentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmploymentTransitionRequest'
+      responses:
+        '200':
+          description: Employment after the committed transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employment'
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Invalid state transition or Agent appearance already controlled by another Employment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/desktop/sidebar:
+    get:
+      tags: [Desktop Sidebar]
+      summary: Read the account-level sidebar override
+      operationId: getDesktopSidebar
+      responses:
+        '200':
+          description: Current override or the revision-zero default marker
+          headers:
+            ETag:
+              $ref: '#/components/headers/SidebarEtag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SidebarPreference'
+        '401': { $ref: '#/components/responses/AuthRequired' }
+    put:
+      tags: [Desktop Sidebar]
+      summary: Replace the account-level sidebar override
+      operationId: putDesktopSidebar
+      parameters:
+        - $ref: '#/components/parameters/SidebarIfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SidebarConfig'
+      responses:
+        '200':
+          description: Saved override
+          headers:
+            ETag:
+              $ref: '#/components/headers/SidebarEtag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SidebarPreference'
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '409': { $ref: '#/components/responses/RevisionConflict' }
+        '428': { $ref: '#/components/responses/PreconditionRequired' }
+    delete:
+      tags: [Desktop Sidebar]
+      summary: Delete the override and return to client defaults
+      operationId: resetDesktopSidebar
+      parameters:
+        - $ref: '#/components/parameters/SidebarIfMatch'
+      responses:
+        '204':
+          description: Override deleted; response ETag is sidebar-0
+          headers:
+            ETag:
+              $ref: '#/components/headers/SidebarEtag'
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '409': { $ref: '#/components/responses/RevisionConflict' }
+        '428': { $ref: '#/components/responses/PreconditionRequired' }
+  /api/v1/desktop/sidebar/icons:
+    post:
+      tags: [Desktop Sidebar]
+      summary: Upload an account-owned sidebar icon
+      operationId: uploadDesktopSidebarIcon
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '201':
+          description: Stored icon metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagedAsset'
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '413': { $ref: '#/components/responses/AssetTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+  /api/v1/desktop/sidebar/icons/{assetId}/content:
+    get:
+      tags: [Desktop Sidebar]
+      summary: Stream an icon owned by the authenticated account
+      operationId: getDesktopSidebarIconContent
+      parameters:
+        - $ref: '#/components/parameters/AssetId'
+      responses:
+        '200':
+          description: Image bytes
+          content:
+            image/png: { schema: { type: string, format: binary } }
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/webp: { schema: { type: string, format: binary } }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/desktop/sidebar/icons/{assetId}:
+    delete:
+      tags: [Desktop Sidebar]
+      summary: Delete an unused account-owned icon
+      operationId: deleteDesktopSidebarIcon
+      parameters:
+        - $ref: '#/components/parameters/AssetId'
+      responses:
+        '204': { description: Icon deleted }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/desktop/templates:
+    get:
+      tags: [Desktop Templates]
+      summary: List published desktop templates
+      operationId: listDesktopTemplates
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 10000, default: 0 } }
+      responses:
+        '200':
+          description: Published templates; purchaseSupported is always false in v1
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, limit, offset, purchaseSupported]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/DesktopTemplate' }
+                  limit: { type: integer }
+                  offset: { type: integer }
+                  purchaseSupported: { type: boolean, const: false }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+    post:
+      tags: [Desktop Templates]
+      summary: Create a Publisher-owned template draft
+      operationId: createDesktopTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTemplate'
+      responses:
+        '201': { description: Template draft created }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/desktop/templates/{templateId}:
+    parameters:
+      - $ref: '#/components/parameters/TemplateId'
+    get:
+      tags: [Desktop Templates]
+      summary: Read a published or owned template
+      operationId: getDesktopTemplate
+      responses:
+        '200':
+          description: Template details
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DesktopTemplate' }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Desktop Templates]
+      summary: Update an owned template draft
+      operationId: updateDesktopTemplateDraft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTemplate'
+      responses:
+        '200': { description: Draft updated }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+  /api/v1/desktop/templates/{templateId}/versions:
+    post:
+      tags: [Desktop Templates]
+      summary: Upload a validated .clawtemplate package for an owned draft
+      operationId: uploadDesktopTemplateVersion
+      parameters:
+        - $ref: '#/components/parameters/TemplateId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '201': { description: Draft version created }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '413': { $ref: '#/components/responses/AssetTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+  /api/v1/desktop/templates/{templateId}/versions/{versionId}/screenshots:
+    post:
+      tags: [Desktop Templates]
+      summary: Upload one of 1–4 template screenshots
+      operationId: uploadDesktopTemplateScreenshot
+      parameters:
+        - $ref: '#/components/parameters/TemplateId'
+        - $ref: '#/components/parameters/VersionId'
+        - name: sortOrder
+          in: query
+          required: true
+          schema: { type: integer, minimum: 0, maximum: 3 }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '201': { description: Screenshot stored }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/desktop/templates/{templateId}/versions/{versionId}/submit:
+    post:
+      tags: [Desktop Templates]
+      summary: Submit a complete draft version for review
+      operationId: submitDesktopTemplateVersion
+      parameters:
+        - $ref: '#/components/parameters/TemplateId'
+        - $ref: '#/components/parameters/VersionId'
+      responses:
+        '200': { description: Version is pending review }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+  /api/v1/desktop/templates/{templateId}/versions/{versionId}/approve:
+    post:
+      tags: [Desktop Templates]
+      summary: Approve and publish a submitted version (platform admin)
+      operationId: approveDesktopTemplateVersion
+      parameters:
+        - $ref: '#/components/parameters/TemplateId'
+        - $ref: '#/components/parameters/VersionId'
+      responses:
+        '200': { description: Version published }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/desktop/templates/{templateId}/package:
+    get:
+      tags: [Desktop Templates]
+      summary: Download a free or entitled published package
+      operationId: downloadDesktopTemplatePackage
+      parameters:
+        - $ref: '#/components/parameters/TemplateId'
+      responses:
+        '200':
+          description: .clawtemplate ZIP package
+          headers:
+            Content-Disposition: { schema: { type: string } }
+            ETag: { schema: { type: string } }
+          content:
+            application/zip: { schema: { type: string, format: binary } }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/EntitlementRequired' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/desktop/template-screenshots/{assetId}/content:
+    get:
+      tags: [Desktop Templates]
+      summary: Stream a published template screenshot
+      operationId: getDesktopTemplateScreenshot
+      parameters:
+        - $ref: '#/components/parameters/AssetId'
+      responses:
+        '200': { description: Screenshot image bytes }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/desktop/templates/{templateId}/entitlements/{userId}:
+    put:
+      tags: [Desktop Templates]
+      summary: Grant a test/admin entitlement (platform admin)
+      operationId: grantDesktopTemplateEntitlement
+      parameters:
+        - $ref: '#/components/parameters/TemplateId'
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                reference: { type: [string, 'null'], maxLength: 191 }
+      responses:
+        '200': { description: Entitlement active }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+    delete:
+      tags: [Desktop Templates]
+      summary: Revoke an entitlement (platform admin)
+      operationId: revokeDesktopTemplateEntitlement
+      parameters:
+        - $ref: '#/components/parameters/TemplateId'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '204': { description: Entitlement revoked }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    AgentId: { name: agentId, in: path, required: true, schema: { type: string, format: uuid } }
+    EmploymentId: { name: employmentId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+    AssetId: { name: assetId, in: path, required: true, schema: { type: string, format: uuid } }
+    TemplateId: { name: templateId, in: path, required: true, schema: { type: string, format: uuid } }
+    VersionId: { name: versionId, in: path, required: true, schema: { type: string, format: uuid } }
+    UserId: { name: userId, in: path, required: true, schema: { type: string, maxLength: 191 } }
+    AppearanceIfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema: { type: string, pattern: '^"appearance-[0-9]+"$' }
+      example: '"appearance-3"'
+    SidebarIfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema: { type: string, pattern: '^"sidebar-[0-9]+"$' }
+      example: '"sidebar-2"'
+  headers:
+    AppearanceEtag:
+      description: Strong optimistic-concurrency tag for the appearance revision
+      schema: { type: string, pattern: '^"appearance-[0-9]+"$' }
+    SidebarEtag:
+      description: Strong optimistic-concurrency tag for the sidebar revision
+      schema: { type: string, pattern: '^"sidebar-[0-9]+"$' }
+  schemas:
+    ContractMetadata:
+      type: object
+      required: [contract, version, openapi, documentation, purchaseSupported]
+      properties:
+        contract: { type: string, const: clawhub-desktop-client }
+        version: { type: string, const: 1.0.0 }
+        openapi: { type: string }
+        documentation: { type: string }
+        purchaseSupported: { type: boolean, const: false }
+    Error:
+      type: object
+      required: [code, error]
+      properties:
+        code:
+          type: string
+          enum: [AUTH_REQUIRED, FORBIDDEN_SCOPE, NOT_FOUND, VALIDATION_ERROR, INVALID_TRANSITION, APPEARANCE_CONTROL_CONFLICT, ASSET_LIMIT_EXCEEDED, ASSET_TOO_LARGE, UNSUPPORTED_MEDIA_TYPE, ASSET_IN_USE, REVISION_CONFLICT, PRECONDITION_REQUIRED, TEMPLATE_ENTITLEMENT_REQUIRED, TEMPLATE_NOT_INSTALLABLE, DUPLICATE_ENTRY, INTERNAL_ERROR]
+        error: { type: string }
+        details: {}
+    EmploymentTransitionRequest:
+      type: object
+      additionalProperties: false
+      required: [toStatus]
+      properties:
+        toStatus:
+          type: string
+          enum: [candidate, evaluating, offer_pending, offered, accepted, onboarding, active, paused, offboarding, terminated]
+        reason: { type: string, maxLength: 500 }
+        approvalId: { type: string, maxLength: 36 }
+    Employment:
+      type: object
+      required: [id, companyId, agentId, roleId, status]
+      properties:
+        id: { type: string, maxLength: 36 }
+        companyId: { type: string, maxLength: 36 }
+        agentId: { type: string, maxLength: 36 }
+        agentVersionId: { type: string, maxLength: 36 }
+        roleId: { type: string, maxLength: 36 }
+        projectId: { type: [string, 'null'], maxLength: 36 }
+        offerId: { type: string, maxLength: 36 }
+        status:
+          type: string
+          enum: [candidate, evaluating, offer_pending, offered, accepted, onboarding, active, paused, offboarding, terminated]
+        roleName: { type: string }
+        companyName: { type: string }
+        startedAt: { type: [string, 'null'], format: date-time }
+        endedAt: { type: [string, 'null'], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Revision:
+      type: object
+      required: [revision]
+      properties:
+        revision: { type: string, pattern: '^[0-9]+$' }
+    ManagedAsset:
+      type: object
+      required: [id, mimeType, sizeBytes, sha256, contentUrl]
+      properties:
+        id: { type: string, format: uuid }
+        mimeType: { type: string }
+        sizeBytes: { type: [string, integer] }
+        sha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+        contentUrl: { type: string }
+    AppearanceAsset:
+      allOf:
+        - $ref: '#/components/schemas/ManagedAsset'
+        - type: object
+          required: [kind, sortOrder, createdAt]
+          properties:
+            kind: { type: string, enum: [avatar, image_2d, model_3d] }
+            sortOrder: { type: integer, minimum: 0 }
+            createdAt: { type: string, format: date-time }
+    AgentAppearancePatch:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        avatarAssetId: { type: [string, 'null'], format: uuid }
+        defaultMode: { type: string, enum: [image_2d, model_3d] }
+    AgentAppearance:
+      type: object
+      required: [agentId, avatarAssetId, defaultMode, revision, control, assets, presentation]
+      properties:
+        agentId: { type: string, format: uuid }
+        avatarAssetId: { type: [string, 'null'], format: uuid }
+        defaultMode: { type: string, enum: [image_2d, model_3d] }
+        revision: { type: string, pattern: '^[0-9]+$' }
+        control:
+          type: object
+          required: [controllerEmploymentId, controllerCompanyId, canWrite, authority, readOnlyReason]
+          properties:
+            controllerEmploymentId: { type: [string, 'null'] }
+            controllerCompanyId: { type: [string, 'null'] }
+            canWrite: { type: boolean }
+            authority: { type: [string, 'null'], enum: [developer, publisher, company, null] }
+            readOnlyReason: { type: [string, 'null'] }
+        assets:
+          type: object
+          required: [avatar, image2d, model3d]
+          properties:
+            avatar: { type: array, items: { $ref: '#/components/schemas/AppearanceAsset' } }
+            image2d: { type: array, maxItems: 5, items: { $ref: '#/components/schemas/AppearanceAsset' } }
+            model3d: { type: array, items: { $ref: '#/components/schemas/AppearanceAsset' } }
+        presentation: { type: object }
+        updatedAt: { type: [string, 'null'], format: date-time }
+    SidebarIcon:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [type, iconId]
+          properties:
+            type: { type: string, const: builtin }
+            iconId: { type: string, maxLength: 64 }
+        - type: object
+          additionalProperties: false
+          required: [type, assetId]
+          properties:
+            type: { type: string, const: asset }
+            assetId: { type: string, format: uuid }
+    SidebarItem:
+      type: object
+      additionalProperties: false
+      required: [itemId, type, order, label, visible, icon]
+      properties:
+        itemId: { type: string, minLength: 1, maxLength: 128 }
+        type: { type: string, enum: [system, route, template] }
+        order: { type: integer, minimum: 0 }
+        label: { type: string, minLength: 1, maxLength: 80 }
+        visible: { type: boolean }
+        icon: { $ref: '#/components/schemas/SidebarIcon' }
+        routeId: { type: string, maxLength: 128 }
+        templateId: { type: string, format: uuid }
+    SidebarConfig:
+      type: object
+      additionalProperties: false
+      required: [schemaVersion, items]
+      properties:
+        schemaVersion: { type: integer, const: 1 }
+        items:
+          type: array
+          maxItems: 64
+          items: { $ref: '#/components/schemas/SidebarItem' }
+    SidebarPreference:
+      type: object
+      required: [overridden, config, revision]
+      properties:
+        overridden: { type: boolean }
+        config:
+          oneOf:
+            - $ref: '#/components/schemas/SidebarConfig'
+            - type: 'null'
+        revision: { type: string, pattern: '^[0-9]+$' }
+        updatedAt: { type: [string, 'null'], format: date-time }
+    TemplatePricing:
+      type: object
+      required: [mode, priceMicros, currency, purchaseSupported]
+      properties:
+        mode: { type: string, enum: [free, paid] }
+        priceMicros: { type: [string, 'null'], pattern: '^[0-9]+$' }
+        currency: { type: [string, 'null'], pattern: '^[A-Z]{3}$' }
+        purchaseSupported: { type: boolean, const: false }
+    DesktopTemplate:
+      type: object
+      required: [id, publisher, slug, name, description, status, pricing, entitled, activeVersion]
+      properties:
+        id: { type: string, format: uuid }
+        publisher:
+          type: object
+          required: [id, name]
+          properties:
+            id: { type: string }
+            name: { type: string }
+        slug: { type: string }
+        name: { type: string }
+        description: { type: string }
+        status: { type: string }
+        pricing: { $ref: '#/components/schemas/TemplatePricing' }
+        entitled: { type: boolean }
+        activeVersion: { type: [object, 'null'] }
+        updatedAt: { type: string, format: date-time }
+    CreateTemplate:
+      type: object
+      additionalProperties: false
+      required: [publisherId, slug, name, description, pricingMode]
+      properties:
+        publisherId: { type: string, maxLength: 191 }
+        slug: { type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$' }
+        name: { type: string, maxLength: 160 }
+        description: { type: string, maxLength: 2000 }
+        pricingMode: { type: string, enum: [free, paid] }
+        priceMicros: { type: [integer, 'null'], minimum: 0 }
+        currency: { type: [string, 'null'], pattern: '^[A-Z]{3}$' }
+    UpdateTemplate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name: { type: string, maxLength: 160 }
+        description: { type: string, maxLength: 2000 }
+        pricingMode: { type: string, enum: [free, paid] }
+        priceMicros: { type: [integer, 'null'], minimum: 0 }
+        currency: { type: [string, 'null'], pattern: '^[A-Z]{3}$' }
+  responses:
+    AuthRequired:
+      description: Missing, invalid, or expired JWT
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    ForbiddenScope:
+      description: The authenticated user lacks the required resource scope
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    NotFound:
+      description: Resource not found or not visible to this account
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    ValidationError:
+      description: Request validation failed
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Conflict:
+      description: State, ownership, uniqueness, limit, or in-use conflict
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    RevisionConflict:
+      description: If-Match revision is stale; details contains currentRevision and etag
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    PreconditionRequired:
+      description: A valid If-Match header is required
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    AssetTooLarge:
+      description: Upload exceeds the policy for its resource kind
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    UnsupportedMediaType:
+      description: Declared type, extension, or detected magic bytes are not allowed
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    EntitlementRequired:
+      description: Paid template download requires an active entitlement; online purchase is unavailable
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }

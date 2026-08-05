@@ -137,20 +137,18 @@ export async function aiDirectCapabilitiesRoutes(fastify: FastifyInstance) {
     try {
       await conn.beginTransaction();
 
-      // Idempotency: check for existing active grant
-      if (idempotencyKey) {
-        const [existing] = await conn.query(
-          `SELECT id FROM ai_direct_capability_grants
-           WHERE subjectType = 'employment' AND subjectId = ?
-           AND resourceType = ? AND resourceId = ? AND action = ?
-           AND revokedAt IS NULL LIMIT 1`,
-          [id, resourceType, resourceId, action],
-        );
-        const existingRow = (existing as any[])[0];
-        if (existingRow) {
-          await conn.rollback();
-          return reply.status(200).send({ id: existingRow.id, replayed: true });
-        }
+      // Active grants are unique by employment/resource/action. Repeated requests replay the existing grant.
+      const [existing] = await conn.query(
+        `SELECT id FROM ai_direct_capability_grants
+         WHERE subjectType = 'employment' AND subjectId = ?
+         AND resourceType = ? AND resourceId = ? AND action = ?
+         AND revokedAt IS NULL LIMIT 1`,
+        [id, resourceType, resourceId, action],
+      );
+      const existingRow = (existing as any[])[0];
+      if (existingRow) {
+        await conn.rollback();
+        return reply.status(200).send({ id: existingRow.id, replayed: true });
       }
 
       await conn.query(

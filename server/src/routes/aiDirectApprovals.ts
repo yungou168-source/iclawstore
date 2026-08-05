@@ -94,7 +94,6 @@ async function writeAudit(
 
 async function advanceApprovalStatus(
   conn: any,
-  pool: any,
   approval: any,
   toStatus: ApprovalStatus,
   event: string,
@@ -107,7 +106,7 @@ async function advanceApprovalStatus(
   const updateFields: string[] = ['status = ?', 'updatedAt = NOW()'];
   const updateParams: unknown[] = [toStatus];
 
-  if (event === 'approved' || event === 'rejected') {
+  if (toStatus === 'approved' || toStatus === 'rejected') {
     updateFields.push('decidedAt = NOW()');
     updateFields.push('decision = ?');
     updateParams.push(toStatus);
@@ -146,8 +145,8 @@ async function advanceApprovalStatus(
     },
   });
 
-  // Refetch
-  const [rows] = await pool.query(
+  // Read through the transaction connection so the response reflects this decision.
+  const [rows] = await conn.query(
     `SELECT * FROM ai_direct_approvals WHERE id = ? LIMIT 1`,
     [approval.id],
   );
@@ -233,15 +232,22 @@ export async function aiDirectApprovalsRoutes(fastify: FastifyInstance) {
       }
 
       const updated = await advanceApprovalStatus(
-        conn, pool, approval, 'approved', 'approve', user.id, reqId,
+        conn, approval, 'approved', 'approve', user.id, reqId,
       );
 
       // If this approval is linked to an offer, advance the offer
       if (approval.targetType === 'offer' && approval.targetId) {
-        await conn.query(
+        const [offerUpdate] = await conn.query(
           `UPDATE ai_direct_offers SET approvalId = ?, status = 'sent', updatedAt = NOW() WHERE id = ? AND status = 'pending_approval'`,
           [id, approval.targetId],
-        ).catch(() => {/* ignore if offer not in expected state */});
+        );
+        if (Number((offerUpdate as { affectedRows?: number }).affectedRows ?? 0) !== 1) {
+          throw new AiDirectHiringError(
+            ErrorCodes.INVALID_TRANSITION,
+            '关联 Offer 已不处于 pending_approval 状态',
+            409,
+          );
+        }
       }
 
       await conn.commit();
@@ -298,7 +304,7 @@ export async function aiDirectApprovalsRoutes(fastify: FastifyInstance) {
       }
 
       const updated = await advanceApprovalStatus(
-        conn, pool, approval, 'rejected', 'reject', user.id, reqId, reason,
+        conn, approval, 'rejected', 'reject', user.id, reqId, reason,
       );
 
       // If linked to an offer, advance the offer to rejected
@@ -353,7 +359,7 @@ export async function aiDirectApprovalsRoutes(fastify: FastifyInstance) {
     try {
       await conn.beginTransaction();
       const updated = await advanceApprovalStatus(
-        conn, pool, approval, 'cancelled', 'cancel', user.id, reqId,
+        conn, approval, 'cancelled', 'cancel', user.id, reqId,
       );
       await conn.commit();
       return reply.status(200).send(updated);

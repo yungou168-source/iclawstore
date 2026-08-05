@@ -16,13 +16,12 @@
 
 import { FastifyInstance } from 'fastify';
 import { randomUUID } from 'node:crypto';
-import { AiDirectHiringError, ErrorCodes, errorResponse } from '../services/aiDirectErrors.js';
+import { AiDirectHiringError, ErrorCodes } from '../services/aiDirectErrors.js';
 import { publishOutboxEvent } from '../utils/outbox.js';
 import { requireAuth } from '../middleware/aiDirectAuth.js';
 import { requireCompanyRole } from '../middleware/aiDirectRbac.js';
 import {
   transitionOffer,
-  isOfferTerminal,
   type OfferStatus,
 } from '../services/offerStateMachine.js';
 
@@ -116,7 +115,6 @@ async function fetchOffer(
 
 async function advanceOfferStatus(
   conn: any,
-  pool: any,
   offer: any,
   toStatus: OfferStatus,
   event: string,
@@ -124,19 +122,29 @@ async function advanceOfferStatus(
   reqId: string,
   extra?: Record<string, unknown>,
 ): Promise<any> {
+  if (
+    event === 'send' ||
+    (offer.status === 'pending_approval' && (event === 'approve' || event === 'reject'))
+  ) {
+    throw new AiDirectHiringError(
+      ErrorCodes.INVALID_TRANSITION,
+      'Offer 审批状态只能通过 Approval API 变更',
+      409,
+    );
+  }
   const transition = transitionOffer(offer.status as OfferStatus, toStatus, event);
 
   const updateFields: string[] = ['status = ?', 'updatedAt = NOW()'];
   const updateParams: unknown[] = [toStatus];
 
-  if (event === 'sent' && offer.expiresAt) {
+  if (toStatus === 'sent' && offer.expiresAt) {
     updateFields.push('expiresAt = ?');
     updateParams.push(offer.expiresAt);
   }
-  if (event === 'accepted') {
+  if (toStatus === 'accepted') {
     updateFields.push('acceptedAt = NOW()');
   }
-  if (event === 'rejected') {
+  if (toStatus === 'rejected') {
     updateFields.push('rejectedAt = NOW()');
   }
 
@@ -170,10 +178,8 @@ async function advanceOfferStatus(
     },
   });
 
-  await conn.commit();
-
-  // Refetch after commit
-  const [rows] = await pool.query(
+  // Read through the transaction connection so the response reflects uncommitted writes.
+  const [rows] = await conn.query(
     `SELECT o.*, r.name AS roleName, c.name AS companyName
      FROM ai_direct_offers o
      JOIN ai_direct_agent_roles r ON r.id = o.roleId
@@ -314,10 +320,48 @@ export async function aiDirectOffersRoutes(fastify: FastifyInstance) {
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
-      const updated = await advanceOfferStatus(
-        conn, pool, offer, 'pending_approval', 'submit', user.id, reqId,
-        { proposedByUserId: offer.proposedByUserId },
+      const approvalId = randomUUID();
+      const [approvalInsert] = await conn.query(
+        `INSERT INTO ai_direct_approvals
+         (id, organizationId, targetType, targetId, requestedByUserId, status, metadata)
+         SELECT ?, c.organizationId, 'offer', ?, ?, 'pending', ?
+         FROM ai_direct_companies c WHERE c.id = ?`,
+        [
+          approvalId,
+          offer.id,
+          user.id,
+          JSON.stringify({ offerId: offer.id, companyId: offer.companyId }),
+          offer.companyId,
+        ],
       );
+      if (Number((approvalInsert as { affectedRows?: number }).affectedRows ?? 0) !== 1) {
+        throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Offer 所属公司不存在', 404);
+      }
+      await conn.query(
+        `UPDATE ai_direct_offers SET approvalId = ?, updatedAt = NOW() WHERE id = ?`,
+        [approvalId, offer.id],
+      );
+      await writeAudit(conn, {
+        organizationId: null,
+        actorUserId: user.id,
+        action: 'approval.requested',
+        targetType: 'approval',
+        targetId: approvalId,
+        requestId: reqId,
+        metadata: { targetType: 'offer', targetId: offer.id },
+      });
+      await publishOutboxEvent(conn, {
+        organizationId: null,
+        aggregateType: 'approval',
+        aggregateId: approvalId,
+        eventType: 'approval.requested.v1',
+        payload: { approvalId, targetType: 'offer', targetId: offer.id, requestedByUserId: user.id },
+      });
+      const updated = await advanceOfferStatus(
+        conn, { ...offer, approvalId }, 'pending_approval', 'submit', user.id, reqId,
+        { proposedByUserId: offer.proposedByUserId, approvalId },
+      );
+      await conn.commit();
       return reply.status(200).send(updated);
     } catch (err) {
       await conn.rollback();
@@ -350,8 +394,9 @@ export async function aiDirectOffersRoutes(fastify: FastifyInstance) {
     try {
       await conn.beginTransaction();
       const updated = await advanceOfferStatus(
-        conn, pool, offer, 'sent', 'approve', user.id, reqId,
+        conn, offer, 'sent', 'approve', user.id, reqId,
       );
+      await conn.commit();
       return reply.status(200).send(updated);
     } catch (err) {
       await conn.rollback();
@@ -386,9 +431,10 @@ export async function aiDirectOffersRoutes(fastify: FastifyInstance) {
     try {
       await conn.beginTransaction();
       const updated = await advanceOfferStatus(
-        conn, pool, offer, 'rejected', 'reject', user.id, reqId,
+        conn, offer, 'rejected', 'reject', user.id, reqId,
         { reason },
       );
+      await conn.commit();
       return reply.status(200).send(updated);
     } catch (err) {
       await conn.rollback();
@@ -435,9 +481,10 @@ export async function aiDirectOffersRoutes(fastify: FastifyInstance) {
       }
 
       const updated = await advanceOfferStatus(
-        conn, pool, { ...offer, expiresAt: expiresAt ?? offer.expiresAt },
+        conn, { ...offer, expiresAt: expiresAt ?? offer.expiresAt },
         'sent', 'send', user.id, reqId,
       );
+      await conn.commit();
       return reply.status(200).send(updated);
     } catch (err) {
       await conn.rollback();
@@ -474,8 +521,9 @@ export async function aiDirectOffersRoutes(fastify: FastifyInstance) {
     try {
       await conn.beginTransaction();
       const updated = await advanceOfferStatus(
-        conn, pool, offer, 'accepted', 'accept', user.id, reqId,
+        conn, offer, 'accepted', 'accept', user.id, reqId,
       );
+      await conn.commit();
       return reply.status(200).send(updated);
     } catch (err) {
       await conn.rollback();
@@ -509,9 +557,10 @@ export async function aiDirectOffersRoutes(fastify: FastifyInstance) {
     try {
       await conn.beginTransaction();
       const updated = await advanceOfferStatus(
-        conn, pool, offer, 'rejected', 'decline', user.id, reqId,
+        conn, offer, 'rejected', 'decline', user.id, reqId,
         { reason, isCandidateAction: true },
       );
+      await conn.commit();
       return reply.status(200).send(updated);
     } catch (err) {
       await conn.rollback();
@@ -543,8 +592,9 @@ export async function aiDirectOffersRoutes(fastify: FastifyInstance) {
     try {
       await conn.beginTransaction();
       const updated = await advanceOfferStatus(
-        conn, pool, offer, 'revoked', 'revoke', user.id, reqId,
+        conn, offer, 'revoked', 'revoke', user.id, reqId,
       );
+      await conn.commit();
       return reply.status(200).send(updated);
     } catch (err) {
       await conn.rollback();
@@ -575,8 +625,9 @@ export async function aiDirectOffersRoutes(fastify: FastifyInstance) {
     try {
       await conn.beginTransaction();
       const updated = await advanceOfferStatus(
-        conn, pool, offer, 'expired', 'expire', user.id, reqId,
+        conn, offer, 'expired', 'expire', user.id, reqId,
       );
+      await conn.commit();
       return reply.status(200).send(updated);
     } catch (err) {
       await conn.rollback();

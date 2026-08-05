@@ -1,4 +1,5 @@
 import GitHub from "@auth/core/providers/github";
+import Google from "@auth/core/providers/google";
 import { ConvexCredentials } from "@convex-dev/auth/providers/ConvexCredentials";
 import { convexAuth } from "@convex-dev/auth/server";
 import type { GenericMutationCtx } from "convex/server";
@@ -7,6 +8,8 @@ import { internal } from "./_generated/api";
 import type { DataModel, Id } from "./_generated/dataModel";
 import { isLocalDevAuthEnabled } from "./lib/devAuth";
 import { shouldScheduleGitHubProfileSync } from "./lib/githubProfileSync";
+import { ResendOtp } from "./lib/resendOtpProvider";
+import { WeChatWebsiteApp } from "./lib/wechatAuthProvider";
 
 export const BANNED_REAUTH_MESSAGE =
   "This account has been banned and cannot sign in. If you believe this is a mistake, appeal this decision: https://appeals.openclaw.ai/.";
@@ -83,6 +86,23 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         };
       },
     }),
+    ...(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
+      ? [
+          Google({
+            clientId: process.env.AUTH_GOOGLE_ID,
+            clientSecret: process.env.AUTH_GOOGLE_SECRET,
+          }),
+        ]
+      : []),
+    ...(process.env.AUTH_RESEND_KEY ? [ResendOtp] : []),
+    ...(process.env.AUTH_WECHAT_APP_ID && process.env.AUTH_WECHAT_APP_SECRET
+      ? [
+          WeChatWebsiteApp({
+            clientId: process.env.AUTH_WECHAT_APP_ID,
+            clientSecret: process.env.AUTH_WECHAT_APP_SECRET,
+          }),
+        ]
+      : []),
     ConvexCredentials({
       id: "dev-persona",
       authorize: async (credentials, ctx) => {

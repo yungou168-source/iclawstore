@@ -8,12 +8,20 @@ read_when:
 
 # Auth
 
-ClawHub uses GitHub for web sign-in. The CLI uses ClawHub API tokens created
-through that signed-in account.
+ClawHub supports email verification codes plus GitHub, Google, and WeChat OAuth
+for web sign-in. The CLI uses ClawHub API tokens created through that signed-in
+account.
 
 ## Web sign-in
 
-Use GitHub to sign in at [clawhub.ai](https://clawhub.ai).
+Enter your email address to receive an 8-digit one-time verification code, then
+enter that code in the sign-in dialog. You can also choose **GitHub**,
+**Google**, or **WeChat**. These methods create the same type of authenticated
+session; there is no password-based account.
+
+If a verification code does not arrive, check the address and spam folder, then
+retry after a short wait. Codes expire after 20 minutes. Contact the site
+operator if the UI reports a server error or a valid code cannot be verified.
 
 Deleted, banned, or disabled accounts cannot complete normal ClawHub sign-in.
 If sign-in returns you to a logged-out state, your account may not be in good

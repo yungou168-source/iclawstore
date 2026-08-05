@@ -1,0 +1,25 @@
+-- Organization-scoped, non-sensitive read model for the desktop employee directory.
+CREATE TABLE `ai_direct_workforce_employee_digests` (
+  `employmentId` VARCHAR(36) NOT NULL,
+  `organizationId` VARCHAR(36) NOT NULL,
+  `companyId` VARCHAR(36) NOT NULL,
+  `departmentId` VARCHAR(36) NOT NULL,
+  `positionId` VARCHAR(36) NOT NULL,
+  `roleId` VARCHAR(36) NOT NULL,
+  `agentId` VARCHAR(36) NOT NULL,
+  `agentVersionId` VARCHAR(36) NOT NULL,
+  `agentDisplayName` VARCHAR(160) NOT NULL,
+  `avatarAssetId` VARCHAR(36) NULL,
+  `departmentName` VARCHAR(160) NOT NULL,
+  `positionName` VARCHAR(160) NOT NULL,
+  `roleName` VARCHAR(160) NOT NULL,
+  `employmentStatus` VARCHAR(32) NOT NULL,
+  `startedAt` DATETIME(3) NULL,
+  `revision` CHAR(64) NOT NULL,
+  `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`employmentId`),
+  INDEX `workforce_employee_digests_company_cursor_idx` (`companyId`, `employmentStatus`, `updatedAt`, `employmentId`),
+  INDEX `workforce_employee_digests_company_department_cursor_idx` (`companyId`, `departmentId`, `updatedAt`, `employmentId`),
+  INDEX `workforce_employee_digests_organization_company_idx` (`organizationId`, `companyId`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

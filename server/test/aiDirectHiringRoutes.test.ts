@@ -206,7 +206,7 @@ describe('POST /agents — publisher membership validation', () => {
     const { pool } = makeMockPool({
       'publisherMembers': [], // empty = no membership
     });
-    const { reply } = await invokeRoute(
+    await expect(invokeRoute(
       async (_: any, request: any, reply: any) => {
         const publisherId = request.body.publisherId;
         if (publisherId) {
@@ -229,11 +229,7 @@ describe('POST /agents — publisher membership validation', () => {
           modelPolicy: { defaultModelId: 'model-fast' },
         },
       },
-    );
-    expect(reply.status).toHaveBeenCalledWith(403);
-    expect(reply.send).toHaveBeenCalledWith(
-      expect.objectContaining({ code: 'FORBIDDEN_SCOPE' }),
-    );
+    )).rejects.toMatchObject({ code: ErrorCodes.FORBIDDEN_SCOPE });
   });
 });
 

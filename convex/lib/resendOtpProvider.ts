@@ -1,0 +1,52 @@
+import { Email } from "@convex-dev/auth/providers/Email";
+
+const OTP_LENGTH = 8;
+const OTP_MAX_AGE_SECONDS = 20 * 60;
+
+function generateOtp() {
+  const bytes = new Uint8Array(OTP_LENGTH);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => String(byte % 10)).join("");
+}
+
+function verificationEmailHtml(code: string) {
+  return `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#171717">
+      <h2 style="margin:0 0 16px">登录 AI直聘</h2>
+      <p>你的登录验证码是：</p>
+      <p style="font-size:28px;font-weight:700;letter-spacing:6px;margin:20px 0">${code}</p>
+      <p style="color:#666">验证码 20 分钟内有效。若非本人操作，请忽略此邮件。</p>
+    </div>
+  `;
+}
+
+export const ResendOtp = Email({
+  id: "resend-otp",
+  name: "Email verification code",
+  apiKey: process.env.AUTH_RESEND_KEY,
+  from: process.env.AUTH_EMAIL_FROM ?? "AI直聘 <no-reply@iclawstore.com>",
+  maxAge: OTP_MAX_AGE_SECONDS,
+  async generateVerificationToken() {
+    return generateOtp();
+  },
+  async sendVerificationRequest({ identifier: email, provider, token }) {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${provider.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: provider.from,
+        to: [email],
+        subject: "AI直聘登录验证码",
+        html: verificationEmailHtml(token),
+        text: `你的 AI直聘登录验证码是 ${token}，20 分钟内有效。`,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to send verification code (HTTP ${response.status})`);
+    }
+  },
+});

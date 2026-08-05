@@ -12,6 +12,78 @@ ClawHub is two deployables:
 - Web app (TanStack Start) -> typically Vercel.
 - Convex backend -> Convex deployment (serves `/api/...` routes).
 
+## iClawStore self-hosted SSR release
+
+`www.iclawstore.com` runs the TanStack Start SSR bundle locally through the
+systemd unit `iclawstore.service`, listening on `127.0.0.1:3000`; Nginx proxies
+public HTTP(S) traffic to it. The Fastify API (`iclawstore-api`) and Nginx do
+not need a restart for web-only changes.
+
+### Self-hosted Convex Auth
+
+Keep one canonical HTTPS web origin. The production configuration uses
+`https://www.iclawstore.com`; Nginx must redirect `https://iclawstore.com` to
+that origin before any login starts. OAuth state cookies are host-only, so a
+mixed `www`/bare-domain login flow loses the verifier and must not be supported.
+
+Convex's management API runs on `127.0.0.1:3210`, while its HTTP site routes
+run on `127.0.0.1:3211`. Nginx must send normal Convex client traffic under
+`/convex/` to `3210`, but route `/convex/api/auth/` to `3211` first. The latter
+is required for OAuth callbacks and must preserve the internal
+`/api/auth/…` path.
+
+Set these values in the Convex deployment, then deploy functions with strict
+TypeScript checking:
+
+```text
+SITE_URL=https://www.iclawstore.com
+CUSTOM_AUTH_SITE_URL=https://www.iclawstore.com/convex
+AUTH_GITHUB_ID
+AUTH_GITHUB_SECRET
+AUTH_GOOGLE_ID
+AUTH_GOOGLE_SECRET
+AUTH_RESEND_KEY
+AUTH_EMAIL_FROM
+AUTH_WECHAT_APP_ID
+AUTH_WECHAT_APP_SECRET
+```
+
+`SITE_URL` is the final browser destination for OAuth. Email sign-in sends an
+8-digit OTP that is verified inside the login dialog; it must not fall back to
+a magic-link-only flow. `CUSTOM_AUTH_SITE_URL` is the externally reachable
+Convex HTTP site URL. Do not substitute `RESEND_API_KEY` for
+`AUTH_RESEND_KEY`; they serve different paths.
+
+The OAuth callback URLs must be exactly:
+
+```text
+https://www.iclawstore.com/convex/api/auth/callback/github
+https://www.iclawstore.com/convex/api/auth/callback/google
+https://www.iclawstore.com/convex/api/auth/callback/wechat
+```
+
+After any environment change, run `bunx convex dev --once` against the local
+management address. Do not disable type checking. Verify the public route
+returns an authentication-handler response rather than a proxy `404` before
+performing a browser login.
+
+A source edit is **not** live until both stages below complete. The running
+Node process loads `.output/server/index.mjs` at start-up and does not watch or
+hot-reload that file.
+
+```bash
+cd /www/wwwroot/iclawstore.com
+bun --smol run build
+sudo systemctl restart iclawstore.service
+sudo systemctl is-active iclawstore.service
+curl --fail --silent --show-error https://www.iclawstore.com/ > /dev/null
+```
+
+For homepage navigation or authentication UI changes, verify the public HTML
+includes the expected labels before handoff. The unauthenticated homepage must
+render a visible `登录` / `Sign in` trigger even while Convex Auth is resolving;
+do not replace it with a blank loading placeholder.
+
 ## 1) Deploy Convex
 
 From your local machine:
@@ -108,7 +180,9 @@ Ensure Convex env is set (auth + embeddings):
 - `CLAWHUB_SECURITY_EMAIL_FROM` for the outbound From header, defaulting to
   `ClawHub Security <noreply@notifications.openclaw.ai>` on the verified Resend
   domain
-- `SITE_URL` (your web app URL)
+- `SITE_URL` (your canonical web app URL)
+- `CUSTOM_AUTH_SITE_URL` (the externally reachable Convex HTTP URL; self-hosted production uses `https://www.iclawstore.com/convex`)
+- `AUTH_RESEND_KEY` and `AUTH_EMAIL_FROM` for magic-link sign-in
 - Optional webhook env (see `docs/webhook.md`)
 - Recommended GitHub App env for authenticated GitHub API reads used by publish
   gates and backups:

@@ -23,8 +23,9 @@
  *   States `succeeded`, `failed`, `cancelled` are terminal.
  */
 
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { Pool, PoolConnection } from 'mysql2/promise';
+import type { ProviderFailureClass } from '../contracts/modelProvider.js';
 
 export const RUN_STATUSES = [
   'queued',
@@ -59,14 +60,53 @@ export interface EnqueueInput {
   inputSummary?: Record<string, unknown> | null;
   priority?: number;
   runAfter?: Date | null;
+  idempotencyKey?: string | null;
   initialSteps: Array<{ stepKey: string; metadata?: Record<string, unknown> }>;
+}
+
+export interface ArtifactInput {
+  kind: string;
+  storagePath: string;
+  mimeType: string;
+  sizeBytes: number;
+  sha256: string;
+  visibility: 'organization' | 'requester';
+}
+
+export interface ModelExecutionAuditInput {
+  agentId: string;
+  agentVersionId: string;
+  catalogModelId: string;
+  modelKey: string;
+  providerKey: string;
+  credentialVersion: number;
+  providerRequestId?: string;
+  attempt: number;
+  taskType: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  costMicros?: number | bigint;
+  latencyMs?: number;
+  routingMetadata?: Record<string, unknown>;
+}
+
+export interface ProviderFailureInput {
+  code: string;
+  reason?: string;
+  failureClass: ProviderFailureClass;
+  retryAfterMs?: number;
+  modelAudit?: Omit<ModelExecutionAuditInput, 'inputTokens' | 'outputTokens' | 'costMicros'>;
 }
 
 export interface RunContext {
   runId: string;
+  organizationId: string | null;
+  agentVersionId: string | null;
+  requestedByUserId: string;
   workflowKey: string;
   status: RunStatus;
   stepCount: number;
+  currentStep: StepContext;
   startedAt: Date | null;
   finishedAt: Date | null;
   payload: Record<string, unknown>;
@@ -77,6 +117,9 @@ export interface StepContext {
   stepKey: string;
   sequence: number;
   status: StepStatus;
+  attempt: number;
+  maxAttempts: number;
+  metadata: Record<string, unknown>;
 }
 
 function nowPlus(seconds: number): Date {
@@ -147,6 +190,191 @@ async function publishOutboxEvent(
   );
 }
 
+async function writeModelAudit(
+  conn: PoolConnection,
+  runId: string,
+  stepId: string,
+  status: 'succeeded' | 'failed',
+  audit: ModelExecutionAuditInput,
+  failure?: Pick<ProviderFailureInput, 'code' | 'failureClass'>,
+): Promise<void> {
+  await conn.query(
+    `INSERT INTO ai_direct_model_run_audits
+     (id, runId, stepId, agentId, agentVersionId, catalogModelId, modelKey,
+      providerKey, credentialVersion, providerRequestId, attempt, taskType, status,
+      failureCode, failureClass, inputTokens, outputTokens, costMicros, latencyMs, routingMetadata)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE id = id`,
+    [
+      randomUUID(),
+      runId,
+      stepId,
+      audit.agentId,
+      audit.agentVersionId,
+      audit.catalogModelId,
+      audit.modelKey,
+      audit.providerKey,
+      audit.credentialVersion,
+      audit.providerRequestId ?? null,
+      audit.attempt,
+      audit.taskType,
+      status,
+      failure?.code ?? null,
+      failure?.failureClass ?? null,
+      audit.inputTokens ?? null,
+      audit.outputTokens ?? null,
+      audit.costMicros ?? null,
+      audit.latencyMs ?? null,
+      JSON.stringify(audit.routingMetadata ?? {}),
+    ],
+  );
+}
+
+async function refreshRunUsage(conn: PoolConnection, runId: string): Promise<void> {
+  await conn.query(
+    `UPDATE ai_direct_workflow_runs r
+     SET r.tokenUsage = JSON_OBJECT(
+           'inputTokens', COALESCE((SELECT SUM(s.inputTokens) FROM ai_direct_workflow_run_steps s WHERE s.runId = r.id), 0),
+           'outputTokens', COALESCE((SELECT SUM(s.outputTokens) FROM ai_direct_workflow_run_steps s WHERE s.runId = r.id), 0)),
+         r.costMicros = COALESCE((SELECT SUM(s.costMicros) FROM ai_direct_workflow_run_steps s WHERE s.runId = r.id), 0),
+         r.latencyMs = COALESCE((SELECT SUM(s.latencyMs) FROM ai_direct_workflow_run_steps s WHERE s.runId = r.id), 0),
+         r.modelRunAuditIds = COALESCE((
+           SELECT JSON_ARRAYAGG(a.id) FROM ai_direct_model_run_audits a WHERE a.runId = r.id
+         ), JSON_ARRAY())
+     WHERE r.id = ?`,
+    [runId],
+  );
+}
+
+async function incrementProviderMetric(
+  conn: PoolConnection,
+  providerKey: string,
+  outcome: string,
+): Promise<void> {
+  const normalized = `${providerKey}:${outcome}`;
+  if (!/^[A-Za-z0-9._:-]{1,96}$/.test(normalized)) return;
+  await conn.query(
+    `INSERT INTO ai_direct_runtime_metrics (metricKey, metricValue)
+     VALUES (?, 1) ON DUPLICATE KEY UPDATE metricValue = metricValue + 1`,
+    [`provider_calls_total:${normalized}`],
+  );
+}
+
+function retryableFailure(failureClass: ProviderFailureClass): boolean {
+  return failureClass === 'timeout'
+    || failureClass === 'network'
+    || failureClass === 'provider_5xx'
+    || failureClass === 'rate_limit';
+}
+
+function retryDelayMs(
+  runId: string,
+  stepId: string,
+  attempt: number,
+  retryAfterMs?: number,
+): number {
+  const base = Math.min(1_000 * 2 ** Math.max(0, attempt - 1), 300_000);
+  const hash = createHash('sha256').update(`${runId}:${stepId}:${attempt}`).digest();
+  const jitter = hash.readUInt16BE(0) / 0xffff;
+  return Math.min(Math.max(retryAfterMs ?? 0, Math.round(base * (0.75 + jitter * 0.5))), 3_600_000);
+}
+
+export function decideProviderFailure(input: Readonly<{
+  runId: string;
+  stepId: string;
+  attempt: number;
+  maxAttempts: number;
+  failureClass: ProviderFailureClass;
+  retryAfterMs?: number;
+  now?: number;
+}>): { retryScheduled: boolean; runAfter: Date | null } {
+  const retryScheduled = retryableFailure(input.failureClass) && input.attempt < input.maxAttempts;
+  return {
+    retryScheduled,
+    runAfter: retryScheduled
+      ? new Date((input.now ?? Date.now()) + retryDelayMs(
+        input.runId,
+        input.stepId,
+        input.attempt,
+        input.retryAfterMs,
+      ))
+      : null,
+  };
+}
+
+export async function enqueueWorkflowRun(
+  conn: PoolConnection,
+  input: EnqueueInput,
+  requestId: string,
+): Promise<{ runId: string; stepIds: string[] }> {
+  if (!input.initialSteps.length) {
+    throw new Error('enqueue requires at least one initial step');
+  }
+  const runId = randomUUID();
+  const stepIds = input.initialSteps.map(() => randomUUID());
+  await conn.query(
+    `INSERT INTO ai_direct_workflow_runs
+     (id, organizationId, employmentId, agentVersionId, workflowKey, workflowVersion,
+      status, requestedByUserId, approvalId, requestedModelPolicy,
+      inputSummary, runAfter, idempotencyKey)
+     VALUES (?, ?, ?, ?, ?, ?, 'queued', ?, ?, ?, ?, ?, ?)`,
+    [
+      runId,
+      input.organizationId ?? null,
+      input.employmentId ?? null,
+      input.agentVersionId ?? null,
+      input.workflowKey,
+      input.workflowVersion ?? null,
+      input.requestedByUserId,
+      input.approvalId ?? null,
+      input.requestedModelPolicy ? JSON.stringify(input.requestedModelPolicy) : null,
+      input.inputSummary ? JSON.stringify(input.inputSummary) : null,
+      input.runAfter ?? null,
+      input.idempotencyKey ?? null,
+    ],
+  );
+  for (let i = 0; i < input.initialSteps.length; i++) {
+    const step = input.initialSteps[i];
+    await conn.query(
+      `INSERT INTO ai_direct_workflow_run_steps
+       (id, runId, stepKey, sequence, status, metadata)
+       VALUES (?, ?, ?, ?, 'pending', ?)`,
+      [
+        stepIds[i],
+        runId,
+        step.stepKey,
+        i + 1,
+        step.metadata ? JSON.stringify(step.metadata) : null,
+      ],
+    );
+  }
+  await writeAudit(conn, {
+    organizationId: input.organizationId ?? null,
+    actorUserId: input.requestedByUserId,
+    action: 'workflow_run.enqueued',
+    targetType: 'workflow_run',
+    targetId: runId,
+    requestId,
+    metadata: {
+      workflowKey: input.workflowKey,
+      stepCount: input.initialSteps.length,
+    },
+  });
+  await publishOutboxEvent(conn, {
+    organizationId: input.organizationId ?? null,
+    aggregateType: 'workflow_run',
+    aggregateId: runId,
+    eventType: 'workflow_run.enqueued.v1',
+    payload: {
+      runId,
+      workflowKey: input.workflowKey,
+      stepCount: input.initialSteps.length,
+      requestedByUserId: input.requestedByUserId,
+    },
+  });
+  return { runId, stepIds };
+}
+
 export class JobQueueService {
   constructor(
     private readonly pool: Pool,
@@ -157,75 +385,11 @@ export class JobQueueService {
    * Enqueue a new workflow run with its initial steps. Atomic.
    */
   async enqueue(input: EnqueueInput): Promise<{ runId: string; stepIds: string[] }> {
-    if (!input.initialSteps.length) {
-      throw new Error('enqueue requires at least one initial step');
-    }
-    const runId = randomUUID();
-    const stepIds = input.initialSteps.map(() => randomUUID());
     const conn = await beginConn(this.pool);
     try {
-      await conn.query(
-        `INSERT INTO ai_direct_workflow_runs
-         (id, organizationId, employmentId, agentVersionId, workflowKey, workflowVersion,
-          status, requestedByUserId, approvalId, requestedModelPolicy,
-          inputSummary, startedAt, leaseExpiresAt)
-         VALUES (?, ?, ?, ?, ?, ?, 'queued', ?, ?, ?, ?, NULL, ?)`,
-        [
-          runId,
-          input.organizationId ?? null,
-          input.employmentId ?? null,
-          input.agentVersionId ?? null,
-          input.workflowKey,
-          input.workflowVersion ?? null,
-          input.requestedByUserId,
-          input.approvalId ?? null,
-          input.requestedModelPolicy ? JSON.stringify(input.requestedModelPolicy) : null,
-          input.inputSummary ? JSON.stringify(input.inputSummary) : null,
-          input.runAfter ?? null,
-        ],
-      );
-      // Insert initial steps with sequence = index + 1.
-      for (let i = 0; i < input.initialSteps.length; i++) {
-        const step = input.initialSteps[i];
-        await conn.query(
-          `INSERT INTO ai_direct_workflow_run_steps
-           (id, runId, stepKey, sequence, status, metadata)
-           VALUES (?, ?, ?, ?, 'pending', ?)`,
-          [
-            stepIds[i],
-            runId,
-            step.stepKey,
-            i + 1,
-            step.metadata ? JSON.stringify(step.metadata) : null,
-          ],
-        );
-      }
-      await writeAudit(conn, {
-        organizationId: input.organizationId ?? null,
-        actorUserId: input.requestedByUserId,
-        action: 'workflow_run.enqueued',
-        targetType: 'workflow_run',
-        targetId: runId,
-        requestId: this.requestId,
-        metadata: {
-          workflowKey: input.workflowKey,
-          stepCount: input.initialSteps.length,
-        },
-      });
-      await publishOutboxEvent(conn, {
-        organizationId: input.organizationId ?? null,
-        aggregateType: 'workflow_run',
-        aggregateId: runId,
-        eventType: 'workflow_run.enqueued.v1',
-        payload: {
-          runId,
-          workflowKey: input.workflowKey,
-          stepCount: input.initialSteps.length,
-          requestedByUserId: input.requestedByUserId,
-        },
-      });
+      const result = await enqueueWorkflowRun(conn, input, this.requestId);
       await conn.commit();
-      return { runId, stepIds };
+      return result;
     } catch (err) {
       await conn.rollback();
       throw err;
@@ -245,19 +409,46 @@ export class JobQueueService {
    *
    * Returns null when nothing is available — workers should sleep + retry.
    */
-  async leaseNext(workerId: string): Promise<RunContext | null> {
+  async leaseNext(
+    workerId: string,
+    organizationId: string,
+    capability: 'general' | 'provider' = 'general',
+  ): Promise<RunContext | null> {
+    const providerStep = capability === 'provider';
     const conn = await beginConn(this.pool);
     try {
       const [rows] = (await conn.query(
-        `SELECT id, workflowKey, status, inputSummary
-         FROM ai_direct_workflow_runs
-         WHERE (status = 'queued' AND (runAfter IS NULL OR runAfter <= NOW()))
-            OR (status = 'active' AND leaseExpiresAt IS NOT NULL AND leaseExpiresAt <= NOW())
+        `SELECT r.id, r.organizationId, r.agentVersionId, r.requestedByUserId,
+                r.workflowKey, r.status, r.inputSummary
+         FROM ai_direct_workflow_runs r
+         WHERE r.organizationId = ? AND (
+              (r.status = 'queued' AND (r.runAfter IS NULL OR r.runAfter <= NOW(3)))
+           OR (r.status = 'active' AND r.leaseExpiresAt IS NOT NULL AND r.leaseExpiresAt <= NOW(3))
+         )
+         AND EXISTS (
+           SELECT 1 FROM ai_direct_workflow_run_steps candidate
+           WHERE candidate.runId = r.id
+             AND (
+               candidate.status = 'running'
+               OR (candidate.status = 'pending'
+                 AND NOT EXISTS (
+                   SELECT 1 FROM ai_direct_workflow_run_steps active_step
+                   WHERE active_step.runId = r.id AND active_step.status = 'running'
+                 )
+                 AND candidate.sequence = (
+                   SELECT MIN(next_step.sequence) FROM ai_direct_workflow_run_steps next_step
+                   WHERE next_step.runId = r.id AND next_step.status = 'pending'
+                 ))
+             )
+             AND ((? = TRUE AND JSON_UNQUOTE(JSON_EXTRACT(candidate.metadata, '$.providerExecution.kind')) = 'provider')
+               OR (? = FALSE AND COALESCE(JSON_UNQUOTE(JSON_EXTRACT(candidate.metadata, '$.providerExecution.kind')), '') <> 'provider'))
+         )
          ORDER BY
-           CASE WHEN status = 'queued' THEN 0 ELSE 1 END ASC,
-           createdAt ASC
+           CASE WHEN r.status = 'queued' THEN 0 ELSE 1 END ASC,
+           r.createdAt ASC
          LIMIT 1
          FOR UPDATE SKIP LOCKED`,
+        [organizationId, providerStep, providerStep],
       )) as any;
       const row = rows[0];
       if (!row) {
@@ -270,25 +461,56 @@ export class JobQueueService {
          SET status = 'active',
              leaseOwner = ?,
              leaseExpiresAt = ?,
-             updatedAt = NOW()
+             lastHeartbeatAt = NOW(3),
+             startedAt = COALESCE(startedAt, NOW(3)),
+             updatedAt = NOW(3)
          WHERE id = ?`,
         [workerId, leaseExpiresAt, row.id],
       );
-      // Mark the first pending step as running.
+      if (row.status === 'active') {
+        await conn.query(
+          `UPDATE ai_direct_workflow_run_steps
+           SET attemptCount = attemptCount + 1
+           WHERE runId = ? AND status = 'running'`,
+          [row.id],
+        );
+        await conn.query(
+          `INSERT INTO ai_direct_runtime_metrics (metricKey, metricValue)
+           VALUES ('lease_recoveries_total', 1)
+           ON DUPLICATE KEY UPDATE metricValue = metricValue + 1`,
+        );
+      }
       await conn.query(
         `UPDATE ai_direct_workflow_run_steps
          SET status = 'running',
-             startedAt = COALESCE(startedAt, NOW()),
+             attemptCount = attemptCount + 1,
+             startedAt = COALESCE(startedAt, NOW(3)),
              metadata = JSON_SET(COALESCE(metadata, JSON_OBJECT()),
                                   '$.leasedByWorkerId', CAST(? AS JSON))
-         WHERE runId = ? AND sequence = (
-           SELECT MIN(sequence) FROM (
-             SELECT sequence FROM ai_direct_workflow_run_steps
-             WHERE runId = ? AND status = 'pending'
-           ) AS p
-         )`,
-        [JSON.stringify(workerId), row.id, row.id],
+         WHERE runId = ? AND status = 'pending'
+           AND ((? = TRUE AND JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.providerExecution.kind')) = 'provider')
+             OR (? = FALSE AND COALESCE(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.providerExecution.kind')), '') <> 'provider'))
+           AND NOT EXISTS (
+             SELECT 1 FROM (
+               SELECT id FROM ai_direct_workflow_run_steps
+               WHERE runId = ? AND status = 'running' LIMIT 1
+             ) AS running_step
+           )
+         ORDER BY sequence ASC
+         LIMIT 1`,
+        [JSON.stringify(workerId), row.id, providerStep, providerStep, row.id],
       );
+      const [currentRows] = (await conn.query(
+        `SELECT id, stepKey, sequence, status, attemptCount, maxAttempts, metadata
+         FROM ai_direct_workflow_run_steps
+         WHERE runId = ? AND status = 'running'
+         ORDER BY sequence ASC LIMIT 1`,
+        [row.id],
+      )) as any;
+      const currentStep = currentRows[0];
+      if (!currentStep) {
+        throw new Error(`Run ${row.id} has no runnable step`);
+      }
       await conn.commit();
       const inputSummary = row.inputSummary
         ? typeof row.inputSummary === 'string'
@@ -302,9 +524,25 @@ export class JobQueueService {
       )) as any;
       return {
         runId: row.id,
+        organizationId: row.organizationId,
+        agentVersionId: row.agentVersionId,
+        requestedByUserId: row.requestedByUserId,
         workflowKey: row.workflowKey,
         status: 'active',
         stepCount: Number(stepRows[0]?.stepCount ?? 0),
+        currentStep: {
+          stepId: currentStep.id,
+          stepKey: currentStep.stepKey,
+          sequence: Number(currentStep.sequence),
+          status: currentStep.status,
+          attempt: Number(currentStep.attemptCount),
+          maxAttempts: Number(currentStep.maxAttempts),
+          metadata: currentStep.metadata
+            ? typeof currentStep.metadata === 'string'
+              ? JSON.parse(currentStep.metadata)
+              : currentStep.metadata
+            : {},
+        },
         startedAt: null,
         finishedAt: null,
         payload: inputSummary,
@@ -339,67 +577,149 @@ export class JobQueueService {
   async completeStep(
     runId: string,
     sequence: number,
-    output: { outputSummary?: Record<string, unknown>; tokenUsage?: Record<string, unknown>; costMicros?: number | bigint; latencyMs?: number },
-  ): Promise<{ runCompleted: boolean }> {
+    workerId: string,
+    output: {
+      outputSummary?: Record<string, unknown>;
+      tokenUsage?: { inputTokens?: number; outputTokens?: number };
+      costMicros?: number | bigint;
+      latencyMs?: number;
+      artifacts?: ArtifactInput[];
+      modelAudit?: ModelExecutionAuditInput;
+    },
+  ): Promise<{ runCompleted: boolean; nextStep: StepContext | null }> {
     const conn = await beginConn(this.pool);
     try {
-      await conn.query(
-        `UPDATE ai_direct_workflow_run_steps
-         SET status = 'succeeded',
-             finishedAt = NOW(),
-             outputSummary = ?,
-             tokenUsage = ?,
-             costMicros = ?,
-             latencyMs = ?
-         WHERE runId = ? AND sequence = ? AND status IN ('pending', 'running')`,
-        [
-          output.outputSummary ? JSON.stringify(output.outputSummary) : null,
-          output.tokenUsage ? JSON.stringify(output.tokenUsage) : null,
-          output.costMicros ?? null,
-          output.latencyMs ?? null,
-          runId,
-          sequence,
-        ],
-      );
-      // Check if more pending steps remain.
-      const [pending] = (await conn.query(
-        `SELECT COUNT(*) AS remaining FROM ai_direct_workflow_run_steps
-         WHERE runId = ? AND status = 'pending'`,
+      const [runRows] = (await conn.query(
+        `SELECT status, leaseOwner, organizationId
+         FROM ai_direct_workflow_runs WHERE id = ? FOR UPDATE`,
         [runId],
       )) as any;
-      const remaining = Number(pending[0]?.remaining ?? 0);
-      if (remaining > 0) {
-        await conn.commit();
-        return { runCompleted: false };
+      const run = runRows[0];
+      if (!run || run.status !== 'active' || run.leaseOwner !== workerId) {
+        throw new Error('Worker does not hold the active run lease');
       }
-      // No more pending steps — close the run.
+      const [stepRows] = (await conn.query(
+        `SELECT id, status, attemptCount FROM ai_direct_workflow_run_steps
+         WHERE runId = ? AND sequence = ? FOR UPDATE`,
+        [runId, sequence],
+      )) as any;
+      const step = stepRows[0];
+      if (!step || step.status !== 'running') {
+        throw new Error('Step is not the active running step');
+      }
+      if (
+        output.modelAudit
+        && (
+          output.modelAudit.attempt !== Number(step.attemptCount)
+          || output.modelAudit.inputTokens !== output.tokenUsage?.inputTokens
+          || output.modelAudit.outputTokens !== output.tokenUsage?.outputTokens
+          || output.modelAudit.costMicros !== output.costMicros
+          || output.modelAudit.latencyMs !== output.latencyMs
+        )
+      ) {
+        throw new Error('Model audit does not match the active step result');
+      }
+      await conn.query(
+        `UPDATE ai_direct_workflow_run_steps
+         SET status = 'succeeded', finishedAt = NOW(3), outputSummary = ?,
+             inputTokens = ?, outputTokens = ?, costMicros = ?, latencyMs = ?,
+             catalogModelId = ?, modelKey = ?
+         WHERE id = ? AND status = 'running'`,
+        [
+          output.outputSummary ? JSON.stringify(output.outputSummary) : null,
+          output.tokenUsage?.inputTokens ?? null,
+          output.tokenUsage?.outputTokens ?? null,
+          output.costMicros ?? null,
+          output.latencyMs ?? null,
+          output.modelAudit?.catalogModelId ?? null,
+          output.modelAudit?.modelKey ?? null,
+          step.id,
+        ],
+      );
+      if (output.modelAudit) {
+        await writeModelAudit(conn, runId, step.id, 'succeeded', output.modelAudit);
+        await incrementProviderMetric(conn, output.modelAudit.providerKey, 'succeeded');
+      }
+      await refreshRunUsage(conn, runId);
+      for (const artifact of output.artifacts ?? []) {
+        await conn.query(
+          `INSERT INTO ai_direct_artifacts
+           (id, organizationId, runId, stepId, kind, storagePath, storagePathHash,
+            mimeType, sizeBytes, sha256, visibility, createdByWorkerId)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            randomUUID(),
+            run.organizationId,
+            runId,
+            step.id,
+            artifact.kind,
+            artifact.storagePath,
+            createHash('sha256').update(artifact.storagePath, 'utf8').digest('hex'),
+            artifact.mimeType,
+            artifact.sizeBytes,
+            artifact.sha256,
+            artifact.visibility,
+            workerId,
+          ],
+        );
+      }
+      const [nextRows] = (await conn.query(
+        `SELECT id, stepKey, sequence, attemptCount, maxAttempts, metadata FROM ai_direct_workflow_run_steps
+         WHERE runId = ? AND status = 'pending'
+         ORDER BY sequence ASC LIMIT 1 FOR UPDATE`,
+        [runId],
+      )) as any;
+      const next = nextRows[0];
+      if (next) {
+        await conn.query(
+          `UPDATE ai_direct_workflow_runs
+           SET status = 'queued', runAfter = NULL, leaseOwner = NULL,
+               leaseExpiresAt = NULL, lastHeartbeatAt = NOW(3), updatedAt = NOW(3)
+           WHERE id = ? AND status = 'active' AND leaseOwner = ?`,
+          [runId, workerId],
+        );
+        await conn.commit();
+        return {
+          runCompleted: false,
+          nextStep: {
+            stepId: next.id,
+            stepKey: next.stepKey,
+            sequence: Number(next.sequence),
+            status: 'pending',
+            attempt: Number(next.attemptCount),
+            maxAttempts: Number(next.maxAttempts),
+            metadata: next.metadata
+              ? typeof next.metadata === 'string'
+                ? JSON.parse(next.metadata)
+                : next.metadata
+              : {},
+          },
+        };
+      }
       await conn.query(
         `UPDATE ai_direct_workflow_runs
-         SET status = 'succeeded',
-             finishedAt = NOW(),
-             leaseOwner = NULL,
-             leaseExpiresAt = NULL,
-             updatedAt = NOW()
-         WHERE id = ? AND status = 'active'`,
-        [runId],
+         SET status = 'succeeded', finishedAt = NOW(3), leaseOwner = NULL,
+             leaseExpiresAt = NULL, updatedAt = NOW(3)
+         WHERE id = ? AND status = 'active' AND leaseOwner = ?`,
+        [runId, workerId],
       );
       await writeAudit(conn, {
-        organizationId: null,
-        actorUserId: 'system',
+        organizationId: run.organizationId,
+        actorUserId: `worker:${workerId}`,
         action: 'workflow_run.succeeded',
         targetType: 'workflow_run',
         targetId: runId,
         requestId: this.requestId,
       });
       await publishOutboxEvent(conn, {
-        organizationId: null,
+        organizationId: run.organizationId,
         aggregateType: 'workflow_run',
         aggregateId: runId,
         eventType: 'workflow_run.succeeded.v1',
-        payload: { runId },
+        payload: { runId, workerId },
       });
       await conn.commit();
-      return { runCompleted: true };
+      return { runCompleted: true, nextStep: null };
     } catch (err) {
       await conn.rollback();
       throw err;
@@ -409,52 +729,121 @@ export class JobQueueService {
   }
 
   /**
-   * Fail a step + the whole run. Terminal.
+   * Report a provider step failure. Retryable classes return the step to pending
+   * with runAfter backoff; terminal classes close both step and run.
    */
   async failStep(
     runId: string,
     sequence: number,
-    failure: { code: string; reason?: string },
-  ): Promise<void> {
+    workerId: string,
+    failure: ProviderFailureInput,
+  ): Promise<{ retryScheduled: boolean; runAfter: Date | null }> {
     const conn = await beginConn(this.pool);
     try {
-      await conn.query(
-        `UPDATE ai_direct_workflow_run_steps
-         SET status = 'failed',
-             finishedAt = NOW(),
-             failureCode = ?
-         WHERE runId = ? AND sequence = ?`,
-        [failure.code, runId, sequence],
-      );
-      await conn.query(
-        `UPDATE ai_direct_workflow_runs
-         SET status = 'failed',
-             finishedAt = NOW(),
-             failureCode = ?,
-             failureReason = ?,
-             leaseOwner = NULL,
-             leaseExpiresAt = NULL,
-             updatedAt = NOW()
-         WHERE id = ? AND status IN ('queued', 'active')`,
-        [failure.code, failure.reason ?? null, runId],
-      );
-      await writeAudit(conn, {
-        organizationId: null,
-        actorUserId: 'system',
-        action: 'workflow_run.failed',
-        targetType: 'workflow_run',
-        targetId: runId,
-        requestId: this.requestId,
-        metadata: { sequence, code: failure.code, reason: failure.reason },
+      const [runRows] = (await conn.query(
+        `SELECT status, leaseOwner, organizationId
+         FROM ai_direct_workflow_runs WHERE id = ? FOR UPDATE`,
+        [runId],
+      )) as any;
+      const run = runRows[0];
+      if (!run || run.status !== 'active' || run.leaseOwner !== workerId) {
+        throw new Error('Worker does not hold the active run lease');
+      }
+      const [stepRows] = (await conn.query(
+        `SELECT id, status, attemptCount, maxAttempts
+         FROM ai_direct_workflow_run_steps
+         WHERE runId = ? AND sequence = ? FOR UPDATE`,
+        [runId, sequence],
+      )) as any;
+      const step = stepRows[0];
+      if (!step || step.status !== 'running') {
+        throw new Error('Step is not the active running step');
+      }
+      if (failure.modelAudit && failure.modelAudit.attempt !== Number(step.attemptCount)) {
+        throw new Error('Model audit does not match the active step attempt');
+      }
+
+      if (failure.modelAudit) {
+        await writeModelAudit(conn, runId, step.id, 'failed', failure.modelAudit, failure);
+        await incrementProviderMetric(conn, failure.modelAudit.providerKey, failure.failureClass);
+      }
+      const decision = decideProviderFailure({
+        runId,
+        stepId: step.id,
+        attempt: Number(step.attemptCount),
+        maxAttempts: Number(step.maxAttempts),
+        failureClass: failure.failureClass,
+        retryAfterMs: failure.retryAfterMs,
       });
-      await publishOutboxEvent(conn, {
-        organizationId: null,
-        aggregateType: 'workflow_run',
-        aggregateId: runId,
-        eventType: 'workflow_run.failed.v1',
-        payload: { runId, sequence, code: failure.code, reason: failure.reason },
-      });
+      const { retryScheduled, runAfter } = decision;
+
+      if (retryScheduled) {
+        await conn.query(
+          `UPDATE ai_direct_workflow_run_steps
+           SET status = 'pending', finishedAt = NULL, failureCode = ?, lastFailureClass = ?
+           WHERE id = ? AND status = 'running'`,
+          [failure.code, failure.failureClass, step.id],
+        );
+        await conn.query(
+          `UPDATE ai_direct_workflow_runs
+           SET status = 'queued', runAfter = ?, failureCode = ?, failureReason = ?,
+               leaseOwner = NULL, leaseExpiresAt = NULL, updatedAt = NOW(3)
+           WHERE id = ? AND status = 'active' AND leaseOwner = ?`,
+          [runAfter, failure.code, failure.reason ?? null, runId, workerId],
+        );
+        await publishOutboxEvent(conn, {
+          organizationId: run.organizationId,
+          aggregateType: 'workflow_run',
+          aggregateId: runId,
+          eventType: 'workflow_run.retry_scheduled.v1',
+          payload: {
+            runId,
+            sequence,
+            attempt: Number(step.attemptCount),
+            failureClass: failure.failureClass,
+            runAfter: runAfter!.toISOString(),
+          },
+        });
+      } else {
+        await conn.query(
+          `UPDATE ai_direct_workflow_run_steps
+           SET status = 'failed', finishedAt = NOW(3), failureCode = ?, lastFailureClass = ?
+           WHERE id = ? AND status = 'running'`,
+          [failure.code, failure.failureClass, step.id],
+        );
+        await conn.query(
+          `UPDATE ai_direct_workflow_runs
+           SET status = 'failed', finishedAt = NOW(3), failureCode = ?,
+               failureReason = ?, leaseOwner = NULL, leaseExpiresAt = NULL, updatedAt = NOW(3)
+           WHERE id = ? AND status = 'active' AND leaseOwner = ?`,
+          [failure.code, failure.reason ?? null, runId, workerId],
+        );
+        await writeAudit(conn, {
+          organizationId: run.organizationId,
+          actorUserId: `worker:${workerId}`,
+          action: 'workflow_run.failed',
+          targetType: 'workflow_run',
+          targetId: runId,
+          requestId: this.requestId,
+          metadata: { sequence, code: failure.code, failureClass: failure.failureClass },
+        });
+        await publishOutboxEvent(conn, {
+          organizationId: run.organizationId,
+          aggregateType: 'workflow_run',
+          aggregateId: runId,
+          eventType: 'workflow_run.failed.v1',
+          payload: {
+            runId,
+            sequence,
+            workerId,
+            code: failure.code,
+            failureClass: failure.failureClass,
+          },
+        });
+      }
+      await refreshRunUsage(conn, runId);
       await conn.commit();
+      return { retryScheduled, runAfter };
     } catch (err) {
       await conn.rollback();
       throw err;
@@ -529,7 +918,7 @@ export class JobQueueService {
   async retry(runId: string, actorUserId: string): Promise<{ runId: string }> {
     const [rows] = (await this.pool.query(
       `SELECT organizationId, employmentId, agentVersionId, workflowKey, workflowVersion,
-              requestedByUserId, approvalId, requestedModelPolicy, inputSummary
+              status, requestedByUserId, approvalId, requestedModelPolicy, inputSummary
        FROM ai_direct_workflow_runs WHERE id = ? LIMIT 1`,
       [runId],
     )) as any;
@@ -575,7 +964,7 @@ export class JobQueueService {
   async heartbeat(runId: string, workerId: string): Promise<{ renewed: boolean }> {
     const [result] = (await this.pool.query(
       `UPDATE ai_direct_workflow_runs
-       SET leaseExpiresAt = ?, updatedAt = NOW()
+       SET leaseExpiresAt = ?, lastHeartbeatAt = NOW(3), updatedAt = NOW(3)
        WHERE id = ? AND status = 'active' AND leaseOwner = ?`,
       [nowPlus(LEASE_TTL_SECONDS), runId, workerId],
     )) as any;

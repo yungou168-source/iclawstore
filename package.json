@@ -90,8 +90,8 @@
     "@radix-ui/react-tooltip": "1.2.9",
     "@resvg/resvg-wasm": "2.6.2",
     "@shikijs/rehype": "4.2.0",
-    "@tanstack/react-router": "1.170.15",
-    "@tanstack/react-start": "1.168.25",
+    "@tanstack/react-router": "1.170.18",
+    "@tanstack/react-start": "1.168.34",
     "@vercel/analytics": "2.0.1",
     "class-variance-authority": "0.7.1",
     "clawhub-schema": "workspace:0.0.2",
@@ -145,7 +145,7 @@
     "prisma": "^5.22.0",
     "typescript": "6.0.3",
     "undici": "7.27.2",
-    "vite": "8.0.16",
+    "vite": "8.2.0",
     "vitest": "4.1.8"
   },
   "overrides": {

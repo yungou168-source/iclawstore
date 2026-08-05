@@ -6,9 +6,9 @@ export const ACCOUNT_APPEAL_URL = "https://appeals.openclaw.ai/";
 export const ACCOUNT_APPEAL_LINK_TEXT = "appeal this decision";
 export const BANNED_ACCOUNT_PATH = "/account-banned";
 
-export const BANNED_SIGN_IN_MESSAGE = `This 龙虾市场 account is not in good standing and cannot sign in. Please ${ACCOUNT_APPEAL_LINK_TEXT} if you believe this is a mistake.`;
+export const BANNED_SIGN_IN_MESSAGE = `This AI直聘 account is not in good standing and cannot sign in. Please ${ACCOUNT_APPEAL_LINK_TEXT} if you believe this is a mistake.`;
 export const DELETED_SIGN_IN_MESSAGE =
-  "This 龙虾市场 account was permanently deleted and cannot sign in again.";
+  "This AI直聘 account was permanently deleted and cannot sign in again.";
 export const ACCESS_DENIED_SIGN_IN_MESSAGE = `Sign in was denied. Please try signing in with GitHub again. If this keeps happening, please ${CLAWHUB_ACCOUNT_ISSUE_LINK_TEXT}.`;
 export const AUTH_CODE_NO_SESSION_MESSAGE = `Sign in did not complete. Please try signing in with GitHub again. If this keeps happening, please ${CLAWHUB_ACCOUNT_ISSUE_LINK_TEXT}.`;
 

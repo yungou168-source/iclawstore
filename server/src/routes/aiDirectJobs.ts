@@ -20,20 +20,41 @@
 import { FastifyInstance } from 'fastify';
 import { AiDirectHiringError, ErrorCodes, errorResponse } from '../services/aiDirectErrors.js';
 import { requireAuth } from '../middleware/aiDirectAuth.js';
-import { requireCompanyRole } from '../middleware/aiDirectRbac.js';
+import { requireOrganizationRole } from '../middleware/aiDirectRbac.js';
 import { JobQueueService } from '../services/jobQueue.js';
 import { RunProjectionService } from '../services/runProjection.js';
 
 async function resolveRunOrganization(
   pool: any,
   runId: string,
-): Promise<{ organizationId: string | null; status: string } | null> {
+): Promise<{ organizationId: string | null; requestedByUserId: string; status: string } | null> {
   const [rows] = await pool.query(
-    `SELECT organizationId, status FROM ai_direct_workflow_runs WHERE id = ? LIMIT 1`,
+    `SELECT organizationId, requestedByUserId, status
+     FROM ai_direct_workflow_runs WHERE id = ? LIMIT 1`,
     [runId],
   );
   const row = (rows as any[])[0];
-  return row ? { organizationId: row.organizationId ?? null, status: row.status } : null;
+  return row
+    ? {
+        organizationId: row.organizationId ?? null,
+        requestedByUserId: row.requestedByUserId,
+        status: row.status,
+      }
+    : null;
+}
+
+async function requireRunAccess(
+  pool: any,
+  meta: { organizationId: string | null; requestedByUserId: string },
+  userId: string,
+): Promise<void> {
+  if (meta.organizationId) {
+    await requireOrganizationRole(pool, meta.organizationId, userId, 'manager');
+    return;
+  }
+  if (meta.requestedByUserId !== userId) {
+    throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '用户无权访问该 Job', 403);
+  }
 }
 
 function readString(value: unknown, field: string, maxLength: number): string {
@@ -71,7 +92,7 @@ export async function aiDirectJobsRoutes(fastify: FastifyInstance) {
           400,
         );
       }
-      await requireCompanyRole(pool, organizationId, user.id, 'manager');
+      await requireOrganizationRole(pool, organizationId, user.id, 'manager');
       const projection = new RunProjectionService(pool);
       const items = await projection.getActiveRuns(organizationId);
       return { items, count: items.length };
@@ -92,15 +113,37 @@ export async function aiDirectJobsRoutes(fastify: FastifyInstance) {
       if (!meta) {
         throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Job 不存在', 404);
       }
-      if (meta.organizationId) {
-        await requireCompanyRole(pool, meta.organizationId, user.id, 'manager');
-      }
+      await requireRunAccess(pool, meta, user.id);
       const projection = new RunProjectionService(pool);
       const detail = await projection.getRun(id, meta.organizationId ?? undefined);
       if (!detail) {
         throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Job 不存在', 404);
       }
       return detail;
+    } catch (err) {
+      if (err instanceof AiDirectHiringError) {
+        return reply.status(err.httpStatus).send(errorResponse(err));
+      }
+      throw err;
+    }
+  });
+
+  fastify.get('/jobs/:id/artifacts', { onRequest: auth }, async (request: any, reply) => {
+    try {
+      const user = await requireAuth(fastify, request);
+      const { id } = request.params;
+      const meta = await resolveRunOrganization(pool, id);
+      if (!meta) {
+        throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Job 不存在', 404);
+      }
+      await requireRunAccess(pool, meta, user.id);
+      const [rows] = await pool.query(
+        `SELECT id, organizationId, runId, stepId, kind, storagePath, mimeType,
+                sizeBytes, sha256, visibility, createdAt
+         FROM ai_direct_artifacts WHERE runId = ? ORDER BY createdAt ASC LIMIT 500`,
+        [id],
+      );
+      return { items: rows };
     } catch (err) {
       if (err instanceof AiDirectHiringError) {
         return reply.status(err.httpStatus).send(errorResponse(err));
@@ -120,9 +163,7 @@ export async function aiDirectJobsRoutes(fastify: FastifyInstance) {
       if (!meta) {
         throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Job 不存在', 404);
       }
-      if (meta.organizationId) {
-        await requireCompanyRole(pool, meta.organizationId, user.id, 'manager');
-      }
+      await requireRunAccess(pool, meta, user.id);
       const queue = new JobQueueService(pool);
       await queue.cancel(id, reason, user.id);
       return reply.status(200).send({ runId: id, status: 'cancelled' });
@@ -149,9 +190,7 @@ export async function aiDirectJobsRoutes(fastify: FastifyInstance) {
       if (!meta) {
         throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Job 不存在', 404);
       }
-      if (meta.organizationId) {
-        await requireCompanyRole(pool, meta.organizationId, user.id, 'manager');
-      }
+      await requireRunAccess(pool, meta, user.id);
       if (meta.status !== 'failed' && meta.status !== 'cancelled') {
         throw new AiDirectHiringError(
           ErrorCodes.INVALID_TRANSITION,

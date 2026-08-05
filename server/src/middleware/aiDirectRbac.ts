@@ -13,6 +13,7 @@
  */
 
 import { Pool } from 'mysql2/promise';
+import { AiDirectHiringError, ErrorCodes } from '../services/aiDirectErrors.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -47,16 +48,24 @@ export interface CompanyMemberRow {
 export interface EmploymentRow {
   id: string;
   companyId: string;
-  requestedByUserId: string;
+  requestedByUserId: string | null;
+  agentId: string;
+  agentVersionId: string;
+  roleId: string;
+  projectId: string | null;
+  offerId: string;
+  status: string;
+  startedAt: Date | null;
+  endedAt: Date | null;
 }
 
 // ---------------------------------------------------------------------------
 // Errors
 // ---------------------------------------------------------------------------
 
-export class RbacError extends Error {
-  constructor(readonly code: string, message: string) {
-    super(message);
+export class RbacError extends AiDirectHiringError {
+  constructor(code: typeof ErrorCodes.FORBIDDEN_SCOPE | typeof ErrorCodes.NOT_FOUND, message: string) {
+    super(code, message, code === ErrorCodes.NOT_FOUND ? 404 : 403);
     this.name = 'RbacError';
   }
 }
@@ -72,7 +81,7 @@ export function parseCompanyRole(value: unknown): CompanyRole | null {
 }
 
 export function canManageCompany(role: CompanyRole): boolean {
-  return companyRoleRank[role] >= companyRoleRank.manager;
+  return role === 'owner' || role === 'admin';
 }
 
 export function canManageEmploymentScope(role: CompanyRole): boolean {
@@ -124,12 +133,12 @@ export async function requireCompanyRole(
 ): Promise<CompanyMemberRow> {
   const member = await lookupCompanyMembership(pool, companyId, userId);
   if (!member) {
-    throw new RbacError('FORBIDDEN_SCOPE', '用户不是该公司的成员');
+    throw new RbacError(ErrorCodes.FORBIDDEN_SCOPE, '用户不是该公司的成员');
   }
   const requiredRank = companyRoleRank[minRole];
   const userRank = companyRoleRank[member.companyRole] ?? 0;
   if (userRank < requiredRank) {
-    throw new RbacError('FORBIDDEN_SCOPE', '用户的公司角色权限不足');
+    throw new RbacError(ErrorCodes.FORBIDDEN_SCOPE, '用户的公司角色权限不足');
   }
   return member;
 }
@@ -154,12 +163,14 @@ export async function requireEmploymentScope(
   userId: string,
 ): Promise<EmploymentRow> {
   const [rows] = await pool.query(
-    `SELECT id, companyId, requestedByUserId FROM ai_direct_employments WHERE id = ? LIMIT 1`,
+    `SELECT id, companyId, requestedByUserId, agentId, agentVersionId, roleId,
+            projectId, offerId, status, startedAt, endedAt
+     FROM ai_direct_employments WHERE id = ? LIMIT 1`,
     [employmentId],
   );
   const employment = (rows as EmploymentRow[])[0];
   if (!employment) {
-    throw new RbacError('NOT_FOUND', 'Employment 不存在');
+    throw new RbacError(ErrorCodes.NOT_FOUND, 'Employment 不存在');
   }
 
   // Self: the requester is always allowed to see / act on their own employment
@@ -170,7 +181,7 @@ export async function requireEmploymentScope(
   // Org scope: check org membership with recruiter rank
   const member = await lookupCompanyMembership(pool, employment.companyId, userId);
   if (!member || !canManageEmploymentScope(member.companyRole)) {
-    throw new RbacError('FORBIDDEN_SCOPE', '用户无权操作该 Employment');
+    throw new RbacError(ErrorCodes.FORBIDDEN_SCOPE, '用户无权操作该 Employment');
   }
   return employment;
 }
@@ -198,4 +209,20 @@ export async function orgMemberAccess(
   );
   const row = (rows as OrgMemberRow[])[0];
   return row?.status === 'active' ? row : null;
+}
+
+export async function requireOrganizationRole(
+  pool: Pool,
+  organizationId: string,
+  userId: string,
+  minRole: OrgRole,
+): Promise<OrgMemberRow> {
+  const member = await orgMemberAccess(pool, organizationId, userId);
+  if (!member) {
+    throw new RbacError(ErrorCodes.FORBIDDEN_SCOPE, '用户不是该组织的成员');
+  }
+  if ((orgRoleRank[member.role] ?? 0) < orgRoleRank[minRole]) {
+    throw new RbacError(ErrorCodes.FORBIDDEN_SCOPE, '用户的组织角色权限不足');
+  }
+  return member;
 }

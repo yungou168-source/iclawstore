@@ -620,17 +620,22 @@ model auditLogs {
 
 // P0: Model Catalog, Agents, Versions, Run Audits, Credentials, Organizations
 model aiDirectModelCatalog {
-  id              String   @id @db.VarChar(36)
-  modelKey        String   @unique @db.VarChar(255)
-  displayName     String   @db.VarChar(255)
-  status          String   @default("draft") @db.VarChar(32)
-  capabilities    Json?
-  taskProfile     Json?
-  evidenceVersion String?  @db.VarChar(128)
-  evidence        Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String   @id @db.VarChar(36)
+  modelKey         String   @unique @db.VarChar(255)
+  providerKey      String?  @db.VarChar(64)
+  providerModelKey String?  @db.VarChar(255)
+  displayName      String   @db.VarChar(255)
+  status           String   @default("draft") @db.VarChar(32)
+  capabilities     Json?
+  taskProfile      Json?
+  pricing          Json?
+  evidenceVersion  String?  @db.VarChar(128)
+  evidence         Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
+  @@unique([providerKey, providerModelKey])
+  @@index([providerKey, status])
   @@index([status])
   @@map("ai_direct_model_catalog")
 }
@@ -645,6 +650,8 @@ model aiDirectAgents {
   activeVersionId  String?  @db.VarChar(36)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  appearanceProfile aiDirectAgentAppearanceProfiles?
+  appearanceAssets  aiDirectAgentAppearanceAssets[]
 
   @@index([ownerUserId])
   @@index([ownerPublisherId])
@@ -669,40 +676,72 @@ model aiDirectAgentVersions {
 }
 
 model aiDirectModelRunAudits {
-  id              String   @id @db.VarChar(36)
-  agentId         String   @db.VarChar(36)
-  agentVersionId  String   @db.VarChar(36)
-  catalogModelId  String   @db.VarChar(36)
-  modelKey        String   @db.VarChar(255)
-  taskType        String?  @db.VarChar(128)
-  status          String   @db.VarChar(32)
-  failureCode     String?  @db.VarChar(128)
-  inputTokens     Int?
-  outputTokens    Int?
-  costMicros      BigInt?
-  latencyMs       Int?
-  routingMetadata Json
-  createdAt       DateTime @default(now())
+  id                String   @id @db.VarChar(36)
+  runId             String?  @db.VarChar(36)
+  stepId            String?  @db.VarChar(36)
+  agentId           String   @db.VarChar(36)
+  agentVersionId    String   @db.VarChar(36)
+  catalogModelId    String   @db.VarChar(36)
+  modelKey          String   @db.VarChar(255)
+  providerKey       String?  @db.VarChar(64)
+  credentialVersion Int?
+  providerRequestId String?  @db.VarChar(191)
+  attempt           Int      @default(1)
+  taskType          String?  @db.VarChar(128)
+  status            String   @db.VarChar(32)
+  failureCode       String?  @db.VarChar(128)
+  failureClass      String?  @db.VarChar(64)
+  inputTokens       Int?
+  outputTokens      Int?
+  costMicros        BigInt?
+  latencyMs         Int?
+  routingMetadata   Json
+  createdAt         DateTime @default(now())
 
+  @@unique([stepId, attempt])
+  @@index([runId, createdAt])
+  @@index([stepId, createdAt])
+  @@index([providerKey, createdAt])
   @@index([agentId, createdAt])
   @@map("ai_direct_model_run_audits")
 }
 
 model aiDirectUserCredentials {
-  id         String   @id @db.VarChar(36)
-  userId     String   @db.VarChar(191)
-  provider   String   @default("jinsha-token") @db.VarChar(64)
-  cipherText String   @db.MediumText
-  iv         String   @db.VarChar(64)
-  authTag    String   @db.VarChar(64)
-  keyVersion String   @default("v1") @db.VarChar(32)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  revokedAt  DateTime?
+  id                 String    @id @db.VarChar(36)
+  userId             String    @db.VarChar(191)
+  provider           String    @default("jinsha-token") @db.VarChar(64)
+  label              String    @default("金沙") @db.VarChar(160)
+  fingerprint        String?   @db.Char(64)
+  cipherText         String    @db.MediumText
+  iv                 String    @db.VarChar(64)
+  authTag            String    @db.VarChar(64)
+  keyVersion         String    @default("v1") @db.VarChar(32)
+  credentialVersion  Int       @default(1)
+  validationStatus   String    @default("unvalidated") @db.VarChar(32)
+  validatedAt        DateTime?
+  lastUsedAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  revokedAt          DateTime?
 
   @@unique([userId, provider])
+  @@index([validationStatus, updatedAt])
   @@index([userId])
   @@map("ai_direct_user_credentials")
+}
+
+model aiDirectAuthIdentities {
+  id                  String   @id @db.VarChar(36)
+  issuer              String   @db.VarChar(255)
+  subject             String   @db.VarChar(191)
+  userId              String   @unique @db.VarChar(191)
+  lastAuthenticatedAt DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([issuer, subject])
+  @@index([lastAuthenticatedAt])
+  @@map("ai_direct_auth_identities")
 }
 
 model aiDirectOrganizations {
@@ -756,6 +795,53 @@ model aiDirectAuditEvents {
   @@map("ai_direct_audit_events")
 }
 
+model aiDirectMemoryBindings {
+  id               String    @id @db.VarChar(36)
+  userId           String    @db.VarChar(191)
+  vaultFingerprint String    @db.Char(64)
+  status           String    @default("active") @db.VarChar(32)
+  extractorVersion String    @db.VarChar(64)
+  evidenceVersion  String    @db.VarChar(64)
+  noteCount        Int       @default(0)
+  tagCount         Int       @default(0)
+  lastSyncAt       DateTime?
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([userId, vaultFingerprint])
+  @@index([userId, status])
+  @@index([vaultFingerprint])
+  @@map("ai_direct_memory_bindings")
+}
+
+model aiDirectMemoryDigests {
+  id               String    @id @db.VarChar(36)
+  bindingId        String    @db.VarChar(36)
+  userId           String    @db.VarChar(191)
+  vaultFingerprint String    @db.Char(64)
+  notePath         String    @db.VarChar(1024)
+  noteHash         String    @db.Char(64)
+  title            String?   @db.VarChar(512)
+  tagsJson         Json?
+  linksJson        Json?
+  summaryMd        String?   @db.Text
+  summaryBytes     Int       @default(0)
+  sourceBytes      Int       @default(0)
+  redactedAt       DateTime?
+  redactionReason  String?   @db.VarChar(128)
+  frontmatterJson  Json?
+  mtime            DateTime?
+  size             Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([bindingId, notePath(length: 255)])
+  @@index([userId, vaultFingerprint])
+  @@index([bindingId])
+  @@map("ai_direct_memory_digests")
+}
+
 model aiDirectOutboxEvents {
   id             String    @id @db.VarChar(36)
   organizationId String?   @db.VarChar(36)
@@ -778,6 +864,56 @@ model aiDirectOutboxEvents {
   @@map("ai_direct_outbox_events")
 }
 
+model aiDirectWorkerTokens {
+  id              String    @id @db.VarChar(36)
+  organizationId  String    @db.VarChar(36)
+  workerId        String    @db.VarChar(128)
+  name            String    @db.VarChar(160)
+  tokenPrefix     String    @db.VarChar(16)
+  tokenHash       String    @unique @db.Char(64)
+  status          String    @default("active") @db.VarChar(32)
+  expiresAt       DateTime?
+  lastUsedAt      DateTime?
+  revokedAt       DateTime?
+  createdByUserId String    @db.VarChar(191)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([organizationId, status])
+  @@index([workerId, status])
+  @@map("ai_direct_worker_tokens")
+}
+
+model aiDirectArtifacts {
+  id                String   @id @db.VarChar(36)
+  organizationId    String   @db.VarChar(36)
+  runId              String   @db.VarChar(36)
+  stepId             String?  @db.VarChar(36)
+  kind               String   @db.VarChar(64)
+  storagePath        String   @db.VarChar(1024)
+  storagePathHash    String   @db.Char(64)
+  mimeType           String   @db.VarChar(255)
+  sizeBytes          BigInt
+  sha256             String   @db.Char(64)
+  visibility         String   @default("organization") @db.VarChar(32)
+  createdByWorkerId  String   @db.VarChar(128)
+  createdAt          DateTime @default(now())
+
+  @@unique([runId, storagePathHash])
+  @@index([organizationId, createdAt])
+  @@index([runId, createdAt])
+  @@index([stepId])
+  @@map("ai_direct_artifacts")
+}
+
+model aiDirectRuntimeMetrics {
+  metricKey   String   @id @db.VarChar(128)
+  metricValue BigInt   @default(0)
+  updatedAt   DateTime @updatedAt
+
+  @@map("ai_direct_runtime_metrics")
+}
+
 // P1: Companies, Projects, AgentRoles, CapabilityGrants, Offers, Employments, Approvals, WorkflowRuns
 model aiDirectCompanies {
   id               String   @id @default(cuid())
@@ -792,6 +928,21 @@ model aiDirectCompanies {
   @@index([organizationId, status])
   @@index([organizationId, updatedAt])
   @@map("ai_direct_companies")
+}
+
+model aiDirectCompanyMembers {
+  id         String   @id @default(cuid()) @db.VarChar(36)
+  companyId  String   @db.VarChar(36)
+  userId     String   @db.VarChar(191)
+  role       String   @db.VarChar(32)
+  status     String   @default("active") @db.VarChar(32)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([companyId, userId])
+  @@index([userId, status])
+  @@index([companyId, status, role])
+  @@map("ai_direct_company_members")
 }
 
 model aiDirectProjects {
@@ -881,7 +1032,8 @@ model aiDirectEmployments {
   agentVersionId   String    @db.VarChar(36)
   roleId           String    @db.VarChar(36)
   projectId        String?   @db.VarChar(36)
-  offerId          String    @db.VarChar(36)
+  offerId          String    @unique @db.VarChar(36)
+  requestedByUserId String?  @db.VarChar(191)
   status           String    @default("candidate") @db.VarChar(32)
   startedAt        DateTime?
   endedAt          DateTime?
@@ -892,6 +1044,7 @@ model aiDirectEmployments {
   @@index([agentId, status])
   @@index([agentVersionId])
   @@index([roleId])
+  @@index([requestedByUserId, status])
   @@map("ai_direct_employments")
 }
 
@@ -942,7 +1095,12 @@ model aiDirectWorkflowRuns {
   workflowKey             String    @db.VarChar(128)
   workflowVersion         String?   @db.VarChar(64)
   status                  String    @default("queued") @db.VarChar(32)
+  runAfter                DateTime?
+  leaseOwner              String?   @db.VarChar(128)
+  leaseExpiresAt          DateTime?
+  lastHeartbeatAt         DateTime?
   requestedByUserId       String    @db.VarChar(191)
+  idempotencyKey          String?   @db.VarChar(128)
   approvalId              String?   @db.VarChar(36)
   requestedModelPolicy    Json?
   resolvedModelCatalogId   String?   @db.VarChar(36)
@@ -965,29 +1123,191 @@ model aiDirectWorkflowRuns {
   @@index([employmentId, createdAt])
   @@index([status, updatedAt])
   @@index([requestedByUserId, status, updatedAt])
+  @@unique([requestedByUserId, idempotencyKey])
+  @@index([status, runAfter, leaseExpiresAt, createdAt], map: "ai_direct_workflow_runs_queue_idx")
+  @@index([leaseOwner, leaseExpiresAt])
   @@map("ai_direct_workflow_runs")
 }
 
 model aiDirectWorkflowRunSteps {
-  id            String    @id @default(cuid())
-  runId         String    @db.VarChar(36)
-  stepKey       String    @db.VarChar(128)
-  sequence      Int
-  status        String    @default("pending") @db.VarChar(32)
-  catalogModelId String?  @db.VarChar(36)
-  modelKey      String?   @db.VarChar(255)
-  inputTokens   Int?
-  outputTokens  Int?
-  costMicros    BigInt?
-  latencyMs     Int?
-  failureCode   String?   @db.VarChar(128)
-  startedAt     DateTime?
-  finishedAt    DateTime?
-  outputSummary Json?
-  metadata      Json?
-  createdAt     DateTime  @default(now())
+  id               String    @id @default(cuid())
+  runId            String    @db.VarChar(36)
+  stepKey          String    @db.VarChar(128)
+  sequence         Int
+  status           String    @default("pending") @db.VarChar(32)
+  attemptCount     Int       @default(0)
+  maxAttempts      Int       @default(3)
+  catalogModelId   String?   @db.VarChar(36)
+  modelKey         String?   @db.VarChar(255)
+  inputTokens      Int?
+  outputTokens     Int?
+  costMicros       BigInt?
+  latencyMs        Int?
+  failureCode      String?   @db.VarChar(128)
+  lastFailureClass String?   @db.VarChar(64)
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  outputSummary    Json?
+  metadata         Json?
+  createdAt        DateTime  @default(now())
 
   @@unique([runId, sequence])
   @@index([runId, sequence])
   @@map("ai_direct_workflow_run_steps")
+}
+
+model aiDirectAgentAppearanceProfiles {
+  agentId                String   @id @db.VarChar(36)
+  avatarAssetId          String?  @db.VarChar(36)
+  defaultMode            String   @default("image_2d") @db.VarChar(32)
+  controllerEmploymentId String?  @unique(map: "appearance_profiles_controller_employment_key") @db.VarChar(36)
+  controllerCompanyId    String?  @db.VarChar(36)
+  revision               BigInt   @default(1)
+  updatedByUserId        String   @db.VarChar(191)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  agent                  aiDirectAgents @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([controllerCompanyId], map: "appearance_profiles_controller_company_idx")
+  @@index([updatedAt], map: "appearance_profiles_updated_at_idx")
+  @@map("ai_direct_agent_appearance_profiles")
+}
+
+model aiDirectAgentAppearanceAssets {
+  id               String    @id @db.VarChar(36)
+  agentId          String    @db.VarChar(36)
+  kind             String    @db.VarChar(32)
+  sortOrder        Int       @default(0)
+  status           String    @default("active") @db.VarChar(32)
+  storageKey       String    @unique(map: "appearance_assets_storage_key") @db.VarChar(512)
+  originalFileName String    @db.VarChar(255)
+  mimeType         String    @db.VarChar(128)
+  sizeBytes        BigInt
+  sha256           String    @db.Char(64)
+  createdByUserId  String    @db.VarChar(191)
+  createdAt        DateTime  @default(now())
+  deletedByUserId  String?   @db.VarChar(191)
+  deletedAt        DateTime?
+  agent            aiDirectAgents @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId, kind, status, sortOrder], map: "appearance_assets_agent_kind_status_order_idx")
+  @@index([agentId, status, createdAt], map: "appearance_assets_agent_status_created_idx")
+  @@map("ai_direct_agent_appearance_assets")
+}
+
+model desktopSidebarPreferences {
+  userId    String   @id @db.VarChar(191)
+  config    Json
+  revision  BigInt   @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([updatedAt], map: "desktop_sidebar_preferences_updated_at_idx")
+  @@map("desktop_sidebar_preferences")
+}
+
+model desktopSidebarAssets {
+  id               String    @id @db.VarChar(36)
+  userId           String    @db.VarChar(191)
+  storageKey       String    @unique(map: "desktop_sidebar_assets_storage_key") @db.VarChar(512)
+  originalFileName String    @db.VarChar(255)
+  mimeType         String    @db.VarChar(128)
+  sizeBytes        BigInt
+  sha256           String    @db.Char(64)
+  createdAt        DateTime  @default(now())
+  deletedAt        DateTime?
+
+  @@index([userId, deletedAt, createdAt], map: "desktop_sidebar_assets_user_deleted_created_idx")
+  @@map("desktop_sidebar_assets")
+}
+
+model desktopTemplates {
+  id              String   @id @db.VarChar(36)
+  publisherId     String   @db.VarChar(191)
+  slug            String   @db.VarChar(160)
+  name            String   @db.VarChar(160)
+  description     String   @db.Text
+  status          String   @default("draft") @db.VarChar(32)
+  pricingMode     String   @default("free") @db.VarChar(32)
+  priceMicros     BigInt?
+  currency        String?  @db.Char(3)
+  activeVersionId String?  @db.VarChar(36)
+  createdByUserId String   @db.VarChar(191)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([publisherId, slug], map: "desktop_templates_publisher_slug_key")
+  @@index([status, updatedAt], map: "desktop_templates_status_updated_idx")
+  @@index([publisherId, status, updatedAt], map: "desktop_templates_publisher_status_updated_idx")
+  @@map("desktop_templates")
+}
+
+model desktopTemplateVersions {
+  id                String    @id @db.VarChar(36)
+  templateId        String    @db.VarChar(36)
+  version           String    @db.VarChar(64)
+  status            String    @default("draft") @db.VarChar(32)
+  manifest          Json
+  dataSchemaVersion Int       @default(1)
+  storageKey        String    @unique(map: "desktop_template_versions_storage_key") @db.VarChar(512)
+  originalFileName  String    @db.VarChar(255)
+  mimeType          String    @db.VarChar(128)
+  sizeBytes         BigInt
+  sha256            String    @db.Char(64)
+  createdByUserId   String    @db.VarChar(191)
+  createdAt         DateTime  @default(now())
+  publishedAt       DateTime?
+
+  @@unique([templateId, version], map: "desktop_template_versions_template_version_key")
+  @@index([templateId, status, createdAt], map: "desktop_template_versions_template_status_created_idx")
+  @@map("desktop_template_versions")
+}
+
+model desktopTemplateScreenshots {
+  id                String   @id @db.VarChar(36)
+  templateVersionId String   @db.VarChar(36)
+  sortOrder         Int
+  storageKey        String   @unique(map: "desktop_template_screenshots_storage_key") @db.VarChar(512)
+  mimeType          String   @db.VarChar(128)
+  sizeBytes         BigInt
+  sha256            String   @db.Char(64)
+  createdAt         DateTime @default(now())
+
+  @@unique([templateVersionId, sortOrder], map: "desktop_template_screenshots_version_order_key")
+  @@index([templateVersionId], map: "desktop_template_screenshots_version_idx")
+  @@map("desktop_template_screenshots")
+}
+
+model desktopTemplateEntitlements {
+  id              String    @id @db.VarChar(36)
+  templateId      String    @db.VarChar(36)
+  userId          String    @db.VarChar(191)
+  source          String    @db.VarChar(32)
+  reference       String?   @db.VarChar(191)
+  status          String    @default("active") @db.VarChar(32)
+  grantedByUserId String?   @db.VarChar(191)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  revokedAt       DateTime?
+
+  @@unique([templateId, userId], map: "desktop_template_entitlements_template_user_key")
+  @@index([userId, status, updatedAt], map: "desktop_template_entitlements_user_status_updated_idx")
+  @@index([templateId, status], map: "desktop_template_entitlements_template_status_idx")
+  @@map("desktop_template_entitlements")
+}
+
+model desktopTemplateAuditEvents {
+  id          String   @id @db.VarChar(36)
+  actorUserId String   @db.VarChar(191)
+  action      String   @db.VarChar(128)
+  targetType  String   @db.VarChar(64)
+  targetId    String   @db.VarChar(191)
+  requestId   String   @db.VarChar(128)
+  outcome     String   @default("success") @db.VarChar(32)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([targetType, targetId, createdAt], map: "desktop_template_audit_target_created_idx")
+  @@index([actorUserId, createdAt], map: "desktop_template_audit_actor_created_idx")
+  @@map("desktop_template_audit_events")
 }

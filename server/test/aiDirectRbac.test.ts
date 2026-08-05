@@ -5,6 +5,7 @@ import {
   canManageEmploymentScope,
   requireCompanyRole,
   requireEmploymentScope,
+  requireOrganizationRole,
   companyRoleRank,
 } from '../src/middleware/aiDirectRbac.js';
 
@@ -132,6 +133,32 @@ describe('aiDirectRbac', () => {
 
       await expect(
         requireCompanyRole(mockPool, 'c1', 'u1', 'recruiter'),
+      ).rejects.toMatchObject({ code: 'FORBIDDEN_SCOPE' });
+    });
+  });
+
+  describe('requireOrganizationRole', () => {
+    const mockPool: any = { query: vi.fn() };
+
+    beforeEach(() => {
+      mockPool.query.mockReset();
+    });
+
+    it('allows an organization manager', async () => {
+      mockPool.query.mockResolvedValue([[{
+        organizationId: 'org-1', role: 'manager', status: 'active',
+      }]]);
+      await expect(requireOrganizationRole(mockPool, 'org-1', 'u1', 'manager')).resolves.toMatchObject({
+        role: 'manager',
+      });
+    });
+
+    it('rejects an organization member below the required rank', async () => {
+      mockPool.query.mockResolvedValue([[{
+        organizationId: 'org-1', role: 'member', status: 'active',
+      }]]);
+      await expect(
+        requireOrganizationRole(mockPool, 'org-1', 'u1', 'manager'),
       ).rejects.toMatchObject({ code: 'FORBIDDEN_SCOPE' });
     });
   });

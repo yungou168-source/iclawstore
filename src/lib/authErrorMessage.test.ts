@@ -33,14 +33,14 @@ describe("authErrorMessage", () => {
         "This account has been permanently deleted and cannot be restored.",
         "fallback",
       ),
-    ).toBe("This ClawHub account was permanently deleted and cannot sign in again.");
+    ).toBe("This AI直聘 account was permanently deleted and cannot sign in again.");
   });
 
   it("does not treat generic permission denials as banned sign-in failures", () => {
     const message = getUserFacingAuthError(new Error("Forbidden"), "fallback");
 
     expect(message).toBe(
-      "This ClawHub account does not have permission to perform this action, or the account is not in good standing.",
+      "This AI直聘 account does not have permission to perform this action, or the account is not in good standing.",
     );
     expect(isBannedAccountAuthError(message)).toBe(false);
   });

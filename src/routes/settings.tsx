@@ -499,7 +499,7 @@ export function Settings() {
             Settings
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[color:var(--ink-soft)]">
-            Account identity, publishing organizations, and API access for 龙虾市场.
+            Account identity, publishing organizations, and API access for AI直聘.
           </p>
         </header>
         <Separator />
@@ -1215,7 +1215,7 @@ export function Settings() {
                           Sync GitHub skills repo
                         </h3>
                         <p className="text-sm text-[color:var(--ink-soft)]">
-                          Add a public repo URL. 龙虾市场 syncs metadata and scan results every 15
+                          Add a public repo URL. AI直聘 syncs metadata and scan results every 15
                           minutes. Users install your skills directly from your GitHub repo.
                         </p>
                       </div>
@@ -1272,7 +1272,7 @@ export function Settings() {
                       <div>
                         <h3 className="text-sm font-bold text-[color:var(--ink)]">New token</h3>
                         <p className="text-sm text-[color:var(--ink-soft)]">
-                          For 龙虾市场 CLI authentication.
+                          For AI直聘 CLI authentication.
                         </p>
                       </div>
                     </div>

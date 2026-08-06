@@ -23,8 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
-  statuses: read
+  contents: read
 
 jobs:
   validate-deploy-request:
@@ -82,6 +81,11 @@ jobs:
     env:
       CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
       PLAYWRIGHT_AUTH_STORAGE_STATE_JSON: ${{ secrets.PLAYWRIGHT_AUTH_STORAGE_STATE_JSON }}
+      PRODUCTION_SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+      PRODUCTION_SSH_PORT: ${{ secrets.PRODUCTION_SSH_PORT }}
+      PRODUCTION_SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+      PRODUCTION_SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+      PRODUCTION_SSH_KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
       PLAYWRIGHT_BASE_URL: https://www.iclawstore.com
     steps:
       - name: Check deploy configuration
@@ -91,6 +95,19 @@ jobs:
 
           if [[ "${{ needs.validate-deploy-request.outputs.deploy_backend }}" == "true" && -z "$CONVEX_DEPLOY_KEY" ]]; then
             missing+=("CONVEX_DEPLOY_KEY")
+          fi
+
+          if [[ "${{ needs.validate-deploy-request.outputs.deploy_frontend }}" == "true" ]]; then
+            for secret_name in \
+              PRODUCTION_SSH_HOST \
+              PRODUCTION_SSH_PORT \
+              PRODUCTION_SSH_USER \
+              PRODUCTION_SSH_PRIVATE_KEY \
+              PRODUCTION_SSH_KNOWN_HOSTS; do
+              if [[ -z "${!secret_name}" ]]; then
+                missing+=("$secret_name")
+              fi
+            done
           fi
 
           if (( ${#missing[@]} > 0 )); then
@@ -155,56 +172,35 @@ jobs:
         if: needs.validate-deploy-request.outputs.deploy_backend == 'true'
         run: bun run verify:convex-contract -- --prod
 
-      - name: Wait for Vercel production deployment
-        id: vercel
+      - name: Configure production SSH
         if: needs.validate-deploy-request.outputs.deploy_frontend == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_SHA: ${{ github.sha }}
-          VERCEL_STATUS_CONTEXT: Vercel – clawhub
         run: |
           set -euo pipefail
-          for attempt in {1..90}; do
-            if ! status_json="$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/status" \
-              --jq '.statuses[] | select(.context == env.VERCEL_STATUS_CONTEXT) | {state, target_url, description} | @base64' \
-              2>/dev/null | head -n1)"; then
-              echo "GitHub status check failed for $GITHUB_SHA on attempt $attempt; retrying..."
-              sleep 10
-              continue
-            fi
+          if [[ ! "$PRODUCTION_SSH_PORT" =~ ^[0-9]{1,5}$ ]] || (( PRODUCTION_SSH_PORT < 1 || PRODUCTION_SSH_PORT > 65535 )); then
+            echo "::error::PRODUCTION_SSH_PORT must be a valid TCP port."
+            exit 1
+          fi
 
-            if [[ -z "$status_json" ]]; then
-              state=""
-              target_url=""
-            else
-              state="$(printf '%s' "$status_json" | base64 -d | jq -r '.state // ""')"
-              target_url="$(printf '%s' "$status_json" | base64 -d | jq -r '.target_url // ""')"
-            fi
+          install -d -m 700 "$RUNNER_TEMP/production-ssh"
+          printf '%s\n' "$PRODUCTION_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/production-ssh/id_ed25519"
+          printf '%s\n' "$PRODUCTION_SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/production-ssh/known_hosts"
+          chmod 600 "$RUNNER_TEMP/production-ssh/id_ed25519"
 
-            case "$state" in
-              success)
-                echo "Vercel production deployment ready for $GITHUB_SHA"
-                echo "deployment_url=$target_url" >> "$GITHUB_OUTPUT"
-                exit 0
-                ;;
-              failure|error)
-                echo "::error::Vercel production deployment failed for $GITHUB_SHA"
-                exit 1
-                ;;
-              pending)
-                echo "Vercel deployment pending for $GITHUB_SHA on attempt $attempt; waiting..."
-                ;;
-              *)
-                echo "Vercel status for $GITHUB_SHA not published yet on attempt $attempt; waiting..."
-                ;;
-            esac
-
-            sleep 10
-          done
-
-          echo "::error::Timed out waiting for Vercel production deployment for $GITHUB_SHA"
-          exit 1
+      - name: Deploy self-hosted SSR
+        if: needs.validate-deploy-request.outputs.deploy_frontend == 'true'
+        env:
+          SSH_AUTH_SOCK: ''
+        run: |
+          set -euo pipefail
+          ssh \
+            -i "$RUNNER_TEMP/production-ssh/id_ed25519" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/production-ssh/known_hosts" \
+            -p "$PRODUCTION_SSH_PORT" \
+            "$PRODUCTION_SSH_USER@$PRODUCTION_SSH_HOST" \
+            "deploy $GITHUB_SHA"
 
       - name: Install Playwright browser
         if: needs.validate-deploy-request.outputs.run_smoke == 'true' && needs.validate-deploy-request.outputs.deploy_frontend == 'true'
@@ -224,11 +220,20 @@ jobs:
         if: needs.validate-deploy-request.outputs.run_smoke == 'true' && needs.validate-deploy-request.outputs.deploy_frontend == 'true'
         run: bunx playwright test --workers=1 e2e/menu-smoke.pw.test.ts e2e/publish-entry-workflows.pw.test.ts e2e/upload-auth-smoke.pw.test.ts
 
-      - name: Tag production frontend deployment
-        if: needs.validate-deploy-request.outputs.deploy_frontend == 'true'
+
+  tag-production-deployment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [validate-deploy-request, deploy-production]
+    if: needs.validate-deploy-request.outputs.deploy_frontend == 'true'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Tag production SSR deployment
         env:
           DEPLOY_TARGET: ${{ needs.validate-deploy-request.outputs.target }}
-          DEPLOYMENT_URL: ${{ steps.vercel.outputs.deployment_url }}
         run: |
           set -euo pipefail
           deployed_at="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
@@ -251,19 +256,17 @@ jobs:
           version_tag="${version_prefix}${next_version}"
 
           git tag -a "$tag_name" "$GITHUB_SHA" \
-            -m "Production frontend deploy $tag_name" \
+            -m "Production SSR deploy $tag_name" \
             -m "SHA: $GITHUB_SHA" \
             -m "Version: $version_tag" \
             -m "Deployed at: $deployed_at" \
             -m "Target: $DEPLOY_TARGET" \
-            -m "Vercel: ${DEPLOYMENT_URL:-unknown}" \
             -m "Run: $run_url"
           git tag -a "$version_tag" "$GITHUB_SHA" \
-            -m "Production frontend deploy $version_tag" \
+            -m "Production SSR deploy $version_tag" \
             -m "SHA: $GITHUB_SHA" \
             -m "Timestamp tag: $tag_name" \
             -m "Deployed at: $deployed_at" \
             -m "Target: $DEPLOY_TARGET" \
-            -m "Vercel: ${DEPLOYMENT_URL:-unknown}" \
             -m "Run: $run_url"
           git push origin "refs/tags/$tag_name" "refs/tags/$version_tag"

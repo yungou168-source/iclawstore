@@ -1,5 +1,5 @@
 ---
-summary: "Maintainer deploy checklist: Convex backend, Vercel web app, CLI npm release, and /api rewrites."
+summary: "Maintainer deploy checklist: self-hosted SSR, Convex backend, CLI npm release, and /api rewrites."
 ---
 
 # Deploy
@@ -9,7 +9,7 @@ under `specs/` so it does not publish into the user-facing ClawHub docs tab.
 
 ClawHub is two deployables:
 
-- Web app (TanStack Start) -> typically Vercel.
+- Web app (TanStack Start SSR) -> the iClawStore production server.
 - Convex backend -> Convex deployment (serves `/api/...` routes).
 
 ## iClawStore self-hosted SSR release
@@ -18,6 +18,50 @@ ClawHub is two deployables:
 systemd unit `iclawstore.service`, listening on `127.0.0.1:3000`; Nginx proxies
 public HTTP(S) traffic to it. The Fastify API (`iclawstore-api`) and Nginx do
 not need a restart for web-only changes.
+
+### GitHub Actions production-server boundary
+
+A manual `Deploy` workflow release is live only after the self-hosted SSR
+release completes and its public smoke tests pass. `full` deploys Convex and
+then the SSR server; `frontend` deploys only the SSR server; `backend` never
+connects to the production server.
+
+GitHub Actions is not granted a general-purpose production shell or `sudo`.
+The `Production` environment contains only these server-release secrets:
+
+- `PRODUCTION_SSH_HOST` — server address.
+- `PRODUCTION_SSH_PORT` — SSH port.
+- `PRODUCTION_SSH_USER` — dedicated unprivileged deploy account.
+- `PRODUCTION_SSH_PRIVATE_KEY` — private half of a newly created, deployment-only Ed25519 key.
+- `PRODUCTION_SSH_KNOWN_HOSTS` — pinned `known_hosts` entry generated from an
+  independently verified server host key; never use `ssh-keyscan` during a deploy.
+
+The deploy key belongs only to the dedicated account. Its entry in
+`~/.ssh/authorized_keys` must use a forced command and disable forwarding and
+PTY allocation:
+
+```text
+command="/usr/local/sbin/iclawstore-deploy",no-agent-forwarding,no-port-forwarding,no-pty,no-user-rc,no-X11-forwarding ssh-ed25519 <github-actions-deploy-public-key>
+```
+
+Install the reviewed `ops/iclawstore-deploy` file as
+`/usr/local/sbin/iclawstore-deploy`, owned by `root:root` with mode `0755`.
+The forced command accepts only `deploy <40-character-commit-sha>`, verifies
+that commit belongs to `origin/main`, builds an isolated release output, switches
+`.output` atomically, restarts only `iclawstore.service`, and rolls back the
+output pointer when restart or local smoke verification fails.
+
+The dedicated account needs write access to the application worktree and this
+narrow `sudoers` entry only:
+
+```text
+iclawstore-deploy ALL=(root) NOPASSWD: /bin/systemctl restart iclawstore.service, /bin/systemctl is-active --quiet iclawstore.service
+```
+
+Use the actual `systemctl` path from `command -v systemctl`. The server needs a
+read-only deploy key for fetching this repository and a Bun binary available to
+the deploy account. Do not reuse the GitHub Actions key for repository fetches,
+interactive administration, or any other host.
 
 ### Self-hosted Convex Auth
 
@@ -157,12 +201,13 @@ Production deploy notes:
 - `deploy.yml` is manual-only (`workflow_dispatch`). Merging to `main` does not deploy.
 - The workflow must be started from `main`.
 - Deploy targets:
-  - `full`: deploy Convex, verify contract, wait for the matching Vercel production deploy, then run smoke tests
-  - `backend`: deploy Convex, verify contract, then run smoke tests against current production
-  - `frontend`: wait for the Vercel production deploy for the selected `main` SHA, then run smoke tests
-- `frontend` does not call `vercel deploy` directly yet. It relies on the existing Vercel Git-based production deploy for that SHA.
+  - `full`: deploy Convex, verify its contract, deploy the selected `main` SHA to the self-hosted SSR server, then run smoke tests
+  - `backend`: deploy Convex, verify its contract, then run smoke tests against the current SSR release without connecting to the production server
+  - `frontend`: deploy the selected `main` SHA to the self-hosted SSR server, then run smoke tests
+- For `full` and `frontend`, the workflow connects only through the forced-command SSH key described above; it never receives an interactive shell or unrestricted `sudo`.
 - The real deploy job uses the GitHub `Production` environment for deploy secrets, but it does not wait for a separate approval.
-- Required `Production` environment secret: `CONVEX_DEPLOY_KEY`, created from the **Production** Convex deployment settings. A development or preview key deploys to the wrong environment and cannot be converted by the CLI.
+- Required `Production` environment secret for backend deploys: `CONVEX_DEPLOY_KEY`, created from the **Production** Convex deployment settings. A development or preview key deploys to the wrong environment and cannot be converted by the CLI.
+- Required `Production` environment secrets for SSR deploys: `PRODUCTION_SSH_HOST`, `PRODUCTION_SSH_PORT`, `PRODUCTION_SSH_USER`, `PRODUCTION_SSH_PRIVATE_KEY`, and `PRODUCTION_SSH_KNOWN_HOSTS`.
 - Optional `Production` environment secret: `PLAYWRIGHT_AUTH_STORAGE_STATE_JSON` for authenticated smoke coverage.
 - Convex application variables such as `JWT_PRIVATE_KEY`, `JWKS`, `SITE_URL`, and `CUSTOM_AUTH_SITE_URL` are configured in the Convex Production deployment itself; they are not GitHub Actions secrets.
 
@@ -245,9 +290,22 @@ Ensure Convex env is set (auth + embeddings):
 - Optional fallback: `GITHUB_TOKEN` (used when GitHub App auth is unavailable,
   and for arbitrary public repository lookups such as trusted-publisher setup)
 
-## 2) Deploy web app (Vercel)
+## 2) Deploy web app (self-hosted SSR)
 
-Set env vars:
+The GitHub Actions `Deploy` workflow builds the selected `main` SHA on the
+production server through `/usr/local/sbin/iclawstore-deploy`. The live
+`.output` symlink changes only after a complete build, and the forced command
+restores the previous release if the service restart or local health probe
+fails.
+
+The release order is:
+
+1. Convex deployment and contract verification for `full`.
+2. Isolated SSR build, atomic activation, service restart, and local health check for `full` and `frontend`.
+3. Public HTTP smoke tests; authenticated UI smoke runs when its optional storage-state secret is configured.
+
+The production process reads these application values from its existing server
+environment; the workflow must not transfer them over SSH:
 
 - `VITE_CONVEX_URL`
 - `VITE_CONVEX_SITE_URL` (Convex "site" URL)
@@ -255,23 +313,11 @@ Set env vars:
 - `SITE_URL` (web app URL)
 - `VITE_APP_BUILD_SHA` (set to the same commit SHA stamped into Convex)
 
-Deploy order:
-
-1. Convex
-2. contract verify
-3. wait for Vercel production deploy for the same Git SHA
-4. smoke
-
 ## 3) Route `/api/*` to Convex
 
-This repo currently uses `vercel.json` rewrites:
-
-- `source: /api/:path*`
-- `destination: https://<deployment>.convex.site/api/:path*`
-
-For self-host:
-
-- update `vercel.json` to your deployment's Convex site URL.
+The production Nginx configuration proxies `/api/*` to the configured Convex
+HTTP site. Keep that upstream and the registry discovery metadata aligned with
+the production Convex deployment.
 
 ## 4) Registry discovery
 

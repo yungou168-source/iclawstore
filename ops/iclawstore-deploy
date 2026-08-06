@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+APP_DIR='/www/wwwroot/iclawstore.com'
+BRANCH='main'
+SERVICE='iclawstore.service'
+HEALTH_URL='http://127.0.0.1:3000/plugins'
+MIN_AVAILABLE_KIB=$((2 * 1024 * 1024))
+
+export PATH='/home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin'
+
+fail() {
+  printf 'deployment failed: %s\n' "$*" >&2
+  exit 1
+}
+
+require_deploy_command() {
+  local command="${SSH_ORIGINAL_COMMAND:-}"
+  if [[ ! "$command" =~ ^deploy[[:space:]]+([[:xdigit:]]{40})$ ]]; then
+    fail 'expected exactly: deploy <40-character-commit-sha>'
+  fi
+  printf '%s\n' "${BASH_REMATCH[1]}"
+}
+
+activate_release() {
+  local release_dir="$1"
+  ln -s "$release_dir" "$APP_DIR/.output.next"
+  mv -Tf "$APP_DIR/.output.next" "$APP_DIR/.output"
+}
+
+requested_sha="$(require_deploy_command)"
+exec 9>/tmp/iclawstore-deploy.lock
+flock -n 9 || fail 'another deployment is already running'
+
+[[ -d "$APP_DIR/.git" ]] || fail "missing Git worktree: $APP_DIR"
+BUN_BIN="$(command -v bun || true)"
+[[ -n "$BUN_BIN" ]] || fail 'bun is not available to the deploy user'
+
+if pgrep -af 'vite build|bun run build|tsc|bun install' >/dev/null; then
+  fail 'a build or dependency installation is already running'
+fi
+
+available_kib="$(awk '/MemAvailable/ { print $2 }' /proc/meminfo)"
+[[ "$available_kib" =~ ^[0-9]+$ ]] || fail 'cannot determine available memory'
+(( available_kib >= MIN_AVAILABLE_KIB )) || fail 'less than 2 GiB of memory is available'
+
+git -C "$APP_DIR" fetch --quiet origin "$BRANCH"
+git -C "$APP_DIR" cat-file -e "$requested_sha^{commit}" || fail 'requested commit is unavailable on origin'
+git -C "$APP_DIR" merge-base --is-ancestor "$requested_sha" "origin/$BRANCH" || \
+  fail 'requested commit is not reachable from origin/main'
+git -C "$APP_DIR" reset --hard --quiet "$requested_sha"
+[[ "$(git -C "$APP_DIR" rev-parse HEAD)" == "$requested_sha" ]] || fail 'checked-out revision differs from requested commit'
+
+release_dir="$APP_DIR/.output.release-$(date -u +%Y%m%d-%H%M%S)-${requested_sha:0:7}"
+[[ ! -e "$release_dir" ]] || fail "release directory already exists: $release_dir"
+
+(
+  cd "$APP_DIR"
+  NITRO_OUTPUT_DIR="$release_dir" "$BUN_BIN" --smol run build
+)
+test -f "$release_dir/server/index.mjs" || fail 'build completed without the Nitro server entrypoint'
+
+previous_release="$(readlink -f "$APP_DIR/.output")"
+[[ -d "$previous_release" ]] || fail 'current release directory is unavailable'
+
+if [[ ! -L "$APP_DIR/.output" ]]; then
+  legacy_release="$APP_DIR/.output.release-legacy-$(date -u +%Y%m%d-%H%M%S)"
+  mv "$APP_DIR/.output" "$legacy_release"
+  previous_release="$legacy_release"
+fi
+
+release_active=false
+rollback() {
+  local exit_code=$?
+  if [[ "$release_active" == true ]]; then
+    printf 'release verification failed; restoring %s\n' "$previous_release" >&2
+    activate_release "$previous_release" || true
+    sudo -n systemctl restart "$SERVICE" || true
+  fi
+  exit "$exit_code"
+}
+trap rollback ERR
+
+activate_release "$release_dir"
+release_active=true
+sudo -n systemctl restart "$SERVICE"
+sudo -n systemctl is-active --quiet "$SERVICE"
+curl --fail --silent --show-error --retry 5 --retry-connrefused "$HEALTH_URL" >/dev/null
+
+release_active=false
+trap - ERR
+printf 'deployed %s to %s\n' "$requested_sha" "$release_dir"

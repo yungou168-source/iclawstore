@@ -11,7 +11,6 @@ const REQUEST_TIMEOUT_MS = 15_000;
 const MAX_RATE_LIMIT_RETRIES = 3;
 const MAX_RATE_LIMIT_WAIT_MS = 15_000;
 const TRANSIENT_RETRY_DELAY_MS = 1_000;
-const OG_IMAGE_TIMEOUT_MS = 45_000;
 
 try {
   setGlobalDispatcher(
@@ -33,14 +32,6 @@ function getSiteBase() {
 
 function getDesktopApiBase() {
   return process.env.DESKTOP_API_BASE_URL?.trim() || 'https://www.iclawstore.com';
-}
-
-function getSkillSlug() {
-  return process.env.CLAWHUB_E2E_SKILL_SLUG?.trim() || "gifgrep";
-}
-
-function getSkillOwner() {
-  return process.env.CLAWHUB_E2E_SKILL_OWNER?.trim() || "steipete";
 }
 
 async function fetchWithTimeout(
@@ -120,78 +111,29 @@ async function fetchHtml(pathname: string) {
   return response.text();
 }
 
-type SkillDetailResponse = {
-  skill: { slug: string; displayName: string; summary: string | null };
-  latestVersion: { version: string | null } | null;
-  owner: { handle: string | null };
-};
-
-let skillDetailPromise: Promise<SkillDetailResponse> | null = null;
-
-async function fetchSkillDetail() {
-  if (!skillDetailPromise) {
-    skillDetailPromise = (async () => {
-      const response = await fetchWithRetry(
-        new URL(`/api/v1/skills/${getSkillSlug()}`, getSiteBase()),
-        {
-          headers: { Accept: "application/json" },
-        },
-      );
-      expect(response.ok).toBe(true);
-      return (await response.json()) as SkillDetailResponse;
-    })();
-  }
-
-  return skillDetailPromise;
-}
-
 describe("prod http smoke", () => {
-  it("serves the home page shell from prod", async () => {
+  it("serves the AI Work home page shell from prod", async () => {
     const html = await fetchHtml("/");
 
-    expect(html).toContain("<title>ClawHub");
-    expect(html).toContain('href="/skills"');
-    expect(html).toMatch(/href="\/(?:skills\/publish|publish-skill)"/);
+    expect(html).toContain("<title>AI直聘</title>");
+    expect(html).toContain('href="/recruit-ai"');
+    expect(html).toContain('href="/plugins"');
     expect(html).not.toContain("Something went wrong!");
   });
 
-  it("serves SSR skill html for a public skill page", async () => {
-    const detail = await fetchSkillDetail();
-    const owner = detail.owner.handle || getSkillOwner();
-    const html = await fetchHtml(`/${owner}/${detail.skill.slug}`);
+  it("serves the AI employee directory from prod", async () => {
+    const html = await fetchHtml("/recruit-ai");
 
-    expect(html).toContain(`<title>${detail.skill.displayName} — ClawHub</title>`);
-    expect(html).toContain(
-      `<link rel="canonical" href="${getSiteBase()}/${owner}/${detail.skill.slug}"/>`,
-    );
-    if (detail.skill.summary) {
-      expect(html).toContain(detail.skill.summary);
-    }
-    expect(html).not.toContain("Loading skill");
+    expect(html).toContain("AI 员工目录");
+    expect(html).toContain("在客户端继续招聘");
+    expect(html).not.toContain("Something went wrong!");
   });
 
-  it("serves the skill og image for the latest published version", async () => {
-    const detail = await fetchSkillDetail();
-    const owner = detail.owner.handle || getSkillOwner();
-    const params = new URLSearchParams({
-      slug: detail.skill.slug,
-      owner,
-    });
-    if (detail.latestVersion?.version) {
-      params.set("version", detail.latestVersion.version);
-    }
-
-    const response = await fetchWithRetry(
-      new URL(`/og/skill.png?${params.toString()}`, getSiteBase()),
-      undefined,
-      { timeoutMs: OG_IMAGE_TIMEOUT_MS },
-    );
+  it("serves the site og image", async () => {
+    const response = await fetchWithRetry(new URL("/og.svg", getSiteBase()));
 
     expect(response.ok).toBe(true);
-    expect(response.headers.get("content-type")).toContain("image/png");
-    if (detail.latestVersion?.version) {
-      expect(response.headers.get("cache-control")).toContain("immutable");
-    }
+    expect(response.headers.get("content-type")).toContain("image/svg+xml");
   });
 });
 

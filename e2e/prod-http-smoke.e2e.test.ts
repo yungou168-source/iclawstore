@@ -25,7 +25,9 @@ try {
 
 function getSiteBase() {
   return (
-    process.env.CLAWHUB_E2E_SITE?.trim() || process.env.CLAWHUB_SITE?.trim() || "https://clawhub.ai"
+    process.env.CLAWHUB_E2E_SITE?.trim() ||
+    process.env.CLAWHUB_SITE?.trim() ||
+    "https://www.iclawstore.com"
   );
 }
 

@@ -5,11 +5,11 @@ APP_DIR='/www/wwwroot/iclawstore.com'
 BRANCH='main'
 SERVICE='iclawstore.service'
 HEALTH_URL='http://127.0.0.1:3000/plugins'
-MIN_AVAILABLE_KIB=$((2 * 1024 * 1024))
+MAX_ARTIFACT_BYTES=$((1024 * 1024 * 1024))
 REPOSITORY_SSH_KEY="${HOME}/.ssh/id_ed25519_iclawstore"
 REPOSITORY_SSH_KNOWN_HOSTS="${HOME}/.ssh/known_hosts"
 
-export PATH='/home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin'
+export PATH='/usr/local/bin:/usr/bin:/bin'
 
 fail() {
   printf 'deployment failed: %s\n' "$*" >&2
@@ -18,10 +18,10 @@ fail() {
 
 require_deploy_command() {
   local command="${SSH_ORIGINAL_COMMAND:-}"
-  if [[ ! "$command" =~ ^deploy[[:space:]]+([[:xdigit:]]{40})$ ]]; then
-    fail 'expected exactly: deploy <40-character-commit-sha>'
+  if [[ ! "$command" =~ ^deploy[[:space:]]+([[:xdigit:]]{40})[[:space:]]+([[:xdigit:]]{64})[[:space:]]+([1-9][0-9]*)$ ]]; then
+    fail 'expected exactly: deploy <40-character-commit-sha> <artifact-sha256> <artifact-size>'
   fi
-  printf '%s\n' "${BASH_REMATCH[1]}"
+  printf '%s %s %s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}"
 }
 
 activate_release() {
@@ -30,40 +30,47 @@ activate_release() {
   mv -Tf "$APP_DIR/.output.next" "$APP_DIR/.output"
 }
 
-requested_sha="$(require_deploy_command)"
+read -r requested_sha artifact_sha artifact_size < <(require_deploy_command)
+(( artifact_size <= MAX_ARTIFACT_BYTES )) || fail 'artifact exceeds the 1 GiB size limit'
 exec 9>/tmp/iclawstore-deploy.lock
 flock -n 9 || fail 'another deployment is already running'
 
 [[ -d "$APP_DIR/.git" ]] || fail "missing Git worktree: $APP_DIR"
 [[ -r "$REPOSITORY_SSH_KEY" ]] || fail "repository SSH key is unavailable: $REPOSITORY_SSH_KEY"
 [[ -r "$REPOSITORY_SSH_KNOWN_HOSTS" ]] || fail "repository known_hosts is unavailable: $REPOSITORY_SSH_KNOWN_HOSTS"
-BUN_BIN="$(command -v bun || true)"
-[[ -n "$BUN_BIN" ]] || fail 'bun is not available to the deploy user'
-
-if pgrep -af 'vite build|bun run build|tsc|bun install' >/dev/null; then
-  fail 'a build or dependency installation is already running'
-fi
-
-available_kib="$(awk '/MemAvailable/ { print $2 }' /proc/meminfo)"
-[[ "$available_kib" =~ ^[0-9]+$ ]] || fail 'cannot determine available memory'
-(( available_kib >= MIN_AVAILABLE_KIB )) || fail 'less than 2 GiB of memory is available'
 
 GIT_SSH_COMMAND="ssh -i $REPOSITORY_SSH_KEY -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$REPOSITORY_SSH_KNOWN_HOSTS" \
   git -C "$APP_DIR" fetch --quiet origin "$BRANCH"
 git -C "$APP_DIR" cat-file -e "$requested_sha^{commit}" || fail 'requested commit is unavailable on origin'
 git -C "$APP_DIR" merge-base --is-ancestor "$requested_sha" "origin/$BRANCH" || \
   fail 'requested commit is not reachable from origin/main'
-git -C "$APP_DIR" reset --hard --quiet "$requested_sha"
-[[ "$(git -C "$APP_DIR" rev-parse HEAD)" == "$requested_sha" ]] || fail 'checked-out revision differs from requested commit'
+
+artifact_file="$(mktemp "$APP_DIR/.output.artifact.XXXXXX")"
+staging_dir="$(mktemp -d "$APP_DIR/.output.staging.XXXXXX")"
+cleanup_temporary_files() {
+  rm -f "$artifact_file"
+  [[ -z "$staging_dir" ]] || rm -rf "$staging_dir"
+}
+trap cleanup_temporary_files EXIT
+
+cat > "$artifact_file"
+[[ "$(stat --format='%s' "$artifact_file")" == "$artifact_size" ]] || fail 'artifact size does not match'
+echo "$artifact_sha  $artifact_file" | sha256sum --check --status || fail 'artifact checksum does not match'
+
+while IFS= read -r archive_path; do
+  case "$archive_path" in
+    /*|../*|*/../*|..)
+      fail 'artifact contains an unsafe archive path'
+      ;;
+  esac
+done < <(tar -tzf "$artifact_file")
+tar -xzf "$artifact_file" -C "$staging_dir" --no-same-owner --no-same-permissions
+[[ -f "$staging_dir/server/index.mjs" ]] || fail 'artifact is missing the Nitro server entrypoint'
 
 release_dir="$APP_DIR/.output.release-$(date -u +%Y%m%d-%H%M%S)-${requested_sha:0:7}"
 [[ ! -e "$release_dir" ]] || fail "release directory already exists: $release_dir"
-
-(
-  cd "$APP_DIR"
-  NITRO_OUTPUT_DIR="$release_dir" "$BUN_BIN" --smol run build
-)
-test -f "$release_dir/server/index.mjs" || fail 'build completed without the Nitro server entrypoint'
+mv "$staging_dir" "$release_dir"
+staging_dir=''
 
 previous_release="$(readlink -f "$APP_DIR/.output")"
 [[ -d "$previous_release" ]] || fail 'current release directory is unavailable'
@@ -94,4 +101,4 @@ curl --fail --silent --show-error --retry 5 --retry-connrefused "$HEALTH_URL" >/
 
 release_active=false
 trap - ERR
-printf 'deployed %s to %s\n' "$requested_sha" "$release_dir"
+printf 'deployed artifact for %s to %s\n' "$requested_sha" "$release_dir"

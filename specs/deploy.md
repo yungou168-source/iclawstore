@@ -46,10 +46,7 @@ command="/usr/local/sbin/iclawstore-deploy",no-agent-forwarding,no-port-forwardi
 
 Install the reviewed `ops/iclawstore-deploy` file as
 `/usr/local/sbin/iclawstore-deploy`, owned by `root:root` with mode `0755`.
-The forced command accepts only `deploy <40-character-commit-sha>`, verifies
-that commit belongs to `origin/main`, builds an isolated release output, switches
-`.output` atomically, restarts only `iclawstore.service`, and rolls back the
-output pointer when restart or local smoke verification fails.
+The forced command accepts only `deploy <40-character-commit-sha> <artifact-sha256> <artifact-size>`. GitHub Actions builds the SSR artifact on its isolated runner, streams it over the forced-command SSH connection, and the server verifies the SHA-256 digest, declared byte size, and that the requested commit is reachable from `origin/main`. It extracts only a valid Nitro output into a staging directory, switches `.output` atomically, restarts only `iclawstore.service`, and rolls back the output pointer when restart or local smoke verification fails. The server never runs dependency installation or application builds during a release.
 
 The dedicated account needs write access to the application worktree and this
 narrow `sudoers` entry only:
@@ -64,9 +61,8 @@ host key pinned in `~/.ssh/known_hosts`; the release script explicitly uses
 this key only for `git fetch origin main`. This repository key is separate from
 the GitHub Actions-to-server key. It needs only repository read access for the
 release script, although the current terminal key may also have repository
-write access for maintainer pushes. A Bun binary must be available to the
-deploy account. Do not reuse the GitHub Actions key for repository fetches,
-interactive administration, or any other host.
+write access for maintainer pushes. Do not reuse the GitHub Actions key for
+repository fetches, interactive administration, or any other host.
 
 Before enabling a manual `frontend` or `full` Deploy run, verify the repository
 key without exposing its private contents:
@@ -137,57 +133,15 @@ A source edit is **not** live until both stages below complete. The running
 Node process loads `.output/server/index.mjs` at start-up and does not watch or
 hot-reload that file.
 
-### Low-memory release guard
+### Low-memory release design
 
-Builds on the self-hosted server must be serialized. Before starting, confirm
-that no `vite build`, `bun run build`, `tsc`, or package-install process is
-already running and that at least 2 GiB of memory is available. Do not run the
-full CI matrix, Convex deployment, dependency installation, and frontend build
-in parallel on this host.
+Production SSR builds run on the GitHub Actions runner, not on the self-hosted server. This keeps the live service and deployment reliability independent of transient server memory, Cursor sessions, or local background work. The server receives only a bounded, checksummed release archive and needs disk space only for the current, previous, and staged outputs.
 
-Run focused tests first, let them exit, and only then start one `bun --smol`
-build. If available memory falls below 512 MiB, swap begins growing quickly, or
-the kernel reports an OOM kill, stop the build and investigate instead of
-starting a second attempt.
+The deployment script serializes archive reception with its lock, rejects archives larger than 1 GiB, verifies the requested commit remains reachable from `origin/main`, verifies the exact archive size and SHA-256 digest, and requires `server/index.mjs` after extraction. It does not run `bun install`, `vite`, `tsc`, or `bun run build`; a low-memory server therefore cannot make the build nondeterministically fail.
 
-A failed Vite/Nitro build may leave `.output/` present but without
-`.output/server/index.mjs`. Preserve the last known-good output under a
-separate, timestamped path before building. Never restart the service merely
-because the build command exited: first require the new entry file to exist. If
-it does not, isolate the incomplete directory, restore `.output` from the
-known-good copy, and keep serving that prior release. This recovery is a
-runtime artifact rollback; it must not revert source files or unrelated working
-copy changes.
+The archive is extracted into a new staging directory. Only after all integrity checks pass does the script rename it into a timestamped release and atomically replace the `.output` symlink. If service restart or the localhost `/plugins` health check fails, it restores the prior symlink and restarts that known-good release. Source files are never reset or mutated by a release.
 
-```bash
-cd /www/wwwroot/iclawstore.com
-pgrep -af 'vite build|bun run build|tsc|bun install'
-awk '/MemAvailable/ { printf "MemAvailable: %.1f GiB\n", $2 / 1024 / 1024 }' /proc/meminfo
-release_dir=".output.release-$(date +%Y%m%d-%H%M%S)"
-NITRO_OUTPUT_DIR="$release_dir" bun --smol run build
-test -f "$release_dir/server/index.mjs"
-ln -s "$release_dir" .output.next
-mv -Tf .output.next .output
-sudo systemctl restart iclawstore.service
-sudo systemctl is-active iclawstore.service
-curl --fail --silent --show-error https://www.iclawstore.com/ > /dev/null
-```
-
-`NITRO_OUTPUT_DIR` applies to both the Nitro build and the required OG runtime
-asset copy, so a release build never writes through the live `.output` symlink.
-Record the previous `.output` target before the atomic link replacement. If the
-new entry check, restart, or smoke check fails, atomically restore that target
-and restart the service; retain both outputs until the new release is verified.
-
-An empty `pgrep` result is expected. If it reports another build or install,
-wait for that process to finish rather than running concurrently. If the entry
-file check fails, do not restart; keep the last known-good output linked and
-verify that the existing service remains healthy.
-
-For homepage navigation or authentication UI changes, verify the public HTML
-includes the expected labels before handoff. The unauthenticated homepage must
-render a visible `登录` / `Sign in` trigger even while Convex Auth is resolving;
-do not replace it with a blank loading placeholder.
+To investigate a release failure, inspect the runner build logs, archive transfer/checksum error, or post-switch health check separately. Do not lower a memory threshold or terminate the live SSR process as a workaround; resource-intensive compilation belongs on the runner.
 
 ## 1) Deploy Convex
 

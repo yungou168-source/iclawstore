@@ -78,11 +78,11 @@ jobs:
     needs: validate-deploy-request
     environment:
       name: Production
-      url: https://clawhub.ai
+      url: https://www.iclawstore.com
     env:
       CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
       PLAYWRIGHT_AUTH_STORAGE_STATE_JSON: ${{ secrets.PLAYWRIGHT_AUTH_STORAGE_STATE_JSON }}
-      PLAYWRIGHT_BASE_URL: https://clawhub.ai
+      PLAYWRIGHT_BASE_URL: https://www.iclawstore.com
     steps:
       - name: Check deploy configuration
         run: |

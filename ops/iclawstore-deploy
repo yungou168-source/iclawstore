@@ -6,6 +6,8 @@ BRANCH='main'
 SERVICE='iclawstore.service'
 HEALTH_URL='http://127.0.0.1:3000/plugins'
 MIN_AVAILABLE_KIB=$((2 * 1024 * 1024))
+REPOSITORY_SSH_KEY="${HOME}/.ssh/id_ed25519_iclawstore"
+REPOSITORY_SSH_KNOWN_HOSTS="${HOME}/.ssh/known_hosts"
 
 export PATH='/home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin'
 
@@ -33,6 +35,8 @@ exec 9>/tmp/iclawstore-deploy.lock
 flock -n 9 || fail 'another deployment is already running'
 
 [[ -d "$APP_DIR/.git" ]] || fail "missing Git worktree: $APP_DIR"
+[[ -r "$REPOSITORY_SSH_KEY" ]] || fail "repository SSH key is unavailable: $REPOSITORY_SSH_KEY"
+[[ -r "$REPOSITORY_SSH_KNOWN_HOSTS" ]] || fail "repository known_hosts is unavailable: $REPOSITORY_SSH_KNOWN_HOSTS"
 BUN_BIN="$(command -v bun || true)"
 [[ -n "$BUN_BIN" ]] || fail 'bun is not available to the deploy user'
 
@@ -44,7 +48,8 @@ available_kib="$(awk '/MemAvailable/ { print $2 }' /proc/meminfo)"
 [[ "$available_kib" =~ ^[0-9]+$ ]] || fail 'cannot determine available memory'
 (( available_kib >= MIN_AVAILABLE_KIB )) || fail 'less than 2 GiB of memory is available'
 
-git -C "$APP_DIR" fetch --quiet origin "$BRANCH"
+GIT_SSH_COMMAND="ssh -i $REPOSITORY_SSH_KEY -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$REPOSITORY_SSH_KNOWN_HOSTS" \
+  git -C "$APP_DIR" fetch --quiet origin "$BRANCH"
 git -C "$APP_DIR" cat-file -e "$requested_sha^{commit}" || fail 'requested commit is unavailable on origin'
 git -C "$APP_DIR" merge-base --is-ancestor "$requested_sha" "origin/$BRANCH" || \
   fail 'requested commit is not reachable from origin/main'

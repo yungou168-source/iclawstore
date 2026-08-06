@@ -58,10 +58,28 @@ narrow `sudoers` entry only:
 iclawstore-deploy ALL=(root) NOPASSWD: /bin/systemctl restart iclawstore.service, /bin/systemctl is-active --quiet iclawstore.service
 ```
 
-Use the actual `systemctl` path from `command -v systemctl`. The server needs a
-read-only deploy key for fetching this repository and a Bun binary available to
-the deploy account. Do not reuse the GitHub Actions key for repository fetches,
+Use the actual `systemctl` path from `command -v systemctl`. The server must
+hold a repository deploy key at `~/.ssh/id_ed25519_iclawstore`, with its GitHub
+host key pinned in `~/.ssh/known_hosts`; the release script explicitly uses
+this key only for `git fetch origin main`. This repository key is separate from
+the GitHub Actions-to-server key. It needs only repository read access for the
+release script, although the current terminal key may also have repository
+write access for maintainer pushes. A Bun binary must be available to the
+deploy account. Do not reuse the GitHub Actions key for repository fetches,
 interactive administration, or any other host.
+
+Before enabling a manual `frontend` or `full` Deploy run, verify the repository
+key without exposing its private contents:
+
+```bash
+ssh -T -o BatchMode=yes -o IdentitiesOnly=yes \
+  -i ~/.ssh/id_ed25519_iclawstore git@github.com
+```
+
+GitHub reports successful deploy-key authentication with a non-zero exit code
+because it does not provide a shell; treat the authentication message itself as
+success. The GitHub Actions SSH secrets and the server-side repository key must
+both be configured before a frontend release can succeed.
 
 ### Self-hosted Convex Auth
 

@@ -4,8 +4,8 @@
 > - 可回收 QA 身份已通过邮箱 OTP 登录，并在受保护组织管理页面创建隔离组织 `QA-EmployeeDirectory-2026-03-14`；该身份在组织中显示为 `owner`。这证明 Web Bearer 身份桥与组织创建写路径可用，但不等同于生产发布完成。
 > - 已在该组织创建 active 公司 `company-A`。组织成员与公司实体是两类资源：误把 `company-A` 填入“组织成员用户 ID”只会创建成员关系，不能替代公司创建。
 > - 当前 Web 管理页支持组织、公司、公司成员、项目和 Agent 岗位管理；它不提供真实 Agent 雇佣表单。`/recruit-ai` 仅在浏览器内选择目录项，选择不持久化，且“在客户端继续招聘”只跳转桌面客户端下载页。
-> - 员工目录的下一条可验证链路必须是：为 `company-A` 建立 QA 的 `recruiter` 成员关系 → 创建有效 Employment → 同事务写入 workforce employee digest → 以该 QA 身份请求目录。仅在完整链路具备可清理 fixture 后，分别断言有数据 `200`、授权空列表 `200` 与无成员公司 `403`。
-> - 不得索取、复制或记录 QA 的密码、OTP、Bearer token、JWT 或任何凭据；fixture 只能通过已认证受保护 API 创建和清理，禁止直接写数据库。
+> - 已新增可回收的受保护 API 集成 fixture：完整创建 Agent、组织、公司 recruiter、项目、Role、Department、Position、Offer、Approval、Employment 与 workforce digest，不直接写业务表。全新隔离 MySQL 依次应用 17 段迁移后，有数据 `200`、授权空列表 `200`、无成员公司 `403` 三项验收 `3/3` 通过，随机测试库已自动删除。
+> - 该结果证明 Fastify JWT 测试身份、MySQL 事务和 RBAC 闭环，不等同于生产 Convex Bearer 身份通过。生产或等价目标环境仍需使用可回收 QA 身份重放同一 API 链，禁止记录凭据或直写数据库。
 
 > **审批治理与生产迁移更新（2026-08-14，以实时结果为准）**
 >

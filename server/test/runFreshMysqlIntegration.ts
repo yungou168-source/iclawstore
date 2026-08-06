@@ -4,6 +4,21 @@ import { readFile } from 'node:fs/promises';
 import { createConnection } from 'mysql2/promise';
 
 const COMMAND_TIMEOUT_MS = 120_000;
+const DEFAULT_TEST_FILES = [
+  'test/aiDirectCoreMysql.test.ts',
+  'test/aiDirectWorkforceEmployeeDirectoryMysql.test.ts',
+  'test/desktopPreferencesMysql.test.ts',
+  'test/outboxDispatcherMysql.test.ts',
+  'test/workerRuntimeMysql.test.ts',
+];
+
+function requestedTestFiles(): string[] {
+  const files = process.argv.slice(2);
+  if (files.some((file) => !/^test\/[A-Za-z0-9._-]+\.test\.ts$/.test(file))) {
+    throw new Error('Integration test paths must match test/<name>.test.ts');
+  }
+  return files.length > 0 ? files : DEFAULT_TEST_FILES;
+}
 
 async function run(command: string[], environment: Record<string, string>): Promise<void> {
   await new Promise<void>((resolve, reject) => {
@@ -35,9 +50,11 @@ async function readDatabaseUrl(): Promise<string | undefined> {
   if (process.env.TEST_MYSQL_ADMIN_URL) return process.env.TEST_MYSQL_ADMIN_URL;
   if (process.env.TEST_MYSQL_ENV_FILE) {
     const content = await readFile(process.env.TEST_MYSQL_ENV_FILE, 'utf8');
-    const line = content.split(/\r?\n/).find((entry) => entry.trim().startsWith('DATABASE_URL='));
-    if (!line) return undefined;
-    const raw = line.slice(line.indexOf('=') + 1).trim();
+    const match = content.match(
+      /^(?:export\s+)?(?:TEST_MYSQL_ADMIN_URL|DATABASE_URL)\s*=\s*(.+)$/m,
+    );
+    if (!match) return undefined;
+    const raw = match[1]!.trim();
     const quoted = (raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"));
     return quoted ? raw.slice(1, -1) : raw;
   }
@@ -65,12 +82,7 @@ async function main(): Promise<void> {
       ['../node_modules/.bin/prisma', 'migrate', 'deploy', '--schema', '../prisma/schema.prisma'],
       { DATABASE_URL: testUrl.toString() },
     );
-    for (const testFile of [
-      'test/aiDirectCoreMysql.test.ts',
-      'test/desktopPreferencesMysql.test.ts',
-      'test/outboxDispatcherMysql.test.ts',
-      'test/workerRuntimeMysql.test.ts',
-    ]) {
+    for (const testFile of requestedTestFiles()) {
       await run(['bun', 'test', testFile], { TEST_DATABASE_URL: testUrl.toString() });
     }
   } finally {

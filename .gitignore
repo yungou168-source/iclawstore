@@ -35,6 +35,7 @@ Thumbs.db
 
 # Convex runtime state
 .convex/
+convex/_generated/ai/
 
 # Temporary files
 *.tmp

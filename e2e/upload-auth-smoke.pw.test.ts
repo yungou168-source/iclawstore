@@ -1,48 +1,21 @@
-import { stat } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { expectHealthyPage, trackRuntimeErrors } from "./helpers/runtimeErrors";
 
-async function hasAuthStorageState() {
-  const path = process.env.PLAYWRIGHT_AUTH_STORAGE_STATE?.trim();
-  if (!path) return null;
-  try {
-    const file = await stat(path);
-    return file.isFile() ? path : null;
-  } catch {
-    return null;
-  }
-}
-
-test("authenticated upload preflight stays healthy", async ({ browser, baseURL }) => {
-  const storageState = await hasAuthStorageState();
-  test.skip(!storageState, "Set PLAYWRIGHT_AUTH_STORAGE_STATE to run authenticated smoke.");
-  if (!storageState) return;
-
-  const context = await browser.newContext({ baseURL, storageState });
-  const page = await context.newPage();
+test("AI employee category filtering stays healthy", async ({ page }) => {
   const errors = trackRuntimeErrors(page);
 
-  await page.goto("/upload?updateSlug=gifgrep", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: /publish a skill/i })).toBeVisible();
-  await expect(page.locator("#slug")).toHaveValue("gifgrep");
+  await page.goto("/recruit-ai", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "法务" }).click();
+  await expect(page.getByText(/个岗位$/, { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "选择员工" }).first()).toBeVisible();
   await expectHealthyPage(page, errors);
-
-  await context.close();
 });
 
-test("authenticated import preflight stays healthy", async ({ browser, baseURL }) => {
-  const storageState = await hasAuthStorageState();
-  test.skip(!storageState, "Set PLAYWRIGHT_AUTH_STORAGE_STATE to run authenticated smoke.");
-  if (!storageState) return;
-
-  const context = await browser.newContext({ baseURL, storageState });
-  const page = await context.newPage();
+test("AI employee search handles an empty result without error", async ({ page }) => {
   const errors = trackRuntimeErrors(page);
 
-  await page.goto("/import", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "Import from GitHub" })).toBeVisible();
-  await expect(page.getByPlaceholder("owner/repo")).toBeVisible();
+  await page.goto("/recruit-ai", { waitUntil: "domcontentloaded" });
+  await page.getByPlaceholder("搜索岗位、领域或技能").fill("不存在的测试岗位");
+  await expect(page.getByText("没有匹配的 AI 员工。", { exact: true })).toBeVisible();
   await expectHealthyPage(page, errors);
-
-  await context.close();
 });

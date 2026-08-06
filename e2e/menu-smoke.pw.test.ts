@@ -1,55 +1,41 @@
 import { expect, test, type Page } from "@playwright/test";
-import { expectHealthyPage, trackRuntimeErrors, waitForHydration } from "./helpers/runtimeErrors";
+import { expectHealthyPage, trackRuntimeErrors } from "./helpers/runtimeErrors";
 
-const navLabels = ["Skills", "Plugins"];
-
-async function headerLink(page: Page, label: string) {
-  let link = page.getByRole("link", { name: label }).first();
-  if (await link.isVisible().catch(() => false)) return link;
-
-  const menuButton = page.getByRole("button", { name: "Open menu" });
-  if (await menuButton.isVisible().catch(() => false)) {
-    await menuButton.click();
-    link = page.getByRole("link", { name: label }).first();
-  }
-
+async function workspaceLink(page: Page, name: string) {
+  const link = page.getByRole("link", { name }).first();
   await expect(link).toBeVisible();
   return link;
 }
 
-test("skills loads without error", async ({ page }) => {
+test("AI employee directory loads without error", async ({ page }) => {
   const errors = trackRuntimeErrors(page);
-  await page.goto("/skills", { waitUntil: "domcontentloaded" });
-  await expect(page.locator("h1", { hasText: "Skills" })).toBeVisible();
+
+  await page.goto("/recruit-ai", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("heading", { name: "招聘你的 AI 员工" })).toBeVisible();
+  await expect(page.getByPlaceholder("搜索岗位、领域或技能")).toBeVisible();
   await expectHealthyPage(page, errors);
 });
 
-test("souls loads without error", async ({ page }) => {
+test("AI employee directory filters roles without error", async ({ page }) => {
   const errors = trackRuntimeErrors(page);
-  await page.goto("/souls", { waitUntil: "domcontentloaded" });
-  await expect(page.locator("h1", { hasText: "SOUL.md discovery is on deck" })).toBeVisible();
+
+  await page.goto("/recruit-ai", { waitUntil: "domcontentloaded" });
+  await page.getByPlaceholder("搜索岗位、领域或技能").fill("地理学家");
+  await expect(page.getByRole("heading", { name: "地理学家" })).toBeVisible();
+  await expect(page.getByText("1 个岗位", { exact: true })).toBeVisible();
   await expectHealthyPage(page, errors);
 });
 
-test("header menu routes render", async ({ page }) => {
+test("workspace header routes render", async ({ page }) => {
   const errors = trackRuntimeErrors(page);
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  await waitForHydration(page);
 
-  for (const label of navLabels) {
-    const link = await headerLink(page, label);
-    await link.click();
+  await (await workspaceLink(page, "招聘 AI 员工")).click();
+  await expect(page).toHaveURL(/\/recruit-ai$/);
+  await expect(page.getByRole("heading", { name: "招聘你的 AI 员工" })).toBeVisible();
 
-    if (label === "Skills") {
-      await expect(page).toHaveURL(/\/skills/);
-      await expect(page.locator("h1", { hasText: "Skills" })).toBeVisible();
-    }
-
-    if (label === "Plugins") {
-      await expect(page).toHaveURL(/\/plugins(\?|$)/);
-      await expect(page.locator("h1", { hasText: "Plugins" })).toBeVisible();
-    }
-  }
-
+  await (await workspaceLink(page, "客户端下载")).click();
+  await expect(page).toHaveURL(/\/desktop-client$/);
+  await expect(page.getByRole("heading", { name: "把 AI 员工带到你的工作台" })).toBeVisible();
   await expectHealthyPage(page, errors);
 });

@@ -20,6 +20,15 @@ function sameStrings(left: string[], right: readonly string[]): boolean {
   return left.length === right.length && left.every((value) => right.includes(value));
 }
 
+type RegisteredOAuthClient = {
+  clientId: string;
+  name: string;
+  type: 'public' | 'confidential';
+  tokenEndpointAuthMethod?: 'client_secret_basic' | 'client_secret_post' | 'none';
+  redirectUris: string[];
+  allowedScopes: string[];
+};
+
 export const ensureDesktopClient = mutation({
   args: {},
   returns: v.object({ clientId: v.string(), created: v.boolean() }),
@@ -29,7 +38,10 @@ export const ensureDesktopClient = mutation({
 
     const redirectUris = desktopOAuthRedirectUris();
     const expectedClientId = process.env.AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID?.trim();
-    const clients = await ctx.runQuery(components.oauthProvider.queries.listClients, {});
+    const clients: RegisteredOAuthClient[] = await ctx.runQuery(
+      components.oauthProvider.queries.listClients,
+      {},
+    );
     const matches = clients.filter((client) =>
       expectedClientId ? client.clientId === expectedClientId : client.name === DESKTOP_OAUTH_CLIENT_NAME,
     );
@@ -198,7 +210,9 @@ export const getDesktopAccessIdentity = query({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity || !isOAuthToken(identity)) return null;
 
-    const clientId = getOAuthClientId(identity);
+    const clientId = getOAuthClientId({
+      cid: typeof identity.cid === 'string' ? identity.cid : undefined,
+    });
     if (!clientId || clientId !== configuredClientId()) return null;
     const userId = ctx.db.normalizeId('users', identity.subject);
     if (!userId) return null;

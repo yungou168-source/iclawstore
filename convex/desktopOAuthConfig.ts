@@ -1,7 +1,6 @@
 import { OAuthProvider } from '@codefox-inc/oauth-provider';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { api, components } from './_generated/api';
-import type { ActionCtx } from './_generated/server';
 import { requiredEnvironment } from './lib/oauthEnvironment';
 
 export const DESKTOP_OAUTH_AUDIENCE = 'https://www.iclawstore.com/api/v1/ai-direct-hiring';
@@ -19,7 +18,7 @@ export function createDesktopOAuthProvider() {
     applicationID: DESKTOP_OAUTH_AUDIENCE,
     allowedScopes: [...DESKTOP_OAUTH_SCOPES],
     allowDynamicClientRegistration: false,
-    getUserId: async (ctx: ActionCtx) => {
+    getUserId: async (ctx) => {
       const userId = await getAuthUserId(ctx);
       if (!userId) return null;
       const user = await ctx.runQuery(api.users.me, {});

@@ -1,6 +1,6 @@
 import { Download, Search, UserRoundCheck } from 'lucide-react';
 import { useState } from 'react';
-import expertsData from '../../AI直聘桌面端/website/src/content/experts.json';
+import expertsData from '../content/experts.json';
 import { useLocale } from '../lib/i18n/context';
 import { AI_WORK_RELEASES_URL } from '../lib/nav-items';
 

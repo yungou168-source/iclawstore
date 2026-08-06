@@ -264,17 +264,13 @@ Ensure Convex env is set (auth + embeddings):
 
 ## 2) Deploy web app (self-hosted SSR)
 
-The GitHub Actions `Deploy` workflow builds the selected `main` SHA on the
-production server through `/usr/local/sbin/iclawstore-deploy`. The live
-`.output` symlink changes only after a complete build, and the forced command
-restores the previous release if the service restart or local health probe
-fails.
+The GitHub Actions `Deploy` workflow builds the selected `main` SHA on its isolated runner, then streams the verified SSR artifact to `/usr/local/sbin/iclawstore-deploy`. The live `.output` symlink changes only after integrity checks, service restart, and local health verification succeed; the forced command restores the previous release if activation fails.
 
 The release order is:
 
 1. Convex deployment and contract verification for `full`.
-2. Isolated SSR build, atomic activation, service restart, and local health check for `full` and `frontend`.
-3. Public HTTP smoke tests; authenticated UI smoke runs when its optional storage-state secret is configured.
+2. Isolated SSR build on the runner, artifact transfer, atomic activation, service restart, and local health check for `full` and `frontend`.
+3. Public HTTP smoke tests, then the cross-browser anonymous AI直聘 UI smoke suite. Authenticated storage state remains optional for any separate authenticated coverage; it is not required by the release gate.
 
 The production process reads these application values from its existing server
 environment; the workflow must not transfer them over SSH:
@@ -307,5 +303,14 @@ Run the contract verifier and smoke tests against production after deploy:
 
 ```bash
 bun run verify:convex-contract -- --prod
-PLAYWRIGHT_BASE_URL=https://clawhub.ai bunx playwright test e2e/menu-smoke.pw.test.ts e2e/upload-auth-smoke.pw.test.ts
+CLAWHUB_E2E_SITE=https://www.iclawstore.com \
+DESKTOP_API_BASE_URL=https://www.iclawstore.com \
+bun run test:e2e:prod-http
+PLAYWRIGHT_BASE_URL=https://www.iclawstore.com \
+bunx playwright test --workers=1 \
+  e2e/menu-smoke.pw.test.ts \
+  e2e/publish-entry-workflows.pw.test.ts \
+  e2e/upload-auth-smoke.pw.test.ts
 ```
+
+The browser suite verifies the anonymous AI直聘 employee-directory flow: directory rendering, search and category filtering, public navigation, desktop-client return navigation, and the desktop continuation link. It intentionally does not assert legacy ClawHub `/upload`, `/import`, `/skills`, or `data-clawhub-hydrated` behavior.

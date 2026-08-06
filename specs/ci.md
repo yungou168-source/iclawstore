@@ -71,9 +71,11 @@ gate without coupling every PR to live data and mobile-browser variance.
 
 Production-only checks stay in the manual deploy workflow:
 
-- `bun run verify:convex-contract -- --prod`
-- `bun run test:e2e:prod-http`
-- production Playwright smoke tests
+- `bun run verify:convex-contract -- --prod` for `full` and `backend` targets.
+- `bun run test:e2e:prod-http` against `https://www.iclawstore.com`.
+- Cross-browser anonymous Playwright smoke against `https://www.iclawstore.com`, covering the AI employee directory, its search/category interactions, workspace navigation, and desktop continuation link. The release gate must not depend on legacy ClawHub `/upload`, `/import`, `/skills`, or `data-clawhub-hydrated` assertions.
+
+`PLAYWRIGHT_AUTH_STORAGE_STATE_JSON` remains optional and is reserved for separate authenticated coverage; the production release gate uses only the public AI直聘 contract.
 
 Successful `full` and `frontend` production deploys create two annotated Git
 tags:

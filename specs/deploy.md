@@ -46,7 +46,11 @@ AUTH_RESEND_KEY
 AUTH_EMAIL_FROM
 AUTH_WECHAT_APP_ID
 AUTH_WECHAT_APP_SECRET
+JWT_PRIVATE_KEY
+JWKS
 ```
+
+`JWT_PRIVATE_KEY` 必须是 PKCS#8 PEM RSA 私钥；`JWKS` 必须是同一密钥对的公钥 JWKS JSON。两项均属于生产机密，只能写入 Convex Production deployment 的环境变量，不得提交、粘贴到 issue 或写入工作区文件。密钥轮换必须同时替换两项，再以严格 typecheck 部署。
 
 `SITE_URL` is the final browser destination for OAuth. Email sign-in sends an
 8-digit OTP that is verified inside the login dialog; it must not fall back to
@@ -136,8 +140,17 @@ bunx convex deploy
 Or use the GitHub Actions pipeline:
 
 ```bash
-gh workflow run deploy.yml --repo openclaw/clawhub --ref main
+gh workflow run deploy.yml \
+  --repo yungou168-source/iclawstore \
+  --ref main \
+  -f target=full
 ```
+
+The workflow uses the npm registry directly, installs with a bounded download
+concurrency and retries failed dependency downloads. It builds
+`packages/schema` before Convex deployment because Convex imports its generated
+dist artifact. The Convex step always uses strict type checking; do not replace
+it with `--typecheck=disable`.
 
 Production deploy notes:
 
@@ -149,8 +162,9 @@ Production deploy notes:
   - `frontend`: wait for the Vercel production deploy for the selected `main` SHA, then run smoke tests
 - `frontend` does not call `vercel deploy` directly yet. It relies on the existing Vercel Git-based production deploy for that SHA.
 - The real deploy job uses the GitHub `Production` environment for deploy secrets, but it does not wait for a separate approval.
-- Required `Production` environment secret: `CONVEX_DEPLOY_KEY`.
+- Required `Production` environment secret: `CONVEX_DEPLOY_KEY`, created from the **Production** Convex deployment settings. A development or preview key deploys to the wrong environment and cannot be converted by the CLI.
 - Optional `Production` environment secret: `PLAYWRIGHT_AUTH_STORAGE_STATE_JSON` for authenticated smoke coverage.
+- Convex application variables such as `JWT_PRIVATE_KEY`, `JWKS`, `SITE_URL`, and `CUSTOM_AUTH_SITE_URL` are configured in the Convex Production deployment itself; they are not GitHub Actions secrets.
 
 ## CLI npm release
 

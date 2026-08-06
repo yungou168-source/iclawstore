@@ -22,6 +22,8 @@
 
 ### 生产启用与验收前置条件
 
+原生桌面 OAuth 与站点登录使用独立的签名密钥配置。Convex Production deployment 必须保存同一 RSA 密钥对的 `JWT_PRIVATE_KEY`（PKCS#8 PEM 私钥）与 `JWKS`（对应公钥 JWKS JSON）；二者均是机密配置，不得提交、记录到测试输出或展示在截图中。疑似泄露时必须同时轮换这两个值。
+
 原生桌面 OAuth 启用需要由平台运维在两个运行边界配置同一组固定参数：
 
 1. Convex 生产环境设置固定的 `AI_DIRECT_DESKTOP_OAUTH_REDIRECT_URIS`。它必须同时包含实际桌面应用使用的 custom URI callback 和 `127.0.0.1`/`[::1]` loopback callback；注册客户端必须是 `public` 且 `token_endpoint_auth_method=none`。

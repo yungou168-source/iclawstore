@@ -70,7 +70,11 @@ Convex 部署必须设置：
 ```text
 SITE_URL=https://www.iclawstore.com
 CUSTOM_AUTH_SITE_URL=https://www.iclawstore.com/convex
+JWT_PRIVATE_KEY=<与 JWKS 成对的 PKCS#8 PEM RSA 私钥>
+JWKS=<上述私钥对应的公钥 JWKS JSON>
 ```
+
+`JWT_PRIVATE_KEY` 与 `JWKS` 必须由同一 RSA 密钥对生成，并只保存在 Convex Production deployment 的环境变量中。私钥不得进入仓库、构建日志、截图或应用配置文件；任何疑似泄露都必须视为密钥轮换，重新生成并同时替换这两个值。
 
 `SITE_URL` 是 OAuth 完成后的浏览器目的地；邮箱 OTP 在站内输入并验证。`CUSTOM_AUTH_SITE_URL` 是 OAuth provider 回调进入 Convex HTTP 服务的外部地址。各 OAuth App 的 callback URL 必须精确为 `https://www.iclawstore.com/convex/api/auth/callback/<provider>`，其中 `<provider>` 为 `github`、`google` 或 `wechat`。
 
@@ -98,7 +102,7 @@ AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID=<locked-public-client-id>
 
 示例仅说明格式，不是可直接复制到生产的回调地址。`AI_DIRECT_DESKTOP_OAUTH_REDIRECT_URIS` 必须同时包含一个 custom scheme 和一个 IP loopback URI；不接受任意端口、浏览器 HTTPS 回调、`file:`、`data:` 或带凭据/fragment 的 URI。客户端类型必须为 `public`，token endpoint authentication method 必须为 `none`，授权模式只能为 Authorization Code + PKCE `S256`。
 
-注册顺序必须是：先设置 redirect URIs，暂不设置 client ID；管理员调用 `desktopOAuth:ensureDesktopClient`；将返回的 client ID 写入生产环境；重新部署后再次调用同一 mutation，必须返回相同 `clientId` 和 `created=false`。如果已存在的客户端类型、scope 或 redirect URI 不一致，操作必须失败，不得删除或宽松修改现有客户端来绕过校验。
+注册顺序必须是：先确定已发布桌面二进制真实处理的 custom scheme 与固定 loopback 端口；设置 redirect URIs，暂不设置 client ID；管理员调用 `desktopOAuth:ensureDesktopClient`；将返回的 client ID 写入生产环境；重新部署后再次调用同一 mutation，必须返回相同 `clientId` 和 `created=false`。Client ID 由该静态注册过程产生，不是第三方 OAuth App 的 Client ID，也不能手工编造。当前没有桌面客户端或尚未完成两个回调闭环时，必须保持两个 `AI_DIRECT_DESKTOP_OAUTH_*` 变量为空，且不得发布 `auth` discovery metadata。如果已存在的客户端类型、scope 或 redirect URI 不一致，操作必须失败，不得删除或宽松修改现有客户端来绕过校验。
 
 Fastify `/home/ubuntu/.config/iclawstore/api.env` 必须设置下列非秘密值，并与 Convex 注册保持一致：
 

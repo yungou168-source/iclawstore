@@ -21,7 +21,7 @@
     "ci:types-build": "bunx tsc --noEmit && bunx tsc -p packages/schema/tsconfig.json --noEmit && bunx tsc -p packages/clawhub/tsconfig.json --noEmit && bun run --cwd packages/clawhub-mod typecheck && VITE_CONVEX_URL=https://example.invalid bun run build",
     "ci:unit": "VITE_CONVEX_URL=https://example.invalid bun run coverage",
     "clawscan:local": "bun scripts/local-clawscan-dry-run.ts",
-    "convex:deploy": "bunx convex deploy --typecheck=disable --yes",
+    "convex:deploy": "bunx convex deploy --typecheck=enable --yes",
     "coverage": "vitest run --coverage",
     "crabbox:hydrate": "node scripts/crabbox-wrapper.mjs actions hydrate",
     "crabbox:run": "node scripts/crabbox-wrapper.mjs run",

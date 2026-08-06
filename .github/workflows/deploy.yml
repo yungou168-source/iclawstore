@@ -130,6 +130,9 @@ jobs:
             sleep "$delay"
           done
 
+      - name: Build workspace schema
+        run: bun run --cwd packages/schema build
+
       - name: Stamp Convex build SHA
         if: needs.validate-deploy-request.outputs.deploy_backend == 'true'
         run: bunx convex env set APP_BUILD_SHA "${GITHUB_SHA}" --prod
@@ -143,7 +146,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "${{ inputs.allow_deleting_large_indexes }}" == "true" ]]; then
-            bunx convex deploy --typecheck=disable --yes --allow-deleting-large-indexes
+            bunx convex deploy --typecheck=enable --yes --allow-deleting-large-indexes
           else
             bun run convex:deploy
           fi

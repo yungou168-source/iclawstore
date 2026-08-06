@@ -49,6 +49,62 @@ function readString(value: unknown, field: string, maxLength: number): string {
   return result;
 }
 
+type ListCursor = { updatedAt: string; id: string };
+
+function encodeCursor(row: { updatedAt: Date | string; id: string }): string {
+  return Buffer.from(
+    JSON.stringify({ updatedAt: new Date(row.updatedAt).toISOString(), id: row.id }),
+    'utf8',
+  ).toString('base64url');
+}
+
+function decodeCursor(value: unknown): ListCursor | null {
+  if (value === undefined) return null;
+  if (typeof value !== 'string' || value.length > 512) {
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '无效的 cursor');
+  }
+  try {
+    const parsed = JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as ListCursor;
+    if (!parsed || typeof parsed.id !== 'string' || !parsed.id || Number.isNaN(Date.parse(parsed.updatedAt))) {
+      throw new Error('invalid cursor');
+    }
+    return parsed;
+  } catch {
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '无效的 cursor');
+  }
+}
+
+function readListQuery(query: Record<string, unknown>, statuses: readonly string[]) {
+  const status = query.status === undefined ? undefined : readString(query.status, 'status', 32);
+  if (status !== undefined && !statuses.includes(status)) {
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '无效的 status filter');
+  }
+  const limit = query.limit === undefined ? 50 : Number(query.limit);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'limit 必须为 1 到 100');
+  }
+  return { status, limit, cursor: decodeCursor(query.cursor) };
+}
+
+function permissionsFor(orgRole: string, companyRole?: string | null): string[] {
+  const permissions = new Set<string>(['company.read', 'project.read', 'agent_role.read']);
+  if (orgRole === 'owner' || orgRole === 'admin') {
+    permissions.add('company.update');
+    permissions.add('company.archive');
+    permissions.add('company.members.manage');
+  }
+  if (['owner', 'admin'].includes(companyRole ?? '')) {
+    permissions.add('company.update');
+    permissions.add('company.archive');
+    permissions.add('company.members.manage');
+  }
+  if (['owner', 'admin', 'manager'].includes(companyRole ?? '') || ['owner', 'admin', 'manager'].includes(orgRole)) {
+    permissions.add('project.manage');
+    permissions.add('agent_role.manage');
+  }
+  return [...permissions];
+}
+
 function readBudgetMicros(value: unknown): bigint {
   if (value === undefined) return 0n;
   if (
@@ -118,6 +174,25 @@ export async function aiDirectCompaniesRoutes(fastify: FastifyInstance) {
   // GET /api/v1/ai-direct-hiring/companies — list companies the user is a member of
   fastify.get('/companies', { onRequest: auth }, async (request: any) => {
     const user = await requireAuth(fastify, request);
+    const { status, limit, cursor } = readListQuery(request.query ?? {}, ['active', 'inactive', 'archived']);
+    const organizationId = request.query?.organizationId === undefined
+      ? undefined
+      : readString(request.query.organizationId, 'organizationId', 36);
+    const conditions = [`m.userId = ?`, `m.status = 'active'`];
+    const values: unknown[] = [user.id];
+    if (organizationId) {
+      conditions.push('c.organizationId = ?');
+      values.push(organizationId);
+    }
+    if (status) {
+      conditions.push('c.status = ?');
+      values.push(status);
+    }
+    if (cursor) {
+      conditions.push('(c.updatedAt < ? OR (c.updatedAt = ? AND c.id < ?))');
+      values.push(cursor.updatedAt, cursor.updatedAt, cursor.id);
+    }
+    values.push(limit + 1);
     const [rows] = await pool.query(
       `SELECT c.id, c.organizationId, c.name, c.slug, c.status, c.createdAt, c.updatedAt,
               m.role AS organizationRole, cm.role AS companyRole
@@ -126,10 +201,17 @@ export async function aiDirectCompaniesRoutes(fastify: FastifyInstance) {
          ON m.organizationId = c.organizationId AND m.userId = ? AND m.status = 'active'
        LEFT JOIN ai_direct_company_members cm
          ON cm.companyId = c.id AND cm.userId = m.userId AND cm.status = 'active'
-       ORDER BY c.updatedAt DESC LIMIT 100`,
-      [user.id],
+       WHERE ${conditions.slice(1).join(' AND ')}
+       ORDER BY c.updatedAt DESC, c.id DESC LIMIT ?`,
+      values,
     );
-    return { items: rows };
+    const page = rows as any[];
+    const hasMore = page.length > limit;
+    const items = page.slice(0, limit).map((row) => ({
+      ...row,
+      permissions: permissionsFor(row.organizationRole, row.companyRole),
+    }));
+    return { items, nextCursor: hasMore && items.length ? encodeCursor(items[items.length - 1]) : null };
   });
 
   // POST /api/v1/ai-direct-hiring/companies — create company
@@ -142,14 +224,15 @@ export async function aiDirectCompaniesRoutes(fastify: FastifyInstance) {
     const name = readString(body.name, 'name', 160);
     const organizationId = readString(body.organizationId ?? '', 'organizationId', 36);
 
-    // Verify user is an active org member
+    // Company creation is an organization-management operation.
     const [orgRows] = await pool.query(
-      `SELECT 1 FROM ai_direct_organization_members
+      `SELECT role FROM ai_direct_organization_members
        WHERE organizationId = ? AND userId = ? AND status = 'active' LIMIT 1`,
       [organizationId, user.id],
     );
-    if (!(orgRows as any[]).length) {
-      throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '用户不是该组织的活跃成员', 403);
+    const organizationRole = (orgRows as any[])[0]?.role;
+    if (organizationRole !== 'owner' && organizationRole !== 'admin') {
+      throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '需要组织 owner 或 admin 权限', 403);
     }
 
     const companyId = randomUUID();
@@ -241,8 +324,8 @@ export async function aiDirectCompaniesRoutes(fastify: FastifyInstance) {
     }
     if (body.status !== undefined) {
       const status = readString(body.status, 'status', 32);
-      if (!['active', 'inactive', 'archived'].includes(status)) {
-        throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '无效的 status 值');
+      if (!['active', 'inactive'].includes(status)) {
+        throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '公司 status 只能通过 PATCH 在 active/inactive 间切换；归档请使用 DELETE');
       }
       updates.push('status = ?');
       params.push(status);
@@ -257,16 +340,32 @@ export async function aiDirectCompaniesRoutes(fastify: FastifyInstance) {
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
+      const [companyRows] = await conn.query(
+        `SELECT organizationId, status FROM ai_direct_companies WHERE id = ? LIMIT 1 FOR UPDATE`,
+        [id],
+      );
+      const company = (companyRows as any[])[0];
+      if (!company) throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, '公司不存在', 404);
+      if (company.status === 'archived') {
+        throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, '已归档公司不能恢复或编辑', 409);
+      }
       await conn.query(`UPDATE ai_direct_companies SET ${updates.join(', ')}, updatedAt = NOW() WHERE id = ?`, params);
 
       await writeAudit(conn, {
-        organizationId: null,
+        organizationId: company.organizationId,
         actorUserId: user.id,
         action: 'company.updated',
         targetType: 'company',
         targetId: id,
         requestId: reqId,
-        metadata: { updates: Object.keys(body) },
+        metadata: { updates: Object.keys(body), previousStatus: company.status },
+      });
+      await publishOutboxEvent(conn, {
+        organizationId: company.organizationId,
+        aggregateType: 'company',
+        aggregateId: id,
+        eventType: 'company.updated.v1',
+        payload: { id, organizationId: company.organizationId, updates: Object.keys(body) },
       });
 
       await conn.commit();
@@ -283,40 +382,73 @@ export async function aiDirectCompaniesRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // DELETE /api/v1/ai-direct-hiring/companies/:id — delete company (creator only)
+  // DELETE keeps historical references intact by archiving an inactive company.
   fastify.delete('/companies/:id', { onRequest: auth }, async (request: any, reply) => {
     const user = await requireAuth(fastify, request);
     const { id } = request.params;
-
-    const [rows] = await pool.query(
-      `SELECT id, createdByUserId FROM ai_direct_companies WHERE id = ? LIMIT 1`,
-      [id],
-    );
-    const company = (rows as any[])[0];
-    if (!company) {
-      throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '公司不存在', 404);
-    }
-    if (company.createdByUserId !== user.id) {
-      throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '只有创建者可以删除公司', 403);
-    }
+    await requireCompanyRole(pool, id, user.id, 'admin');
 
     const reqId = requestIdFrom(request);
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
-      await conn.query(`DELETE FROM ai_direct_companies WHERE id = ?`, [id]);
+      const [rows] = await conn.query(
+        `SELECT id, organizationId, status FROM ai_direct_companies WHERE id = ? LIMIT 1 FOR UPDATE`,
+        [id],
+      );
+      const company = (rows as any[])[0];
+      if (!company) {
+        throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, '公司不存在', 404);
+      }
+      if (company.status === 'archived') {
+        await conn.commit();
+        return reply.status(200).send({ id, organizationId: company.organizationId, status: 'archived' });
+      }
+      if (company.status === 'active') {
+        throw new AiDirectHiringError(
+          ErrorCodes.INVALID_TRANSITION,
+          '请先将公司停用，再执行归档',
+          409,
+        );
+      }
 
+      const [blockingRows] = await conn.query(
+        `SELECT
+           (SELECT COUNT(*) FROM ai_direct_projects WHERE companyId = ? AND status = 'active') AS activeProjects,
+           (SELECT COUNT(*) FROM ai_direct_agent_roles WHERE companyId = ? AND status = 'open') AS openRoles,
+           (SELECT COUNT(*) FROM ai_direct_offers WHERE companyId = ? AND status NOT IN ('accepted', 'rejected', 'expired', 'revoked')) AS activeOffers,
+           (SELECT COUNT(*) FROM ai_direct_employments WHERE companyId = ? AND status <> 'terminated') AS activeEmployments`,
+        [id, id, id, id],
+      );
+      const blockers = (blockingRows as any[])[0] ?? {};
+      if (Object.values(blockers).some((value) => Number(value) > 0)) {
+        throw new AiDirectHiringError(
+          ErrorCodes.INVALID_TRANSITION,
+          '公司仍有活跃项目、开放岗位、Offer 或在职 Employment，不能归档',
+          409,
+          { blockers },
+        );
+      }
+
+      await conn.query(`UPDATE ai_direct_companies SET status = 'archived', updatedAt = NOW() WHERE id = ?`, [id]);
       await writeAudit(conn, {
-        organizationId: null,
+        organizationId: company.organizationId,
         actorUserId: user.id,
-        action: 'company.deleted',
+        action: 'company.archived',
         targetType: 'company',
         targetId: id,
         requestId: reqId,
+        metadata: { previousStatus: company.status },
       });
-
+      await publishOutboxEvent(conn, {
+        organizationId: company.organizationId,
+        aggregateType: 'company',
+        aggregateId: id,
+        eventType: 'company.archived.v1',
+        payload: { id, organizationId: company.organizationId, previousStatus: company.status },
+      });
       await conn.commit();
-      return reply.status(204).send();
+      return reply.status(200).send({ id, organizationId: company.organizationId, status: 'archived' });
     } catch (err) {
       await conn.rollback();
       throw err;
@@ -327,14 +459,35 @@ export async function aiDirectCompaniesRoutes(fastify: FastifyInstance) {
 
   fastify.get('/companies/:id/members', { onRequest: auth }, async (request: any) => {
     const user = await requireAuth(fastify, request);
-    await requireCompanyRole(pool, request.params.id, user.id, 'manager');
+    const companyId = readString(request.params.id, 'companyId', 36);
+    const membership = await requireCompanyRole(pool, companyId, user.id, 'manager');
+    const { status, limit, cursor } = readListQuery(request.query ?? {}, ['active', 'inactive']);
+    const conditions = ['companyId = ?'];
+    const values: unknown[] = [companyId];
+    if (status) {
+      conditions.push('status = ?');
+      values.push(status);
+    }
+    if (cursor) {
+      conditions.push('(updatedAt < ? OR (updatedAt = ? AND userId < ?))');
+      values.push(cursor.updatedAt, cursor.updatedAt, cursor.id);
+    }
+    values.push(limit + 1);
     const [rows] = await pool.query(
       `SELECT userId, role, status, createdAt, updatedAt
-       FROM ai_direct_company_members WHERE companyId = ?
-       ORDER BY createdAt ASC LIMIT 500`,
-      [request.params.id],
+       FROM ai_direct_company_members WHERE ${conditions.join(' AND ')}
+       ORDER BY updatedAt DESC, userId DESC LIMIT ?`,
+      values,
     );
-    return { items: rows };
+    const page = rows as any[];
+    const hasMore = page.length > limit;
+    const permissions = permissionsFor(membership.orgRole, membership.companyRole);
+    const items = page.slice(0, limit).map((row) => ({ ...row, permissions }));
+    const last = items[items.length - 1];
+    return {
+      items,
+      nextCursor: hasMore && last ? encodeCursor({ updatedAt: last.updatedAt, id: last.userId }) : null,
+    };
   });
 
   fastify.put('/companies/:id/members/:userId', { onRequest: auth }, async (request: any) => {
@@ -358,12 +511,15 @@ export async function aiDirectCompaniesRoutes(fastify: FastifyInstance) {
     try {
       await conn.beginTransaction();
       const [companyRows] = await conn.query(
-        `SELECT organizationId FROM ai_direct_companies WHERE id = ? LIMIT 1 FOR UPDATE`,
+        `SELECT organizationId, status FROM ai_direct_companies WHERE id = ? LIMIT 1 FOR UPDATE`,
         [companyId],
       );
       const company = (companyRows as any[])[0];
       if (!company) {
         throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, '公司不存在', 404);
+      }
+      if (company.status !== 'active') {
+        throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, '停用或归档公司不能新增或变更成员', 409);
       }
       const [orgRows] = await conn.query(
         `SELECT 1 FROM ai_direct_organization_members
@@ -379,6 +535,9 @@ export async function aiDirectCompaniesRoutes(fastify: FastifyInstance) {
         [companyId, targetUserId],
       );
       const target = (targetRows as any[])[0];
+      if (target?.role === 'owner' && actorMembership.companyRole !== 'owner') {
+        throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '只有 owner 可以变更 owner 成员', 403);
+      }
       if (target?.role === 'owner' && (role !== 'owner' || status !== 'active')) {
         const [ownerRows] = await conn.query(
           `SELECT COUNT(*) AS count FROM ai_direct_company_members
@@ -422,25 +581,119 @@ export async function aiDirectCompaniesRoutes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.delete('/companies/:id/members/:userId', { onRequest: auth }, async (request: any, reply) => {
+    const actor = await requireAuth(fastify, request);
+    const companyId = readString(request.params.id, 'companyId', 36);
+    const targetUserId = readString(request.params.userId, 'userId', 191);
+    const actorMembership = await requireCompanyRole(pool, companyId, actor.id, 'admin');
+    const reqId = requestIdFrom(request);
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      const [companyRows] = await conn.query(
+        `SELECT organizationId FROM ai_direct_companies WHERE id = ? LIMIT 1 FOR UPDATE`,
+        [companyId],
+      );
+      const company = (companyRows as any[])[0];
+      if (!company) throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, '公司不存在', 404);
+      const [targetRows] = await conn.query(
+        `SELECT role, status FROM ai_direct_company_members
+         WHERE companyId = ? AND userId = ? LIMIT 1 FOR UPDATE`,
+        [companyId, targetUserId],
+      );
+      const target = (targetRows as any[])[0];
+      if (!target || target.status !== 'active') {
+        throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, '活跃公司成员不存在', 404);
+      }
+      if (target.role === 'owner' && actorMembership.companyRole !== 'owner') {
+        throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '只有 owner 可以撤销 owner 成员', 403);
+      }
+      if (target.role === 'owner') {
+        const [ownerRows] = await conn.query(
+          `SELECT COUNT(*) AS count FROM ai_direct_company_members
+           WHERE companyId = ? AND role = 'owner' AND status = 'active'`,
+          [companyId],
+        );
+        if (Number((ownerRows as any[])[0]?.count ?? 0) <= 1) {
+          throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, '公司必须至少保留一个活跃 owner', 409);
+        }
+      }
+      await conn.query(
+        `UPDATE ai_direct_company_members SET status = 'inactive', updatedAt = NOW()
+         WHERE companyId = ? AND userId = ?`,
+        [companyId, targetUserId],
+      );
+      await writeAudit(conn, {
+        organizationId: company.organizationId,
+        actorUserId: actor.id,
+        action: 'company.member.revoked',
+        targetType: 'company_member',
+        targetId: targetUserId,
+        requestId: reqId,
+        metadata: { companyId, previousRole: target.role },
+      });
+      await publishOutboxEvent(conn, {
+        organizationId: company.organizationId,
+        aggregateType: 'company_member',
+        aggregateId: targetUserId,
+        eventType: 'company.member.revoked.v1',
+        payload: { companyId, organizationId: company.organizationId, userId: targetUserId },
+      });
+      await conn.commit();
+      return reply.status(204).send();
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
+  });
+
   // ── Projects ────────────────────────────────────────────────────────────────
 
   // GET /api/v1/ai-direct-hiring/projects — list projects user can see
   fastify.get('/projects', { onRequest: auth }, async (request: any) => {
     const user = await requireAuth(fastify, request);
+    const { status, limit, cursor } = readListQuery(request.query ?? {}, ['active', 'inactive', 'archived']);
+    const companyId = request.query?.companyId === undefined
+      ? undefined
+      : readString(request.query.companyId, 'companyId', 36);
+    const conditions = [`m.userId = ?`, `m.status = 'active'`];
+    const values: unknown[] = [user.id];
+    if (companyId) {
+      conditions.push('p.companyId = ?');
+      values.push(companyId);
+    }
+    if (status) {
+      conditions.push('p.status = ?');
+      values.push(status);
+    }
+    if (cursor) {
+      conditions.push('(p.updatedAt < ? OR (p.updatedAt = ? AND p.id < ?))');
+      values.push(cursor.updatedAt, cursor.updatedAt, cursor.id);
+    }
+    values.push(limit + 1);
     const [rows] = await pool.query(
       `SELECT p.id, p.companyId, p.name, p.slug, p.status, p.budgetMicros, p.sensitivityLimit,
-              p.createdByUserId, p.createdAt, p.updatedAt,
-              c.name AS companyName
+              p.createdByUserId, p.createdAt, p.updatedAt, c.name AS companyName,
+              m.role AS organizationRole, cm.role AS companyRole
        FROM ai_direct_projects p
        JOIN ai_direct_companies c ON c.id = p.companyId
-       JOIN ai_direct_organization_members m ON m.organizationId = c.organizationId AND m.userId = ?
-       WHERE c.organizationId IN (
-         SELECT organizationId FROM ai_direct_organization_members WHERE userId = ? AND status = 'active'
-       )
-       ORDER BY p.updatedAt DESC LIMIT 100`,
-      [user.id, user.id],
+       JOIN ai_direct_organization_members m
+         ON m.organizationId = c.organizationId AND m.userId = ? AND m.status = 'active'
+       LEFT JOIN ai_direct_company_members cm
+         ON cm.companyId = c.id AND cm.userId = m.userId AND cm.status = 'active'
+       WHERE ${conditions.slice(2).length ? conditions.slice(2).join(' AND ') : '1 = 1'}
+       ORDER BY p.updatedAt DESC, p.id DESC LIMIT ?`,
+      values,
     );
-    return { items: rows };
+    const page = rows as any[];
+    const hasMore = page.length > limit;
+    const items = page.slice(0, limit).map((row) => ({
+      ...row,
+      permissions: permissionsFor(row.organizationRole, row.companyRole),
+    }));
+    return { items, nextCursor: hasMore && items.length ? encodeCursor(items[items.length - 1]) : null };
   });
 
   // POST /api/v1/ai-direct-hiring/projects — create project (needs company member)
@@ -453,6 +706,13 @@ export async function aiDirectCompaniesRoutes(fastify: FastifyInstance) {
     const companyId = readString(body.companyId, 'companyId', 36);
     const name = readString(body.name, 'name', 160);
     await requireCompanyRole(pool, companyId, user.id, 'recruiter');
+    const [companyStateRows] = await pool.query(
+      `SELECT status, organizationId FROM ai_direct_companies WHERE id = ? LIMIT 1`,
+      [companyId],
+    );
+    if ((companyStateRows as any[])[0]?.status !== 'active') {
+      throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, '停用或归档公司不能创建项目', 409);
+    }
 
     const projectId = randomUUID();
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + projectId.slice(0, 8);
@@ -472,7 +732,7 @@ export async function aiDirectCompaniesRoutes(fastify: FastifyInstance) {
       );
 
       await writeAudit(conn, {
-        organizationId: null,
+        organizationId: (companyStateRows as any[])[0].organizationId,
         actorUserId: user.id,
         action: 'project.created',
         targetType: 'project',
@@ -482,7 +742,7 @@ export async function aiDirectCompaniesRoutes(fastify: FastifyInstance) {
       });
 
       await publishOutboxEvent(conn, {
-        organizationId: null,
+        organizationId: (companyStateRows as any[])[0].organizationId,
         aggregateType: 'project',
         aggregateId: projectId,
         eventType: 'project.created.v1',
@@ -626,6 +886,7 @@ export async function aiDirectCompaniesRoutes(fastify: FastifyInstance) {
   fastify.get('/projects/:id/roles', { onRequest: auth }, async (request: any) => {
     const user = await requireAuth(fastify, request);
     const { id } = request.params;
+    const { status, limit, cursor } = readListQuery(request.query ?? {}, ['open', 'filled', 'cancelled']);
 
     const [projRows] = await pool.query(
       `SELECT companyId FROM ai_direct_projects WHERE id = ? LIMIT 1`,
@@ -633,17 +894,31 @@ export async function aiDirectCompaniesRoutes(fastify: FastifyInstance) {
     );
     const project = (projRows as any[])[0];
     if (!project) throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '项目不存在', 404);
-    await requireCompanyRole(pool, project.companyId, user.id, 'recruiter');
-
+    const membership = await requireCompanyRole(pool, project.companyId, user.id, 'recruiter');
+    const conditions = ['(projectId = ? OR (projectId IS NULL AND companyId = ?))'];
+    const values: unknown[] = [id, project.companyId];
+    if (status) {
+      conditions.push('status = ?');
+      values.push(status);
+    }
+    if (cursor) {
+      conditions.push('(updatedAt < ? OR (updatedAt = ? AND id < ?))');
+      values.push(cursor.updatedAt, cursor.updatedAt, cursor.id);
+    }
+    values.push(limit + 1);
     const [rows] = await pool.query(
       `SELECT id, companyId, projectId, name, responsibilities, requiredCapabilities,
               budgetMicros, status, createdByUserId, createdAt, updatedAt
        FROM ai_direct_agent_roles
-       WHERE projectId = ? OR (projectId IS NULL AND companyId = ?)
-       ORDER BY createdAt DESC LIMIT 100`,
-      [id, project.companyId],
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY updatedAt DESC, id DESC LIMIT ?`,
+      values,
     );
-    return { items: rows };
+    const page = rows as any[];
+    const hasMore = page.length > limit;
+    const permissions = permissionsFor(membership.orgRole, membership.companyRole);
+    const items = page.slice(0, limit).map((row) => ({ ...row, permissions }));
+    return { items, nextCursor: hasMore && items.length ? encodeCursor(items[items.length - 1]) : null };
   });
 
   // POST /api/v1/ai-direct-hiring/projects/:id/roles — create role
@@ -655,12 +930,17 @@ export async function aiDirectCompaniesRoutes(fastify: FastifyInstance) {
     rejectExtra(body, ['name', 'responsibilities', 'requiredCapabilities', 'budgetMicros'], 'POST /projects/:id/roles');
 
     const [projRows] = await pool.query(
-      `SELECT companyId FROM ai_direct_projects WHERE id = ? LIMIT 1`,
+      `SELECT p.companyId, p.status AS projectStatus, c.status AS companyStatus, c.organizationId
+       FROM ai_direct_projects p JOIN ai_direct_companies c ON c.id = p.companyId
+       WHERE p.id = ? LIMIT 1`,
       [id],
     );
     const project = (projRows as any[])[0];
     if (!project) throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '项目不存在', 404);
     await requireCompanyRole(pool, project.companyId, user.id, 'recruiter');
+    if (project.projectStatus !== 'active' || project.companyStatus !== 'active') {
+      throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, '停用项目或公司不能创建岗位', 409);
+    }
 
     const name = readString(body.name, 'name', 160);
     const responsibilities =
@@ -696,7 +976,7 @@ export async function aiDirectCompaniesRoutes(fastify: FastifyInstance) {
       );
 
       await writeAudit(conn, {
-        organizationId: null,
+        organizationId: project.organizationId,
         actorUserId: user.id,
         action: 'agent_role.created',
         targetType: 'agent_role',
@@ -706,7 +986,7 @@ export async function aiDirectCompaniesRoutes(fastify: FastifyInstance) {
       });
 
       await publishOutboxEvent(conn, {
-        organizationId: null,
+        organizationId: project.organizationId,
         aggregateType: 'agent_role',
         aggregateId: roleId,
         eventType: 'agent_role.created.v1',

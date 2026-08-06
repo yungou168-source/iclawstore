@@ -347,7 +347,7 @@ describe("fetchPackages", () => {
 
     await expect(fetchPackages({ family: "code-plugin" })).rejects.toMatchObject({
       message:
-        "Sign in required. If this ClawHub account was deleted, banned, or disabled, it cannot access private packages.",
+        "Sign in required. If this AI直聘 account was deleted, banned, or disabled, it cannot access private packages.",
       status: 401,
     });
 

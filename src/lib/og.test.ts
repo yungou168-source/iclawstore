@@ -21,7 +21,7 @@ describe("og helpers", () => {
       summary: "Forecasts for your area.",
       version: "1.2.3",
     });
-    expect(meta.title).toBe("Weather — ClawHub");
+    expect(meta.title).toBe("Weather — AI直聘");
     expect(meta.description).toBe("Forecasts for your area.");
     expect(meta.url).toContain("/steipete/weather");
     expect(meta.owner).toBe("steipete");
@@ -61,9 +61,9 @@ describe("og helpers", () => {
       summary: "OpenClaw Codex harness.",
       latestVersion: "1.0.0",
     });
-    expect(meta.title).toBe("Codex — ClawHub Plugins");
+    expect(meta.title).toBe("Codex — AI直聘 开发者资产");
     expect(meta.description).toBe("OpenClaw Codex harness.");
-    expect(meta.url).toBe("https://clawhub.ai/plugins/@openclaw/codex");
+    expect(meta.url).toBe("https://www.iclawstore.com/plugins/@openclaw/codex");
     expect(meta.image).toContain("/og/plugin?");
     expect(meta.image).toContain("v=2");
     expect(meta.image).toContain("name=%40openclaw%2Fcodex");
@@ -76,9 +76,9 @@ describe("og helpers", () => {
       displayName: "byungkyu",
       bio: "maton.ai",
     });
-    expect(meta.title).toBe("byungkyu — ClawHub");
+    expect(meta.title).toBe("byungkyu — AI直聘");
     expect(meta.description).toBe("maton.ai");
-    expect(meta.url).toBe("https://clawhub.ai/user/byungkyu");
+    expect(meta.url).toBe("https://www.iclawstore.com/user/byungkyu");
     expect(meta.image).toContain("/og/profile?");
     expect(meta.image).toContain("v=2");
     expect(meta.image).toContain("handle=byungkyu");
@@ -86,8 +86,8 @@ describe("og helpers", () => {
 
   it("uses defaults when owner and summary are missing", () => {
     const meta = buildSkillMeta({ slug: "parser" });
-    expect(meta.title).toBe("parser — ClawHub");
-    expect(meta.description).toMatch(/ClawHub — a fast skill registry/i);
+    expect(meta.title).toBe("parser — AI直聘");
+    expect(meta.description).toMatch(/AI直聘（Ai Work）/);
     expect(meta.url).toContain("/unknown/parser");
     expect(meta.owner).toBeNull();
     expect(meta.image).toContain("slug=parser");

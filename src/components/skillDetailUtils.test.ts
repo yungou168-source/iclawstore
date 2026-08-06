@@ -55,14 +55,14 @@ describe("skill detail install helpers", () => {
     });
 
     expect(prompt).toContain("steipete/weather");
-    expect(prompt).toContain("https://clawhub.ai/steipete/weather");
+    expect(prompt).toContain("https://www.iclawstore.com/steipete/weather");
     expect(prompt).toContain("WEATHER_API_KEY");
     expect(prompt).toContain("curl");
     expect(prompt).toContain("~/.weatherrc");
     expect(prompt.startsWith("Before installing anything")).toBe(true);
     expect(prompt).toContain("verify its source, maintainer, and package contents");
     expect(prompt).toContain(
-      'Install the skill "Weather" (steipete/weather) from ClawHub only after those checks pass.',
+      'Install the skill "Weather" (steipete/weather) from AI直聘 only after those checks pass.',
     );
     expect(prompt).toContain("After install, help me finish setup from verified skill metadata.");
     expect(prompt).not.toContain("unknown");
@@ -81,7 +81,7 @@ describe("skill detail install helpers", () => {
 
     expect(prompt.startsWith("Before installing anything")).toBe(true);
     expect(prompt).toContain(
-      'Install the skill "Weather" (weather) from ClawHub only after those checks pass.',
+      'Install the skill "Weather" (weather) from AI直聘 only after those checks pass.',
     );
     expect(prompt).toContain("verify its source, maintainer, and package contents");
     expect(prompt).not.toContain("Skill page:");

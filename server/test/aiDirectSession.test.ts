@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import Fastify, { type FastifyInstance } from "fastify";
 import { AuthRequiredError, type AuthenticatedUser } from "../src/middleware/aiDirectAuth.js";
-import { aiDirectSessionRoutes } from "../src/routes/aiDirectSession.js";
+import {
+  aiDirectSessionRoutes,
+  featureFlagConfigFromEnvironment,
+  featureFlagsForOrganization,
+} from '../src/routes/aiDirectSession.js';
 import { AiDirectHiringError, errorResponse } from "../src/services/aiDirectErrors.js";
 
 const apps: FastifyInstance[] = [];
@@ -18,8 +22,8 @@ const user: AuthenticatedUser = {
 };
 
 const organizations = [
-  { id: "org-2", name: "Second", slug: "second", role: "manager" },
-  { id: "org-1", name: "First", slug: "first", role: "owner" },
+  { id: "org-2", name: "Second", slug: "second", role: "manager", membershipUpdatedAt: '2026-08-01T00:00:00.000Z' },
+  { id: "org-1", name: "First", slug: "first", role: "owner", membershipUpdatedAt: '2026-08-02T00:00:00.000Z' },
 ];
 
 const createApp = async (authenticated = true) => {
@@ -66,6 +70,7 @@ describe("AI Direct Hiring session", () => {
       currentOrganization: {
         id: "org-1",
         role: "owner",
+        grantVersion: expect.any(String),
         permissions: [
           "organization:read",
           "organization:manage",
@@ -78,7 +83,19 @@ describe("AI Direct Hiring session", () => {
         { id: "org-2", role: "manager" },
         { id: "org-1", role: "owner" },
       ],
-      featureFlags: { aiDirectHiring: true, desktopIdentityBridge: true },
+      organizationSelection: {
+        requestedOrganizationId: 'org-1',
+        resolvedOrganizationId: 'org-1',
+        source: 'requested',
+      },
+      featureFlags: { aiDirectHiring: true, desktopIdentityBridge: true, candidateCatalog: false, interviews: false, providerExecution: false },
+      runtimeCapabilities: {
+        desktopJobs: true,
+        artifactDownload: false,
+        candidateCatalog: false,
+        interviews: false,
+        providerExecution: false,
+      },
     });
   });
 
@@ -91,7 +108,34 @@ describe("AI Direct Hiring session", () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json().currentOrganization.id).toBe("org-2");
+    expect(response.json()).toMatchObject({
+      currentOrganization: { id: "org-2" },
+      organizationSelection: {
+        requestedOrganizationId: 'revoked-org',
+        resolvedOrganizationId: 'org-2',
+        source: 'default',
+      },
+    });
+  });
+
+  it("applies server-owned organization overrides without enabling undeclared capabilities", () => {
+    const config = featureFlagConfigFromEnvironment({
+      AI_DIRECT_FEATURE_FLAGS: JSON.stringify({
+        defaults: { candidateCatalog: true },
+        organizations: { "org-1": { candidateCatalog: false, interviews: true } },
+      }),
+    });
+
+    expect(featureFlagsForOrganization("org-1", config)).toMatchObject({
+      candidateCatalog: false,
+      interviews: true,
+      providerExecution: false,
+    });
+    expect(featureFlagsForOrganization("org-2", config)).toMatchObject({
+      candidateCatalog: true,
+      interviews: false,
+      providerExecution: false,
+    });
   });
 
   it("fails closed when authentication cannot establish an active identity", async () => {

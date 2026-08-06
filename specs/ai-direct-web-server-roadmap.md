@@ -102,6 +102,10 @@ SessionDto
 
 ### 当前分支实现状态
 
+- **QA 实测（2026-03-14）**：可回收 QA 身份已在真实组织管理页面创建隔离组织 `QA-EmployeeDirectory-2026-03-14` 和 active 公司 `company-A`，身份显示为组织 `owner`。这只证明身份桥及组织/公司写路径可用，不证明 Offer、Employment 或员工目录业务闭环。
+- 组织成员、公司、项目、Agent 岗位与 Employment 属于不同的领域资源。将文本 `company-A` 添加到“组织成员用户 ID”只会尝试创建成员关系，不能创建公司；创建 Agent 岗位也不创建 Employment。
+- `/recruit-ai` 当前是本地目录选择页，选择状态不持久化；“在客户端继续招聘”跳转桌面客户端发布页。Web 未提供“选择候选 → Offer → 接受 → Employment”的可操作表单，不能把页面选择标记为已雇佣。
+- 员工目录 QA fixture 仍需经受保护 API 建立 company recruiter、有效 Employment 和 workforce digest；禁止直写数据库或请求用户提供 Bearer token、OTP、密码等凭据。
 - **代码完成，待验证**：组织、成员、公司、公司成员、项目和 Agent 岗位已统一使用状态过滤、opaque cursor 与权限 DTO；新页面同时保留领域角色独立入口，并接入 `/management?view=organizations`。
 - 成员写入包含最后 active owner 保护；每次组织级请求继续读取 active membership，撤权后不依赖前端缓存授权。
 - 公司删除已收敛为受约束归档：必须先停用，并拒绝仍有 active 项目、开放岗位、未完成 Offer/Employment 或运行任务的公司；不执行物理删除。

@@ -1,8 +1,18 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render as renderWithProviders, screen, waitFor } from "@testing-library/react";
+import type { ReactElement } from "react";
 import { getFunctionName } from "convex/server";
 import { strToU8, zipSync } from "fflate";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { I18nProvider } from "../lib/i18n/context";
 import { Upload } from "../routes/skills/publish";
+
+const render = (ui: ReactElement) => {
+  const result = renderWithProviders(<I18nProvider>{ui}</I18nProvider>);
+  return {
+    ...result,
+    rerender: (nextUi: ReactElement) => result.rerender(<I18nProvider>{nextUi}</I18nProvider>),
+  };
+};
 
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (config: { component: unknown }) => config,
@@ -57,6 +67,7 @@ describe("Upload route", () => {
     getSiteModeMock.mockReturnValue("skills");
     useSearchMock.mockReset();
     useSearchMock.mockReturnValue({ updateSlug: undefined, ownerHandle: undefined });
+    localStorage.setItem("clawhub-locale", "en");
     useActionCallCount = 0;
     useAuthStatusMock.mockReturnValue({
       isAuthenticated: true,
@@ -104,7 +115,7 @@ describe("Upload route", () => {
     getSiteModeMock.mockReturnValue("souls");
     render(<Upload />);
 
-    expect(screen.getByRole("heading", { name: /Publish a soul/i })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /Publish soul/i })).toBeTruthy();
     expect(screen.getByText("Drop or select a soul folder")).toBeTruthy();
     const guideLink = screen.getByRole("link", { name: /Soul publishing guide/i });
     expect(guideLink.getAttribute("href")).toBe("https://docs.openclaw.ai/clawhub/soul-format");

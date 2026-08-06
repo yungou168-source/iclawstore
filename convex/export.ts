@@ -1,3 +1,4 @@
+import { api } from "./_generated/api";
 import { query, action } from "./_generated/server";
 
 /**
@@ -145,31 +146,31 @@ export const export_auditLogs = query({
 
 // Action that exports all tables at once for efficiency
 export const exportAllData = action({
-  handler: async (ctx) => {
+  handler: async (ctx): Promise<Record<string, unknown>> => {
     return {
-      users: await ctx.runQuery("export:export_users"),
-      publishers: await ctx.runQuery("export:export_publishers"),
-      publisherMembers: await ctx.runQuery("export:export_publisherMembers"),
-      officialPublishers: await ctx.runQuery("export:export_officialPublishers"),
-      skills: await ctx.runQuery("export:export_skills"),
-      skillVersions: await ctx.runQuery("export:export_skillVersions"),
-      skillEmbeddings: await ctx.runQuery("export:export_skillEmbeddings"),
-      skillBadges: await ctx.runQuery("export:export_skillBadges"),
-      comments: await ctx.runQuery("export:export_comments"),
-      commentReports: await ctx.runQuery("export:export_commentReports"),
-      stars: await ctx.runQuery("export:export_stars"),
-      skillReports: await ctx.runQuery("export:export_skillReports"),
-      skillAppeals: await ctx.runQuery("export:export_skillAppeals"),
-      packages: await ctx.runQuery("export:export_packages"),
-      packageReleases: await ctx.runQuery("export:export_packageReleases"),
-      skillDailyStats: await ctx.runQuery("export:export_skillDailyStats"),
-      skillStatEvents: await ctx.runQuery("export:export_skillStatEvents"),
-      globalStats: await ctx.runQuery("export:export_globalStats"),
-      apiTokens: await ctx.runQuery("export:export_apiTokens"),
-      rateLimits: await ctx.runQuery("export:export_rateLimits"),
-      reservedSlugs: await ctx.runQuery("export:export_reservedSlugs"),
-      reservedHandles: await ctx.runQuery("export:export_reservedHandles"),
-      auditLogs: await ctx.runQuery("export:export_auditLogs"),
+      users: await ctx.runQuery(api.export.export_users),
+      publishers: await ctx.runQuery(api.export.export_publishers),
+      publisherMembers: await ctx.runQuery(api.export.export_publisherMembers),
+      officialPublishers: await ctx.runQuery(api.export.export_officialPublishers),
+      skills: await ctx.runQuery(api.export.export_skills),
+      skillVersions: await ctx.runQuery(api.export.export_skillVersions),
+      skillEmbeddings: await ctx.runQuery(api.export.export_skillEmbeddings),
+      skillBadges: await ctx.runQuery(api.export.export_skillBadges),
+      comments: await ctx.runQuery(api.export.export_comments),
+      commentReports: await ctx.runQuery(api.export.export_commentReports),
+      stars: await ctx.runQuery(api.export.export_stars),
+      skillReports: await ctx.runQuery(api.export.export_skillReports),
+      skillAppeals: await ctx.runQuery(api.export.export_skillAppeals),
+      packages: await ctx.runQuery(api.export.export_packages),
+      packageReleases: await ctx.runQuery(api.export.export_packageReleases),
+      skillDailyStats: await ctx.runQuery(api.export.export_skillDailyStats),
+      skillStatEvents: await ctx.runQuery(api.export.export_skillStatEvents),
+      globalStats: await ctx.runQuery(api.export.export_globalStats),
+      apiTokens: await ctx.runQuery(api.export.export_apiTokens),
+      rateLimits: await ctx.runQuery(api.export.export_rateLimits),
+      reservedSlugs: await ctx.runQuery(api.export.export_reservedSlugs),
+      reservedHandles: await ctx.runQuery(api.export.export_reservedHandles),
+      auditLogs: await ctx.runQuery(api.export.export_auditLogs),
     };
   },
 });

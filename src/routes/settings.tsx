@@ -62,8 +62,8 @@ import { Separator } from "../components/ui/separator";
 import { Textarea } from "../components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group";
 import { getUserFacingConvexError } from "../lib/convexError";
+import { useLocale } from "../lib/i18n/context";
 import { useThemeMode } from "../lib/theme";
-import { timeAgo } from "../lib/timeAgo";
 import { useAuthStatus } from "../lib/useAuthStatus";
 
 const settingsViews = ["account", "organizations", "githubSources", "tokens", "danger"] as const;
@@ -171,8 +171,8 @@ type GitHubSkillSource = {
 const navigationGroups: Array<{
   items: Array<{
     view: SettingsView;
-    label: string;
-    mobileLabel: string;
+    labelKey: string;
+    mobileLabelKey: string;
     icon: LucideIcon;
   }>;
 }> = [
@@ -180,8 +180,8 @@ const navigationGroups: Array<{
     items: [
       {
         view: "account",
-        label: "Account & Preferences",
-        mobileLabel: "Account",
+        labelKey: "settings.account_preferences",
+        mobileLabelKey: "settings.account_mobile",
         icon: UserRound,
       },
     ],
@@ -190,21 +190,26 @@ const navigationGroups: Array<{
     items: [
       {
         view: "organizations",
-        label: "Organizations",
-        mobileLabel: "Orgs",
+        labelKey: "settings.organizations",
+        mobileLabelKey: "settings.organizations_mobile",
         icon: Building2,
       },
       {
         view: "githubSources",
-        label: "GitHub Skill Sync",
-        mobileLabel: "Skill Sync",
+        labelKey: "settings.github_sources",
+        mobileLabelKey: "settings.github_sources_mobile",
         icon: GitBranch,
       },
-      { view: "tokens", label: "API tokens", mobileLabel: "Tokens", icon: KeyRound },
+      {
+        view: "tokens",
+        labelKey: "settings.tokens",
+        mobileLabelKey: "settings.tokens_mobile",
+        icon: KeyRound,
+      },
       {
         view: "danger",
-        label: "Account deletion",
-        mobileLabel: "Deletion",
+        labelKey: "settings.danger",
+        mobileLabelKey: "settings.danger_mobile",
         icon: ShieldAlert,
       },
     ],
@@ -220,6 +225,7 @@ const themeToggleItemClass =
   "!h-20 min-w-0 flex-1 flex-col gap-2 !rounded-[var(--r-btn)] border border-[color:var(--line)] bg-[color:var(--surface)] px-3 text-sm font-semibold text-[color:var(--ink-soft)] opacity-70 hover:border-[color:var(--border-ui-hover)] hover:bg-[color:var(--surface-muted)] hover:text-[color:var(--ink)] hover:opacity-100 data-[state=on]:border-[color:var(--accent)] data-[state=on]:!bg-[color:var(--surface-muted)] data-[state=on]:text-[color:var(--ink)] data-[state=on]:opacity-100 sm:!w-28 sm:flex-none";
 
 export function Settings() {
+  const { t, locale } = useLocale();
   const { isAuthenticated, isLoading: isAuthLoading, me } = useAuthStatus();
   const updateProfile = useMutation(api.users.updateProfile);
   const deleteAccount = useMutation(api.users.deleteAccount);
@@ -355,8 +361,8 @@ export function Settings() {
   if (!isAuthenticated || !me) {
     return (
       <SignInPrompt
-        title="Sign in to access settings"
-        description="Manage your profile, organizations, and API access."
+        title={t("settings.sign_in_title")}
+        description={t("settings.sign_in_description")}
       />
     );
   }
@@ -379,7 +385,7 @@ export function Settings() {
   async function onSave(event: FormEvent) {
     event.preventDefault();
     await updateProfile({ displayName, bio });
-    toast.success("Saved");
+    toast.success(t("settings.saved"));
   }
 
   async function onDelete() {
@@ -388,7 +394,7 @@ export function Settings() {
   }
 
   async function onCreateToken() {
-    const label = tokenLabel.trim() || "CLI token";
+    const label = tokenLabel.trim() || t("settings.default_token_label");
     const result = await createToken({ label });
     setNewToken(result.token);
     setTokenLabel("");
@@ -408,10 +414,10 @@ export function Settings() {
         setOrgHandle("");
         setOrgDisplayName("");
         setCreateOrgDialogOpen(false);
-        toast.success("Organization created");
+        toast.success(t("settings.org_created"));
       }
     } catch (error) {
-      const message = getUserFacingConvexError(error, "Organization could not be created.");
+      const message = getUserFacingConvexError(error, t("settings.org_create_error"));
       setCreateOrgError(message);
       toast.error(message);
     } finally {
@@ -427,7 +433,7 @@ export function Settings() {
       bio: selectedOrgBio || undefined,
       image: selectedOrgImage || undefined,
     });
-    toast.success("Organization updated");
+    toast.success(t("settings.org_updated"));
   }
 
   async function onDeleteOrg() {
@@ -437,7 +443,7 @@ export function Settings() {
     setDeleteOrgDialogOpen(false);
     const nextOrg = orgs.find((entry) => entry.publisher.handle !== deletingHandle);
     setSelectedOrgHandle(nextOrg?.publisher.handle ?? "");
-    toast.success(`Deleted @${deletingHandle}`);
+    toast.success(t("settings.org_deleted", { handle: deletingHandle }));
   }
 
   async function onConfigureGitHubSource(event: FormEvent) {
@@ -452,9 +458,9 @@ export function Settings() {
         repo,
       });
       setGithubRepo("");
-      toast.success(formatGitHubSourceSyncToast(result?.stats));
+      toast.success(formatGitHubSourceSyncToast(result?.stats, locale));
     } catch (error) {
-      toast.error(getUserFacingConvexError(error, "GitHub source could not be synced."));
+      toast.error(getUserFacingConvexError(error, t("settings.github_sync_error")));
     } finally {
       setIsSyncingSource(false);
     }
@@ -469,14 +475,10 @@ export function Settings() {
         ownerPublisherId,
         sourceId: source._id,
       });
-      toast.success(
-        `GitHub sync deleted (${result.deletedSkills} ${
-          result.deletedSkills === 1 ? "skill" : "skills"
-        } deleted)`,
-      );
+      toast.success(t("settings.github_sync_deleted", { count: result.deletedSkills }));
       setSourceToDelete(null);
     } catch (error) {
-      toast.error(getUserFacingConvexError(error, "GitHub sync could not be deleted."));
+      toast.error(getUserFacingConvexError(error, t("settings.github_delete_error")));
     } finally {
       setDeletingSourceId(null);
     }
@@ -496,10 +498,10 @@ export function Settings() {
       >
         <header>
           <h1 className="font-display text-3xl font-black leading-none text-[color:var(--ink)]">
-            Settings
+            {t("settings.title")}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[color:var(--ink-soft)]">
-            Account identity, publishing organizations, and API access for AI直聘.
+            {t("settings.subtitle")}
           </p>
         </header>
         <Separator />
@@ -509,7 +511,7 @@ export function Settings() {
             <div className="flex flex-col">
               <nav
                 className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0"
-                aria-label="Settings sections"
+                aria-label={t("settings.sections_label")}
               >
                 {navigationGroups.map((group, groupIndex) => (
                   <div
@@ -531,7 +533,7 @@ export function Settings() {
                           type="button"
                           onClick={() => navigateToView(item.view)}
                           aria-current={active ? "true" : undefined}
-                          aria-label={item.label}
+                          aria-label={t(item.labelKey)}
                           className={`settings-sidebar-link inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-[var(--radius-sm)] px-3 py-2 text-left text-sm font-semibold no-underline transition-colors hover:no-underline lg:min-h-10 lg:px-2 ${
                             active
                               ? "bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] text-[color:var(--ink)]"
@@ -546,8 +548,8 @@ export function Settings() {
                                 : "text-[color:var(--ink-soft)] opacity-60"
                             }
                           />
-                          <span className="lg:hidden">{item.mobileLabel}</span>
-                          <span className="hidden lg:inline">{item.label}</span>
+                          <span className="lg:hidden">{t(item.mobileLabelKey)}</span>
+                          <span className="hidden lg:inline">{t(item.labelKey)}</span>
                         </button>
                       );
                     })}
@@ -562,8 +564,8 @@ export function Settings() {
               id="account"
               visible={effectiveActiveView === "account"}
               icon={<UserRound size={18} />}
-              title="Account & Preferences"
-              description="Profile details and interface preferences."
+              title={t("settings.account_preferences")}
+              description={t("settings.account_description")}
             >
               <div className="flex flex-col gap-5">
                 <SettingsBlock>
@@ -573,46 +575,54 @@ export function Settings() {
                         <UserRound size={17} />
                       </span>
                       <div className="min-w-0">
-                        <h3 className="text-sm font-bold text-[color:var(--ink)]">Account</h3>
+                        <h3 className="text-sm font-bold text-[color:var(--ink)]">
+                          {t("settings.account")}
+                        </h3>
                         <p className="text-sm text-[color:var(--ink-soft)]">
-                          Public profile details used across skills, plugins, and publisher pages.
+                          {t("settings.account_profile_description")}
                         </p>
                       </div>
                     </div>
-                    <Avatar className="hidden h-14 w-14 rounded-full sm:flex" title="github avatar">
+                    <Avatar
+                      className="hidden h-14 w-14 rounded-full sm:flex"
+                      title={t("settings.github_avatar")}
+                    >
                       {accountAvatar ? (
-                        <AvatarImage src={accountAvatar} alt="GitHub avatar" />
+                        <AvatarImage src={accountAvatar} alt={t("settings.github_avatar")} />
                       ) : null}
                       <AvatarFallback>{accountInitial}</AvatarFallback>
                     </Avatar>
                   </div>
 
                   <form className="flex min-w-0 flex-col gap-4" onSubmit={onSave}>
-                    <Field label="Display name" htmlFor="settings-display-name">
+                    <Field
+                      label={t("settings.display_name")}
+                      htmlFor="settings-display-name"
+                    >
                       <Input
                         id="settings-display-name"
                         value={displayName}
                         onChange={(event) => setDisplayName(event.target.value)}
                       />
                     </Field>
-                    <Field label="Bio" htmlFor="settings-bio">
+                    <Field label={t("settings.bio")} htmlFor="settings-bio">
                       <Textarea
                         id="settings-bio"
                         rows={5}
                         value={bio}
                         onChange={(event) => setBio(event.target.value)}
-                        placeholder="Tell people what you're building."
+                        placeholder={t("settings.bio_placeholder")}
                       />
                     </Field>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
                       {hasProfileChanges ? (
                         <span className="text-sm font-semibold text-red-700 dark:text-red-300">
-                          You have unsaved changes.
+                          {t("settings.unsaved_changes")}
                         </span>
                       ) : null}
                       <Button variant="primary" type="submit">
                         <Save size={16} />
-                        Save profile
+                        {t("settings.save_profile")}
                       </Button>
                     </div>
                   </form>
@@ -625,9 +635,11 @@ export function Settings() {
                         <Palette size={17} />
                       </span>
                       <div className="min-w-0">
-                        <h3 className="text-sm font-bold text-[color:var(--ink)]">Appearance</h3>
+                        <h3 className="text-sm font-bold text-[color:var(--ink)]">
+                          {t("settings.appearance")}
+                        </h3>
                         <p className="text-sm text-[color:var(--ink-soft)]">
-                          Select your preferred theme.
+                          {t("settings.appearance_description")}
                         </p>
                       </div>
                     </div>
@@ -639,32 +651,32 @@ export function Settings() {
                         if (!value) return;
                         setThemeMode(value as "system" | "light" | "dark");
                       }}
-                      aria-label="Theme mode"
+                      aria-label={t("settings.theme_mode")}
                       className="!h-auto w-full justify-start gap-2 !border-0 !bg-transparent !p-0 sm:w-auto lg:justify-end"
                     >
                       <ToggleGroupItem
                         value="system"
-                        aria-label="System theme"
+                        aria-label={t("settings.theme_system")}
                         className={themeToggleItemClass}
                       >
                         <Monitor size={18} />
-                        System
+                        {t("settings.theme_system")}
                       </ToggleGroupItem>
                       <ToggleGroupItem
                         value="light"
-                        aria-label="Light theme"
+                        aria-label={t("settings.theme_light")}
                         className={themeToggleItemClass}
                       >
                         <Sun size={18} />
-                        Light
+                        {t("settings.theme_light")}
                       </ToggleGroupItem>
                       <ToggleGroupItem
                         value="dark"
-                        aria-label="Dark theme"
+                        aria-label={t("settings.theme_dark")}
                         className={themeToggleItemClass}
                       >
                         <Moon size={18} />
-                        Dark
+                        {t("settings.theme_dark")}
                       </ToggleGroupItem>
                     </ToggleGroup>
                   </div>
@@ -676,8 +688,8 @@ export function Settings() {
               id="organizations"
               visible={effectiveActiveView === "organizations"}
               icon={<Building2 size={18} />}
-              title="Organizations"
-              description="Publisher profiles and access."
+              title={t("settings.organizations")}
+              description={t("settings.organizations_description")}
             >
               <div className="flex flex-col gap-5">
                 {orgs.length > 0 ? (
@@ -689,7 +701,7 @@ export function Settings() {
                       >
                         <SelectTrigger
                           id="settings-manage-org"
-                          aria-label="Manage organization"
+                          aria-label={t("settings.manage_org")}
                           className="h-12 sm:min-w-[280px]"
                         >
                           {selectedOrg ? (
@@ -701,11 +713,11 @@ export function Settings() {
                                 className="h-6 w-6"
                               />
                               <span className="truncate">
-                                @{selectedOrg.publisher.handle} · {selectedOrg.role}
+                                @{selectedOrg.publisher.handle} · {t(`settings.role.${selectedOrg.role}`)}
                               </span>
                             </span>
                           ) : (
-                            <SelectValue placeholder="Select an org" />
+                            <SelectValue placeholder={t("settings.select_org")} />
                           )}
                         </SelectTrigger>
                         <SelectContent>
@@ -719,7 +731,7 @@ export function Settings() {
                                   className="h-6 w-6"
                                 />
                                 <span className="truncate">
-                                  @{entry.publisher.handle} · {entry.role}
+                                  @{entry.publisher.handle} · {t(`settings.role.${entry.role}`)}
                                 </span>
                               </span>
                             </SelectItem>
@@ -736,18 +748,18 @@ export function Settings() {
                         <DialogTrigger asChild>
                           <Button variant="outline" type="button" className="h-12 sm:w-auto">
                             <Plus size={16} />
-                            Add new org
+                            {t("settings.add_new_org")}
                           </Button>
                         </DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
-                            <DialogTitle>Create organization</DialogTitle>
+                            <DialogTitle>{t("settings.create_org")}</DialogTitle>
                             <DialogDescription>
-                              Create a publisher profile for a team or project.
+                              {t("settings.create_org_description")}
                             </DialogDescription>
                           </DialogHeader>
                           <div className="grid gap-4">
-                            <Field label="Handle" htmlFor="settings-org-handle">
+                            <Field label={t("settings.handle")} htmlFor="settings-org-handle">
                               <Input
                                 id="settings-org-handle"
                                 value={orgHandle}
@@ -758,7 +770,10 @@ export function Settings() {
                                 placeholder="openclaw"
                               />
                             </Field>
-                            <Field label="Display name" htmlFor="settings-org-display-name">
+                            <Field
+                              label={t("settings.display_name")}
+                              htmlFor="settings-org-display-name"
+                            >
                               <Input
                                 id="settings-org-display-name"
                                 value={orgDisplayName}
@@ -780,7 +795,7 @@ export function Settings() {
                           ) : null}
                           <DialogFooter>
                             <Button variant="ghost" onClick={() => setCreateOrgDialogOpen(false)}>
-                              Cancel
+                              {t("common.cancel")}
                             </Button>
                             <Button
                               variant="primary"
@@ -789,7 +804,9 @@ export function Settings() {
                               onClick={() => void onCreateOrg()}
                             >
                               <Building2 size={16} />
-                              {isCreatingOrg ? "Creating..." : "Create org"}
+                              {isCreatingOrg
+                                ? t("settings.creating_org")
+                                : t("settings.create_org")}
                             </Button>
                           </DialogFooter>
                         </DialogContent>
@@ -819,7 +836,7 @@ export function Settings() {
 
                             <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2">
                               <Field
-                                label="Display name"
+                                label={t("settings.display_name")}
                                 htmlFor="settings-selected-org-display-name"
                               >
                                 <Input
@@ -833,7 +850,10 @@ export function Settings() {
                               </Field>
                               <div className="flex min-w-0 items-center gap-2">
                                 <div className="min-w-0 flex-1">
-                                  <Field label="Avatar URL" htmlFor="settings-selected-org-image">
+                                  <Field
+                                    label={t("settings.avatar_url")}
+                                    htmlFor="settings-selected-org-image"
+                                  >
                                     <Input
                                       id="settings-selected-org-image"
                                       value={selectedOrgImage}
@@ -847,7 +867,7 @@ export function Settings() {
                                     type="button"
                                     variant="ghost"
                                     size="icon-sm"
-                                    aria-label="Clear avatar URL"
+                                    aria-label={t("settings.clear_avatar_url")}
                                     className="mt-6 shrink-0"
                                     onClick={() => setSelectedOrgImage("")}
                                   >
@@ -856,25 +876,25 @@ export function Settings() {
                                 ) : null}
                               </div>
                               <div className="lg:col-span-2">
-                                <Field label="Bio" htmlFor="settings-selected-org-bio">
+                                <Field label={t("settings.bio")} htmlFor="settings-selected-org-bio">
                                   <Textarea
                                     id="settings-selected-org-bio"
                                     rows={4}
                                     value={selectedOrgBio}
                                     onChange={(event) => setSelectedOrgBio(event.target.value)}
-                                    placeholder="Tell people what this organization publishes."
+                                    placeholder={t("settings.org_bio_placeholder")}
                                   />
                                 </Field>
                               </div>
                               <div className="flex flex-col gap-3 lg:col-span-2 lg:flex-row lg:items-center lg:justify-end">
                                 {hasOrgProfileChanges ? (
                                   <span className="text-sm font-semibold text-red-700 dark:text-red-300">
-                                    You have unsaved changes.
+                                    {t("settings.unsaved_changes")}
                                   </span>
                                 ) : null}
                                 <Button type="button" onClick={() => void onSaveOrgProfile()}>
                                   <Save size={16} />
-                                  Save changes
+                                  {t("settings.save_changes")}
                                 </Button>
                               </div>
                             </div>
@@ -890,7 +910,7 @@ export function Settings() {
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
                                   <h3 className="text-sm font-bold text-[color:var(--ink)]">
-                                    Members
+                                    {t("settings.members")}
                                   </h3>
                                   <span className="inline-flex h-5 items-center rounded-full border border-[color:var(--line)] bg-[color:var(--surface-muted)] px-2 text-[11px] font-semibold text-[color:var(--ink-soft)]">
                                     {(orgMembers?.members ?? []).length}
@@ -908,18 +928,23 @@ export function Settings() {
                                   className="h-10 w-auto shrink-0 px-3 text-sm sm:h-11 sm:px-4"
                                 >
                                   <Users size={16} />
-                                  Add member
+                                  {t("settings.add_member")}
                                 </Button>
                               </DialogTrigger>
                               <DialogContent>
                                 <DialogHeader>
-                                  <DialogTitle>Add member</DialogTitle>
+                                  <DialogTitle>{t("settings.add_member")}</DialogTitle>
                                   <DialogDescription>
-                                    Give a user access to @{selectedOrg.publisher.handle}.
+                                    {t("settings.add_member_description", {
+                                      handle: selectedOrg.publisher.handle,
+                                    })}
                                   </DialogDescription>
                                 </DialogHeader>
                                 <div className="grid gap-4">
-                                  <Field label="User handle" htmlFor="settings-add-member">
+                                  <Field
+                                    label={t("settings.user_handle")}
+                                    htmlFor="settings-add-member"
+                                  >
                                     <Input
                                       id="settings-add-member"
                                       value={memberHandle}
@@ -927,7 +952,7 @@ export function Settings() {
                                       placeholder="@username"
                                     />
                                   </Field>
-                                  <Field label="Role" htmlFor="settings-member-role">
+                                  <Field label={t("settings.role")} htmlFor="settings-member-role">
                                     <Select
                                       value={memberRole}
                                       onValueChange={(value) =>
@@ -938,9 +963,15 @@ export function Settings() {
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="publisher">Publisher</SelectItem>
-                                        <SelectItem value="admin">Admin</SelectItem>
-                                        <SelectItem value="owner">Owner</SelectItem>
+                                        <SelectItem value="publisher">
+                                          {t("settings.role.publisher")}
+                                        </SelectItem>
+                                        <SelectItem value="admin">
+                                          {t("settings.role.admin")}
+                                        </SelectItem>
+                                        <SelectItem value="owner">
+                                          {t("settings.role.owner")}
+                                        </SelectItem>
                                       </SelectContent>
                                     </Select>
                                   </Field>
@@ -950,7 +981,7 @@ export function Settings() {
                                     variant="ghost"
                                     onClick={() => setAddMemberDialogOpen(false)}
                                   >
-                                    Cancel
+                                    {t("common.cancel")}
                                   </Button>
                                   <Button
                                     type="button"
@@ -967,7 +998,7 @@ export function Settings() {
                                     }
                                   >
                                     <Users size={16} />
-                                    Add member
+                                    {t("settings.add_member")}
                                   </Button>
                                 </DialogFooter>
                               </DialogContent>
@@ -988,7 +1019,9 @@ export function Settings() {
                                           <AvatarImage
                                             src={entry.user.image}
                                             alt={
-                                              entry.user.displayName ?? entry.user.handle ?? "User"
+                                              entry.user.displayName ??
+                                              entry.user.handle ??
+                                              t("settings.user_fallback")
                                             }
                                           />
                                         ) : null}
@@ -1006,7 +1039,7 @@ export function Settings() {
                                               entry.user._id}
                                           </span>
                                           <Badge className="shrink-0 self-center px-2.5 py-0.5 text-fs-xs">
-                                            {entry.role}
+                                            {t(`settings.role.${entry.role}`)}
                                           </Badge>
                                         </div>
                                         <div className="truncate text-xs text-[color:var(--ink-soft)]">
@@ -1027,7 +1060,7 @@ export function Settings() {
                                             })
                                           }
                                         >
-                                          Remove
+                                          {t("settings.remove_member")}
                                         </Button>
                                       ) : null}
                                     </div>
@@ -1047,11 +1080,10 @@ export function Settings() {
                                 </span>
                                 <div className="min-w-0">
                                   <h3 className="text-sm font-bold text-red-700 dark:text-red-300">
-                                    Delete organization
+                                    {t("settings.delete_org")}
                                   </h3>
                                   <p className="text-sm text-[color:var(--ink-soft)]">
-                                    Permanently remove this org and its published skills and
-                                    plugins.
+                                    {t("settings.delete_org_description")}
                                   </p>
                                 </div>
                               </div>
@@ -1062,33 +1094,34 @@ export function Settings() {
                                 <DialogTrigger asChild>
                                   <Button variant="destructive" type="button" className="sm:w-auto">
                                     <Trash2 size={16} />
-                                    Delete organization
+                                    {t("settings.delete_org")}
                                   </Button>
                                 </DialogTrigger>
                                 <DialogContent>
                                   <DialogHeader>
-                                    <DialogTitle>Delete organization</DialogTitle>
+                                    <DialogTitle>{t("settings.delete_org")}</DialogTitle>
                                     <DialogDescription>
-                                      Permanently delete @{selectedOrg.publisher.handle} and its
-                                      published resources. This action cannot be undone.
+                                      {t("settings.delete_org_confirm", {
+                                        handle: selectedOrg.publisher.handle,
+                                      })}
                                     </DialogDescription>
                                   </DialogHeader>
                                   <DeletionResourceSummary
                                     publishers={[selectedOrg]}
-                                    emptyLabel="This organization has no published skills or plugins."
+                                    emptyLabel={t("settings.org_no_resources")}
                                   />
                                   <DialogFooter>
                                     <Button
                                       variant="ghost"
                                       onClick={() => setDeleteOrgDialogOpen(false)}
                                     >
-                                      Cancel
+                                      {t("common.cancel")}
                                     </Button>
                                     <Button
                                       variant="destructive"
                                       onClick={() => void onDeleteOrg()}
                                     >
-                                      Permanently delete organization
+                                      {t("settings.delete_org_permanently")}
                                     </Button>
                                   </DialogFooter>
                                 </DialogContent>
@@ -1099,8 +1132,7 @@ export function Settings() {
                       </>
                     ) : selectedOrg ? (
                       <div className="rounded-[var(--radius-sm)] border border-[color:var(--line)] bg-[color:var(--surface-muted)]/30 p-4 text-sm text-[color:var(--ink-soft)]">
-                        You can publish under this org. Owners and admins manage profile and
-                        members.
+                        {t("settings.publisher_only_notice")}
                       </div>
                     ) : null}
                   </>
@@ -1115,10 +1147,10 @@ export function Settings() {
                         </span>
                         <div className="min-w-0">
                           <h3 className="text-sm font-bold text-[color:var(--ink)]">
-                            Create organization
+                            {t("settings.create_org")}
                           </h3>
                           <p className="text-sm text-[color:var(--ink-soft)]">
-                            Add a publisher profile for a team or project.
+                            {t("settings.create_org_description")}
                           </p>
                         </div>
                       </div>
@@ -1132,18 +1164,21 @@ export function Settings() {
                         <DialogTrigger asChild>
                           <Button variant="primary" type="button" className="lg:w-auto">
                             <Building2 size={16} />
-                            Create org
+                            {t("settings.create_org")}
                           </Button>
                         </DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
-                            <DialogTitle>Create organization</DialogTitle>
+                            <DialogTitle>{t("settings.create_org")}</DialogTitle>
                             <DialogDescription>
-                              Create a publisher profile for a team or project.
+                              {t("settings.create_org_description")}
                             </DialogDescription>
                           </DialogHeader>
                           <div className="grid gap-4">
-                            <Field label="Handle" htmlFor="settings-org-handle-empty">
+                            <Field
+                              label={t("settings.handle")}
+                              htmlFor="settings-org-handle-empty"
+                            >
                               <Input
                                 id="settings-org-handle-empty"
                                 value={orgHandle}
@@ -1154,7 +1189,10 @@ export function Settings() {
                                 placeholder="openclaw"
                               />
                             </Field>
-                            <Field label="Display name" htmlFor="settings-org-display-name-empty">
+                            <Field
+                              label={t("settings.display_name")}
+                              htmlFor="settings-org-display-name-empty"
+                            >
                               <Input
                                 id="settings-org-display-name-empty"
                                 value={orgDisplayName}
@@ -1176,7 +1214,7 @@ export function Settings() {
                           ) : null}
                           <DialogFooter>
                             <Button variant="ghost" onClick={() => setCreateOrgDialogOpen(false)}>
-                              Cancel
+                              {t("common.cancel")}
                             </Button>
                             <Button
                               variant="primary"
@@ -1185,7 +1223,9 @@ export function Settings() {
                               onClick={() => void onCreateOrg()}
                             >
                               <Building2 size={16} />
-                              {isCreatingOrg ? "Creating..." : "Create org"}
+                              {isCreatingOrg
+                                ? t("settings.creating_org")
+                                : t("settings.create_org")}
                             </Button>
                           </DialogFooter>
                         </DialogContent>
@@ -1200,8 +1240,8 @@ export function Settings() {
               id="githubSources"
               visible={effectiveActiveView === "githubSources"}
               icon={<GitBranch size={18} />}
-              title="GitHub Skill Sync"
-              description="Public source-backed skill repos."
+              title={t("settings.github_sources")}
+              description={t("settings.github_sources_description")}
             >
               <div className="flex flex-col gap-5">
                 <SettingsBlock>
@@ -1212,11 +1252,10 @@ export function Settings() {
                       </span>
                       <div className="min-w-0">
                         <h3 className="text-sm font-bold text-[color:var(--ink)]">
-                          Sync GitHub skills repo
+                          {t("settings.github_sync_title")}
                         </h3>
                         <p className="text-sm text-[color:var(--ink-soft)]">
-                          Add a public repo URL. AI直聘 syncs metadata and scan results every 15
-                          minutes. Users install your skills directly from your GitHub repo.
+                          {t("settings.github_sync_description")}
                         </p>
                       </div>
                     </div>
@@ -1233,7 +1272,7 @@ export function Settings() {
                       />
                     ) : (
                       <p className="rounded-[var(--radius-sm)] border border-[color:var(--line)] bg-[color:var(--surface-muted)]/25 p-3 text-sm text-[color:var(--ink-soft)]">
-                        You need an official publisher profile before adding GitHub skill sync.
+                        {t("settings.github_official_required")}
                       </p>
                     )}
                   </div>
@@ -1259,8 +1298,8 @@ export function Settings() {
               id="tokens"
               visible={effectiveActiveView === "tokens"}
               icon={<KeyRound size={18} />}
-              title="API tokens"
-              description="CLI access. New tokens are shown once."
+              title={t("settings.tokens")}
+              description={t("settings.tokens_description")}
             >
               <div className="flex flex-col gap-5">
                 <SettingsBlock>
@@ -1270,20 +1309,22 @@ export function Settings() {
                         <KeyRound size={17} />
                       </span>
                       <div>
-                        <h3 className="text-sm font-bold text-[color:var(--ink)]">New token</h3>
+                        <h3 className="text-sm font-bold text-[color:var(--ink)]">
+                          {t("settings.new_token")}
+                        </h3>
                         <p className="text-sm text-[color:var(--ink-soft)]">
-                          For AI直聘 CLI authentication.
+                          {t("settings.new_token_description")}
                         </p>
                       </div>
                     </div>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                       <div className="min-w-0 flex-1">
-                        <Field label="Label" htmlFor="settings-token-label">
+                        <Field label={t("settings.token_label")} htmlFor="settings-token-label">
                           <Input
                             id="settings-token-label"
                             value={tokenLabel}
                             onChange={(event) => setTokenLabel(event.target.value)}
-                            placeholder="Name your token"
+                            placeholder={t("settings.token_placeholder")}
                           />
                         </Field>
                       </div>
@@ -1294,7 +1335,7 @@ export function Settings() {
                         className="shrink-0"
                       >
                         <KeyRound size={16} />
-                        Create token
+                        {t("settings.create_token")}
                       </Button>
                     </div>
                   </div>
@@ -1304,7 +1345,7 @@ export function Settings() {
                   <div className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-amber-300/30 bg-amber-500/[0.06] p-4 dark:border-amber-500/25 dark:bg-amber-500/[0.08]">
                     <div className="flex items-center gap-2 text-sm font-semibold text-amber-800 dark:text-amber-300">
                       <ShieldAlert size={16} />
-                      Copy this token now — it will not be shown again.
+                      {t("settings.token_copy_warning")}
                     </div>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <code className="min-w-0 flex-1 break-all rounded-[var(--radius-sm)] bg-[color:var(--surface)] px-3 py-2 text-sm font-mono text-[color:var(--ink)]">
@@ -1319,18 +1360,18 @@ export function Settings() {
                           void copyText(newToken)
                             .then((didCopy) => {
                               if (didCopy) {
-                                toast.success("Token copied");
+                                toast.success(t("settings.token_copied"));
                               } else {
-                                toast.error("Failed to copy token");
+                                toast.error(t("settings.token_copy_error"));
                               }
                             })
                             .catch(() => {
-                              toast.error("Failed to copy token");
+                              toast.error(t("settings.token_copy_error"));
                             });
                         }}
                       >
                         <Copy size={15} />
-                        Copy token
+                        {t("settings.copy_token")}
                       </Button>
                     </div>
                   </div>
@@ -1340,21 +1381,21 @@ export function Settings() {
                   <>
                     {activeTokens.length ? (
                       <TokenList
-                        title="Active tokens"
+                        title={t("settings.active_tokens")}
                         tokens={activeTokens}
                         onRevoke={(tokenId) => setRevokeTokenId(tokenId)}
                       />
                     ) : null}
 
                     {revokedTokens.length ? (
-                      <TokenList title="Revoked tokens" tokens={revokedTokens} />
+                      <TokenList title={t("settings.revoked_tokens")} tokens={revokedTokens} />
                     ) : null}
                   </>
                 ) : (
                   <EmptyState
                     icon={KeyRound}
-                    title="No API tokens"
-                    description="Create a token to authenticate CLI requests."
+                    title={t("settings.no_tokens")}
+                    description={t("settings.no_tokens_description")}
                   />
                 )}
                 <Dialog
@@ -1365,10 +1406,9 @@ export function Settings() {
                 >
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Revoke token</DialogTitle>
+                      <DialogTitle>{t("settings.revoke_token")}</DialogTitle>
                       <DialogDescription>
-                        Revoke this token permanently? Any CLI or automation using it will stop
-                        working.
+                        {t("settings.revoke_token_description")}
                       </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
@@ -1386,7 +1426,7 @@ export function Settings() {
                         }}
                       >
                         <Trash2 size={16} />
-                        Revoke token
+                        {t("settings.revoke_token")}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -1398,8 +1438,8 @@ export function Settings() {
               id="danger"
               visible={effectiveActiveView === "danger"}
               icon={<ShieldAlert size={18} />}
-              title="Account deletion"
-              description="Delete your account permanently and hide personal published resources."
+              title={t("settings.danger")}
+              description={t("settings.delete_account_description")}
               tone="danger"
               hideHeader
             >
@@ -1412,7 +1452,7 @@ export function Settings() {
                       </span>
                       <div className="min-w-0">
                         <h3 className="text-sm font-bold text-[color:var(--ink)]">
-                          Account deletion
+                          {t("settings.danger")}
                         </h3>
                       </div>
                     </div>
@@ -1420,27 +1460,26 @@ export function Settings() {
                       <DialogTrigger asChild>
                         <Button variant="destructive" type="button" className="sm:w-auto">
                           <Trash2 size={16} />
-                          Delete account
+                          {t("settings.delete_account")}
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Delete account</DialogTitle>
                           <DialogDescription>
-                            This permanently deletes your account and eligible owned resources. This
-                            action cannot be undone.
+                            {t("settings.delete_account_confirm")}
                           </DialogDescription>
                         </DialogHeader>
                         <DeletionResourceSummary
                           publishers={deletionPublishers}
-                          emptyLabel="No published skills or plugins are attached to your account."
+                          emptyLabel={t("settings.account_no_resources")}
                         />
                         <DialogFooter>
                           <Button variant="ghost" onClick={() => setDeleteDialogOpen(false)}>
                             Cancel
                           </Button>
                           <Button variant="destructive" onClick={() => void onDelete()}>
-                            Permanently delete account
+                            {t("settings.delete_account_permanently")}
                           </Button>
                         </DialogFooter>
                       </DialogContent>
@@ -1454,11 +1493,10 @@ export function Settings() {
                     />
                     <div className="flex flex-col gap-1">
                       <p className="text-sm font-semibold text-red-700 dark:text-red-300">
-                        This will permanently delete your account
+                        {t("settings.delete_account_warning")}
                       </p>
                       <p className="text-sm text-[color:var(--ink-soft)]">
-                        Your profile, API tokens, personal publisher resources, and sole-owner org
-                        resources will be permanently removed.
+                        {t("settings.delete_account_warning_detail")}
                       </p>
                     </div>
                   </div>
@@ -1504,6 +1542,7 @@ function DeletionResourceSummary({
   publishers: PublisherMembership[];
   emptyLabel: string;
 }) {
+  const { t } = useLocale();
   const totals = publishers.reduce(
     (acc, entry) => {
       acc.skills += entry.publisher.stats?.skills ?? 0;
@@ -1521,16 +1560,17 @@ function DeletionResourceSummary({
   const totalResources = totals.skills + totals.plugins;
   const summary =
     totalResources > 0
-      ? `${totals.skills} skill${totals.skills === 1 ? "" : "s"} and ${totals.plugins} plugin${
-          totals.plugins === 1 ? "" : "s"
-        } will be permanently deleted.`
+      ? t("settings.resources_summary", {
+          skills: totals.skills,
+          plugins: totals.plugins,
+        })
       : emptyLabel;
 
   return (
     <div className="overflow-hidden rounded-[var(--radius-sm)] border border-red-300/40 bg-red-500/5 text-sm dark:border-red-500/30">
       <div className="border-b border-red-300/30 px-3 py-2 dark:border-red-500/25">
         <p className="font-semibold text-red-700 dark:text-red-300">
-          Resources permanently deleted
+          {t("settings.resources_deleted")}
         </p>
         <p className="mt-1 text-[color:var(--ink-soft)]">{summary}</p>
       </div>
@@ -1556,7 +1596,7 @@ function DeletionResourceSummary({
                       size="sm"
                       className="w-fit shrink-0 capitalize"
                     >
-                      {resource.kind}
+                      {t(`settings.resource_${resource.kind}`)}
                     </Badge>
                   </div>
                   <p className="mt-1 truncate text-xs text-[color:var(--ink-soft)]">
@@ -1708,11 +1748,12 @@ function GitHubSourceList({
   deletingSourceId: Id<"githubSkillSources"> | null;
   onDeleteSource: (source: GitHubSkillSource) => void;
 }) {
+  const { t } = useLocale();
   return (
     <section className="flex min-w-0 flex-col gap-3" aria-labelledby="github-synced-repos-title">
       <div className="flex items-center gap-2">
         <h3 id="github-synced-repos-title" className="text-sm font-bold text-[color:var(--ink)]">
-          Synced repositories
+          {t("settings.synced_repositories")}
         </h3>
         <span className="inline-flex h-5 items-center rounded-full border border-[color:var(--line)] bg-[color:var(--surface-muted)] px-2 text-[11px] font-semibold text-[color:var(--ink-soft)]">
           {sources?.length ?? 0}
@@ -1720,7 +1761,9 @@ function GitHubSourceList({
       </div>
 
       {sources === undefined ? (
-        <p className="text-sm text-[color:var(--ink-soft)]">Loading sources...</p>
+        <p className="text-sm text-[color:var(--ink-soft)]">
+          {t("settings.loading_sources")}
+        </p>
       ) : sources.length ? (
         <div className="flex flex-col gap-3">
           {sources.map((source) => (
@@ -1759,7 +1802,7 @@ function GitHubSourceList({
                 <div className="rounded-[var(--radius-sm)] border border-[color:var(--line)]">
                   <div className="flex items-center gap-2 border-b border-[color:var(--line)] px-3 py-2">
                     <span className="text-xs font-semibold uppercase tracking-[0.08em] text-[color:var(--ink-soft)]">
-                      Synced skills
+                      {t("settings.synced_skills")}
                     </span>
                     <span className="inline-flex h-5 items-center rounded-full border border-[color:var(--line)] bg-[color:var(--surface-muted)] px-2 text-[11px] font-semibold text-[color:var(--ink-soft)]">
                       {source.skills.length}
@@ -1796,7 +1839,7 @@ function GitHubSourceList({
                     </div>
                   ) : (
                     <p className="px-3 py-3 text-sm text-[color:var(--ink-soft)]">
-                      No published skills are currently synced from this repo.
+                      {t("settings.no_synced_skills")}
                     </p>
                   )}
                 </div>
@@ -1804,11 +1847,10 @@ function GitHubSourceList({
                 <div className="-mx-4 -mb-4 flex flex-col gap-3 border-t border-[color:var(--line)] px-4 py-4 sm:-mx-5 sm:-mb-5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                   <div className="min-w-0">
                     <h5 className="text-sm font-bold text-[color:var(--ink)]">
-                      Delete synced repo &amp; skills
+                      {t("settings.delete_synced_repo")}
                     </h5>
                     <p className="mt-1 text-sm leading-6 text-[color:var(--ink-soft)]">
-                      This will delete the sync job for this repo and all published skills
-                      associated to the repo. This action cannot be undone.
+                      {t("settings.delete_synced_repo_description")}
                     </p>
                   </div>
                   <Button
@@ -1818,7 +1860,7 @@ function GitHubSourceList({
                     className="shrink-0 border-red-500/45 text-red-700 hover:not-disabled:border-red-500 hover:not-disabled:bg-red-500/10 dark:border-red-500/35 dark:text-red-300"
                     onClick={() => onDeleteSource(source)}
                   >
-                    Delete
+                    {t("common.delete")}
                   </Button>
                 </div>
               </div>
@@ -1828,8 +1870,8 @@ function GitHubSourceList({
       ) : (
         <EmptyState
           icon={GitBranch}
-          title="No synced repositories"
-          description="Add a repo above to start syncing GitHub-backed skills."
+          title={t("settings.no_synced_repositories")}
+          description={t("settings.no_synced_repositories_description")}
         />
       )}
     </section>
@@ -1847,22 +1889,24 @@ function GitHubSourceDeleteDialog({
   onOpenChange: (open: boolean) => void;
   onConfirm: (source: GitHubSkillSource) => void;
 }) {
+  const { t } = useLocale();
   const isDeleting = Boolean(source && deletingSourceId === source._id);
 
   return (
     <Dialog open={Boolean(source)} onOpenChange={onOpenChange}>
       <DialogContent className="flex w-[min(100%,640px)] flex-col gap-4">
         <DialogHeader>
-          <DialogTitle>Delete {source?.repo ?? "synced repo"}</DialogTitle>
-          <DialogDescription>
-            This will delete the sync job and all published skills associated with this repo. This
-            action cannot be undone.
-          </DialogDescription>
+          <DialogTitle>
+            {t("settings.delete_repo_title", {
+              repo: source?.repo ?? t("settings.synced_repositories"),
+            })}
+          </DialogTitle>
+          <DialogDescription>{t("settings.delete_synced_repo_description")}</DialogDescription>
         </DialogHeader>
 
         <div className="rounded-[var(--radius-sm)] border border-[color:var(--line)]">
           <div className="border-b border-[color:var(--line)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[color:var(--ink-soft)]">
-            Skills to delete
+            {t("settings.skills_to_delete")}
           </div>
           {source?.skills.length ? (
             <div className="max-h-72 divide-y divide-[color:var(--line)] overflow-auto">
@@ -1913,6 +1957,7 @@ function GitHubSourceDeleteDialog({
 }
 
 function GitHubSourceHealth({ source }: { source: GitHubSkillSource }) {
+  const { t, locale } = useLocale();
   const needsAttention =
     source.lastSyncStatus === "failed" ||
     source.displayManifestStatus === "failed" ||
@@ -1920,9 +1965,9 @@ function GitHubSourceHealth({ source }: { source: GitHubSkillSource }) {
   const latestError =
     source.lastSyncError ??
     (source.displayManifestStatus === "invalid"
-      ? "skills.sh.json could not be parsed"
+      ? t("settings.invalid_manifest")
       : source.displayManifestStatus === "failed"
-        ? "GitHub sync failed"
+        ? t("settings.github_sync_failed")
         : null);
   const lastSuccessfulSync =
     source.displayManifestFetchedAt ?? (source.lastSyncStatus === "ok" ? source.updatedAt : null);
@@ -1930,16 +1975,16 @@ function GitHubSourceHealth({ source }: { source: GitHubSkillSource }) {
   return (
     <div className="rounded-[var(--radius-sm)] border border-[color:var(--line)]">
       <div className="border-b border-[color:var(--line)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[color:var(--ink-soft)]">
-        Overview
+        {t("settings.overview")}
       </div>
       <div className="divide-y divide-[color:var(--line)]">
-        <GitHubSourceOverviewRow label="Status">
+        <GitHubSourceOverviewRow label={t("settings.status")}>
           <GitHubSourceStatusPill needsAttention={needsAttention} />
         </GitHubSourceOverviewRow>
-        <GitHubSourceOverviewRow label="Last synced">
-          {lastSuccessfulSync ? timeAgo(lastSuccessfulSync) : "Never"}
+        <GitHubSourceOverviewRow label={t("settings.last_synced")}>
+          {lastSuccessfulSync ? formatSettingsTimeAgo(lastSuccessfulSync, locale) : t("settings.never")}
         </GitHubSourceOverviewRow>
-        <GitHubSourceOverviewRow label="Current commit">
+        <GitHubSourceOverviewRow label={t("settings.current_commit")}>
           {source.displayManifestCommit ? (
             <a
               href={`https://github.com/${source.repo}/commit/${source.displayManifestCommit}`}
@@ -1950,13 +1995,13 @@ function GitHubSourceHealth({ source }: { source: GitHubSkillSource }) {
               {shortCommit(source.displayManifestCommit)}
             </a>
           ) : (
-            "None"
+            t("settings.none")
           )}
         </GitHubSourceOverviewRow>
       </div>
       {needsAttention && latestError ? (
         <p className="border-t border-[color:var(--line)] px-3 py-2 text-sm text-red-700 dark:text-red-300">
-          <span className="font-semibold">Latest error:</span> {latestError}
+          <span className="font-semibold">{t("settings.latest_error")}</span> {latestError}
         </p>
       ) : null}
     </div>
@@ -1964,6 +2009,7 @@ function GitHubSourceHealth({ source }: { source: GitHubSkillSource }) {
 }
 
 function GitHubSourceSyncIssues({ source }: { source: GitHubSkillSource }) {
+  const { t } = useLocale();
   const issues = getGitHubSourceSyncIssues(source);
   if (issues.length === 0) return null;
 
@@ -1971,7 +2017,7 @@ function GitHubSourceSyncIssues({ source }: { source: GitHubSkillSource }) {
     <div className="rounded-[var(--radius-sm)] border border-[color:var(--line)]">
       <div className="flex items-center gap-2 border-b border-[color:var(--line)] px-3 py-2">
         <span className="text-xs font-semibold uppercase tracking-[0.08em] text-[color:var(--ink-soft)]">
-          Sync issues
+          {t("settings.sync_issues")}
         </span>
         <span className="inline-flex h-5 items-center rounded-full border border-red-500/35 bg-red-500/10 px-2 text-[11px] font-semibold text-red-700 dark:text-red-300">
           {issues.length}
@@ -1989,7 +2035,7 @@ function GitHubSourceSyncIssues({ source }: { source: GitHubSkillSource }) {
               </div>
               <div className="truncate text-xs text-[color:var(--ink-soft)]">{skill.path}</div>
               <div className="mt-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[color:var(--ink-soft)]">
-                {formatGitHubSourceIssueKind(skill.kind)}
+                {t(`settings.${formatGitHubSourceIssueKind(skill.kind)}`)}
               </div>
             </div>
             <div className="shrink-0 text-left text-xs font-semibold text-red-700 dark:text-red-300 sm:max-w-[40%] sm:text-right">
@@ -2022,9 +2068,9 @@ function formatGitHubSourceIssueKind(
 ) {
   switch (kind) {
     case "invalid_slug":
-      return "Invalid slug";
+      return "invalid_slug";
     case "slug_conflict":
-      return "Slug conflict";
+      return "slug_conflict";
     default:
       return kind;
   }
@@ -2044,6 +2090,7 @@ function GitHubSourceOverviewRow({ label, children }: { label: string; children:
 }
 
 function GitHubSourceStatusPill({ needsAttention }: { needsAttention: boolean }) {
+  const { t } = useLocale();
   return (
     <span
       className={`inline-flex h-6 items-center rounded-full border px-2.5 text-xs font-semibold ${
@@ -2052,7 +2099,7 @@ function GitHubSourceStatusPill({ needsAttention }: { needsAttention: boolean })
           : "border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
       }`}
     >
-      {needsAttention ? "Needs attention" : "Healthy"}
+      {needsAttention ? t("settings.needs_attention") : t("settings.healthy")}
     </span>
   );
 }
@@ -2074,13 +2121,14 @@ function GitHubSourceForm({
   onConfigure: (event: FormEvent) => void;
   isSyncing: boolean;
 }) {
+  const { t } = useLocale();
   return (
     <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={onConfigure}>
       <div className="min-w-0 sm:w-64 sm:shrink-0">
-        <Field label="Publisher" htmlFor="settings-github-source-publisher">
+        <Field label={t("settings.publisher")} htmlFor="settings-github-source-publisher">
           <Select value={selectedPublisherId} onValueChange={onPublisherChange}>
             <SelectTrigger id="settings-github-source-publisher">
-              <SelectValue placeholder="Select org" />
+              <SelectValue placeholder={t("settings.select_publisher")} />
             </SelectTrigger>
             <SelectContent>
               {publisherOptions.map((entry) => (
@@ -2094,7 +2142,7 @@ function GitHubSourceForm({
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-end">
         <div className="min-w-0 flex-1">
-          <Field label="GitHub repo URL" htmlFor="settings-github-repo">
+          <Field label={t("settings.github_repo_url")} htmlFor="settings-github-repo">
             <Input
               id="settings-github-repo"
               value={githubRepo}
@@ -2105,7 +2153,7 @@ function GitHubSourceForm({
         </div>
         <Button type="submit" disabled={!githubRepo.trim() || isSyncing} className="shrink-0">
           <Plus size={16} />
-          {isSyncing ? "Adding..." : "Add repo"}
+          {isSyncing ? t("settings.adding_repo") : t("settings.add_repo")}
         </Button>
       </div>
     </form>
@@ -2140,6 +2188,7 @@ function TokenList({
   tokens: ApiToken[];
   onRevoke?: (tokenId: Id<"apiTokens">) => void;
 }) {
+  const { t, locale } = useLocale();
   const isRevokedList = tokens.every((token) => token.revokedAt);
 
   return (
@@ -2171,12 +2220,16 @@ function TokenList({
           <thead>
             <tr className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[color:var(--ink-muted)]">
               <th className="pb-3 text-left font-semibold">
-                <span className="pl-7">Name</span>
+                <span className="pl-7">{t("settings.token_name")}</span>
               </th>
-              <th className="pb-3 text-left font-semibold">Created</th>
-              <th className="pb-3 text-left font-semibold">Last used</th>
+              <th className="pb-3 text-left font-semibold">
+                {t("settings.token_created_label")}
+              </th>
+              <th className="pb-3 text-left font-semibold">
+                {t("settings.token_last_used_label")}
+              </th>
               <th className="pb-3 text-right font-semibold">
-                {isRevokedList ? "Revoked" : "Action"}
+                {isRevokedList ? t("settings.token_revoked") : t("settings.token_action")}
               </th>
             </tr>
           </thead>
@@ -2205,7 +2258,7 @@ function TokenList({
                   </div>
                 </td>
                 <td className="py-4 align-middle text-xs text-[color:var(--ink-soft)]">
-                  {formatShortDate(token.createdAt)}
+                  {formatShortDate(token.createdAt, locale)}
                 </td>
                 <td className="py-4 align-middle">
                   <span
@@ -2215,13 +2268,15 @@ function TokenList({
                         : "text-xs font-semibold text-[color:var(--ink-muted)] opacity-70"
                     }
                   >
-                    {token.lastUsedAt ? formatShortDate(token.lastUsedAt) : "Never"}
+                    {token.lastUsedAt
+                      ? formatShortDate(token.lastUsedAt, locale)
+                      : t("settings.token_never_used")}
                   </span>
                 </td>
                 <td className="py-4 text-right align-middle">
                   {token.revokedAt ? (
                     <span className="text-xs text-[color:var(--ink-soft)]">
-                      {formatShortDate(token.revokedAt)}
+                      {formatShortDate(token.revokedAt, locale)}
                     </span>
                   ) : (
                     <Button
@@ -2232,7 +2287,7 @@ function TokenList({
                       className="h-8 gap-2 px-0 text-xs text-red-700 hover:bg-transparent hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                     >
                       <Trash2 size={14} />
-                      Revoke
+                      {t("settings.revoke_token")}
                     </Button>
                   )}
                 </td>
@@ -2270,7 +2325,7 @@ function TokenList({
 
             <div className="flex items-center justify-between lg:block">
               <span className="text-xs font-semibold uppercase tracking-[0.1em] text-[color:var(--ink-muted)] lg:hidden">
-                Created
+                {t("settings.token_created_label")}
               </span>
               <span className="text-xs text-[color:var(--ink-soft)]">
                 {formatShortDate(token.createdAt)}
@@ -2279,7 +2334,7 @@ function TokenList({
 
             <div className="flex items-center justify-between lg:block">
               <span className="text-xs font-semibold uppercase tracking-[0.1em] text-[color:var(--ink-muted)] lg:hidden">
-                Last used
+                {t("settings.token_last_used_label")}
               </span>
               <span
                 className={
@@ -2288,14 +2343,18 @@ function TokenList({
                     : "text-xs font-semibold text-[color:var(--ink-muted)] opacity-70"
                 }
               >
-                {token.lastUsedAt ? formatShortDate(token.lastUsedAt) : "Never"}
+                {token.lastUsedAt
+                  ? formatShortDate(token.lastUsedAt, locale)
+                  : t("settings.token_never_used")}
               </span>
             </div>
 
             <div className="flex justify-start lg:justify-end">
               {token.revokedAt ? (
                 <span className="text-xs text-[color:var(--ink-soft)]">
-                  Revoked {formatShortDate(token.revokedAt)}
+                  {t("settings.token_revoked_at", {
+                    time: formatShortDate(token.revokedAt, locale),
+                  })}
                 </span>
               ) : (
                 <Button
@@ -2363,9 +2422,30 @@ function useActiveSettingsView() {
   return { activeView, navigateToView };
 }
 
-function formatShortDate(value: number) {
+function formatSettingsTimeAgo(value: number, locale: string) {
+  const elapsedSeconds = Math.round((value - Date.now()) / 1_000);
+  const units = [
+    ["year", 31_536_000],
+    ["month", 2_592_000],
+    ["week", 604_800],
+    ["day", 86_400],
+    ["hour", 3_600],
+    ["minute", 60],
+  ] as const;
+  const [unit, seconds] = units.find(([, threshold]) => Math.abs(elapsedSeconds) >= threshold) ?? [
+    "second",
+    1,
+  ];
+
+  return new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(
+    Math.round(elapsedSeconds / seconds),
+    unit,
+  );
+}
+
+function formatShortDate(value: number, locale: string) {
   try {
-    return new Date(value).toLocaleString(undefined, {
+    return new Date(value).toLocaleString(locale, {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",

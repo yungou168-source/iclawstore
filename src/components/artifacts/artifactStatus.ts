@@ -102,7 +102,7 @@ export function skillArtifactStatus(skill: SkillArtifactStatusInput): ArtifactDi
       key: "suspicious",
       label: "Review",
       description:
-        "Visible in 龙虾市场, but users are asked to inspect this skill carefully before installing.",
+        "Visible in AI直聘, but users are asked to inspect this skill carefully before installing.",
       variant: "warning",
     };
   }
@@ -136,7 +136,7 @@ export function packageArtifactStatus(pkg: PackageArtifactStatusInput): Artifact
     return {
       label: "Review",
       description:
-        "Visible in 龙虾市场, but users are asked to inspect this plugin carefully before installing.",
+        "Visible in AI直聘, but users are asked to inspect this plugin carefully before installing.",
       variant: "warning",
     };
   }

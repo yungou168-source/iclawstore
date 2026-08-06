@@ -23,9 +23,17 @@ afterEach(async () => {
 describe('aiDirectCoreRoutes', () => {
   for (const path of [
     '/api/v1/ai-direct-hiring/session',
+    '/api/v1/ai-direct-hiring/agents',
+    '/api/v1/ai-direct-hiring/agents/agent-1/versions',
+    '/api/v1/ai-direct-hiring/catalog/agents',
+    '/api/v1/ai-direct-hiring/catalog/agents/agent-1',
+    '/api/v1/ai-direct-hiring/catalog/categories',
     '/api/v1/ai-direct-hiring/organizations',
     '/api/v1/ai-direct-hiring/companies',
+    '/api/v1/ai-direct-hiring/workforce/departments?companyId=company-1',
+    '/api/v1/ai-direct-hiring/workforce/positions/position-1/candidate-matches',
     '/api/v1/ai-direct-hiring/offers',
+    '/api/v1/ai-direct-hiring/interviews/interview-1/messages',
     '/api/v1/ai-direct-hiring/approvals',
     '/api/v1/ai-direct-hiring/jobs?organizationId=org-1',
     '/api/v1/ai-direct-hiring/worker-tokens?organizationId=org-1',

@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Button } from "../../components/ui/button";
+import { useLocale } from "../../lib/i18n/context";
 import { resolveOwnerParam, type DuplicateCandidateEntry } from "./managementShared";
 
 type DuplicateSkillId = DuplicateCandidateEntry["skill"]["_id"];
@@ -11,18 +12,20 @@ export function DuplicatesPage({
   duplicateCandidates: DuplicateCandidateEntry[] | undefined;
   onSetDuplicate: (skillId: DuplicateSkillId, canonicalSlug: string) => void;
 }) {
+  const { t } = useLocale();
   return (
     <div className="management-view">
-      <h2 className="section-title text-[1.2rem] m-0">Duplicate candidates</h2>
+      <h2 className="section-title text-[1.2rem] m-0">
+        {t("management.duplicate_candidates")}
+      </h2>
       <p className="section-subtitle m-0 mt-1">
-        Skills whose code fingerprint matches another publisher's — possible copies. Pick the
-        canonical original.
+        {t("management.duplicates.subtitle")}
       </p>
       <div className="management-list">
         {!duplicateCandidates ? (
-          <div className="management-empty">Loading duplicate candidates…</div>
+          <div className="management-empty">{t("management.duplicates.loading")}</div>
         ) : duplicateCandidates.length === 0 ? (
-          <div className="management-empty">No duplicate candidates.</div>
+          <div className="management-empty">{t("management.duplicates.empty")}</div>
         ) : (
           duplicateCandidates.map((entry) => (
             <div key={entry.skill._id} className="management-item management-dupe">
@@ -60,14 +63,16 @@ export function DuplicatesPage({
                         slug: entry.skill.slug,
                       }}
                     >
-                      View
+                      {t("management.view")}
                     </Link>
                   </Button>
                 </div>
               </div>
               <div className="management-dupe-matches">
                 <div className="management-dupe-label">
-                  {entry.matches.length === 1 ? "Possible duplicate of" : "Possible duplicates of"}
+                  {entry.matches.length === 1
+                    ? t("management.duplicates.possible_one")
+                    : t("management.duplicates.possible_many")}
                 </div>
                 {entry.matches.map((match) => (
                   <div key={match.skill._id} className="management-dupe-match">
@@ -89,14 +94,14 @@ export function DuplicatesPage({
                             slug: match.skill.slug,
                           }}
                         >
-                          View
+                          {t("management.view")}
                         </Link>
                       </Button>
                       <Button
                         type="button"
                         onClick={() => onSetDuplicate(entry.skill._id, match.skill.slug)}
                       >
-                        Mark duplicate
+                        {t("management.duplicates.mark")}
                       </Button>
                     </div>
                   </div>

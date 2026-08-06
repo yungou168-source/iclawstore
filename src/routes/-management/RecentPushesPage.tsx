@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Button } from "../../components/ui/button";
+import { useLocale } from "../../lib/i18n/context";
 import {
   formatShortTimestamp,
   resolveOwnerParam,
@@ -11,25 +12,26 @@ export function RecentPushesPage({
 }: {
   recentVersions: RecentVersionEntry[] | undefined;
 }) {
+  const { locale, t } = useLocale();
   return (
     <div className="management-view">
-      <h2 className="section-title text-[1.2rem] m-0">Recent pushes</h2>
+      <h2 className="section-title text-[1.2rem] m-0">{t("management.recent.title")}</h2>
       <p className="section-subtitle m-0 mt-1">
-        The latest skill versions published across 龙虾市场.
+        {t("management.recent.subtitle")}
       </p>
       <div className="management-list">
         {!recentVersions ? (
-          <div className="management-empty">Loading recent pushes…</div>
+          <div className="management-empty">{t("management.recent.loading")}</div>
         ) : recentVersions.length === 0 ? (
-          <div className="management-empty">No recent versions.</div>
+          <div className="management-empty">{t("management.recent.empty")}</div>
         ) : (
           recentVersions.map((entry) => (
             <div key={entry.version._id} className="management-item">
               <div className="management-item-main">
-                <strong>{entry.skill?.displayName ?? "Unknown skill"}</strong>
+                <strong>{entry.skill?.displayName ?? t("management.recent.unknown_skill")}</strong>
                 <div className="section-subtitle m-0">
                   v{entry.version.version} · @{entry.owner?.handle ?? entry.owner?.name ?? "user"} ·{" "}
-                  {formatShortTimestamp(entry.version._creationTime)}
+                  {formatShortTimestamp(entry.version._creationTime, locale)}
                 </div>
               </div>
               <div className="management-actions">
@@ -43,7 +45,7 @@ export function RecentPushesPage({
                         plugin: undefined,
                       }}
                     >
-                      Manage
+                      {t("management.manage")}
                     </Link>
                   </Button>
                 ) : null}
@@ -59,7 +61,7 @@ export function RecentPushesPage({
                         slug: entry.skill.slug,
                       }}
                     >
-                      View
+                      {t("management.view")}
                     </Link>
                   </Button>
                 ) : null}

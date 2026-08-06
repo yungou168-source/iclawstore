@@ -533,7 +533,7 @@ export function PublishedItemCard({
           {item.isOfficial ? <OfficialBadge /> : null}
         </div>
         <p className="skill-card-summary">
-          {item.summary ?? `${item.kind === "plugin" ? "Plugin" : "Skill"} published on 龙虾市场.`}
+          {item.summary ?? `${item.kind === "plugin" ? "Plugin" : "Skill"} published on AI直聘.`}
         </p>
         <div className="skill-card-footer">
           <div className="skill-card-footer-inline publisher-published-card-stats">

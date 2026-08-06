@@ -813,7 +813,7 @@ export const seedLocalFixtures: ReturnType<typeof internalAction> = internalActi
 export const seedPublicCorpusBatch: ReturnType<typeof internalAction> = internalAction({
   args: {
     resetOwnerHandles: v.optional(v.array(v.string())),
-    rows: v.array(publicCorpusSeedRowValidator),
+    rows: v.array(publicCorpusPreparedRowValidator),
   },
   handler: async (ctx, args) => {
     if (args.resetOwnerHandles && args.resetOwnerHandles.length > 0) {
@@ -839,7 +839,7 @@ export const resetPublicCorpusMutation = internalMutation({
 
 export const seedPublicCorpusMutation = internalMutation({
   args: {
-    rows: v.array(publicCorpusSeedRowValidator),
+    rows: v.array(publicCorpusPreparedRowValidator),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -908,13 +908,11 @@ export const seedPublicCorpusMutation = internalMutation({
               },
             ],
             parsed: {
-              license: undefined,
+              frontmatter,
+              metadata,
               clawdis,
-              tags: [],
-              capabilityTags: [],
-              topics: [],
             },
-            moderationStatus: "active",
+            createdBy: userId,
             createdAt,
             softDeletedAt: undefined,
           });
@@ -923,10 +921,12 @@ export const seedPublicCorpusMutation = internalMutation({
             const embeddingId = await ctx.db.insert("skillEmbeddings", {
               skillId,
               versionId,
-              text: row.embeddingText.slice(0, 10000),
-              vector: row.embedding,
-              model: "text-embedding-3-small",
-              createdAt: now,
+              ownerId: userId,
+              embedding: row.embedding,
+              isLatest: true,
+              isApproved: true,
+              visibility: "public",
+              updatedAt: now,
             });
             await ctx.db.insert("embeddingSkillMap", {
               embeddingId,
@@ -1031,7 +1031,7 @@ export const seedPublicCorpusMutation = internalMutation({
           normalizedName,
           ownerUserId: userId,
           displayName: row.displayName,
-          summary: row.summary ?? null,
+          summary: row.summary ?? undefined,
           family: "code-plugin",
           channel,
           isOfficial: row.sourceRepoHost === "github.com",

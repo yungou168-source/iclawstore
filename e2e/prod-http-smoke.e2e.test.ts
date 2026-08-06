@@ -2,6 +2,10 @@
 
 import { Agent, setGlobalDispatcher } from "undici";
 import { describe, expect, it } from "vitest";
+import {
+  DESKTOP_CLIENT_CONTRACT_ROUTES,
+  DESKTOP_CLIENT_CONTRACT_VERSION,
+} from '../server/src/desktopContractManifest.js';
 
 const REQUEST_TIMEOUT_MS = 15_000;
 const MAX_RATE_LIMIT_RETRIES = 3;
@@ -23,6 +27,10 @@ function getSiteBase() {
   return (
     process.env.CLAWHUB_E2E_SITE?.trim() || process.env.CLAWHUB_SITE?.trim() || "https://clawhub.ai"
   );
+}
+
+function getDesktopApiBase() {
+  return process.env.DESKTOP_API_BASE_URL?.trim() || 'https://www.iclawstore.com';
 }
 
 function getSkillSlug() {
@@ -182,5 +190,43 @@ describe("prod http smoke", () => {
     if (detail.latestVersion?.version) {
       expect(response.headers.get("cache-control")).toContain("immutable");
     }
+  });
+});
+
+describe('desktop client production contract', () => {
+  it('publishes the expected discovery and OpenAPI version', async () => {
+    const discoveryResponse = await fetchWithRetry(
+      new URL('/api/v1/desktop/contract', getDesktopApiBase()),
+    );
+    expect(discoveryResponse.status).toBe(200);
+    const discovery = (await discoveryResponse.json()) as { version?: string; openapi?: string };
+    expect(discovery.version).toBe(DESKTOP_CLIENT_CONTRACT_VERSION);
+
+    const openApiResponse = await fetchWithRetry(
+      new URL(discovery.openapi || '/api/v1/desktop/openapi.yaml', getDesktopApiBase()),
+    );
+    expect(openApiResponse.status).toBe(200);
+    expect(await openApiResponse.text()).toContain(
+      `version: ${DESKTOP_CLIENT_CONTRACT_VERSION}`,
+    );
+  });
+
+  it('does not return 404 for any protected operation promised by 1.1.0', async () => {
+    const missing: string[] = [];
+    for (const route of DESKTOP_CLIENT_CONTRACT_ROUTES) {
+      if (route.public) continue;
+      const hasBody = route.method === 'POST' || route.method === 'PUT' || route.method === 'PATCH';
+      const response = await fetchWithRetry(new URL(route.probePath, getDesktopApiBase()), {
+        method: route.method,
+        headers: {
+          Accept: 'application/json',
+          ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+        },
+        ...(hasBody ? { body: '{}' } : {}),
+      });
+      if (response.status === 404) missing.push(`${route.method} ${route.openApiPath}`);
+    }
+
+    expect(missing, `OpenAPI operations missing in production: ${missing.join(', ')}`).toEqual([]);
   });
 });

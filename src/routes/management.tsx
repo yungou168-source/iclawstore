@@ -2,11 +2,14 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAction, useMutation, useQuery } from "convex/react";
 import {
   AlertTriangle,
+  Building2,
   ChevronRight,
   ClipboardList,
+  FileCheck2,
   GitBranch,
   PackageSearch,
   Plug,
+  ShieldCheck,
   UserRound,
   Wrench,
 } from "lucide-react";
@@ -15,6 +18,11 @@ import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import { ManagementSkeleton } from "../components/skeletons/ProtectedPageSkeletons";
+import { ApprovalCenterPage } from "../components/ai-direct/ApprovalCenterPage";
+import { AuditCenterPage } from "../components/ai-direct/AuditCenterPage";
+import { ManagementInsightsPage } from "../components/ai-direct/ManagementInsightsPage";
+import { OrganizationAdminPage } from "../components/ai-direct/OrganizationAdminPage";
+import { TemplateReviewPage } from "../components/ai-direct/TemplateReviewPage";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import {
@@ -27,6 +35,7 @@ import {
 } from "../components/ui/dialog";
 import { Textarea } from "../components/ui/textarea";
 import { isAdmin, isModerator } from "../lib/roles";
+import { useLocale } from "../lib/i18n/context";
 import { useAuthStatus } from "../lib/useAuthStatus";
 import {
   AbusePage,
@@ -70,8 +79,13 @@ const MANAGEMENT_VIEWS = new Set<string>([
   "plugins",
   "duplicates",
   "recent",
+  "organizations",
+  "templates",
   "audit",
   "system",
+  "employees",
+  "costs",
+  "approvals",
   "settings",
 ]);
 
@@ -109,6 +123,7 @@ function ManagementConfirmDialog({
   request: ManagementConfirmRequest | null;
   onClose: () => void;
 }) {
+  const { t } = useLocale();
   const [reason, setReason] = useState("");
 
   useEffect(() => {
@@ -145,7 +160,7 @@ function ManagementConfirmDialog({
         ) : null}
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
+            {t("management.cancel")}
           </Button>
           <Button
             type="button"
@@ -186,6 +201,7 @@ export const Route = createFileRoute("/management")({
 });
 
 export function Management() {
+  const { t } = useLocale();
   const { isLoading: isAuthLoading, me } = useAuthStatus();
   const search = Route.useSearch();
   const navigate = useNavigate();
@@ -351,7 +367,7 @@ export function Management() {
   if (!staff) {
     return (
       <main className="section">
-        <Card>Management only.</Card>
+        <Card>{t("management.management_only")}</Card>
       </main>
     );
   }
@@ -379,17 +395,20 @@ export function Management() {
   });
   const reportCountLabel =
     filteredReportedSkills?.length === 0 && (reportedSkills?.length ?? 0) > 0
-      ? "No matching reports."
-      : "No reports yet.";
+      ? t("management.no_matching_reports")
+      : t("management.no_reports");
   const reportSummary = reportedSkills
-    ? `Showing ${filteredReportedSkills?.length ?? 0} of ${reportedSkills.length}`
-    : "Loading reports…";
+    ? t("management.showing_of", {
+        count: filteredReportedSkills?.length ?? 0,
+        total: reportedSkills.length,
+      })
+    : t("management.loading_reports");
 
   const filteredUsers = userResult?.items ?? [];
   const userTotal = userResult?.total ?? 0;
   const userSummary = userResult
-    ? `Showing ${filteredUsers.length} of ${userTotal}`
-    : "Loading users…";
+    ? t("management.showing_of", { count: filteredUsers.length, total: userTotal })
+    : t("management.loading_users");
   const ownerUsers = ownerResult?.items ?? [];
   const selectedOwnerOption: ManagementOwnerOption | null = selectedSkill?.owner?.linkedUserId
     ? {
@@ -399,7 +418,7 @@ export function Management() {
     : null;
   const ownerUserOptions: ManagementOwnerOption[] = ownerUsers.map((user) => ({
     userId: user._id,
-    label: formatManagementUserLabel(user, user._id),
+    label: formatManagementUserLabel(user, user._id, t),
   }));
   const ownerOptions =
     selectedOwnerOption &&
@@ -407,15 +426,18 @@ export function Management() {
       ? [selectedOwnerOption, ...ownerUserOptions]
       : ownerUserOptions;
   const ownerSummary = ownerResult
-    ? `Showing ${ownerOptions.length} of ${Math.max(ownerResult.total, ownerOptions.length)}`
-    : "Loading owners…";
+    ? t("management.showing_of", {
+        count: ownerOptions.length,
+        total: Math.max(ownerResult.total, ownerOptions.length),
+      })
+    : t("management.loading_owners");
   const userEmptyLabel = userResult
     ? filteredUsers.length === 0
       ? userQuery
-        ? "No matching users."
-        : "No users yet."
+        ? t("management.no_matching_users")
+        : t("management.no_users")
       : ""
-    : "Loading users…";
+    : t("management.loading_users");
 
   const applySkillOverride = () => {
     if (!selectedSkill?.skill) return;
@@ -425,9 +447,9 @@ export function Management() {
     })
       .then(() => {
         setSkillOverrideNote("");
-        toast.success("Skill marked okay.");
+        toast.success(t("management.skill_marked_okay"));
       })
-      .catch((error) => toast.error(formatMutationError(error)));
+      .catch((error) => toast.error(formatMutationError(error, t("management.request_failed"))));
   };
 
   const clearSkillOverride = () => {
@@ -438,9 +460,9 @@ export function Management() {
     })
       .then(() => {
         setSkillOverrideNote("");
-        toast.success("Override cleared.");
+        toast.success(t("management.override_cleared"));
       })
-      .catch((error) => toast.error(formatMutationError(error)));
+      .catch((error) => toast.error(formatMutationError(error, t("management.request_failed"))));
   };
 
   const managePlugin = () => {
@@ -461,37 +483,37 @@ export function Management() {
   };
   const requestBanUser = (userId: Id<"users">, label: string) => {
     setConfirmRequest({
-      title: `Ban ${label}?`,
-      body: "Hides their skills and personal package/plugin resources, and revokes package publish tokens.",
-      confirmLabel: "Ban user",
+      title: t("management.ban.title", { label }),
+      body: t("management.ban.body"),
+      confirmLabel: t("management.ban_user"),
       destructive: true,
       reason: {
-        label: "Reason (optional)",
-        placeholder: "Why are you banning this user?",
+        label: t("management.reason_optional"),
+        placeholder: t("management.ban.placeholder"),
         maxLength: USER_BAN_REASON_MAX_LENGTH,
       },
       onConfirm: (reason) => {
         void banUser({ userId, reason })
-          .then(() => toast.success(`Banned ${label}.`))
-          .catch((error) => toast.error(formatMutationError(error)));
+          .then(() => toast.success(t("management.ban.success", { label })))
+          .catch((error) => toast.error(formatMutationError(error, t("management.request_failed"))));
       },
     });
   };
 
   const requestUnbanUser = (userId: Id<"users">, label: string) => {
     setConfirmRequest({
-      title: `Unban ${label}?`,
-      body: "Restores eligible skills and ban-hidden personal package/plugin resources.",
-      confirmLabel: "Unban user",
+      title: t("management.unban.title", { label }),
+      body: t("management.unban.body"),
+      confirmLabel: t("management.unban_user"),
       reason: {
-        label: "Reason (optional)",
-        placeholder: "Why are you unbanning this user?",
+        label: t("management.reason_optional"),
+        placeholder: t("management.unban.placeholder"),
         maxLength: USER_BAN_REASON_MAX_LENGTH,
       },
       onConfirm: (reason) => {
         void unbanUser({ userId, reason })
-          .then(() => toast.success(`Unbanned ${label}.`))
-          .catch((error) => toast.error(formatMutationError(error)));
+          .then(() => toast.success(t("management.unban.success", { label })))
+          .catch((error) => toast.error(formatMutationError(error, t("management.request_failed"))));
       },
     });
   };
@@ -499,12 +521,18 @@ export function Management() {
   const requestToggleSkillHidden = (skill: Doc<"skills">) => {
     const hide = !skill.softDeletedAt;
     setConfirmRequest({
-      title: hide ? `Hide ${skill.displayName}?` : `Restore ${skill.displayName}?`,
-      confirmLabel: hide ? "Hide skill" : "Restore skill",
+      title: hide
+        ? t("management.skill.hide_title", { name: skill.displayName })
+        : t("management.skill.restore_title", { name: skill.displayName }),
+      confirmLabel: hide
+        ? t("management.skill.hide_action")
+        : t("management.skill.restore_action"),
       destructive: hide,
       reason: {
-        label: "Reason",
-        placeholder: hide ? "Why hide this skill?" : "Why restore this skill?",
+        label: t("management.reason"),
+        placeholder: hide
+          ? t("management.skill.hide_reason")
+          : t("management.skill.restore_reason"),
         required: true,
       },
       onConfirm: (reason) => {
@@ -513,22 +541,26 @@ export function Management() {
           deleted: hide,
           reason: reason ?? "",
         })
-          .then(() => toast.success(hide ? "Skill hidden." : "Skill restored."))
-          .catch((error) => toast.error(formatMutationError(error)));
+          .then(() =>
+            toast.success(
+              hide ? t("management.skill.hidden") : t("management.skill.restored"),
+            ),
+          )
+          .catch((error) => toast.error(formatMutationError(error, t("management.request_failed"))));
       },
     });
   };
 
   const requestHardDeleteSkill = (skill: Doc<"skills">) => {
     setConfirmRequest({
-      title: `Hard delete ${skill.displayName}?`,
-      body: "This permanently removes the skill and its history. It cannot be undone.",
-      confirmLabel: "Hard delete",
+      title: t("management.skill.delete_title", { name: skill.displayName }),
+      body: t("management.skill.delete_body"),
+      confirmLabel: t("management.hard_delete"),
       destructive: true,
       onConfirm: () => {
         void hardDelete({ skillId: skill._id })
-          .then(() => toast.success("Skill hard-deleted."))
-          .catch((error) => toast.error(formatMutationError(error)));
+          .then(() => toast.success(t("management.skill.deleted")))
+          .catch((error) => toast.error(formatMutationError(error, t("management.request_failed"))));
       },
     });
   };
@@ -540,9 +572,9 @@ export function Management() {
     // The review notes box above the Ban button is the ban reason — no separate prompt.
     const reason = publisherAbuseNotes.trim() || undefined;
     setConfirmRequest({
-      title: `Ban ${label}?`,
-      body: "Hides their skills and personal package/plugin resources, and revokes package publish tokens.",
-      confirmLabel: "Ban user",
+      title: t("management.ban.title", { label }),
+      body: t("management.ban.body"),
+      confirmLabel: t("management.ban_user"),
       destructive: true,
       onConfirm: () => {
         void banPublisherAbuseOwnerMutation({
@@ -552,11 +584,11 @@ export function Management() {
           reason,
         })
           .then(() => {
-            toast.success(`Banned ${label}.`);
+            toast.success(t("management.ban.success", { label }));
             setPublisherAbuseNotes("");
             setSelectedPublisherAbuseNominationId(null);
           })
-          .catch((error) => toast.error(formatMutationError(error)));
+          .catch((error) => toast.error(formatMutationError(error, t("management.request_failed"))));
       },
     });
   };
@@ -578,9 +610,9 @@ export function Management() {
       />
       <section className="management-main">
         <div className="management-breadcrumb">
-          <span>Management</span>
+          <span>{t("management.title")}</span>
           <ChevronRight size={13} aria-hidden="true" />
-          <strong>{formatManagementViewLabel(activeView)}</strong>
+          <strong>{t(`management.${managementViewKey(activeView)}`)}</strong>
         </div>
 
         {activeView === "abuse" ? (
@@ -601,13 +633,13 @@ export function Management() {
             onChangeTab={setPublisherAbuseTab}
             onRefresh={() => {
               setConfirmRequest({
-                title: "Run a new abuse scan?",
-                body: "Re-scores every publisher in the catalog against the latest model. This normally runs automatically every few days; a manual run can take a while.",
-                confirmLabel: "Run scan",
+                title: t("management.abuse.scan_title"),
+                body: t("management.abuse.scan_body"),
+                confirmLabel: t("management.abuse.run_scan"),
                 onConfirm: () => {
                   void startPublisherAbuseScoreRun({})
-                    .then(() => toast.success("Scan started."))
-                    .catch((error) => toast.error(formatMutationError(error)));
+                    .then(() => toast.success(t("management.abuse.scan_started")))
+                    .catch((error) => toast.error(formatMutationError(error, t("management.request_failed"))));
                 },
               });
             }}
@@ -682,7 +714,7 @@ export function Management() {
             onManagePlugin={managePlugin}
             onSetPackageBatch={(packageId, batch) => {
               void setPackageBatch({ packageId, batch }).catch((error) =>
-                toast.error(formatMutationError(error)),
+                toast.error(formatMutationError(error, t("management.request_failed"))),
               );
             }}
           />
@@ -716,38 +748,28 @@ export function Management() {
         ) : null}
         {!admin && activeView === "users" ? (
           <ManagementPlaceholder
-            title="Users"
-            description="User administration is available to admins."
+            title={t("management.users")}
+            description={t("management.placeholder.users")}
           />
         ) : null}
-        {activeView === "overview" ? (
-          <ManagementPlaceholder
-            title="Overview"
-            description="Use the sidebar to jump into focused management queues."
-          />
-        ) : null}
+        {activeView === "overview" ? <ManagementInsightsPage view="overview" /> : null}
+        {activeView === "employees" ? <ManagementInsightsPage view="employees" /> : null}
+        {activeView === "costs" ? <ManagementInsightsPage view="costs" /> : null}
         {activeView === "publishers" ? (
           <ManagementPlaceholder
-            title="Publishers"
-            description="Publisher-specific tooling will live here as it graduates out of one-off moderation flows."
+            title={t("management.publishers")}
+            description={t("management.placeholder.publishers")}
           />
         ) : null}
-        {activeView === "audit" ? (
-          <ManagementPlaceholder
-            title="Audit log"
-            description="Audit log exploration is still handled inside individual tools for now."
-          />
-        ) : null}
-        {activeView === "system" ? (
-          <ManagementPlaceholder
-            title="System"
-            description="System maintenance shortcuts can be added here without crowding moderation queues."
-          />
-        ) : null}
+        {activeView === "organizations" ? <OrganizationAdminPage /> : null}
+        {activeView === "templates" ? <TemplateReviewPage /> : null}
+        {activeView === "audit" ? <AuditCenterPage /> : null}
+        {activeView === "approvals" ? <ApprovalCenterPage /> : null}
+        {activeView === "system" ? <ManagementInsightsPage view="system" /> : null}
         {activeView === "settings" ? (
           <ManagementPlaceholder
-            title="Settings"
-            description="Staff settings can be split into this view when we have more than inline controls."
+            title={t("management.settings")}
+            description={t("management.placeholder.settings")}
           />
         ) : null}
       </section>
@@ -782,67 +804,100 @@ function ManagementSidebar({
   reportCount?: number;
   userCount?: number;
 }) {
+  const { locale, t } = useLocale();
   return (
     <aside className="management-sidebar">
-      <nav aria-label="Management sections">
-        <div className="management-sidebar-heading">Management</div>
-        <div className="management-sidebar-section-title">Review</div>
+      <nav aria-label={t("management.sections")}>
+        <div className="management-sidebar-heading">{t("management.title")}</div>
+        <div className="management-sidebar-section-title">经营与运行</div>
+        <div className="management-sidebar-group">
+          <ManagementSidebarLink active={activeView === "overview"} icon={<ClipboardList size={15} />} label="经营总览" view="overview" />
+          <ManagementSidebarLink active={activeView === "system"} icon={<ShieldCheck size={15} />} label="系统状态" view="system" />
+          <ManagementSidebarLink active={activeView === "employees"} icon={<UserRound size={15} />} label="AI 员工目录" view="employees" />
+          <ManagementSidebarLink active={activeView === "costs"} icon={<FileCheck2 size={15} />} label="成本账本" view="costs" />
+          <ManagementSidebarLink active={activeView === "approvals"} icon={<ShieldCheck size={15} />} label="统一审批中心" view="approvals" />
+        </div>
+        <div className="management-sidebar-section-title">{t("management.review")}</div>
         <div className="management-sidebar-group">
           <ManagementSidebarLink
             active={activeView === "abuse"}
             badge={queueBadge(abuseCount)}
             icon={<AlertTriangle size={15} />}
-            label="Publisher abuse"
+            label={t("management.publisher_abuse")}
             view="abuse"
           />
           <ManagementSidebarLink
             active={activeView === "reports"}
             badge={queueBadge(reportCount)}
             icon={<ClipboardList size={15} />}
-            label="Content reports"
+            label={t("management.content_reports")}
             view="reports"
           />
         </div>
 
-        <div className="management-sidebar-section-title">Queues</div>
+        <div className="management-sidebar-section-title">{t("management.queues")}</div>
         <div className="management-sidebar-group">
           <ManagementSidebarLink
             active={activeView === "duplicates"}
             badge={queueBadge(duplicateCount)}
             icon={<PackageSearch size={15} />}
-            label="Duplicate candidates"
+            label={t("management.duplicate_candidates")}
             view="duplicates"
           />
           <ManagementSidebarLink
             active={activeView === "recent"}
             badge={queueBadge(recentCount)}
             icon={<GitBranch size={15} />}
-            label="Recent pushes"
+            label={t("management.recent_pushes")}
             view="recent"
           />
         </div>
 
-        <div className="management-sidebar-section-title">Staff tools</div>
+        <div className="management-sidebar-section-title">{t("management.ai_direct")}</div>
+        <div className="management-sidebar-group">
+          <ManagementSidebarLink
+            active={activeView === "organizations"}
+            icon={<Building2 size={15} />}
+            label={t("management.organizations")}
+            view="organizations"
+          />
+          {admin ? (
+            <ManagementSidebarLink
+              active={activeView === "templates"}
+              icon={<FileCheck2 size={15} />}
+              label={t("management.template_review")}
+              view="templates"
+            />
+          ) : null}
+          <ManagementSidebarLink
+            active={activeView === "audit"}
+            icon={<ShieldCheck size={15} />}
+            label={t("management.audit_log")}
+            view="audit"
+          />
+        </div>
+
+        <div className="management-sidebar-section-title">{t("management.staff_tools")}</div>
         <div className="management-sidebar-group">
           {admin ? (
             <ManagementSidebarLink
               active={activeView === "users"}
-              badge={userCount === undefined ? undefined : formatWholeNumber(userCount)}
+              badge={userCount === undefined ? undefined : formatWholeNumber(userCount, locale)}
               icon={<UserRound size={15} />}
-              label="Users"
+              label={t("management.users")}
               view="users"
             />
           ) : null}
           <ManagementSidebarLink
             active={activeView === "skills"}
             icon={<Wrench size={15} />}
-            label="Skills"
+            label={t("management.skills")}
             view="skills"
           />
           <ManagementSidebarLink
             active={activeView === "plugins"}
             icon={<Plug size={15} />}
-            label="Plugins"
+            label={t("management.plugins")}
             view="plugins"
           />
         </div>
@@ -887,23 +942,25 @@ function resolveManagementView(
   return view ?? "abuse";
 }
 
-const MANAGEMENT_VIEW_LABELS: Record<ManagementView, string> = {
-  overview: "Overview",
-  abuse: "Publisher abuse",
-  reports: "Content reports",
-  users: "Users",
-  publishers: "Publishers",
-  skills: "Skills",
-  plugins: "Plugins",
-  duplicates: "Duplicate candidates",
-  recent: "Recent pushes",
-  audit: "Audit log",
-  system: "System",
-  settings: "Settings",
+const MANAGEMENT_VIEW_KEYS: Record<ManagementView, string> = {
+  overview: "overview",
+  abuse: "publisher_abuse",
+  reports: "content_reports",
+  users: "users",
+  publishers: "publishers",
+  skills: "skills",
+  plugins: "plugins",
+  duplicates: "duplicate_candidates",
+  recent: "recent_pushes",
+  organizations: "organizations",
+  templates: "template_review",
+  audit: "audit_log",
+  system: "system",
+  settings: "settings",
 };
 
-function formatManagementViewLabel(view: ManagementView) {
-  return MANAGEMENT_VIEW_LABELS[view];
+function managementViewKey(view: ManagementView) {
+  return MANAGEMENT_VIEW_KEYS[view];
 }
 
 /** Queue badges only carry signal when there is a backlog; hide 0 and loading. */

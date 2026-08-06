@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { LayoutGrid, List, Search } from "lucide-react";
+import { LayoutGrid, List } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../../convex/_generated/api";
 import { PublisherListItem } from "../../components/PublisherListItem";
@@ -78,7 +78,7 @@ export const Route = createFileRoute("/publishers/")({
     const siteUrl = getSiteUrlForMode(mode);
     const title = `Publishers · ${siteName}`;
     const description =
-      "Discover the people and organizations publishing skills, plugins, packages, and ecosystem tooling on 龙虾市场.";
+      "Discover the people and organizations publishing AI Agent assets, skills, plugins, packages, and ecosystem tooling on AI直聘.";
 
     return {
       links: [
@@ -113,7 +113,6 @@ function PublishersIndex() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const result = Route.useLoaderData() as PublishersLoaderResult;
-  const [query, setQuery] = useState(search.q ?? "");
   const [publishers, setPublishers] = useState(result.page);
   const [nextCursor, setNextCursor] = useState<string | null>(
     result.isDone ? null : result.continueCursor,
@@ -142,30 +141,13 @@ function PublishersIndex() {
   const directoryPublishers = showHighlights ? publishers.slice(3) : publishers;
 
   useEffect(() => {
-    setQuery(search.q ?? "");
     setPublishers(result.page);
     setNextCursor(result.isDone ? null : result.continueCursor);
     setIsLoadingMore(false);
     loadMoreInFlightRef.current = false;
   }, [result, search.q]);
 
-  const handleQueryChange = useCallback(
-    (next: string) => {
-      setQuery(next);
-      const trimmed = next.trim();
-      void navigate({
-        search: (prev: PublishersSearchState) => ({
-          ...prev,
-          q: trimmed ? next : undefined,
-        }),
-        replace: true,
-      });
-    },
-    [navigate],
-  );
-
   const handleClear = useCallback(() => {
-    setQuery("");
     void navigate({
       search: (prev: PublishersSearchState) => ({
         ...prev,
@@ -218,15 +200,6 @@ function PublishersIndex() {
           {t("publishers.title", locale)}
           <span className="browse-count">{globalCounts.all}</span>
         </h1>
-      </div>
-      <div className="browse-page-search">
-        <Search size={15} className="navbar-search-icon" aria-hidden="true" />
-        <input
-          className="browse-search-input"
-          value={query}
-          onChange={(event) => handleQueryChange(event.target.value)}
-          placeholder={t("publishers.search_placeholder", locale)}
-        />
       </div>
 
       <div className="browse-results publishers-results">

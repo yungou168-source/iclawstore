@@ -24,10 +24,10 @@ function cleanupConvexMessage(message: string) {
 
 function normalizeGenericDenialMessage(message: string) {
   if (/^unauthorized$/i.test(message)) {
-    return "Sign in required. If this 龙虾市场 account was deleted, banned, or disabled, it cannot perform this action.";
+    return "Sign in required. If this AI直聘 account was deleted, banned, or disabled, it cannot perform this action.";
   }
   if (/^forbidden$/i.test(message)) {
-    return "This 龙虾市场 account does not have permission to perform this action, or the account is not in good standing.";
+    return "This AI直聘 account does not have permission to perform this action, or the account is not in good standing.";
   }
   return message;
 }

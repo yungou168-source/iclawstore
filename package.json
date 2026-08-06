@@ -72,6 +72,7 @@
   },
   "dependencies": {
     "@auth/core": "0.37.4",
+    "@codefox-inc/oauth-provider": "^0.4.2",
     "@convex-dev/auth": "0.0.93",
     "@fontsource/bricolage-grotesque": "5.2.10",
     "@fontsource/ibm-plex-mono": "5.2.7",

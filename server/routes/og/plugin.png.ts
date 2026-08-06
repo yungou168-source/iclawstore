@@ -73,7 +73,7 @@ export default defineEventHandler(async (event) => {
   const ownerLabel = owner ? `@${owner}` : "clawhub";
   const title = titleFromQuery || meta?.displayName || packageName;
   const description =
-    descriptionFromQuery || meta?.summary || "OpenClaw plugin published on ClawHub.";
+    descriptionFromQuery || meta?.summary || "OpenClaw plugin published on Ai Work.";
 
   const cacheKey = meta?.latestVersion
     ? "public, max-age=31536000, immutable"

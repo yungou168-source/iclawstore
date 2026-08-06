@@ -1,7 +1,6 @@
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import tailwindcss from "@tailwindcss/vite";
-import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
@@ -188,7 +187,19 @@ const config = defineConfig({
   plugins: [
     patchArkSafariInOperator(),
     nitro({
+      buildDir: process.env.NITRO_BUILD_DIR ?? "node_modules/.nitro",
+      output: {
+        dir: process.env.NITRO_OUTPUT_DIR ?? ".output",
+      },
       serverDir: "server",
+      hooks: {
+        "build:before": (nitroContext) => {
+          for (const asset of nitroContext.options.serverAssets) {
+            if (asset.baseName !== "server") continue;
+            asset.ignore = [...(asset.ignore ?? []), "**/*.css"];
+          }
+        },
+      },
       rollupConfig: {
         onwarn: handleRollupWarning,
       },

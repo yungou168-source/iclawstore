@@ -1,5 +1,5 @@
 import { getRuntimeEnv } from "./runtimeEnv";
-import { getClawHubSiteUrl, getOnlyCrabsSiteUrl } from "./site";
+import { getAiWorkSiteUrl, getOnlyCrabsSiteUrl } from "./site";
 
 type SkillMetaSource = {
   slug: string;
@@ -55,7 +55,7 @@ type BasicMeta = {
   url: string;
 };
 
-const DEFAULT_DESCRIPTION = "龙虾市场 — agents 的技能市场，带向量搜索。";
+const DEFAULT_DESCRIPTION = "AI直聘（Ai Work）— 招聘、授权与管理 AI Agent 的工作平台。";
 const DEFAULT_SOUL_DESCRIPTION = "SoulHub — the home for SOUL.md bundles and personal system lore.";
 const OG_SKILL_IMAGE_LAYOUT_VERSION = "7";
 const OG_SOUL_IMAGE_LAYOUT_VERSION = "1";
@@ -63,7 +63,7 @@ const OG_PLUGIN_IMAGE_LAYOUT_VERSION = "2";
 const OG_PUBLISHER_IMAGE_LAYOUT_VERSION = "2";
 
 function getSiteUrl() {
-  return getClawHubSiteUrl();
+  return getAiWorkSiteUrl();
 }
 
 function getSoulSiteUrl() {
@@ -127,9 +127,9 @@ export function buildSkillMeta(source: SkillMetaSource): SkillMeta {
   const displayName = clean(source.displayName) || clean(source.slug);
   const summary = clean(source.summary);
   const version = clean(source.version);
-  const title = `${displayName} — 龙虾市场`;
+  const title = `${displayName} — AI直聘`;
   const description =
-    summary || (owner ? `Agent skill by @${owner} on 龙虾市场.` : DEFAULT_DESCRIPTION);
+    summary || (owner ? `Agent skill by @${owner} on Ai Work.` : DEFAULT_DESCRIPTION);
   const ownerPath = owner || ownerId || "unknown";
   const url = `${siteUrl}/${ownerPath}/${source.slug}`;
   const imageParams = new URLSearchParams();
@@ -176,8 +176,8 @@ export function buildPluginMeta(source: PluginMetaSource): BasicMeta {
   const summary = clean(source.summary);
   const owner = clean(source.owner);
   const latestVersion = clean(source.latestVersion);
-  const title = `${displayName} — 龙虾市场 Plugins`;
-  const description = summary || (owner ? `Plugin by @${owner} on 龙虾市场.` : DEFAULT_DESCRIPTION);
+  const title = `${displayName} — AI直聘 开发者资产`;
+  const description = summary || (owner ? `Plugin by @${owner} on Ai Work.` : DEFAULT_DESCRIPTION);
   const url = `${siteUrl}/plugins/${source.name.startsWith("@") ? source.name : encodeURIComponent(source.name)}`;
   const imageParams = new URLSearchParams();
   imageParams.set("v", OG_PLUGIN_IMAGE_LAYOUT_VERSION);
@@ -196,8 +196,8 @@ export function buildPublisherMeta(source: PublisherMetaSource): BasicMeta {
   const handle = clean(source.handle).replace(/^@+/, "");
   const displayName = clean(source.displayName) || `@${handle}`;
   const bio = clean(source.bio);
-  const title = `${displayName} — 龙虾市场`;
-  const description = bio || `Publisher @${handle} on 龙虾市场.`;
+  const title = `${displayName} — AI直聘`;
+  const description = bio || `Publisher @${handle} on Ai Work.`;
   const imageParams = new URLSearchParams();
   imageParams.set("v", OG_PUBLISHER_IMAGE_LAYOUT_VERSION);
   imageParams.set("handle", handle);

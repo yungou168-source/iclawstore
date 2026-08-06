@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   detectSiteMode,
   detectSiteModeFromUrl,
+  getAiWorkSiteUrl,
   getClawHubSiteUrl,
   getOnlyCrabsHost,
   getOnlyCrabsSiteUrl,
@@ -18,6 +19,7 @@ const SITE_ENV_KEYS = [
   "SITE_URL",
   "VITE_SITE_MODE",
   "VITE_SITE_URL",
+  "VITE_AI_WORK_SITE_URL",
   "VITE_SOULHUB_HOST",
   "VITE_SOULHUB_SITE_URL",
 ];
@@ -66,6 +68,13 @@ describe("site helpers", () => {
     });
     withServerEnv({ VITE_SITE_URL: "https://auth.clawdhub.com" }, () => {
       expect(getClawHubSiteUrl()).toBe("https://clawhub.ai");
+    });
+  });
+
+  it("uses the AI直聘 URL for platform metadata", () => {
+    expect(getAiWorkSiteUrl()).toBe("https://www.iclawstore.com");
+    withServerEnv({ VITE_AI_WORK_SITE_URL: "https://ai-work.example.com/path" }, () => {
+      expect(getAiWorkSiteUrl()).toBe("https://ai-work.example.com");
     });
   });
 
@@ -147,13 +156,13 @@ describe("site helpers", () => {
   });
 
   it("derives site metadata from mode", () => {
-    expect(getSiteName("skills")).toBe("ClawHub");
+    expect(getSiteName("skills")).toBe("AI直聘");
     expect(getSiteName("souls")).toBe("SoulHub");
 
-    expect(getSiteDescription("skills")).toContain("ClawHub");
+    expect(getSiteDescription("skills")).toContain("AI直聘");
     expect(getSiteDescription("souls")).toContain("SoulHub");
 
-    expect(getSiteUrlForMode("skills")).toBe("https://clawhub.ai");
+    expect(getSiteUrlForMode("skills")).toBe("https://www.iclawstore.com");
     expect(getSiteUrlForMode("souls")).toBe("https://onlycrabs.ai");
   });
 });

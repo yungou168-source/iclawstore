@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { isPluginCategorySlug } from "clawhub-schema";
-import { PackageSearch, Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { PackageSearch } from "lucide-react";
+import { useMemo, useState } from "react";
 import { BrowseSidebar } from "../../components/BrowseSidebar";
 import { PluginListItem } from "../../components/PluginListItem";
 import { BrowseResultsSkeleton } from "../../components/skeletons/BrowseResultsSkeleton";
@@ -229,10 +229,6 @@ function PluginsIndexPending() {
         </button>
         <h1 className="browse-title">{t("plugins.title", locale)}</h1>
       </div>
-      <div className="browse-page-search">
-        <Search size={15} className="navbar-search-icon" aria-hidden="true" />
-        <input className="browse-search-input" placeholder={t("header.search_placeholder", locale)} disabled />
-      </div>
       <div className="browse-layout">
         <BrowseSidebar
           categories={PLUGIN_CATEGORIES}
@@ -247,7 +243,7 @@ function PluginsIndexPending() {
           onSortChange={() => {}}
           filters={[
             { key: "official", label: t("plugins.official", locale), active: false },
-            { key: "executesCode", label: "Executes code", active: false },
+            { key: "executesCode", label: t("plugins.executes_code", locale), active: false },
           ]}
           onFilterToggle={() => {}}
         />
@@ -271,6 +267,7 @@ function PluginsIndexPending() {
 }
 
 function PluginsIndex() {
+  const { locale } = useLocale();
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const loaderData = Route.useLoaderData() as PluginsLoaderData | undefined;
@@ -283,12 +280,7 @@ function PluginsIndex() {
   const apiError = loaderData?.apiError ?? !loaderData;
   const view = normalizePluginView(search.view) ?? "list";
 
-  const [query, setQuery] = useState(search.q ?? "");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  useEffect(() => {
-    setQuery(search.q ?? "");
-  }, [search.q]);
 
   const hasQuery = Boolean(search.q?.trim());
 
@@ -305,25 +297,35 @@ function PluginsIndex() {
   );
   const hasPreviousPage = Boolean(!hasQuery && search.cursor);
   const hasNextPage = Boolean(!hasQuery && nextCursor);
-  const headingCount = formatPluginHeadingCount(visibleItems.length, hasNextPage, hasPreviousPage);
-  const resultsCount = formatPluginResultsCount(visibleItems.length, hasNextPage, hasPreviousPage);
+  const headingCount = formatPluginHeadingCount(
+    visibleItems.length,
+    hasNextPage,
+    hasPreviousPage,
+    locale,
+  );
+  const resultsCount = formatPluginResultsCount(
+    visibleItems.length,
+    hasNextPage,
+    hasPreviousPage,
+    locale,
+  );
 
   const sortOptions = useMemo(() => {
     if (hasQuery) {
       return [
-        { value: "relevance", label: "Relevance" },
-        { value: "downloads", label: "Most downloaded" },
-        { value: "updated", label: "Recently updated" },
-        { value: "newest", label: "Newest" },
-        { value: "name", label: "Name" },
+        { value: "relevance", label: t("plugins.sort.relevance", locale) },
+        { value: "downloads", label: t("plugins.sort.downloads", locale) },
+        { value: "updated", label: t("plugins.sort.updated", locale) },
+        { value: "newest", label: t("plugins.sort.newest", locale) },
+        { value: "name", label: t("plugins.sort.name", locale) },
       ];
     }
     return [
-      { value: "featured", label: "Featured" },
-      { value: "downloads", label: "Most downloaded" },
-      { value: "updated", label: "Recently updated" },
+      { value: "featured", label: t("plugins.featured", locale) },
+      { value: "downloads", label: t("plugins.sort.downloads", locale) },
+      { value: "updated", label: t("plugins.sort.updated", locale) },
     ];
-  }, [hasQuery]);
+  }, [hasQuery, locale]);
 
   const handleFilterToggle = (key: string) => {
     if (key === "official") {
@@ -401,20 +403,6 @@ function PluginsIndex() {
     });
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    void navigate({
-      search: (prev: PluginSearchState) => ({
-        ...prev,
-        cursor: undefined,
-        family: undefined,
-        q: query.trim() || undefined,
-        featured: undefined,
-        sort: undefined,
-      }),
-    });
-  };
-
   const handleToggleView = () => {
     void navigate({
       search: (prev: PluginSearchState) => ({
@@ -440,7 +428,6 @@ function PluginsIndex() {
       }),
       replace: true,
     });
-    setQuery("");
   };
 
   return (
@@ -450,23 +437,14 @@ function PluginsIndex() {
           className="browse-sidebar-toggle"
           type="button"
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          aria-label="Toggle filters"
+          aria-label={t("browse.aria.toggle_filters", locale)}
         >
-          Filters
+          {t("plugins.filters", locale)}
         </button>
         <h1 className="browse-title">
-          Plugins <span className="browse-count">{headingCount}</span>
+          {t("plugins.title", locale)} <span className="browse-count">{headingCount}</span>
         </h1>
       </div>
-      <form className="browse-page-search" onSubmit={handleSearch}>
-        <Search size={15} className="navbar-search-icon" aria-hidden="true" />
-        <input
-          className="browse-search-input"
-          placeholder="Search plugins..."
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
-      </form>
       <div className={`browse-layout${sidebarOpen ? " sidebar-open" : ""}`}>
         <BrowseSidebar
           categories={PLUGIN_CATEGORIES}
@@ -476,8 +454,12 @@ function PluginsIndex() {
           activeSort={activeSort}
           onSortChange={handleSortChange}
           filters={[
-            { key: "official", label: "Official only", active: search.official ?? false },
-            { key: "executesCode", label: "Executes code", active: search.executesCode ?? false },
+            { key: "official", label: t("plugins.official", locale), active: search.official ?? false },
+            {
+              key: "executesCode",
+              label: t("plugins.executes_code", locale),
+              active: search.executesCode ?? false,
+            },
           ]}
           onFilterToggle={handleFilterToggle}
         />
@@ -491,7 +473,7 @@ function PluginsIndex() {
               search.executesCode ||
               search.featured ? (
                 <button className="browse-clear-btn" type="button" onClick={handleClear}>
-                  Clear
+                  {t("plugins.clear_filters", locale)}
                 </button>
               ) : null}
             </span>
@@ -501,14 +483,14 @@ function PluginsIndex() {
                 type="button"
                 onClick={view === "grid" ? handleToggleView : undefined}
               >
-                List
+                {t("common.list", locale)}
               </button>
               <button
                 className={`browse-view-btn${view === "grid" ? " is-active" : ""}`}
                 type="button"
                 onClick={view === "list" ? handleToggleView : undefined}
               >
-                Grid
+                {t("common.grid", locale)}
               </button>
             </div>
           </div>
@@ -516,21 +498,23 @@ function PluginsIndex() {
           {apiError ? (
             <div className="empty-state">
               <PackageSearch size={22} className="empty-state-icon" aria-hidden="true" />
-              <p className="empty-state-title">Unable to load plugins</p>
-              <p className="empty-state-body">
-                The plugin catalog is temporarily unavailable. Please try again later.
-              </p>
+              <p className="empty-state-title">{t("plugins.load_error_title", locale)}</p>
+              <p className="empty-state-body">{t("plugins.load_error_description", locale)}</p>
             </div>
           ) : rateLimited ? (
             <div className="empty-state">
               <PackageSearch size={22} className="empty-state-icon" aria-hidden="true" />
-              <p className="empty-state-title">Plugin catalog is temporarily unavailable</p>
-              <p className="empty-state-body">Try again {formatRetryDelay(retryAfterSeconds)}.</p>
+              <p className="empty-state-title">{t("plugins.rate_limited_title", locale)}</p>
+              <p className="empty-state-body">
+                {t("plugins.retry_after", locale, {
+                  time: formatRetryDelay(retryAfterSeconds, locale),
+                })}
+              </p>
             </div>
           ) : visibleItems.length === 0 ? (
             <div className="empty-state">
-              <p className="empty-state-title">No plugins found</p>
-              <p className="empty-state-body">Try a different search term or remove filters.</p>
+              <p className="empty-state-title">{t("plugins.no_results", locale)}</p>
+              <p className="empty-state-body">{t("plugins.no_results_description", locale)}</p>
             </div>
           ) : (
             <div className={view === "grid" ? "grid" : "results-list"}>
@@ -538,6 +522,7 @@ function PluginsIndex() {
                 <PluginListItem
                   key={item.name}
                   item={item}
+                  locale={locale}
                   variant={view === "grid" ? "card" : "list"}
                 />
               ))}
@@ -555,7 +540,7 @@ function PluginsIndex() {
                     });
                   }}
                 >
-                  First page
+                  {t("plugins.first_page", locale)}
                 </Button>
               ) : null}
               {nextCursor ? (
@@ -568,7 +553,7 @@ function PluginsIndex() {
                     });
                   }}
                 >
-                  Next page
+                  {t("plugins.next_page", locale)}
                 </Button>
               ) : null}
             </div>

@@ -12,12 +12,15 @@ import {
   SheetTitle,
 } from "../../components/ui/sheet";
 import { Textarea } from "../../components/ui/textarea";
+import { useLocale } from "../../lib/i18n/context";
+import type { Locale } from "../../lib/i18n/config";
 import {
   formatRatio,
   formatScore,
   formatShortTimestamp,
   formatWholeNumber,
   type PublisherAbuseReviewDashboard,
+  type ManagementTranslator,
   type PublisherAbuseReviewDetail,
   type PublisherAbuseReviewItem,
   type PublisherAbuseReviewScore,
@@ -62,6 +65,7 @@ export function AbusePage({
   onRefresh: () => void;
   onSelect: (value: Id<"publisherAbuseReviewNominations">) => void;
 }) {
+  const { locale, t } = useLocale();
   const latestRun = dashboard?.latestRun ?? null;
   const selectedScore = selectedItem?.latestScore ?? null;
   const selectedPublisher = selectedItem?.publisher ?? null;
@@ -88,16 +92,16 @@ export function AbusePage({
       <header className="pa-head">
         <div>
           <h2 id="pa-title" className="section-title pa-title">
-            Publisher abuse review
+            {t("management.abuse.title")}
           </h2>
           <p className="section-subtitle pa-subtitle">
-            Statistical publisher abuse signals from the latest scoring run.
+            {t("management.abuse.subtitle")}
           </p>
         </div>
         <div className="pa-run">
           <dl className="pa-run-meta">
             <div>
-              <dt>Last scan</dt>
+              <dt>{t("management.abuse.last_scan")}</dt>
               <dd
                 className={
                   latestRun?.status === "completed"
@@ -108,54 +112,62 @@ export function AbusePage({
                 }
               >
                 {latestRun
-                  ? formatPublisherAbuseRunStatus(latestRun.status)
+                  ? formatPublisherAbuseRunStatus(latestRun.status, t)
                   : loaded
-                    ? "No scans yet"
-                    : "Loading"}
+                    ? t("management.abuse.no_scans")
+                    : t("management.abuse.loading")}
               </dd>
             </div>
             <div>
-              <dt>Scanned</dt>
-              <dd>{formatWholeNumber(latestRun?.scannedPublishers)}</dd>
+              <dt>{t("management.abuse.scanned")}</dt>
+              <dd>{formatWholeNumber(latestRun?.scannedPublishers, locale)}</dd>
             </div>
             <div>
-              <dt>Scored</dt>
-              <dd>{formatWholeNumber(latestRun?.scoredPublishers)}</dd>
+              <dt>{t("management.abuse.scored")}</dt>
+              <dd>{formatWholeNumber(latestRun?.scoredPublishers, locale)}</dd>
             </div>
           </dl>
           <div className="pa-rescan">
             <Button type="button" variant="outline" size="sm" onClick={onRefresh}>
               <RefreshCcw size={14} />
-              Run new scan
+              {t("management.abuse.run_new")}
             </Button>
-            <span className="pa-rescan-hint">Re-scores every publisher</span>
+            <span className="pa-rescan-hint">{t("management.abuse.rescores_all")}</span>
           </div>
         </div>
       </header>
 
-      <div className="pa-tabs" role="tablist" aria-label="Publisher abuse queue">
+      <div className="pa-tabs" role="tablist" aria-label={t("management.abuse.queue")}>
         <PublisherAbuseTabButton
           active={tab === "potential_ban_candidate"}
           count={loaded ? potentialBan : undefined}
-          label="Potential ban"
+          label={t("management.abuse.potential_ban")}
+          locale={locale}
+          loadingLabel={t("management.abuse.loading")}
           onClick={() => onChangeTab("potential_ban_candidate")}
         />
         <PublisherAbuseTabButton
           active={tab === "review"}
           count={loaded ? review : undefined}
-          label="On the brink"
+          label={t("management.abuse.on_brink")}
+          locale={locale}
+          loadingLabel={t("management.abuse.loading")}
           onClick={() => onChangeTab("review")}
         />
         <PublisherAbuseTabButton
           active={tab === "all_pending"}
           count={loaded ? totalPending : undefined}
-          label="All flagged"
+          label={t("management.abuse.all_flagged")}
+          locale={locale}
+          loadingLabel={t("management.abuse.loading")}
           onClick={() => onChangeTab("all_pending")}
         />
         <PublisherAbuseTabButton
           active={tab === "resolved"}
           count={loaded ? resolved : undefined}
-          label="Resolved"
+          label={t("management.abuse.resolved")}
+          locale={locale}
+          loadingLabel={t("management.abuse.loading")}
           onClick={() => onChangeTab("resolved")}
         />
       </div>
@@ -165,7 +177,7 @@ export function AbusePage({
           <Search size={16} />
           <input
             type="search"
-            placeholder="Search handle, user, ID, or reason"
+            placeholder={t("management.abuse.search")}
             value={search}
             onChange={(event) => onChangeSearch(event.target.value)}
           />
@@ -174,23 +186,23 @@ export function AbusePage({
           <table className="pa-table">
             <thead>
               <tr>
-                <th>Label</th>
-                <th>Handle</th>
+                <th>{t("management.abuse.label")}</th>
+                <th>{t("management.abuse.handle")}</th>
                 <th className="pa-num">Z-score</th>
-                <th>Reasons</th>
-                <th>Last scored</th>
+                <th>{t("management.abuse.reasons")}</th>
+                <th>{t("management.abuse.last_scored")}</th>
               </tr>
             </thead>
             <tbody>
               {!loaded ? (
                 <tr>
-                  <td colSpan={5}>Loading publisher abuse nominations…</td>
+                  <td colSpan={5}>{t("management.abuse.loading_nominations")}</td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr className="pa-empty-row">
                   <td colSpan={5}>
-                    <strong>Queue clear</strong>
-                    No publishers in this view from the latest scoring run.
+                    <strong>{t("management.abuse.queue_clear")}</strong>
+                    {t("management.abuse.queue_empty")}
                   </td>
                 </tr>
               ) : (
@@ -208,14 +220,16 @@ export function AbusePage({
                           variant={publisherAbuseLabelVariant(item.nomination.label)}
                           size="sm"
                         >
-                          {formatPublisherAbuseLabel(item.nomination.label)}
+                          {formatPublisherAbuseLabel(item.nomination.label, t)}
                         </Badge>
                       </td>
                       <td>
                         <button
                           type="button"
                           className="pa-handle pa-row-button"
-                          aria-label={`Open details for ${item.nomination.handleSnapshot}`}
+                          aria-label={t("management.abuse.open_details", {
+                            handle: item.nomination.handleSnapshot,
+                          })}
                           onClick={(event) => {
                             event.stopPropagation();
                             onSelect(item.nomination._id);
@@ -231,13 +245,13 @@ export function AbusePage({
                         </button>
                       </td>
                       <td className={`pa-num ${score ? zScoreClass(score.zScore) : ""}`}>
-                        {score ? formatScore(score.zScore) : "—"}
+                        {score ? formatScore(score.zScore, locale) : "—"}
                       </td>
                       <td>
                         <div className="pa-reasons">
                           {(score?.reasonCodes ?? []).slice(0, 2).map((reason) => (
                             <Badge key={reason} variant="compact">
-                              {formatReasonCode(reason)}
+                              {formatReasonCode(reason, t)}
                             </Badge>
                           ))}
                           {(score?.reasonCodes.length ?? 0) > 2 ? (
@@ -247,7 +261,7 @@ export function AbusePage({
                         </div>
                       </td>
                       <td className="pa-muted">
-                        {formatShortTimestamp(item.nomination.lastScoredAt)}
+                        {formatShortTimestamp(item.nomination.lastScoredAt, locale)}
                       </td>
                     </tr>
                   );
@@ -258,8 +272,11 @@ export function AbusePage({
         </div>
         <div className="pa-foot">
           {loaded
-            ? `Showing ${formatWholeNumber(items.length)} of ${formatWholeNumber(totalForTab)} nominations`
-            : "Loading…"}
+            ? t("management.abuse.showing_nominations", {
+                count: formatWholeNumber(items.length, locale),
+                total: formatWholeNumber(totalForTab, locale),
+              })
+            : `${t("management.abuse.loading")}…`}
         </div>
       </Card>
 
@@ -275,27 +292,29 @@ export function AbusePage({
               <SheetHeader className="pa-sheet-head">
                 <SheetTitle>{selectedItem.nomination.handleSnapshot}</SheetTitle>
                 <SheetDescription className="sr-only">
-                  Publisher abuse score details, owner identifiers, signal metrics, and available
-                  moderation action.
+                  {t("management.abuse.details_desc")}
                 </SheetDescription>
                 <div className="pa-pills">
                   <Badge
                     variant={publisherAbuseLabelVariant(selectedItem.nomination.label)}
                     size="sm"
                   >
-                    {formatPublisherAbuseLabel(selectedItem.nomination.label)}
+                    {formatPublisherAbuseLabel(selectedItem.nomination.label, t)}
                   </Badge>
                 </div>
                 <div className="pa-idline">
                   <PublisherAbuseIdentity
-                    label="Publisher"
+                    label={t("management.abuse.publisher")}
                     value={
                       selectedItem.nomination.ownerPublisherId ?? selectedItem.nomination.ownerKey
                     }
                   />
                   <PublisherAbuseIdentity
-                    label="User"
-                    value={selectedItem.nomination.ownerUserId ?? "No linked user"}
+                    label={t("management.abuse.user")}
+                    value={
+                      selectedItem.nomination.ownerUserId ??
+                      t("management.abuse.no_linked_user")
+                    }
                   />
                   {selectedPublisher ? (
                     <Link
@@ -304,7 +323,7 @@ export function AbusePage({
                       params={{ handle: selectedPublisher.handle }}
                     >
                       <ExternalLink size={12} />
-                      Profile
+                      {t("management.abuse.profile")}
                     </Link>
                   ) : null}
                 </div>
@@ -317,70 +336,88 @@ export function AbusePage({
                     <strong
                       className={selectedScore ? zScoreClass(selectedScore.zScore) : undefined}
                     >
-                      {selectedScore ? formatScore(selectedScore.zScore) : "—"}
+                      {selectedScore ? formatScore(selectedScore.zScore, locale) : "—"}
                     </strong>
                   </div>
                   <div>
-                    <span>Rank</span>
-                    <strong>{selectedScore ? formatWholeNumber(selectedScore.rank) : "—"}</strong>
+                    <span>{t("management.abuse.rank")}</span>
+                    <strong>
+                      {selectedScore ? formatWholeNumber(selectedScore.rank, locale) : "—"}
+                    </strong>
                     <small>
-                      of {formatWholeNumber(latestRunScoredCount(detail, dashboard))} scored
+                      {t("management.abuse.rank_of", {
+                        total: formatWholeNumber(latestRunScoredCount(detail, dashboard), locale),
+                      })}
                     </small>
                   </div>
                   <div>
-                    <span>Pressure</span>
-                    <strong>{selectedScore ? formatPressureLabel(selectedScore) : "—"}</strong>
+                    <span>{t("management.abuse.pressure")}</span>
+                    <strong>
+                      {selectedScore ? formatPressureLabel(selectedScore, t) : "—"}
+                    </strong>
                   </div>
                 </div>
 
                 <section className="pa-zone">
-                  <div className="pa-section-label">Why it was flagged</div>
+                  <div className="pa-section-label">{t("management.abuse.why_flagged")}</div>
                   <div className="pa-reason-list">
                     {(selectedScore?.reasonCodes ?? []).map((reason) => (
                       <div key={reason} className="pa-reason">
-                        <strong>{formatReasonCode(reason)}</strong>
-                        <small>{describeReasonCode(reason)}</small>
+                        <strong>{formatReasonCode(reason, t)}</strong>
+                        <small>{describeReasonCode(reason, t)}</small>
                       </div>
                     ))}
                     {!selectedScore?.reasonCodes.length ? (
                       <div className="pa-reason">
-                        <strong>No active reason code</strong>
-                        <small>The latest score did not cross a named reason threshold.</small>
+                        <strong>{t("management.abuse.no_reason")}</strong>
+                        <small>{t("management.abuse.no_reason_desc")}</small>
                       </div>
                     ) : null}
                   </div>
                 </section>
 
                 <section className="pa-zone">
-                  <div className="pa-section-label">Publisher activity</div>
+                  <div className="pa-section-label">
+                    {t("management.abuse.publisher_activity")}
+                  </div>
                   <div className="pa-metrics">
                     <PublisherAbuseMetric
-                      label="Published skills"
+                      label={t("management.abuse.published_skills")}
+                      locale={locale}
                       value={selectedScore?.publishedSkills}
                     />
                     <PublisherAbuseMetric
-                      label="Total installs"
+                      label={t("management.abuse.total_installs")}
+                      locale={locale}
                       value={selectedScore?.totalInstalls}
                     />
-                    <PublisherAbuseMetric label="Total stars" value={selectedScore?.totalStars} />
                     <PublisherAbuseMetric
-                      label="Total downloads"
+                      label={t("management.abuse.total_stars")}
+                      locale={locale}
+                      value={selectedScore?.totalStars}
+                    />
+                    <PublisherAbuseMetric
+                      label={t("management.abuse.total_downloads")}
+                      locale={locale}
                       value={selectedScore?.totalDownloads}
                     />
                   </div>
                   <div className="pa-metrics pa-metrics-ratios">
                     <PublisherAbuseMetric
-                      label="Installs / skill"
+                      label={t("management.abuse.installs_per_skill")}
+                      locale={locale}
                       value={selectedScore?.installsPerSkill}
                       ratio
                     />
                     <PublisherAbuseMetric
-                      label="Stars / skill"
+                      label={t("management.abuse.stars_per_skill")}
+                      locale={locale}
                       value={selectedScore?.starsPerSkill}
                       ratio
                     />
                     <PublisherAbuseMetric
-                      label="Downloads / skill"
+                      label={t("management.abuse.downloads_per_skill")}
+                      locale={locale}
                       value={selectedScore?.downloadsPerSkill}
                       ratio
                     />
@@ -390,13 +427,15 @@ export function AbusePage({
 
                 {detail?.scoreHistory.length ? (
                   <section className="pa-zone">
-                    <div className="pa-section-label">Scoring history</div>
+                    <div className="pa-section-label">
+                      {t("management.abuse.scoring_history")}
+                    </div>
                     <div className="pa-history">
                       {detail.scoreHistory.map((score) => (
                         <div key={score._id} className="pa-history-item">
-                          <span>{formatShortTimestamp(score.createdAt)}</span>
+                          <span>{formatShortTimestamp(score.createdAt, locale)}</span>
                           <strong className={zScoreClass(score.zScore)}>
-                            {formatScore(score.zScore)}
+                            {formatScore(score.zScore, locale)}
                           </strong>
                         </div>
                       ))}
@@ -406,29 +445,31 @@ export function AbusePage({
 
                 {selectedItem.nomination.status !== "pending" ? (
                   <section className="pa-zone pa-review">
-                    <div className="pa-section-label">Resolution</div>
+                    <div className="pa-section-label">{t("management.abuse.resolution")}</div>
                     <div className="pa-actions">
                       <Badge variant={publisherAbuseStatusVariant(selectedItem.nomination.status)}>
-                        {formatPublisherAbuseStatus(selectedItem.nomination.status)}
+                        {formatPublisherAbuseStatus(selectedItem.nomination.status, t)}
                       </Badge>
                       <span className="pa-muted">
-                        Reviewed{" "}
-                        {formatShortTimestamp(
-                          selectedItem.nomination.reviewedAt ?? selectedItem.nomination.updatedAt,
-                        )}
+                        {t("management.abuse.reviewed_at", {
+                          time: formatShortTimestamp(
+                            selectedItem.nomination.reviewedAt ?? selectedItem.nomination.updatedAt,
+                            locale,
+                          ),
+                        })}
                       </span>
                     </div>
                     <p className="pa-hint">
                       {selectedItem.nomination.notes?.trim() ||
-                        "This nomination is no longer in the pending queue."}
+                        t("management.abuse.no_longer_pending")}
                     </p>
                   </section>
                 ) : selectedItem.nomination.label === "potential_ban_candidate" ? (
                   <section className="pa-zone pa-review">
-                    <div className="pa-section-label">Triage note</div>
+                    <div className="pa-section-label">{t("management.abuse.triage_note")}</div>
                     <Textarea
                       maxLength={USER_BAN_REASON_MAX_LENGTH}
-                      placeholder="Why are you taking this action? (optional)"
+                      placeholder={t("management.abuse.action_placeholder")}
                       value={notes}
                       onChange={(event) => onChangeNotes(event.target.value)}
                     />
@@ -442,17 +483,14 @@ export function AbusePage({
                         onClick={() => onBanOwner(selectedItem)}
                       >
                         <Ban size={14} />
-                        Ban user
+                        {t("management.ban_user")}
                       </Button>
                     </div>
                   </section>
                 ) : (
                   <section className="pa-zone pa-review">
-                    <div className="pa-section-label">Calibration signal</div>
-                    <p className="pa-hint">
-                      This publisher is close to the ban line, but is not a ban candidate. Leave it
-                      here so we can tune the scoring gap.
-                    </p>
+                    <div className="pa-section-label">{t("management.abuse.calibration")}</div>
+                    <p className="pa-hint">{t("management.abuse.calibration_desc")}</p>
                   </section>
                 )}
               </div>
@@ -468,11 +506,15 @@ function PublisherAbuseTabButton({
   active,
   count,
   label,
+  locale,
+  loadingLabel,
   onClick,
 }: {
   active: boolean;
   count: number | undefined;
   label: string;
+  locale: Locale;
+  loadingLabel: string;
   onClick: () => void;
 }) {
   return (
@@ -485,9 +527,9 @@ function PublisherAbuseTabButton({
     >
       {label}{" "}
       {count === undefined ? (
-        <span className="pa-tab-count pa-count-loading" aria-label="Loading" />
+        <span className="pa-tab-count pa-count-loading" aria-label={loadingLabel} />
       ) : (
-        <span className="pa-tab-count">{formatWholeNumber(count)}</span>
+        <span className="pa-tab-count">{formatWholeNumber(count, locale)}</span>
       )}
     </button>
   );
@@ -512,34 +554,41 @@ function PublisherAbuseIdentity({ label, value }: { label: string; value: string
 
 function PublisherAbuseMetric({
   label,
+  locale,
   ratio,
   value,
 }: {
   label: string;
+  locale?: Locale;
   ratio?: boolean;
   value?: number;
 }) {
   return (
     <div className="pa-metric">
       <span>{label}</span>
-      <strong>{ratio ? formatRatio(value) : formatWholeNumber(value)}</strong>
+      <strong>
+        {ratio ? formatRatio(value, locale) : formatWholeNumber(value, locale)}
+      </strong>
     </div>
   );
 }
 
 function PublisherTemporalEvidence({ score }: { score: PublisherAbuseReviewScore | null }) {
+  const { locale, t } = useLocale();
   const evidence = score?.temporalEvidence ?? [];
   if (!evidence.length) return null;
 
   const benchmark = score?.temporalBenchmark;
   return (
     <div className="pa-activity-evidence">
-      <div className="pa-subsection-label">Temporal signal</div>
+      <div className="pa-subsection-label">{t("management.abuse.temporal_signal")}</div>
       {benchmark ? (
         <p className="pa-hint">
-          Compared with {formatWholeNumber(benchmark.sampleSize)} scanned skills: 30d download P95{" "}
-          {formatWholeNumber(benchmark.downloads30dP95)}, P99{" "}
-          {formatWholeNumber(benchmark.downloads30dP99)}.
+          {t("management.abuse.temporal_benchmark", {
+            count: formatWholeNumber(benchmark.sampleSize, locale),
+            p95: formatWholeNumber(benchmark.downloads30dP95, locale),
+            p99: formatWholeNumber(benchmark.downloads30dP99, locale),
+          })}
         </p>
       ) : null}
       <div className="pa-temporal-list">
@@ -562,24 +611,48 @@ function PublisherTemporalEvidence({ score }: { score: PublisherAbuseReviewScore
               </div>
             </div>
             <div className="pa-temporal-metrics">
-              <PublisherAbuseMetric label="30d downloads" value={item.recent30Downloads} />
-              {benchmark ? (
-                <PublisherAbuseMetric label="Peer 30d P95" value={benchmark.downloads30dP95} />
-              ) : null}
-              {benchmark ? (
-                <PublisherAbuseMetric label="Peer 30d P99" value={benchmark.downloads30dP99} />
-              ) : null}
-              <PublisherAbuseMetric label="30d vs P95" value={item.downloads30dVsPeerP95} ratio />
-              <PublisherAbuseMetric label="7d spike multiple" value={item.spikeMultiplier} ratio />
+              <PublisherAbuseMetric
+                label={t("management.abuse.downloads_30d")}
+                locale={locale}
+                value={item.recent30Downloads}
+              />
               {benchmark ? (
                 <PublisherAbuseMetric
-                  label="Peer spike P95"
+                  label={t("management.abuse.peer_30d_p95")}
+                  locale={locale}
+                  value={benchmark.downloads30dP95}
+                />
+              ) : null}
+              {benchmark ? (
+                <PublisherAbuseMetric
+                  label={t("management.abuse.peer_30d_p99")}
+                  locale={locale}
+                  value={benchmark.downloads30dP99}
+                />
+              ) : null}
+              <PublisherAbuseMetric
+                label={t("management.abuse.vs_p95_30d")}
+                locale={locale}
+                value={item.downloads30dVsPeerP95}
+                ratio
+              />
+              <PublisherAbuseMetric
+                label={t("management.abuse.spike_7d")}
+                locale={locale}
+                value={item.spikeMultiplier}
+                ratio
+              />
+              {benchmark ? (
+                <PublisherAbuseMetric
+                  label={t("management.abuse.peer_spike_p95")}
+                  locale={locale}
                   value={benchmark.spikeMultiplier7dP95}
                   ratio
                 />
               ) : null}
               <PublisherAbuseMetric
-                label="Spike vs P95"
+                label={t("management.abuse.spike_vs_p95")}
+                locale={locale}
                 value={item.spikeMultiplierVsPeerP95}
                 ratio
               />
@@ -684,27 +757,27 @@ function latestRunScoredCount(
   );
 }
 
-function formatPublisherAbuseRunStatus(status: string) {
-  if (status === "completed") return "Completed";
-  if (status === "running") return "Running";
-  if (status === "failed") return "Failed";
+function formatPublisherAbuseRunStatus(status: string, t: ManagementTranslator) {
+  if (status === "completed") return t("management.abuse.status.completed");
+  if (status === "running") return t("management.abuse.status.running");
+  if (status === "failed") return t("management.abuse.status.failed");
   return status;
 }
 
-function formatPublisherAbuseLabel(label: string) {
-  if (label === "potential_ban_candidate") return "Potential Ban";
-  if (label === "review") return "On the brink";
-  if (label === "pass") return "Pass";
+function formatPublisherAbuseLabel(label: string, t: ManagementTranslator) {
+  if (label === "potential_ban_candidate") return t("management.abuse.potential_ban");
+  if (label === "review") return t("management.abuse.on_brink");
+  if (label === "pass") return t("management.abuse.status.pass");
   return label;
 }
 
-function formatPublisherAbuseStatus(status: string) {
-  if (status === "pending") return "Pending";
-  if (status === "banned") return "Banned";
-  if (status === "reviewed_no_action") return "Reviewed";
-  if (status === "false_positive") return "False positive";
-  if (status === "needs_policy_discussion") return "Needs discussion";
-  if (status === "candidate_for_future_action") return "Future action";
+function formatPublisherAbuseStatus(status: string, t: ManagementTranslator) {
+  if (status === "pending") return t("management.abuse.status.pending");
+  if (status === "banned") return t("management.abuse.status.banned");
+  if (status === "reviewed_no_action") return t("management.abuse.status.reviewed");
+  if (status === "false_positive") return t("management.abuse.status.false_positive");
+  if (status === "needs_policy_discussion") return t("management.abuse.status.needs_discussion");
+  if (status === "candidate_for_future_action") return t("management.abuse.status.future_action");
   return status;
 }
 
@@ -717,46 +790,28 @@ function publisherAbuseStatusVariant(status: string): NonNullable<BadgeProps["va
   return "default";
 }
 
-function formatReasonCode(reason: string) {
-  return reason
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" / ")
-    .replace("High / Catalog / Volume", "High Catalog Volume")
-    .replace("Extreme / Volume / Low / Engagement", "Extreme Volume, Low Engagement")
-    .replace("Low / Installs / Per / Skill", "Low Installs / Skill")
-    .replace("Low / Stars / Per / Skill", "Low Stars / Skill")
-    .replace("Low / Downloads / Per / Skill", "Low Downloads / Skill")
-    .replace("Temporal / Download / Spike / Flat / Installs", "Temporal Spike, Flat Installs")
-    .replace(
-      "Temporal / Sustained / Downloads / Flat / Installs",
-      "Temporal Sustained Downloads, Flat Installs",
-    );
+const PUBLISHER_ABUSE_REASON_CODES = new Set([
+  "high_catalog_volume",
+  "extreme_volume_low_engagement",
+  "low_installs_per_skill",
+  "low_stars_per_skill",
+  "low_downloads_per_skill",
+  "temporal_download_spike_flat_installs",
+  "temporal_sustained_downloads_flat_installs",
+]);
+
+function formatReasonCode(reason: string, t: ManagementTranslator) {
+  if (PUBLISHER_ABUSE_REASON_CODES.has(reason)) {
+    return t(`management.abuse.reason.${reason}`);
+  }
+  return reason.replaceAll("_", " ");
 }
 
-function describeReasonCode(reason: string) {
-  if (reason === "high_catalog_volume") {
-    return "Publisher has an unusually high number of skills compared to peers.";
+function describeReasonCode(reason: string, t: ManagementTranslator) {
+  if (PUBLISHER_ABUSE_REASON_CODES.has(reason)) {
+    return t(`management.abuse.reason_desc.${reason}`);
   }
-  if (reason === "extreme_volume_low_engagement") {
-    return "Very high catalog volume with extremely low engagement across installs, stars, and downloads.";
-  }
-  if (reason === "low_installs_per_skill") {
-    return "Installs per skill are far below the platform median.";
-  }
-  if (reason === "low_stars_per_skill") {
-    return "Stars per skill are far below the platform median.";
-  }
-  if (reason === "low_downloads_per_skill") {
-    return "Downloads per skill are far below the platform median.";
-  }
-  if (reason === "temporal_download_spike_flat_installs") {
-    return "The skill's 7-day download spike is above the peer cohort while installs stayed flat.";
-  }
-  if (reason === "temporal_sustained_downloads_flat_installs") {
-    return "The skill's 30-day downloads are above the peer cohort while installs stayed flat.";
-  }
-  return "Model reason emitted by the publisher abuse scorer.";
+  return t("management.abuse.reason.default");
 }
 
 function compactIdentifier(value: string) {
@@ -770,9 +825,12 @@ function zScoreClass(value: number) {
   return "pa-z-ok";
 }
 
-function formatPressureLabel(score: Pick<PublisherAbuseReviewScore, "zScore">) {
-  if (score.zScore >= 2.5) return "Very High";
-  if (score.zScore >= 1.5) return "High";
-  if (score.zScore >= 0.5) return "Elevated";
-  return "Low";
+function formatPressureLabel(
+  score: Pick<PublisherAbuseReviewScore, "zScore">,
+  t: ManagementTranslator,
+) {
+  if (score.zScore >= 2.5) return t("management.abuse.pressure.very_high");
+  if (score.zScore >= 1.5) return t("management.abuse.pressure.high");
+  if (score.zScore >= 0.5) return t("management.abuse.pressure.elevated");
+  return t("management.abuse.pressure.low");
 }

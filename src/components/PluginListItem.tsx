@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowDownToLine } from "lucide-react";
 import { formatCompactStat } from "../lib/numberFormat";
+import { t, type Locale } from "../lib/i18n";
 import type { PackageListItem } from "../lib/packageApi";
 import { MarketplaceIcon } from "./MarketplaceIcon";
 import { OfficialBadge } from "./OfficialBadge";
@@ -8,10 +9,16 @@ import { OfficialBadge } from "./OfficialBadge";
 type PluginListItemProps = {
   item: PackageListItem;
   variant?: "list" | "card";
+  locale?: Locale;
 };
 
-export function PluginListItem({ item, variant = "list" }: PluginListItemProps) {
+export function PluginListItem({ item, variant = "list", locale = "en" }: PluginListItemProps) {
   const downloads = formatCompactStat(item.stats?.downloads ?? 0);
+  const officialLabel = t("plugins.official", locale);
+  const fallbackSummary = t("plugins.item_fallback_summary", locale);
+  const itemType = t("plugins.item_type", locale);
+  const communityLabel = t("plugins.item_community", locale);
+  const ariaLabel = t("plugins.item_aria_label", locale, { name: item.displayName });
 
   if (variant === "card") {
     return (
@@ -19,11 +26,11 @@ export function PluginListItem({ item, variant = "list" }: PluginListItemProps) 
         to="/plugins/$name"
         params={{ name: item.name }}
         className="card skill-card plugin-card"
-        aria-label={`Plugin: ${item.displayName}`}
+        aria-label={ariaLabel}
       >
         {item.isOfficial ? (
           <div className="skill-card-tags">
-            <OfficialBadge />
+            <OfficialBadge label={officialLabel} />
           </div>
         ) : null}
         <div className="skill-card-header">
@@ -31,11 +38,11 @@ export function PluginListItem({ item, variant = "list" }: PluginListItemProps) 
           <h3 className="skill-card-title">{item.displayName}</h3>
         </div>
         <p className="skill-card-summary">
-          {item.summary ?? "Plugin package for agent workflows."}
+          {item.summary ?? fallbackSummary}
         </p>
         <div className="skill-card-footer">
           <div className="skill-list-item-meta plugin-card-meta">
-            <span className="skill-list-item-meta-item">Plugin</span>
+            <span className="skill-list-item-meta-item">{itemType}</span>
             {item.latestVersion ? (
               <span className="skill-list-item-meta-item">v{item.latestVersion}</span>
             ) : null}
@@ -43,7 +50,7 @@ export function PluginListItem({ item, variant = "list" }: PluginListItemProps) 
               <ArrowDownToLine size={14} aria-hidden="true" /> {downloads}
             </span>
             <span className="skill-list-item-meta-item">
-              {item.ownerHandle ? `@${item.ownerHandle}` : "community"}
+              {item.ownerHandle ? `@${item.ownerHandle}` : communityLabel}
             </span>
           </div>
         </div>
@@ -56,7 +63,7 @@ export function PluginListItem({ item, variant = "list" }: PluginListItemProps) 
       to="/plugins/$name"
       params={{ name: item.name }}
       className="skill-list-item"
-      aria-label={`Plugin: ${item.displayName}`}
+      aria-label={ariaLabel}
     >
       <MarketplaceIcon kind="plugin" label={item.displayName} />
       <div className="skill-list-item-body">
@@ -68,13 +75,13 @@ export function PluginListItem({ item, variant = "list" }: PluginListItemProps) 
             </>
           ) : null}
           <span className="skill-list-item-name">{item.displayName}</span>
-          {item.isOfficial ? <OfficialBadge /> : null}
+          {item.isOfficial ? <OfficialBadge label={officialLabel} /> : null}
         </div>
         <p className="skill-list-item-summary">
-          {item.summary ?? "Plugin package for agent workflows."}
+          {item.summary ?? fallbackSummary}
         </p>
         <div className="skill-list-item-meta">
-          <span className="skill-list-item-meta-item">Plugin</span>
+          <span className="skill-list-item-meta-item">{itemType}</span>
           {item.latestVersion ? (
             <span className="skill-list-item-meta-item">v{item.latestVersion}</span>
           ) : null}
@@ -82,7 +89,7 @@ export function PluginListItem({ item, variant = "list" }: PluginListItemProps) 
             <ArrowDownToLine size={14} aria-hidden="true" /> {downloads}
           </span>
           <span className="skill-list-item-meta-item">
-            {item.ownerHandle ? `@${item.ownerHandle}` : "community"}
+            {item.ownerHandle ? `@${item.ownerHandle}` : communityLabel}
           </span>
         </div>
       </div>

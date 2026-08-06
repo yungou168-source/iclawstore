@@ -1,23 +1,31 @@
 import { createPool } from 'mysql2/promise';
 import { dispatchAvailableOutboxEvents } from './services/outboxDispatcher.js';
+import {
+  createRuntimeObserver,
+  parseBoundedPositiveInteger,
+  startRuntimeMetricsLogging,
+} from './services/runtimeObservability.js';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl?.startsWith('mysql')) {
   throw new Error('DATABASE_URL must be a MySQL URL');
 }
 
-const readPositiveInteger = (value: string | undefined, fallback: number, max: number): number => {
-  const parsed = Number(value);
-  return Number.isSafeInteger(parsed) && parsed > 0 ? Math.min(parsed, max) : fallback;
-};
-const pollIntervalMs = readPositiveInteger(process.env.OUTBOX_POLL_INTERVAL_MS, 1000, 60_000);
-const batchSize = readPositiveInteger(process.env.OUTBOX_BATCH_SIZE, 20, 100);
+const pollIntervalMs = parseBoundedPositiveInteger(process.env.OUTBOX_POLL_INTERVAL_MS, 1000, 60_000);
+const batchSize = parseBoundedPositiveInteger(process.env.OUTBOX_BATCH_SIZE, 20, 20);
+const metricsIntervalMs = parseBoundedPositiveInteger(process.env.RUNTIME_METRICS_INTERVAL_MS, 60_000, 300_000);
 const pool = createPool({
   uri: databaseUrl,
   connectionLimit: 2,
   waitForConnections: true,
   enableKeepAlive: true,
 });
+const observer = createRuntimeObserver({ role: 'dispatcher', mysqlConnectionLimit: 2 });
+const stopMetricsLogging = startRuntimeMetricsLogging(
+  observer,
+  (metrics) => console.info(JSON.stringify({ event: 'runtime.metrics', ...metrics })),
+  metricsIntervalMs,
+);
 let stopping = false;
 
 const sleep = (milliseconds: number) =>
@@ -53,5 +61,7 @@ try {
     }
   }
 } finally {
+  stopMetricsLogging();
+  observer.close();
   await pool.end();
 }

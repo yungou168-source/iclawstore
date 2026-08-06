@@ -10,6 +10,10 @@ vi.mock("@tanstack/react-router", () => ({
   ),
 }));
 
+vi.mock("../lib/i18n/context", () => ({
+  useLocale: () => ({ locale: "en" }),
+}));
+
 import { Footer } from "./Footer";
 
 describe("Footer", () => {
@@ -28,63 +32,26 @@ describe("Footer", () => {
     );
   }
 
-  it("renders the restored four-column public footer", () => {
+  it("renders friendly links, social icons, and the legal record information", () => {
     const { container } = render(<Footer />);
 
-    const columns = container.querySelectorAll(".footer-col");
-    expect(columns).toHaveLength(4);
-
-    const browse = screen.getByRole("heading", { name: "Browse" }).closest(".footer-col");
-    const publish = screen.getByRole("heading", { name: "Publish" }).closest(".footer-col");
-    const community = screen.getByRole("heading", { name: "Community" }).closest(".footer-col");
-    const platform = screen.getByRole("heading", { name: "Platform" }).closest(".footer-col");
-
-    expect(browse).not.toBeNull();
-    expect(publish).not.toBeNull();
-    expect(community).not.toBeNull();
-    expect(platform).not.toBeNull();
-
-    expect(
-      within(browse as HTMLElement)
-        .getByRole("link", { name: "Skills" })
-        .getAttribute("href"),
-    ).toBe("/skills");
-    expect(
-      within(browse as HTMLElement)
-        .getByRole("link", { name: "Plugins" })
-        .getAttribute("href"),
-    ).toBe("/plugins");
-    expect(
-      within(publish as HTMLElement)
-        .getByRole("link", { name: "Publish Skill" })
-        .getAttribute("href"),
-    ).toBe("/skills/publish");
-    expect(
-      within(publish as HTMLElement)
-        .getByRole("link", { name: "Publish Plugin" })
-        .getAttribute("href"),
-    ).toBe("/plugins/publish");
-    expect(
-      within(community as HTMLElement)
-        .getByRole("link", { name: "GitHub" })
-        .getAttribute("href"),
-    ).toBe("https://github.com/openclaw/clawhub");
-    expect(
-      within(community as HTMLElement)
-        .getByRole("link", { name: "OpenClaw" })
-        .getAttribute("href"),
-    ).toBe("https://openclaw.ai");
-    expect(within(community as HTMLElement).queryByRole("link", { name: "About" })).toBeNull();
-    expect(
-      within(platform as HTMLElement)
-        .getByRole("link", { name: "Deployed on Vercel" })
-        .getAttribute("href"),
-    ).toBe("https://vercel.com");
-    expect(
-      within(platform as HTMLElement)
-        .getByRole("link", { name: "Powered by Convex" })
-        .getAttribute("href"),
-    ).toBe("https://www.convex.dev");
+    expect(container.querySelectorAll(".footer-col")).toHaveLength(2);
+    expect(screen.getByRole("region", { name: "Friendly links" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "AI直聘 desktop" }).getAttribute("href")).toBe(
+      "https://github.com/yungou168-source/iclawstore",
+    );
+    expect(screen.getByRole("link", { name: "Desktop client" }).getAttribute("href")).toBe(
+      "https://github.com/yungou168-source/iclawstore/releases",
+    );
+    expect(screen.getByRole("link", { name: "Source repository" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Issue tracker" })).toBeTruthy();
+    expect(screen.getByText("© 2026 Ai Work. All rights reserved.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "苏ICP备2025218477号" }).getAttribute("href")).toBe(
+      "https://beian.miit.gov.cn/",
+    );
+    expect(screen.getByRole("link", { name: "苏公网安备32072102010431号" }).getAttribute("href")).toBe(
+      "https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=32072102010431",
+    );
   });
 
   it("collapses footer sections by heading until toggled open", async () => {
@@ -93,15 +60,15 @@ describe("Footer", () => {
 
     const browseToggle = screen.getByRole("button", { name: "Browse" });
     const browseLinks = document.getElementById("footer-section-browse-links");
-    const platformToggle = screen.getByRole("button", { name: "Platform" });
-    const platformLinks = document.getElementById("footer-section-platform-links");
+    const developerToggle = screen.getByRole("button", { name: "Developers" });
+    const developerLinks = document.getElementById("footer-section-developers-links");
 
     expect(browseLinks).not.toBeNull();
-    expect(platformLinks).not.toBeNull();
+    expect(developerLinks).not.toBeNull();
     await waitFor(() => expect(browseToggle.getAttribute("aria-expanded")).toBe("false"));
     expect(browseLinks?.getAttribute("data-open")).toBe("false");
-    expect(platformToggle.getAttribute("aria-expanded")).toBe("false");
-    expect(platformLinks?.getAttribute("data-open")).toBe("false");
+    expect(developerToggle.getAttribute("aria-expanded")).toBe("false");
+    expect(developerLinks?.getAttribute("data-open")).toBe("false");
 
     fireEvent.click(browseToggle);
 
@@ -109,10 +76,10 @@ describe("Footer", () => {
     expect(browseLinks?.getAttribute("data-open")).toBe("true");
     expect(
       within(browseLinks as HTMLElement)
-        .getByRole("link", { name: "Skills" })
+        .getByRole("link", { name: "Home" })
         .getAttribute("href"),
-    ).toBe("/skills");
-    expect(platformLinks?.getAttribute("data-open")).toBe("false");
+    ).toBe("/");
+    expect(developerLinks?.getAttribute("data-open")).toBe("false");
 
     fireEvent.click(browseToggle);
 

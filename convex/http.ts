@@ -1,6 +1,7 @@
 import { ApiRoutes, LegacyApiRoutes } from "clawhub-schema";
 import { httpRouter } from "convex/server";
 import { auth } from "./auth";
+import { registerDesktopOAuthRoutes } from "./desktopOAuthHttp";
 import { downloadZip } from "./downloads";
 import {
   cliPublishHttp,
@@ -68,6 +69,7 @@ import {
 const http = httpRouter();
 
 auth.addHttpRoutes(http);
+registerDesktopOAuthRoutes(http);
 
 http.route({
   path: ApiRoutes.download,

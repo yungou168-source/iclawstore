@@ -18,9 +18,9 @@ describe("AccountBannedPage", () => {
     render(<AccountBannedPage />);
 
     expect(
-      screen.getByRole("heading", { name: "Your ClawHub account has been banned" }),
+      screen.getByRole("heading", { name: "Your AI直聘 account has been banned" }),
     ).toBeTruthy();
-    expect(screen.getByText("This account cannot sign in to ClawHub.")).toBeTruthy();
+    expect(screen.getByText("This account cannot sign in to AI直聘.")).toBeTruthy();
 
     const appealLink = screen.getByRole("link", { name: "Open an appeal" });
     expect(appealLink.getAttribute("href")).toBe("https://appeals.openclaw.ai/");

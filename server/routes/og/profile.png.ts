@@ -51,7 +51,7 @@ export default defineEventHandler(async (event) => {
   const meta = needFetch && convexUrl ? await fetchPublisherOgMeta(handle, convexUrl) : null;
   const handleLabel = `@${meta?.handle || handle}`;
   const title = titleFromQuery || meta?.displayName || handleLabel;
-  const description = descriptionFromQuery || meta?.bio || "Publisher on ClawHub.";
+  const description = descriptionFromQuery || meta?.bio || "Publisher on Ai Work.";
 
   const [markDataUrl, watermarkDataUrl, fontBuffers] = await Promise.all([
     getMarkDataUrl(),

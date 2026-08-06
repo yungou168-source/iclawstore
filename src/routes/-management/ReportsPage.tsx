@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { Button } from "../../components/ui/button";
+import { useLocale } from "../../lib/i18n/context";
 import { formatTimestamp, resolveOwnerParam, type ReportedSkillEntry } from "./managementShared";
 
 export function ReportsPage({
@@ -22,18 +23,19 @@ export function ReportsPage({
   onHardDeleteSkill: (skill: Doc<"skills">) => void;
   onToggleSkillHidden: (skill: Doc<"skills">) => void;
 }) {
+  const { locale, t } = useLocale();
   return (
     <div className="management-view">
-      <h2 className="section-title text-[1.2rem] m-0">Reported skills</h2>
+      <h2 className="section-title text-[1.2rem] m-0">{t("management.reports.title")}</h2>
       <p className="section-subtitle m-0 mt-1">
-        Skills the community has flagged. Review each report and take action.
+        {t("management.reports.subtitle")}
       </p>
       <div className="management-controls">
         <div className="management-control management-search">
-          <span className="mono">Filter</span>
+          <span className="mono">{t("management.filter")}</span>
           <input
             type="search"
-            placeholder="Search reported skills"
+            placeholder={t("management.reports.search")}
             value={search}
             onChange={(event) => onChangeSearch(event.target.value)}
           />
@@ -42,7 +44,7 @@ export function ReportsPage({
       </div>
       <div className="management-list">
         {!items ? (
-          <div className="management-empty">Loading reports…</div>
+          <div className="management-empty">{t("management.loading_reports")}</div>
         ) : items.length === 0 ? (
           <div className="management-empty">{reportCountLabel}</div>
         ) : (
@@ -61,9 +63,12 @@ export function ReportsPage({
                   </Link>
                   <div className="section-subtitle m-0">
                     @{owner?.handle ?? owner?.name ?? "user"} · v{latestVersion?.version ?? "—"} ·
-                    {skill.reportCount ?? 0} report
-                    {(skill.reportCount ?? 0) === 1 ? "" : "s"}
-                    {skill.lastReportedAt ? ` · last ${formatTimestamp(skill.lastReportedAt)}` : ""}
+                    {t("management.reports.count", { count: skill.reportCount ?? 0 })}
+                    {skill.lastReportedAt
+                      ? ` · ${t("management.reports.last", {
+                          time: formatTimestamp(skill.lastReportedAt, locale),
+                        })}`
+                      : ""}
                   </div>
                   {reportEntries.length > 0 ? (
                     <div className="management-sublist">
@@ -73,7 +78,7 @@ export function ReportsPage({
                           className="management-report-item"
                         >
                           <span className="management-report-meta">
-                            {formatTimestamp(report.createdAt)}
+                            {formatTimestamp(report.createdAt, locale)}
                             {report.reporterHandle ? ` · @${report.reporterHandle}` : ""}
                           </span>
                           <span>{report.reason}</span>
@@ -81,7 +86,9 @@ export function ReportsPage({
                       ))}
                     </div>
                   ) : (
-                    <div className="section-subtitle m-0">No report reasons yet.</div>
+                    <div className="section-subtitle m-0">
+                      {t("management.reports.no_reasons")}
+                    </div>
                   )}
                 </div>
                 <div className="management-actions">
@@ -94,11 +101,11 @@ export function ReportsPage({
                         plugin: undefined,
                       }}
                     >
-                      Manage
+                      {t("management.manage")}
                     </Link>
                   </Button>
                   <Button type="button" onClick={() => onToggleSkillHidden(skill)}>
-                    {skill.softDeletedAt ? "Restore" : "Hide"}
+                    {skill.softDeletedAt ? t("management.restore") : t("management.hide")}
                   </Button>
                   {admin ? (
                     <Button
@@ -106,7 +113,7 @@ export function ReportsPage({
                       variant="destructive"
                       onClick={() => onHardDeleteSkill(skill)}
                     >
-                      Hard delete
+                      {t("management.hard_delete")}
                     </Button>
                   ) : null}
                 </div>

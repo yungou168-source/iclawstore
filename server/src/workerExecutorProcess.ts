@@ -3,6 +3,10 @@ import { clearProviderRuntime, loadProviderRuntime } from './services/providerRu
 import { createProviderRateLimiter } from './services/providerRateLimiter.js';
 import { createWorkerExecutor } from './services/workerExecutor.js';
 import { createWorkerRuntimeClient } from './services/workerRuntimeClient.js';
+import {
+  createRuntimeObserver,
+  startRuntimeMetricsLogging,
+} from './services/runtimeObservability.js';
 
 function integer(value: string | undefined, fallback: number, minimum: number, maximum: number): number {
   if (value === undefined) return fallback;
@@ -46,8 +50,16 @@ if (!enabled(process.env.PROVIDER_EXECUTION_ENABLED)) {
     waitForConnections: true,
     enableKeepAlive: true,
   });
+  const observer = createRuntimeObserver({ role: 'executor', mysqlConnectionLimit: 1 });
+  const stopMetricsLogging = startRuntimeMetricsLogging(
+    observer,
+    (metrics) => console.info(JSON.stringify({ event: 'runtime.metrics', ...metrics })),
+    integer(process.env.RUNTIME_METRICS_INTERVAL_MS, 60_000, 1_000, 300_000),
+  );
   const runtime = loadProviderRuntime(pool);
   if (!runtime) {
+    stopMetricsLogging();
+    observer.close();
     await pool.end();
     throw new Error('AI Direct provider runtime must be enabled for the Executor');
   }
@@ -80,6 +92,8 @@ if (!enabled(process.env.PROVIDER_EXECUTION_ENABLED)) {
   } catch (error) {
     if (!stop.signal.aborted) throw error;
   } finally {
+    stopMetricsLogging();
+    observer.close();
     clearProviderRuntime(runtime);
     await pool.end();
     console.info(JSON.stringify({ event: 'provider.executor.stopped' }));

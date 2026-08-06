@@ -147,6 +147,7 @@ describe('JobQueueService.retry', () => {
           agentVersionId: null,
           workflowKey: 'agent.evaluate',
           workflowVersion: 'v1',
+          status: 'failed',
           requestedByUserId: 'user-1',
           approvalId: null,
           requestedModelPolicy: null,

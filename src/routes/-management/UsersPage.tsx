@@ -1,5 +1,6 @@
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "../../components/ui/button";
+import { useLocale } from "../../lib/i18n/context";
 import {
   Select,
   SelectContent,
@@ -32,18 +33,20 @@ export function UsersPage({
   onSetRole: (userId: Id<"users">, role: ManagementRole) => void;
   onUnbanUser: (userId: Id<"users">, label: string) => void;
 }) {
+  const { locale, t } = useLocale();
+  const roleLabel = (role: ManagementRole) => t(`management.users.${role}`);
   return (
     <div className="management-view">
-      <h2 className="section-title text-[1.2rem] m-0">Users</h2>
+      <h2 className="section-title text-[1.2rem] m-0">{t("management.users")}</h2>
       <p className="section-subtitle m-0 mt-1">
-        Staff and member accounts. Search by handle, change a role, or ban an account.
+        {t("management.users.subtitle")}
       </p>
       <div className="management-controls">
         <div className="management-control management-search">
-          <span className="mono">Filter</span>
+          <span className="mono">{t("management.filter")}</span>
           <input
             type="search"
-            placeholder="Search users"
+            placeholder={t("management.users.search")}
             value={search}
             onChange={(event) => onChangeSearch(event.target.value)}
           />
@@ -68,9 +71,15 @@ export function UsersPage({
                   <div className="management-item-meta">
                     {removed
                       ? user.banReason && user.deletedAt
-                        ? `Banned ${formatTimestamp(user.deletedAt)} · ${user.banReason}`
-                        : `Deleted ${formatTimestamp(removedAt)}`
-                      : `${user.role ?? "user"} · joined ${formatTimestamp(user._creationTime)}`}
+                        ? t("management.users.banned", {
+                            time: formatTimestamp(user.deletedAt, locale),
+                            reason: user.banReason,
+                          })
+                        : t("management.users.deleted", { time: formatTimestamp(removedAt, locale) })
+                      : t("management.users.joined", {
+                          role: roleLabel(user.role ?? "user"),
+                          time: formatTimestamp(user._creationTime, locale),
+                        })}
                   </div>
                 </div>
                 <div className="management-actions">
@@ -86,9 +95,11 @@ export function UsersPage({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="moderator">Moderator</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="user">{t("management.users.user")}</SelectItem>
+                      <SelectItem value="moderator">
+                        {t("management.users.moderator")}
+                      </SelectItem>
+                      <SelectItem value="admin">{t("management.users.admin")}</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button
@@ -100,11 +111,11 @@ export function UsersPage({
                       onBanUser(user._id, label);
                     }}
                   >
-                    Ban user
+                    {t("management.ban_user")}
                   </Button>
                   {user.deletedAt && !user.deactivatedAt ? (
                     <Button type="button" onClick={() => onUnbanUser(user._id, label)}>
-                      Unban user
+                      {t("management.unban_user")}
                     </Button>
                   ) : null}
                 </div>

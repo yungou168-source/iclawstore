@@ -21,9 +21,9 @@ import {
   normalizeAuthErrorMessage,
 } from "../lib/authErrorMessage";
 import { getSiteDescription, getSiteMode, getSiteName, getSiteUrlForMode } from "../lib/site";
-import appCss from "../styles.css?url";
+import '../styles.css';
 
-const OG_IMAGE_VERSION = "20260420-12";
+const OG_IMAGE_VERSION = "20260804-ai-work";
 
 export const Route = createRootRoute({
   beforeLoad: ({ location }) => {
@@ -43,7 +43,7 @@ export const Route = createRootRoute({
     const siteName = getSiteName(mode);
     const siteDescription = getSiteDescription(mode);
     const siteUrl = getSiteUrlForMode(mode);
-    const ogImage = `${siteUrl}/og.png?v=${OG_IMAGE_VERSION}`;
+    const ogImage = `${siteUrl}/og.svg?v=${OG_IMAGE_VERSION}`;
 
     return {
       meta: [
@@ -116,17 +116,13 @@ export const Route = createRootRoute({
       ],
       links: [
         {
-          rel: "stylesheet",
-          href: appCss,
-        },
-        {
           rel: "icon",
-          href: "/favicon.ico",
-          type: "image/x-icon",
+          href: "/ai-work-icon.svg",
+          type: "image/svg+xml",
         },
         {
           rel: "apple-touch-icon",
-          href: "/logo192.png",
+          href: "/ai-work-icon.svg",
         },
         {
           rel: "manifest",

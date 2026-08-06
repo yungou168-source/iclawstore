@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { AuthRequiredError } from "../src/middleware/aiDirectAuth.js";
 import {
   assertConvexAuthUserIdMatches,
+  assertDesktopAccessTokenClaims,
   convexAuthUserIdFromSubject,
 } from "../src/services/convexIdentityBridge.js";
 
@@ -41,5 +42,63 @@ describe("Convex identity bridge subject", () => {
     expect(() =>
       assertConvexAuthUserIdMatches("convex-user-1", "convex-user-1"),
     ).not.toThrow();
+  });
+});
+
+describe("desktop OAuth access token claims", () => {
+  const validPayload = {
+    sub: "convex-user-1",
+    client_id: "desktop-client",
+    jti: "token-id",
+  };
+
+  it("accepts an audience-bound access token from the configured client", () => {
+    expect(() =>
+      assertDesktopAccessTokenClaims(
+        validPayload,
+        { alg: "RS256", typ: "at+jwt" },
+        "desktop-client",
+      ),
+    ).not.toThrow();
+  });
+
+  it("accepts the OAuth cid compatibility claim", () => {
+    expect(() =>
+      assertDesktopAccessTokenClaims(
+        { sub: "convex-user-1", cid: "desktop-client", jti: "token-id" },
+        { alg: "RS256", typ: "application/at+jwt" },
+        "desktop-client",
+      ),
+    ).not.toThrow();
+  });
+
+  it("rejects an ID token in place of an access token", () => {
+    expect(() =>
+      assertDesktopAccessTokenClaims(
+        validPayload,
+        { alg: "RS256", typ: "JWT" },
+        "desktop-client",
+      ),
+    ).toThrow(AuthRequiredError);
+  });
+
+  it("rejects a token issued to another desktop client", () => {
+    expect(() =>
+      assertDesktopAccessTokenClaims(
+        validPayload,
+        { alg: "RS256", typ: "at+jwt" },
+        "other-client",
+      ),
+    ).toThrow(AuthRequiredError);
+  });
+
+  it("rejects a token without a jti replay identifier", () => {
+    expect(() =>
+      assertDesktopAccessTokenClaims(
+        { sub: "convex-user-1", client_id: "desktop-client" },
+        { alg: "RS256", typ: "at+jwt" },
+        "desktop-client",
+      ),
+    ).toThrow(AuthRequiredError);
   });
 });

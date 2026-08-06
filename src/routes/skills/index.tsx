@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BrowseSidebar } from "../../components/BrowseSidebar";
 import { SKILL_CATEGORIES } from "../../lib/categories";
@@ -163,16 +162,6 @@ export function SkillsIndex() {
           {t("skills.title", locale)}
           {totalSkillsText ? <span className="browse-count">{totalSkillsText}</span> : null}
         </h1>
-      </div>
-      <div className="browse-page-search">
-        <Search size={15} className="navbar-search-icon" aria-hidden="true" />
-        <input
-          ref={searchInputRef}
-          className="browse-search-input"
-          value={model.query}
-          onChange={(event) => model.onQueryChange(event.target.value)}
-          placeholder={t("header.search_placeholder", locale)}
-        />
       </div>
       <div className={`browse-layout${sidebarOpen ? " sidebar-open" : ""}`}>
         <BrowseSidebar

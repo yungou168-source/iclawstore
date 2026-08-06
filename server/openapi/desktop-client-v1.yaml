@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ClawHub Desktop Client API
-  version: 1.0.0
+  version: 1.1.0
   description: |
     Versioned contract for Agent appearance, account-synchronized desktop sidebar
     preferences, and the desktop template catalog. Template business data remains
@@ -14,8 +14,14 @@ tags:
   - name: Contract
   - name: Agent Appearance
   - name: Employments
+  - name: Offers
   - name: Desktop Sidebar
   - name: Desktop Templates
+  - name: Session
+  - name: Jobs
+  - name: Interviews
+  - name: Candidate Catalog
+  - name: Workforce
 paths:
   /api/v1/desktop/contract:
     get:
@@ -206,6 +212,37 @@ paths:
             model/gltf-binary: { schema: { type: string, format: binary } }
         '401': { $ref: '#/components/responses/AuthRequired' }
         '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/ai-direct-hiring/offers/{offerId}/accept:
+    post:
+      tags: [Offers]
+      summary: Accept an Offer and create its sole Employment atomically
+      description: |
+        This is the only Employment creation endpoint. One committed transaction
+        marks the Offer accepted, creates exactly one accepted Employment, assigns
+        appearance control, and writes its state, audit, and outbox records.
+        A repeated request after a committed acceptance returns the same Employment
+        with `replayed: true`; it never creates a second Employment.
+      operationId: acceptOffer
+      parameters:
+        - { name: offerId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      responses:
+        '200':
+          description: Accepted Offer and its sole Employment
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, status, employmentId, employmentStatus]
+                properties:
+                  id: { type: string, maxLength: 36 }
+                  status: { type: string, const: accepted }
+                  employmentId: { type: string, maxLength: 36 }
+                  employmentStatus: { type: string, const: accepted }
+                  replayed: { type: boolean }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
   /api/v1/ai-direct-hiring/employments/{employmentId}/transition:
     post:
       tags: [Employments]
@@ -556,6 +593,356 @@ paths:
         '204': { description: Entitlement revoked }
         '401': { $ref: '#/components/responses/AuthRequired' }
         '403': { $ref: '#/components/responses/ForbiddenScope' }
+  /api/v1/ai-direct-hiring/session:
+    get:
+      tags: [Session]
+      summary: Resolve the authenticated desktop identity, organization scope, and enabled capabilities
+      operationId: getDesktopSession
+      parameters:
+        - { name: X-Organization-Id, in: header, schema: { type: string, maxLength: 36 } }
+      responses:
+        '200':
+          description: Server-authoritative desktop session scope
+          content: { application/json: { schema: { $ref: '#/components/schemas/DesktopSession' } } }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+  /api/v1/ai-direct-hiring/jobs:
+    get:
+      tags: [Jobs]
+      summary: List organization Jobs using a stable cursor
+      operationId: listDesktopJobs
+      parameters:
+        - { name: organizationId, in: query, required: true, schema: { type: string, maxLength: 36 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: cursor, in: query, schema: { type: string } }
+        - { name: status, in: query, description: Comma-separated statuses, schema: { type: string } }
+      responses:
+        '200':
+          description: Cursor page of Jobs; newest runs first
+          content: { application/json: { schema: { $ref: '#/components/schemas/JobPage' } } }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/ai-direct-hiring/jobs/{runId}:
+    get:
+      tags: [Jobs]
+      summary: Read a Job and its ordered step projection
+      operationId: getDesktopJob
+      parameters:
+        - { name: runId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      responses:
+        '200':
+          description: Job detail
+          content: { application/json: { schema: { $ref: '#/components/schemas/JobDetail' } } }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/ai-direct-hiring/jobs/{runId}/artifacts:
+    get:
+      tags: [Jobs]
+      summary: List visible Job artifact metadata without storage paths
+      operationId: listDesktopJobArtifacts
+      parameters:
+        - { name: runId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      responses:
+        '200':
+          description: Artifact metadata with authorized content URLs
+          content: { application/json: { schema: { type: object, required: [items], properties: { items: { type: array, items: { $ref: '#/components/schemas/JobArtifact' } } } } } }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/ai-direct-hiring/jobs/{runId}/artifacts/{artifactId}/content:
+    get:
+      tags: [Jobs]
+      summary: Stream a verified artifact after visibility authorization
+      operationId: downloadDesktopJobArtifact
+      parameters:
+        - { name: runId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+        - { name: artifactId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Verified artifact byte stream
+          content: { application/octet-stream: { schema: { type: string, format: binary } } }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { description: Artifact download is disabled }
+  /api/v1/ai-direct-hiring/interviews:
+    post:
+      tags: [Interviews]
+      summary: Create an organization-scoped remote interview conversation
+      operationId: createInterviewConversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [organizationId, agentVersionId]
+              properties:
+                organizationId: { type: string, maxLength: 36 }
+                agentVersionId: { type: string, maxLength: 36 }
+                participantUserIds: { type: array, maxItems: 20, items: { type: string, maxLength: 191 } }
+      responses:
+        '201': { description: Conversation created }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+  /api/v1/ai-direct-hiring/interviews/{conversationId}/model-consent:
+    put:
+      tags: [Interviews]
+      summary: Let a participant opt out of organization-enabled remote model use
+      operationId: updateInterviewModelConsent
+      parameters:
+        - { name: conversationId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [optedOut]
+              properties: { optedOut: { type: boolean } }
+      responses:
+        '200': { description: Consent updated }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+  /api/v1/ai-direct-hiring/interviews/{conversationId}/messages:
+    parameters:
+      - { name: conversationId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+    get:
+      tags: [Interviews]
+      summary: Reconcile messages through a monotonic sequence cursor
+      operationId: listInterviewMessages
+      parameters:
+        - { name: afterSequence, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+      responses:
+        '200': { description: Ordered messages; deleted bodies are null }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+    post:
+      tags: [Interviews]
+      summary: Append a text-only interview message with a 90-day retention deadline
+      operationId: createInterviewMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [body]
+              properties: { body: { type: string, minLength: 1, maxLength: 10000 } }
+      responses:
+        '201': { description: Message appended }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+  /api/v1/ai-direct-hiring/interviews/{conversationId}/messages/{messageId}:
+    delete:
+      tags: [Interviews]
+      summary: Hide the caller's message and enqueue deletion subject to legal hold
+      operationId: deleteInterviewMessage
+      parameters:
+        - { name: conversationId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+        - { name: messageId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      responses:
+        '204': { description: Message hidden and deletion requested }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/ai-direct-hiring/interviews/{conversationId}/read-cursor:
+    put:
+      tags: [Interviews]
+      summary: Advance the caller's read cursor without decreasing it
+      operationId: advanceInterviewReadCursor
+      parameters:
+        - { name: conversationId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [sequence]
+              properties: { sequence: { type: integer, minimum: 0 } }
+      responses:
+        '200': { description: Cursor advanced }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+  /api/v1/ai-direct-hiring/interview-retention-policies/{organizationId}:
+    parameters:
+      - { name: organizationId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+    get:
+      tags: [Interviews]
+      summary: Read the organization interview retention policy
+      operationId: getInterviewRetentionPolicy
+      responses:
+        '200': { description: Policy defaults to 90-day text retention, organization-default model opt-in, and image/PDF attachments up to 10 MiB }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+    put:
+      tags: [Interviews]
+      summary: Confirm the fixed v1 interview retention policy
+      operationId: putInterviewRetentionPolicy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [bodyRetentionDays, modelConsentMode, attachmentPolicy, attachmentMaxBytes]
+              properties:
+                bodyRetentionDays: { type: integer, const: 90 }
+                modelConsentMode: { type: string, const: organization_default_opt_in }
+                attachmentPolicy: { type: string, const: image_pdf_only }
+                attachmentMaxBytes: { type: integer, const: 10485760 }
+      responses:
+        '200': { description: Policy confirmed }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+  /api/v1/ai-direct-hiring/interview-legal-holds:
+    post:
+      tags: [Interviews]
+      summary: Create an organization-admin legal hold for a conversation or message
+      operationId: createInterviewLegalHold
+      responses:
+        '201': { description: Legal hold created }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+  /api/v1/ai-direct-hiring/interview-legal-holds/{holdId}:
+    delete:
+      tags: [Interviews]
+      summary: Release an active organization-admin legal hold
+      operationId: releaseInterviewLegalHold
+      parameters:
+        - { name: holdId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      responses:
+        '204': { description: Legal hold released }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/ai-direct-hiring/catalog/agents:
+    get:
+      tags: [Candidate Catalog]
+      summary: List catalog-safe candidates visible to the selected organization
+      operationId: listCandidateCatalogAgents
+      parameters:
+        - { name: X-Organization-Id, in: header, required: false, schema: { type: string, maxLength: 36 } }
+        - { name: category, in: query, required: false, schema: { type: string, maxLength: 80 } }
+        - { name: search, in: query, required: false, schema: { type: string, maxLength: 200 } }
+        - { name: cursor, in: query, required: false, schema: { type: string } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        '200': { description: Digest-backed candidate page; excludes prompts, execution policy, review notes, and employment records }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+  /api/v1/ai-direct-hiring/catalog/agents/{agentId}:
+    get:
+      tags: [Candidate Catalog]
+      summary: Read one catalog-safe candidate with organization-scoped disclosure
+      operationId: getCandidateCatalogAgent
+      parameters:
+        - { name: agentId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+        - { name: X-Organization-Id, in: header, required: false, schema: { type: string, maxLength: 36 } }
+      responses:
+        '200': { description: Digest-backed candidate detail }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/ai-direct-hiring/catalog/categories:
+    get:
+      tags: [Candidate Catalog]
+      summary: List categories and visible candidate counts
+      operationId: listCandidateCatalogCategories
+      parameters:
+        - { name: X-Organization-Id, in: header, required: false, schema: { type: string, maxLength: 36 } }
+      responses:
+        '200': { description: Digest-backed category counts }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+  /api/v1/ai-direct-hiring/workforce/employees:
+    get:
+      tags: [Workforce]
+      summary: List current company AI employees from the workforce digest
+      description: >-
+        Requires recruiter-level access to companyId. This endpoint reads only
+        current Employment digest rows, not the candidate catalog. It excludes
+        prompts, model policy, credentials, execution records, and audit data.
+      operationId: listWorkforceEmployees
+      parameters:
+        - { name: companyId, in: query, required: true, schema: { type: string, maxLength: 36 } }
+        - { name: departmentId, in: query, required: false, schema: { type: string, maxLength: 36 } }
+        - { name: positionId, in: query, required: false, schema: { type: string, maxLength: 36 } }
+        - { name: status, in: query, required: false, schema: { type: string, maxLength: 32 } }
+        - { name: cursor, in: query, required: false, schema: { type: string, maxLength: 512 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        '200': { description: Company-scoped employee digest page with an opaque updatedAt/employmentId cursor }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+  /api/v1/ai-direct-hiring/workforce/departments:
+    get:
+      tags: [Workforce]
+      summary: List company departments with an opaque cursor
+      operationId: listWorkforceDepartments
+      parameters:
+        - { name: companyId, in: query, required: true, schema: { type: string, maxLength: 36 } }
+        - { name: cursor, in: query, required: false, schema: { type: string } }
+      responses:
+        '200': { description: Company-scoped department page }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+    post:
+      tags: [Workforce]
+      summary: Create a company-owned department
+      operationId: createWorkforceDepartment
+      responses:
+        '201': { description: Department created }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+  /api/v1/ai-direct-hiring/workforce/positions:
+    get:
+      tags: [Workforce]
+      summary: List department positions with an opaque cursor
+      operationId: listWorkforcePositions
+      parameters:
+        - { name: departmentId, in: query, required: true, schema: { type: string, maxLength: 36 } }
+        - { name: cursor, in: query, required: false, schema: { type: string } }
+      responses:
+        '200': { description: Department-scoped position page with headcount projections }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+    post:
+      tags: [Workforce]
+      summary: Create a draft position
+      operationId: createWorkforcePosition
+      responses:
+        '201': { description: Position created }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+  /api/v1/ai-direct-hiring/workforce/positions/{positionId}/candidate-matches:
+    get:
+      tags: [Candidate Catalog, Workforce]
+      summary: Rank catalog-safe candidates for an authorized open position
+      description: >-
+        Requires recruiter-level access to the Position's Company and the owning
+        organization's candidateCatalog flag. The server derives organization scope
+        from the Position; clients cannot override it. Only digest-safe fields and
+        a viewer-scoped employment disclosure are returned.
+      operationId: listPositionCandidateMatches
+      parameters:
+        - { name: positionId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+        - { name: cursor, in: query, required: false, schema: { type: string, maxLength: 512 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        '200': { description: Candidate digest matches with capability coverage score, viewer-scoped employment disclosure, and an opaque cursor }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
 components:
   securitySchemes:
     bearerAuth:
@@ -594,17 +981,169 @@ components:
       required: [contract, version, openapi, documentation, purchaseSupported]
       properties:
         contract: { type: string, const: clawhub-desktop-client }
-        version: { type: string, const: 1.0.0 }
+        version: { type: string, const: 1.1.0 }
         openapi: { type: string }
         documentation: { type: string }
         purchaseSupported: { type: boolean, const: false }
+        auth:
+          $ref: '#/components/schemas/DesktopAuthDiscovery'
+    DesktopAuthDiscovery:
+      type: object
+      additionalProperties: false
+      required: [issuer, authorizationEndpoint, tokenEndpoint, userinfoEndpoint, jwksUri, revocationEndpoint, clientId, audience, scopes, codeChallengeMethods]
+      properties:
+        issuer: { type: string, format: uri }
+        authorizationEndpoint: { type: string, format: uri }
+        tokenEndpoint: { type: string, format: uri }
+        userinfoEndpoint: { type: string, format: uri }
+        jwksUri: { type: string, format: uri }
+        revocationEndpoint: { type: string, format: uri }
+        clientId: { type: string, minLength: 1 }
+        audience: { type: string, format: uri }
+        scopes:
+          type: array
+          items: { type: string }
+        codeChallengeMethods:
+          type: array
+          items: { type: string, enum: [S256] }
+    DesktopSession:
+      type: object
+      required: [user, organizations, currentOrganization, organizationSelection, featureFlags, runtimeCapabilities]
+      properties:
+        user:
+          type: object
+          required: [id, convexUserId, email, name, handle, displayName, image, role]
+          properties:
+            id: { type: string }
+            convexUserId: { type: string }
+            email: { type: [string, 'null'], format: email }
+            name: { type: [string, 'null'] }
+            handle: { type: [string, 'null'] }
+            displayName: { type: [string, 'null'] }
+            image: { type: [string, 'null'], format: uri }
+            role: { type: string }
+        organizations:
+          type: array
+          maxItems: 100
+          items: { $ref: '#/components/schemas/OrganizationScope' }
+        currentOrganization:
+          oneOf:
+            - $ref: '#/components/schemas/OrganizationScope'
+            - type: 'null'
+        organizationSelection:
+          type: object
+          required: [requestedOrganizationId, resolvedOrganizationId, source]
+          properties:
+            requestedOrganizationId: { type: [string, 'null'] }
+            resolvedOrganizationId: { type: [string, 'null'] }
+            source: { type: string, enum: [requested, default] }
+        featureFlags: { $ref: '#/components/schemas/DesktopFeatureFlags' }
+        runtimeCapabilities: { $ref: '#/components/schemas/DesktopRuntimeCapabilities' }
+    OrganizationScope:
+      type: object
+      required: [id, name, slug, role, permissions, grantVersion]
+      properties:
+        id: { type: string, maxLength: 36 }
+        name: { type: string }
+        slug: { type: string }
+        role: { type: string, enum: [owner, admin, manager, member] }
+        permissions:
+          type: array
+          items: { type: string }
+        grantVersion:
+          type: string
+          minLength: 1
+    DesktopFeatureFlags:
+      type: object
+      required: [aiDirectHiring, desktopIdentityBridge, wechatLogin, desktopJobs, candidateCatalog, interviews, providerExecution]
+      additionalProperties: { type: boolean }
+      properties:
+        aiDirectHiring: { type: boolean }
+        desktopIdentityBridge: { type: boolean }
+        wechatLogin: { type: boolean }
+        desktopJobs: { type: boolean }
+        candidateCatalog: { type: boolean, default: false }
+        interviews: { type: boolean, default: false }
+        providerExecution: { type: boolean, default: false }
+    DesktopRuntimeCapabilities:
+      type: object
+      required: [desktopJobs, artifactDownload, candidateCatalog, interviews, providerExecution]
+      additionalProperties: false
+      properties:
+        desktopJobs: { type: boolean }
+        artifactDownload: { type: boolean }
+        candidateCatalog: { type: boolean }
+        interviews: { type: boolean }
+        providerExecution: { type: boolean }
+    JobPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/JobSummary' } }
+        nextCursor: { type: [string, 'null'] }
+    JobSummary:
+      type: object
+      required: [runId, workflowKey, status, requestedByUserId, stepCount, completedSteps, failedSteps, createdAt, startedAt, finishedAt, failureCode]
+      properties:
+        runId: { type: string, maxLength: 36 }
+        workflowKey: { type: string }
+        status: { type: string, enum: [queued, active, succeeded, failed, cancelled] }
+        requestedByUserId: { type: string }
+        employmentId: { type: [string, 'null'] }
+        agentVersionId: { type: [string, 'null'] }
+        stepCount: { type: integer, minimum: 0 }
+        completedSteps: { type: integer, minimum: 0 }
+        failedSteps: { type: integer, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        startedAt: { type: [string, 'null'], format: date-time }
+        finishedAt: { type: [string, 'null'], format: date-time }
+        failureCode: { type: [string, 'null'] }
+    JobStep:
+      type: object
+      required: [stepId, stepKey, sequence, status, startedAt, finishedAt, latencyMs, costMicros, failureCode, outputSummary]
+      properties:
+        stepId: { type: string, maxLength: 36 }
+        stepKey: { type: string }
+        sequence: { type: integer, minimum: 1 }
+        status: { type: string, enum: [pending, running, succeeded, failed, skipped] }
+        startedAt: { type: [string, 'null'], format: date-time }
+        finishedAt: { type: [string, 'null'], format: date-time }
+        latencyMs: { type: [integer, 'null'], minimum: 0 }
+        costMicros: { type: [string, 'null'], pattern: '^[0-9]+$' }
+        failureCode: { type: [string, 'null'] }
+        outputSummary: { type: [object, 'null'] }
+    JobDetail:
+      allOf:
+        - $ref: '#/components/schemas/JobSummary'
+        - type: object
+          required: [steps, inputSummary, outputIndex, failureReason, leaseOwner, leaseExpiresAt]
+          properties:
+            steps: { type: array, items: { $ref: '#/components/schemas/JobStep' } }
+            inputSummary: { type: [object, 'null'] }
+            outputIndex: { type: [object, 'null'] }
+            failureReason: { type: [string, 'null'] }
+            leaseOwner: { type: [string, 'null'] }
+            leaseExpiresAt: { type: [string, 'null'], format: date-time }
+    JobArtifact:
+      type: object
+      required: [artifactId, runId, kind, mimeType, sizeBytes, sha256, visibility, createdAt, contentUrl]
+      properties:
+        artifactId: { type: string, format: uuid }
+        runId: { type: string, maxLength: 36 }
+        kind: { type: string }
+        mimeType: { type: string }
+        sizeBytes: { type: integer, minimum: 0 }
+        sha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+        visibility: { type: string, enum: [organization, requester] }
+        createdAt: { type: string, format: date-time }
+        contentUrl: { type: string }
     Error:
       type: object
       required: [code, error]
       properties:
         code:
           type: string
-          enum: [AUTH_REQUIRED, FORBIDDEN_SCOPE, NOT_FOUND, VALIDATION_ERROR, INVALID_TRANSITION, APPEARANCE_CONTROL_CONFLICT, ASSET_LIMIT_EXCEEDED, ASSET_TOO_LARGE, UNSUPPORTED_MEDIA_TYPE, ASSET_IN_USE, REVISION_CONFLICT, PRECONDITION_REQUIRED, TEMPLATE_ENTITLEMENT_REQUIRED, TEMPLATE_NOT_INSTALLABLE, DUPLICATE_ENTRY, INTERNAL_ERROR]
+          enum: [AUTH_REQUIRED, FORBIDDEN_SCOPE, NOT_FOUND, VALIDATION_ERROR, INVALID_TRANSITION, RUN_NOT_RECOVERABLE, RUNTIME_CAPABILITY_DISABLED, APPEARANCE_CONTROL_CONFLICT, ASSET_LIMIT_EXCEEDED, ASSET_TOO_LARGE, UNSUPPORTED_MEDIA_TYPE, ASSET_IN_USE, REVISION_CONFLICT, PRECONDITION_REQUIRED, TEMPLATE_ENTITLEMENT_REQUIRED, TEMPLATE_NOT_INSTALLABLE, DUPLICATE_ENTRY, INTERNAL_ERROR]
         error: { type: string }
         details: {}
     EmploymentTransitionRequest:

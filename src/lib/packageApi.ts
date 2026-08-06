@@ -343,10 +343,10 @@ function normalizePackageApiErrorBody(status: number, body: string) {
     return body;
   }
   if (status === 401) {
-    return "Sign in required. If this 龙虾市场 account was deleted, banned, or disabled, it cannot access private packages.";
+    return "Sign in required. If this AI直聘 account was deleted, banned, or disabled, it cannot access private packages.";
   }
   if (status === 403) {
-    return "This 龙虾市场 account does not have access to this package or action, or the account is not in good standing.";
+    return "This AI直聘 account does not have access to this package or action, or the account is not in good standing.";
   }
   return body || `Request failed with status ${status}`;
 }

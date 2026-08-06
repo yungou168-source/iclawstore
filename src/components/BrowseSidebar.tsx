@@ -13,7 +13,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useLocale } from "../lib/i18n/context";
-import { t } from "../lib/i18n";
+import { t, type TranslationKey } from "../lib/i18n";
 import type { BrowseCategory } from "../lib/categories";
 
 type FilterItem = {
@@ -58,7 +58,7 @@ function getCategoryIcon(icon: string) {
 }
 
 // Map category slug to translation key
-const CATEGORY_SLUG_TO_KEY: Record<string, string> = {
+const CATEGORY_SLUG_TO_KEY: Record<string, TranslationKey> = {
   "mcp-tools": "skills.category.mcp_tools",
   prompts: "skills.category.prompts",
   workflows: "skills.category.workflows",
@@ -91,7 +91,7 @@ export function BrowseSidebar({
   
   const filterSection =
     filters.length && onFilterToggle ? (
-      <fieldset className="sidebar-section" aria-label="Toggle filters">
+      <fieldset className="sidebar-section" aria-label={t("browse.aria.toggle_filters", locale)}>
         <legend className="sidebar-title">{t("common.filter", locale)}</legend>
         {filters.map((f) => (
           <label key={f.key} className="sidebar-checkbox">
@@ -108,8 +108,8 @@ export function BrowseSidebar({
     ) : null;
 
   return (
-    <aside className="browse-sidebar" aria-label="Browse filters">
-      <fieldset className="sidebar-section" role="radiogroup" aria-label="Sort order">
+    <aside className="browse-sidebar" aria-label={t("browse.aria.filters", locale)}>
+      <fieldset className="sidebar-section" role="radiogroup" aria-label={t("browse.aria.sort_order", locale)}>
         <legend className="sidebar-title">{t("skills.sort_by", locale)}</legend>
         {sortOptions.map((opt) => (
           <button
@@ -126,7 +126,7 @@ export function BrowseSidebar({
       </fieldset>
 
       {categories && onCategoryChange ? (
-        <fieldset className="sidebar-section" role="radiogroup" aria-label="Category filter">
+        <fieldset className="sidebar-section" role="radiogroup" aria-label={t("browse.aria.category_filter", locale)}>
           <legend className="sidebar-title">{t("skills.category.all", locale)}</legend>
           <button
             className={`sidebar-option${!activeCategory ? " is-active" : ""}`}

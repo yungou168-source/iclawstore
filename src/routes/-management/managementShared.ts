@@ -1,6 +1,7 @@
 import type { FunctionReturnType } from "convex/server";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import type { Locale } from "../../lib/i18n/config";
 import { getUserFacingConvexError } from "../../lib/convexError";
 
 export const SKILL_AUDIT_LOG_LIMIT = 10;
@@ -36,14 +37,24 @@ export type ManagementView =
   | "plugins"
   | "duplicates"
   | "recent"
+  | "organizations"
+  | "templates"
   | "audit"
   | "system"
+  | "employees"
+  | "costs"
+  | "approvals"
   | "settings";
 
 export type ManagementOwnerOption = {
   userId: Id<"users">;
   label: string;
 };
+
+export type ManagementTranslator = (
+  key: string,
+  vars?: Record<string, string | number>,
+) => string;
 
 export function resolveOwnerParam(
   handle: string | null | undefined,
@@ -52,12 +63,12 @@ export function resolveOwnerParam(
   return handle?.trim().toLowerCase() || (ownerId ? String(ownerId) : "unknown");
 }
 
-export function formatTimestamp(value: number) {
-  return new Date(value).toLocaleString();
+export function formatTimestamp(value: number, locale?: Locale) {
+  return new Date(value).toLocaleString(locale);
 }
 
-export function formatShortTimestamp(value: number) {
-  return new Date(value).toLocaleString(undefined, {
+export function formatShortTimestamp(value: number, locale?: Locale) {
+  return new Date(value).toLocaleString(locale, {
     month: "short",
     day: "numeric",
     hour: "2-digit",
@@ -65,28 +76,28 @@ export function formatShortTimestamp(value: number) {
   });
 }
 
-export function formatWholeNumber(value: number | null | undefined) {
+export function formatWholeNumber(value: number | null | undefined, locale?: Locale) {
   if (typeof value !== "number" || !Number.isFinite(value)) return "—";
-  return new Intl.NumberFormat().format(Math.round(value));
+  return new Intl.NumberFormat(locale).format(Math.round(value));
 }
 
-export function formatRatio(value: number | null | undefined) {
+export function formatRatio(value: number | null | undefined, locale?: Locale) {
   if (typeof value !== "number" || !Number.isFinite(value)) return "—";
-  return new Intl.NumberFormat(undefined, {
+  return new Intl.NumberFormat(locale, {
     maximumFractionDigits: value < 1 ? 2 : 1,
     minimumFractionDigits: value < 1 ? 2 : 0,
   }).format(value);
 }
 
-export function formatScore(value: number) {
-  return new Intl.NumberFormat(undefined, {
+export function formatScore(value: number, locale?: Locale) {
+  return new Intl.NumberFormat(locale, {
     maximumFractionDigits: 2,
     minimumFractionDigits: 2,
   }).format(value);
 }
 
-export function formatMutationError(error: unknown) {
-  return getUserFacingConvexError(error, "Request failed.");
+export function formatMutationError(error: unknown, fallback = "Request failed.") {
+  return getUserFacingConvexError(error, fallback);
 }
 
 export function formatManualOverrideState(
@@ -100,50 +111,69 @@ export function formatManualOverrideState(
     | null
     | undefined,
   reviewer?: ManagementUserSummary | null,
+  t?: ManagementTranslator,
+  locale?: Locale,
 ) {
-  if (!override) return "No override.";
-  return `${formatVerdictLabel(override.verdict)} · reviewer ${formatManagementUserLabel(reviewer, override.reviewerUserId)} · updated ${formatTimestamp(
-    override.updatedAt,
-  )} · ${override.note}`;
+  if (!override) return t?.("management.skills.no_override") ?? "No override.";
+  const verdict = formatVerdictLabel(override.verdict, t);
+  const reviewerLabel = formatManagementUserLabel(reviewer, override.reviewerUserId, t);
+  const time = formatTimestamp(override.updatedAt, locale);
+  return (
+    t?.("management.skills.override_state", {
+      verdict,
+      reviewer: reviewerLabel,
+      time,
+      note: override.note,
+    }) ?? `${verdict} · reviewer ${reviewerLabel} · updated ${time} · ${override.note}`
+  );
 }
 
 export function formatManagementUserLabel(
   user: ManagementUserSummary | null | undefined,
   fallbackId?: string | null,
+  t?: ManagementTranslator,
 ) {
   if (user?.handle?.trim()) return `@${user.handle.trim()}`;
   if (user?.displayName?.trim()) return user.displayName.trim();
   if (user?.name?.trim()) return user.name.trim();
   if (fallbackId?.trim()) return fallbackId.trim();
-  return "unknown user";
+  return t?.("management.unknown_user") ?? "unknown user";
 }
 
-export function formatAuditActionLabel(action: string, metadata?: unknown) {
+export function formatAuditActionLabel(
+  action: string,
+  metadata?: unknown,
+  t?: ManagementTranslator,
+) {
   const record = asAuditMetadataRecord(metadata);
   if (action === "skill.manual_override.set") {
     const verdict = typeof record?.verdict === "string" ? record.verdict : "unknown";
-    return `Override set to ${formatVerdictLabel(verdict)}`;
+    return (
+      t?.("management.audit.override_set", { verdict: formatVerdictLabel(verdict, t) }) ??
+      `Override set to ${formatVerdictLabel(verdict)}`
+    );
   }
   if (action === "skill.manual_override.clear") {
-    return "Override cleared";
+    return t?.("management.audit.override_cleared") ?? "Override cleared";
   }
   if (action === "skill.owner.change") {
-    return "Owner changed";
+    return t?.("management.audit.owner_changed") ?? "Owner changed";
   }
   if (action === "skill.duplicate.set") {
-    return "Duplicate target set";
+    return t?.("management.audit.duplicate_set") ?? "Duplicate target set";
   }
   if (action === "skill.duplicate.clear") {
-    return "Duplicate target cleared";
+    return t?.("management.audit.duplicate_cleared") ?? "Duplicate target cleared";
   }
   if (action === "skill.auto_hide") {
-    return "Skill auto-hidden";
+    return t?.("management.audit.auto_hidden") ?? "Skill auto-hidden";
   }
   if (action === "skill.hard_delete") {
-    return "Skill hard-deleted";
+    return t?.("management.audit.hard_deleted") ?? "Skill hard-deleted";
   }
   if (action.startsWith("skill.transfer.")) {
-    return `Transfer ${action.slice("skill.transfer.".length).replaceAll("_", " ")}`;
+    const transferAction = action.slice("skill.transfer.".length).replaceAll("_", " ");
+    return t?.("management.audit.transfer", { action: transferAction }) ?? `Transfer ${transferAction}`;
   }
   if (action.startsWith("skill.")) {
     return action.slice("skill.".length).replaceAll(".", " ").replaceAll("_", " ");
@@ -151,7 +181,11 @@ export function formatAuditActionLabel(action: string, metadata?: unknown) {
   return action.replaceAll(".", " ").replaceAll("_", " ");
 }
 
-export function formatAuditMetadataSummary(action: string, metadata?: unknown) {
+export function formatAuditMetadataSummary(
+  action: string,
+  metadata?: unknown,
+  t?: ManagementTranslator,
+) {
   const record = asAuditMetadataRecord(metadata);
   if (!record) return null;
 
@@ -160,7 +194,11 @@ export function formatAuditMetadataSummary(action: string, metadata?: unknown) {
     if (note) return note;
     const previousVerdict =
       typeof record.previousVerdict === "string" ? record.previousVerdict : null;
-    return previousVerdict ? `Previous verdict: ${formatVerdictLabel(previousVerdict)}` : null;
+    return previousVerdict
+      ? (t?.("management.audit.previous_verdict", {
+          verdict: formatVerdictLabel(previousVerdict, t),
+        }) ?? `Previous verdict: ${formatVerdictLabel(previousVerdict)}`)
+      : null;
   }
 
   if (action === "skill.manual_override.clear") {
@@ -169,32 +207,48 @@ export function formatAuditMetadataSummary(action: string, metadata?: unknown) {
     const previousVerdict =
       typeof record.previousVerdict === "string" ? record.previousVerdict : null;
     return previousVerdict
-      ? `Previous override verdict: ${formatVerdictLabel(previousVerdict)}`
+      ? (t?.("management.audit.previous_override_verdict", {
+          verdict: formatVerdictLabel(previousVerdict, t),
+        }) ?? `Previous override verdict: ${formatVerdictLabel(previousVerdict)}`)
       : null;
   }
 
   if (action === "skill.owner.change") {
     const from = typeof record.from === "string" ? record.from : null;
     const to = typeof record.to === "string" ? record.to : null;
-    if (from || to) return `from ${from ?? "unknown"} to ${to ?? "unknown"}`;
+    if (from || to) {
+      const fromLabel = from ?? t?.("management.audit.unknown") ?? "unknown";
+      const toLabel = to ?? t?.("management.audit.unknown") ?? "unknown";
+      return (
+        t?.("management.audit.owner_from_to", { from: fromLabel, to: toLabel }) ??
+        `from ${fromLabel} to ${toLabel}`
+      );
+    }
   }
 
   if (action === "skill.duplicate.set") {
     return typeof record.canonicalSlug === "string"
-      ? `Canonical skill: ${record.canonicalSlug}`
+      ? (t?.("management.audit.canonical_skill", { slug: record.canonicalSlug }) ??
+          `Canonical skill: ${record.canonicalSlug}`)
       : null;
   }
 
   if (action === "skill.duplicate.clear") {
-    return "Canonical skill cleared.";
+    return t?.("management.audit.canonical_cleared") ?? "Canonical skill cleared.";
   }
 
   if (action === "skill.auto_hide") {
-    return typeof record.reportCount === "number" ? `${record.reportCount} active reports` : null;
+    return typeof record.reportCount === "number"
+      ? (t?.("management.audit.active_reports", { count: record.reportCount }) ??
+          `${record.reportCount} active reports`)
+      : null;
   }
 
   if (action === "skill.hard_delete") {
-    return typeof record.slug === "string" ? `Deleted slug: ${record.slug}` : null;
+    return typeof record.slug === "string"
+      ? (t?.("management.audit.deleted_slug", { slug: record.slug }) ??
+          `Deleted slug: ${record.slug}`)
+      : null;
   }
 
   if (typeof record.note === "string" && record.note.trim()) {
@@ -211,6 +265,6 @@ function asAuditMetadataRecord(metadata: unknown) {
   return metadata as Record<string, unknown>;
 }
 
-function formatVerdictLabel(verdict: string) {
-  return verdict === "clean" ? "okay" : verdict;
+function formatVerdictLabel(verdict: string, t?: ManagementTranslator) {
+  return verdict === "clean" ? (t?.("management.audit.verdict_okay") ?? "okay") : verdict;
 }

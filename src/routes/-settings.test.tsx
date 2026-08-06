@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../convex/_generated/api";
+import { I18nProvider } from "../lib/i18n/context";
 import { Settings } from "./settings";
 
 const useQueryMock = vi.fn();
@@ -166,8 +167,17 @@ function mockSignedInSettings({
   });
 }
 
+function renderSettings() {
+  return render(
+    <I18nProvider>
+      <Settings />
+    </I18nProvider>,
+  );
+}
+
 describe("Settings", () => {
   beforeEach(() => {
+    localStorage.setItem("clawhub-locale", "en");
     window.history.replaceState(null, "", "/settings");
     useQueryMock.mockReset();
     useMutationMock.mockReset();
@@ -199,7 +209,7 @@ describe("Settings", () => {
     });
     useQueryMock.mockImplementation(() => undefined);
 
-    render(<Settings />);
+    renderSettings();
 
     expect(screen.getByLabelText(/loading settings/i)).toBeTruthy();
     expect(screen.queryByRole("heading", { name: /sign in to access settings/i })).toBeNull();
@@ -209,7 +219,7 @@ describe("Settings", () => {
   it("renders account and appearance inside signed-in account preferences", () => {
     mockSignedInSettings();
 
-    render(<Settings />);
+    renderSettings();
 
     expect(screen.getByRole("button", { name: "Account & Preferences" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Account" })).toBeTruthy();
@@ -224,10 +234,26 @@ describe("Settings", () => {
     expect(screen.queryByText(/experimental features/i)).toBeNull();
   });
 
+  it("renders settings navigation and account copy in Simplified Chinese", async () => {
+    localStorage.setItem("clawhub-locale", "zh-CN");
+    mockSignedInSettings();
+
+    renderSettings();
+
+    expect(await screen.findByRole("heading", { name: "设置" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "账户与偏好" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "组织" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "GitHub 技能同步" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "API 令牌" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "删除账户" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "外观" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "跟随系统" })).toBeTruthy();
+  });
+
   it("does not load organization members on the default account view", () => {
     mockSignedInSettings();
 
-    render(<Settings />);
+    renderSettings();
 
     expect(useQueryMock).toHaveBeenCalledWith(api.publishers.listMembers, "skip");
     expect(screen.queryByRole("heading", { name: "Members" })).toBeNull();
@@ -236,7 +262,7 @@ describe("Settings", () => {
   it("navigates to a focused settings view from the section navigation", () => {
     mockSignedInSettings();
 
-    render(<Settings />);
+    renderSettings();
 
     fireEvent.click(screen.getByRole("button", { name: "Organizations" }));
 
@@ -246,13 +272,13 @@ describe("Settings", () => {
   it("renders organization management and loads members only on the organizations view", async () => {
     mockSignedInSettings({ search: { view: "organizations" } });
 
-    render(<Settings />);
+    renderSettings();
 
     expect(screen.getByRole("button", { name: "Organizations" }).getAttribute("aria-current")).toBe(
       "true",
     );
     expect(await screen.findByText("OpenClaw Team")).toBeTruthy();
-    expect(screen.getByText("@openclaw · owner")).toBeTruthy();
+    expect(screen.getByText("@openclaw · Owner")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Members" })).toBeTruthy();
     expect(screen.getByText("Patrick")).toBeTruthy();
     expect(useQueryMock).toHaveBeenCalledWith(api.publishers.listMembers, {
@@ -265,7 +291,7 @@ describe("Settings", () => {
     useMutationMock.mockReturnValue(deleteOrg);
     mockSignedInSettings({ search: { view: "organizations" } });
 
-    render(<Settings />);
+    renderSettings();
 
     fireEvent.click(screen.getByRole("button", { name: "Delete organization" }));
 
@@ -285,7 +311,7 @@ describe("Settings", () => {
       memberships: [personalMembership, orgMembership],
     });
 
-    render(<Settings />);
+    renderSettings();
 
     expect(
       screen.getByRole("button", { name: "GitHub Skill Sync" }).getAttribute("aria-current"),
@@ -369,13 +395,13 @@ describe("Settings", () => {
       ],
     });
 
-    render(<Settings />);
+    renderSettings();
 
     expect(screen.getByRole("heading", { name: "Synced repositories" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "mattpocock/skills" })).toBeTruthy();
     expect(
       screen.getByText(
-        "Add a public repo URL. ClawHub syncs metadata and scan results every 15 minutes. Users install your skills directly from your GitHub repo.",
+        "Add a public repo URL. Ai Work syncs metadata and scan results every 15 minutes. Users install your skills directly from your GitHub repo.",
       ),
     ).toBeTruthy();
     const repoLink = screen.getByRole("link", { name: "https://github.com/mattpocock/skills" });
@@ -429,7 +455,7 @@ describe("Settings", () => {
       memberships: [personalMembership],
     });
 
-    render(<Settings />);
+    renderSettings();
 
     expect(screen.queryByRole("button", { name: "GitHub Skill Sync" })).toBeNull();
     expect(
@@ -450,14 +476,14 @@ describe("Settings", () => {
     mockSignedInSettings({ search: { view: "organizations" }, memberships: [] });
     useMutationMock.mockReturnValue(createOrg);
 
-    render(<Settings />);
+    renderSettings();
 
-    fireEvent.click(screen.getByRole("button", { name: "Create org" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create organization" }));
     fireEvent.change(screen.getByLabelText("Handle"), { target: { value: "romneyda" } });
     fireEvent.change(screen.getByLabelText("Display name"), {
       target: { value: "Dallin Romney @ OpenClaw" },
     });
-    const createOrgButtons = screen.getAllByRole("button", { name: "Create org" });
+    const createOrgButtons = screen.getAllByRole("button", { name: "Create organization" });
     fireEvent.click(createOrgButtons[createOrgButtons.length - 1]);
 
     await waitFor(() => {
@@ -474,7 +500,7 @@ describe("Settings", () => {
     window.history.replaceState(null, "", "/settings#tokens");
     mockSignedInSettings();
 
-    render(<Settings />);
+    renderSettings();
 
     expect(navigateMock).toHaveBeenCalledWith({ search: { view: "tokens" }, replace: true });
   });

@@ -1,6 +1,6 @@
 import type { ClawdisSkillMetadata, SkillInstallSpec } from "clawhub-schema";
 import type { Id } from "../../convex/_generated/dataModel";
-import { getClawHubSiteUrl } from "../lib/site";
+import { getAiWorkSiteUrl } from "../lib/site";
 
 export type SkillPromptMode = "install-only" | "install-and-setup";
 type SkillPackageManager = "npm" | "pnpm" | "bun";
@@ -191,7 +191,7 @@ export function buildSkillPageUrl(
   if (!owner) return null;
 
   const path = `/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}`;
-  return new URL(path, getClawHubSiteUrl()).toString();
+  return new URL(path, getAiWorkSiteUrl()).toString();
 }
 
 export function formatOpenClawInstallCommand(slug: string) {
@@ -232,9 +232,9 @@ export function formatOpenClawPrompt({
   }
 
   const lines = [
-    "Before installing anything, inspect the 龙虾市场 skill metadata and setup requirements.",
+    "Before installing anything, inspect the AI直聘 skill metadata and setup requirements.",
     "If the skill asks you to install a third-party package or CLI, verify its source, maintainer, and package contents before running the install command.",
-    `Install the skill "${displayName}" (${target}) from 龙虾市场 only after those checks pass.`,
+    `Install the skill "${displayName}" (${target}) from AI直聘 only after those checks pass.`,
   ];
 
   if (pageUrl) {
@@ -261,7 +261,7 @@ export function formatOpenClawPrompt({
   }
 
   lines.push(
-    "Use only the metadata you can verify from 龙虾市场; do not invent missing requirements.",
+    "Use only the metadata you can verify from AI直聘; do not invent missing requirements.",
   );
   lines.push("Ask before making any broader environment changes.");
   return lines.join("\n");

@@ -65,7 +65,7 @@ type SecurityAuditPageProps = {
 const EMPTY_SKILLSPECTOR_ISSUES: SkillSpectorIssue[] = [];
 const SKILLSPECTOR_VISIBLE_CHECK_LIMIT = 5;
 const RISK_ANALYSIS_SCOPE_COPY =
-  "龙虾市场 reviews SkillSpector, VirusTotal, and artifact evidence before producing the final verdict.";
+  "AI直聘 reviews SkillSpector, VirusTotal, and artifact evidence before producing the final verdict.";
 const SKILLSPECTOR_CLEAN_CHECKS = [
   {
     category: "Prompt Injection",

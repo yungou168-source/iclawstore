@@ -21,44 +21,25 @@ describe("ogAssets", () => {
     initWasmMock.mockReset();
   });
 
-  it("loads the packaged local OG watermark asset", async () => {
+  it("loads and shares the packaged AI直聘 SVG logo for OG marks", async () => {
     readFileMock.mockImplementation(async (input: unknown) => {
       const path = String(input);
-      if (path.includes("public/og-clawhub-watermark.png")) {
-        return Buffer.from("watermark");
+      if (path.includes("public/ai-work-icon.svg")) {
+        return Buffer.from("svg");
       }
-      if (path.includes("og-clawhub-watermark.png")) {
-        throw new Error("missing root watermark");
-      }
-      throw new Error(`unexpected read: ${path}`);
-    });
-
-    const { getWatermarkDataUrl } = await import("./ogAssets");
-
-    await expect(getWatermarkDataUrl()).resolves.toBe("data:image/png;base64,d2F0ZXJtYXJr");
-    expect(readFileMock).toHaveBeenCalledTimes(2);
-    expect(String(readFileMock.mock.calls[0]?.[0])).toContain("og-clawhub-watermark.png");
-    expect(String(readFileMock.mock.calls[1]?.[0])).toContain("public/og-clawhub-watermark.png");
-  });
-
-  it("falls back to the packaged public site logo asset", async () => {
-    readFileMock.mockImplementation(async (input: unknown) => {
-      const path = String(input);
-      if (path.includes("public/clawd-logo.png")) {
-        return Buffer.from("png");
-      }
-      if (path.includes("clawd-logo.png")) {
+      if (path.includes("ai-work-icon.svg")) {
         throw new Error("missing root mark");
       }
       throw new Error(`unexpected read: ${path}`);
     });
 
-    const { getMarkDataUrl } = await import("./ogAssets");
+    const { getMarkDataUrl, getWatermarkDataUrl } = await import("./ogAssets");
 
-    await expect(getMarkDataUrl()).resolves.toBe("data:image/png;base64,cG5n");
+    await expect(getMarkDataUrl()).resolves.toBe("data:image/svg+xml;base64,c3Zn");
+    await expect(getWatermarkDataUrl()).resolves.toBe("data:image/svg+xml;base64,c3Zn");
     expect(readFileMock).toHaveBeenCalledTimes(2);
-    expect(String(readFileMock.mock.calls[0]?.[0])).toContain("clawd-logo.png");
-    expect(String(readFileMock.mock.calls[1]?.[0])).toContain("public/clawd-logo.png");
+    expect(String(readFileMock.mock.calls[0]?.[0])).toContain("ai-work-icon.svg");
+    expect(String(readFileMock.mock.calls[1]?.[0])).toContain("public/ai-work-icon.svg");
   });
 
   it("initializes resvg wasm only once per process", async () => {

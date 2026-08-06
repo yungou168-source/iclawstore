@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
+import { useLocale } from "../../lib/i18n/context";
 import { familyLabel } from "../../lib/packageLabels";
 import { formatTimestamp, type PluginByNameResult } from "./managementShared";
 
@@ -21,15 +22,16 @@ export function PluginsPage({
   onManagePlugin: () => void;
   onSetPackageBatch: (packageId: PluginPackageId, batch: "highlighted" | undefined) => void;
 }) {
+  const { locale, t } = useLocale();
   return (
     <div className="management-view">
-      <h2 className="section-title text-[1.2rem] m-0">Plugin tools</h2>
+      <h2 className="section-title text-[1.2rem] m-0">{t("management.plugins.title")}</h2>
       <p className="section-subtitle m-0 mt-1">
-        Look up a plugin package to open its moderation tooling.
+        {t("management.plugins.subtitle")}
       </p>
       <div className="management-controls">
         <div className="management-control management-search">
-          <span className="mono">Package</span>
+          <span className="mono">{t("management.plugins.package")}</span>
           <input
             type="search"
             placeholder="@scope/plugin-name or package-name"
@@ -44,12 +46,12 @@ export function PluginsPage({
           />
         </div>
         <Button type="button" onClick={onManagePlugin} disabled={!pluginSearch.trim()}>
-          Manage
+          {t("management.manage")}
         </Button>
       </div>
       {selectedPluginName ? (
         <div className="section-subtitle mt-2">
-          Managing "{selectedPluginName}" ·{" "}
+          {t("management.plugins.managing", { name: selectedPluginName })} ·{" "}
           <Link
             to="/management"
             search={{
@@ -58,17 +60,19 @@ export function PluginsPage({
               plugin: undefined,
             }}
           >
-            Clear selection
+            {t("management.clear_selection")}
           </Link>
         </div>
       ) : null}
       <div className="management-list">
         {!selectedPluginName ? (
-          <div className="management-empty">Enter a plugin package name to open tooling here.</div>
+          <div className="management-empty">{t("management.plugins.enter")}</div>
         ) : selectedPlugin === undefined ? (
-          <div className="management-empty">Loading plugin…</div>
+          <div className="management-empty">{t("management.plugins.loading")}</div>
         ) : !selectedPlugin?.package ? (
-          <div className="management-empty">No plugin found for "{selectedPluginName}".</div>
+          <div className="management-empty">
+            {t("management.plugins.not_found", { name: selectedPluginName })}
+          </div>
         ) : (
           (() => {
             const plugin = selectedPlugin.package;
@@ -83,33 +87,47 @@ export function PluginsPage({
                     {plugin.displayName}
                   </Link>
                   <div className="section-subtitle m-0">
-                    {owner?.handle ? `@${owner.handle}` : "unknown owner"} ·{" "}
-                    {familyLabel(plugin.family)} · v{latestRelease?.version ?? "—"} · updated{" "}
-                    {formatTimestamp(plugin.updatedAt)}
-                    {plugin.softDeletedAt ? " · hidden" : ""}
-                    {isHighlighted ? " · highlighted" : ""}
+                    {owner?.handle
+                      ? `@${owner.handle}`
+                      : t("management.plugins.unknown_owner")} · {familyLabel(plugin.family)} · v
+                    {latestRelease?.version ?? "—"} ·{" "}
+                    {t("management.plugins.updated", { time: formatTimestamp(plugin.updatedAt, locale) })}
+                    {plugin.softDeletedAt ? ` · ${t("management.plugins.hidden")}` : ""}
+                    {isHighlighted ? ` · ${t("management.plugins.highlighted")}` : ""}
                   </div>
                   <div className="management-tags">
                     <Badge>{plugin.channel}</Badge>
-                    {plugin.isOfficial ? <Badge variant="official">Official</Badge> : null}
-                    {plugin.executesCode ? <Badge>executes code</Badge> : null}
+                    {plugin.isOfficial ? (
+                      <Badge variant="official">{t("management.plugins.official")}</Badge>
+                    ) : null}
+                    {plugin.executesCode ? (
+                      <Badge>{t("management.plugins.executes_code")}</Badge>
+                    ) : null}
                     {plugin.runtimeId ? <Badge>{plugin.runtimeId}</Badge> : null}
                   </div>
                   <div className="management-sublist">
                     <div className="management-report-item">
-                      <span className="management-report-meta">Package name</span>
+                      <span className="management-report-meta">
+                        {t("management.plugins.package_name")}
+                      </span>
                       <span className="mono">{plugin.name}</span>
                     </div>
                     <div className="management-report-item">
-                      <span className="management-report-meta">Summary</span>
-                      <span>{plugin.summary ?? "No summary provided."}</span>
+                      <span className="management-report-meta">
+                        {t("management.plugins.summary")}
+                      </span>
+                      <span>{plugin.summary ?? t("management.plugins.no_summary")}</span>
                     </div>
                     <div className="management-report-item">
-                      <span className="management-report-meta">Featured state</span>
+                      <span className="management-report-meta">
+                        {t("management.plugins.featured_state")}
+                      </span>
                       <span>
                         {isHighlighted
-                          ? `Highlighted ${formatTimestamp(selectedPlugin.highlighted?.at ?? 0)}`
-                          : "Not highlighted"}
+                          ? t("management.plugins.highlighted_at", {
+                              time: formatTimestamp(selectedPlugin.highlighted?.at ?? 0, locale),
+                            })
+                          : t("management.plugins.not_highlighted")}
                       </span>
                     </div>
                   </div>
@@ -117,7 +135,7 @@ export function PluginsPage({
                 <div className="management-actions management-action-grid">
                   <Button asChild className="management-action-btn">
                     <Link to="/plugins/$name" params={{ name: plugin.name }}>
-                      View
+                      {t("management.view")}
                     </Link>
                   </Button>
                   <Button
@@ -127,7 +145,7 @@ export function PluginsPage({
                       onSetPackageBatch(plugin._id, isHighlighted ? undefined : "highlighted")
                     }
                   >
-                    {isHighlighted ? "Unhighlight" : "Highlight"}
+                    {isHighlighted ? t("management.unhighlight") : t("management.highlight")}
                   </Button>
                 </div>
               </div>

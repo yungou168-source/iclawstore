@@ -2518,8 +2518,23 @@ const skillOwnershipTransfers = defineTable({
   .index("by_from_user_status", ["fromUserId", "status"])
   .index("by_skill_status", ["skillId", "status"]);
 
+const desktopOAuthTokenFamilies = defineTable({
+  familyId: v.string(),
+  userId: v.id("users"),
+  clientId: v.string(),
+  createdAt: v.number(),
+  lastUsedAt: v.number(),
+  absoluteExpiresAt: v.number(),
+  idleExpiresAt: v.number(),
+  revokedAt: v.optional(v.number()),
+})
+  .index("by_family_id", ["familyId"])
+  .index("by_user_and_client", ["userId", "clientId"])
+  .index("by_user_and_client_and_revoked_at", ["userId", "clientId", "revokedAt"]);
+
 export default defineSchema({
   ...authTables,
+  desktopOAuthTokenFamilies,
   users,
   publishers,
   publisherMembers,

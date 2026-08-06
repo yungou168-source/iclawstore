@@ -2,7 +2,7 @@ import { customCtx, customMutation } from "convex-helpers/server/customFunctions
 import { Triggers, type Change } from "convex-helpers/server/triggers";
 import { v } from "convex/values";
 import semver from "semver";
-import { internal } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import type { DataModel, Doc, Id } from "./_generated/dataModel";
 import {
   mutation as rawMutation,
@@ -14,6 +14,7 @@ import {
   httpAction,
 } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
+import { shouldRevokeDesktopOAuthForUserChange } from "./lib/desktopOAuthTokenPolicy";
 import {
   deletePackageSearchDigests,
   extractPackageDigestFields,
@@ -500,7 +501,26 @@ triggers.register("packageReleases", async (ctx, change) => {
   await syncPackageSearchDigestForPackageId(ctx, packageId);
 });
 
+async function revokeDesktopOAuthForDisabledUser(
+  ctx: MutationCtx,
+  change: Change<DataModel, "users">,
+): Promise<void> {
+  const clientId = process.env.AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID?.trim();
+  if (!clientId || !shouldRevokeDesktopOAuthForUserChange(change)) return;
+
+  const userId = change.operation === "delete" ? change.id : change.newDoc._id;
+  await ctx.runMutation(components.oauthProvider.mutations.revokeAuthorization, {
+    userId,
+    clientId,
+  });
+  await ctx.runMutation(internal.desktopOAuth.revokeRefreshFamiliesForUserInternal, {
+    userId,
+    revokedAt: Date.now(),
+  });
+}
+
 triggers.register("users", async (ctx, change) => {
+  await revokeDesktopOAuthForDisabledUser(ctx, change);
   if (!shouldScheduleOwnerUserPackageDigestSyncForUserChange(change)) return;
   const ownerUserId = change.operation === "delete" ? change.id : change.newDoc._id;
   await scheduleOwnerUserPackageDigestSync(ctx, ownerUserId);

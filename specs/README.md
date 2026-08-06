@@ -20,6 +20,7 @@ into `docs/` and leave only the design record here.
 - `spec.md`: product + implementation spec for the original registry model.
 - `ai-direct-desktop-platform-integration.md`: authoritative server-side alignment with the latest desktop product contracts, including contract layers, data ownership, implementation gaps, state machines, feature flags, and backend priorities.
 - `ai-direct-identity-bridge.md`: production Convex identity bridge, login provider, Bearer session verification, and fail-closed constraints.
+- `ai-direct-admin-capability-gaps.md`: ordered AI直聘 administration capability gap register, distinguishing code completion, validation, migration, runtime wiring, and production acceptance.
 - `ai-direct-web-server-roadmap.md`: executable P1/P2 Web and server work packages for organization/company management, Agent publication and catalog, non-payment hiring, interviews, runtime, appearance, template review, and central audit.
 - `ai-direct-hiring-progress.md`: production release evidence and current AI Direct Hiring delivery status.
 - `ai-work-site-navigation.md`: AI直聘 Web 首页、员工目录、客户端下载页的路由职责、导航约束和静态岗位目录边界。

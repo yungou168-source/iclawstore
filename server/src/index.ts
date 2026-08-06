@@ -10,10 +10,12 @@ import { MeiliSearch } from "meilisearch";
 import { createPool } from "mysql2/promise";
 import { PrismaClient } from "../../node_modules/.prisma/client/index.js";
 import { AuthRequiredError, type AuthenticatedUser } from "./middleware/aiDirectAuth.js";
+import { assertDesktopContractRoutes } from './desktopContractManifest.js';
 import { createAiDirectCoreRoutes } from "./routes/aiDirectCore.js";
 import { aiDirectMemoryRoutes } from "./routes/aiDirectMemory.js";
 import { desktopContractRoutes } from "./routes/desktopContract.js";
 import { createDesktopPreferencesRoutes } from "./routes/desktopPreferences.js";
+import { desktopTemplateReviewRoutes } from "./routes/desktopTemplateReview.js";
 import { createDesktopTemplateRoutes } from "./routes/desktopTemplates.js";
 // Routes
 import { skillsRoutes } from "./routes/skills.js";
@@ -23,7 +25,13 @@ import {
   createConvexIdentityBridge,
   identityBridgeConfigFromEnvironment,
 } from "./services/convexIdentityBridge.js";
+import { ArtifactStore } from './services/artifactStore.js';
 import { ManagedAssetStore } from "./services/managedAssetStore.js";
+import {
+  createRuntimeObserver,
+  parseBoundedPositiveInteger,
+  type RuntimeObserver,
+} from './services/runtimeObservability.js';
 
 export const prisma = new PrismaClient();
 export const meili = new MeiliSearch({
@@ -62,16 +70,24 @@ fastify.decorate("authenticate", async function (request: FastifyRequest) {
   request.user = await authenticateBusinessIdentity(request.headers.authorization);
 });
 
+let runtimeObserver: RuntimeObserver | null = null;
+
 // Optional MySQL pool for legacy P2 routes (aiDirectHiring et al.).
 // Only registered when DATABASE_URL is a mysql:// URL so unit tests, serverless
 // bootstraps, and SQLite-backed dev workflows still boot without MySQL.
 if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith("mysql")) {
+  const mysqlConnectionLimit = parseBoundedPositiveInteger(
+    process.env.MYSQL_CONNECTION_LIMIT,
+    6,
+    10,
+  );
   const pool = createPool({
     uri: process.env.DATABASE_URL,
     waitForConnections: true,
-    connectionLimit: 10,
+    connectionLimit: mysqlConnectionLimit,
     enableKeepAlive: true,
   });
+  runtimeObserver = createRuntimeObserver({ role: 'api', mysqlConnectionLimit });
   fastify.decorate("mysql", pool);
   try {
     const identityBridge = await createConvexIdentityBridge(
@@ -86,6 +102,7 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith("mysql")) {
     );
   }
   fastify.addHook("onClose", async () => {
+    runtimeObserver?.close();
     await pool.end();
   });
 }
@@ -97,6 +114,17 @@ fastify.get("/health", async () => {
     timestamp: new Date().toISOString(),
     version: "1.0.0",
   };
+});
+
+fastify.get('/health/runtime', async (request: FastifyRequest, reply: FastifyReply) => {
+  const token = process.env.RUNTIME_METRICS_TOKEN;
+  if (!token || request.headers['x-runtime-metrics-token'] !== token) {
+    return reply.status(404).send();
+  }
+  if (!runtimeObserver) {
+    return reply.status(503).send({ error: 'Runtime metrics are unavailable' });
+  }
+  return runtimeObserver.snapshot();
 });
 
 // 错误处理必须先于子路由注册，确保 Fastify 封装上下文继承统一业务错误边界。
@@ -125,8 +153,10 @@ await fastify.register(aiDirectMemoryRoutes, { prefix: "/api/v1" });
 await fastify.register(desktopContractRoutes, { prefix: "/api/v1/desktop" });
 if (process.env.DATABASE_URL?.startsWith("mysql")) {
   const managedAssetStore = ManagedAssetStore.fromEnvironment();
+  const artifactStore = ArtifactStore.fromEnvironment();
   await managedAssetStore.initialize();
-  await fastify.register(createAiDirectCoreRoutes(managedAssetStore), {
+  await artifactStore?.initialize();
+  await fastify.register(createAiDirectCoreRoutes(managedAssetStore, artifactStore), {
     prefix: "/api/v1/ai-direct-hiring",
   });
   await fastify.register(createDesktopPreferencesRoutes(managedAssetStore), {
@@ -135,12 +165,17 @@ if (process.env.DATABASE_URL?.startsWith("mysql")) {
   await fastify.register(createDesktopTemplateRoutes(managedAssetStore), {
     prefix: "/api/v1/desktop",
   });
+  await fastify.register(desktopTemplateReviewRoutes, {
+    prefix: "/api/v1/desktop",
+  });
 }
 
 // 启动服务器
 const start = async () => {
   try {
     const port = parseInt(process.env.PORT || "3002");
+    await fastify.ready();
+    assertDesktopContractRoutes(fastify);
     await fastify.listen({ port, host: "0.0.0.0" });
     console.log(`🚀 Server running at http://localhost:${port}`);
   } catch (err) {
@@ -149,11 +184,19 @@ const start = async () => {
   }
 };
 
-// 关闭时断开 Prisma
-process.on("SIGINT", async () => {
+let shuttingDown = false;
+const shutdown = async (): Promise<void> => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  await fastify.close();
   await prisma.$disconnect();
-  process.exit(0);
-});
+};
+
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(signal, () => {
+    void shutdown().finally(() => process.exit(0));
+  });
+}
 
 start();
 

@@ -27,10 +27,10 @@ export function AccountBannedPage() {
           <ShieldX size={22} />
         </span>
         <h1 className="font-display text-2xl font-black leading-tight text-[color:var(--ink)] sm:text-4xl">
-          Your 龙虾市场 account has been banned
+          Your AI直聘 account has been banned
         </h1>
         <p className="mt-4 max-w-2xl text-base leading-7 text-[color:var(--ink-soft)]">
-          This account cannot sign in to 龙虾市场.
+          This account cannot sign in to AI直聘.
         </p>
         <p className="mt-2 max-w-2xl text-base leading-7 text-[color:var(--ink-soft)]">
           Visit appeals.openclaw.ai to open an appeal if you believe this was a mistake.

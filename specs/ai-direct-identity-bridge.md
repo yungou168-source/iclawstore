@@ -48,7 +48,9 @@ AUTH_WECHAT_APP_ID
 AUTH_WECHAT_APP_SECRET
 ```
 
-邮箱登录必须发送 8 位一次性验证码，并在站内完成校验；不得回退为仅发送魔法链接。OAuth provider 只有在对应 ID 与 Secret 都配置后才会在 Convex Auth 中启用。任一变量值、Bearer token、私钥、JWKS 私钥或 Convex admin key 都不得写入仓库、文档、日志、测试输出或聊天记录。
+邮箱登录必须发送 8 位一次性验证码，并在站内完成校验；不得回退为仅发送魔法链接。登录表单必须始终展示验证码输入框，邮箱输入使用标准邮箱校验且最多 38 个字符。发送前将邮箱去除首尾空白并转为小写；待验证状态必须绑定到发起请求时的归一化邮箱。用户修改邮箱时必须清空已输入验证码并作废当前对话框中的待验证状态，只有新邮箱重新请求验证码后才能提交。验证码输入仅接受 8 位数字，发送请求进行中必须拒绝同一表单的并发请求，避免后完成的请求替换用户正在输入的有效验证码。
+
+OAuth provider 只有在对应 ID 与 Secret 都配置后才会在 Convex Auth 中启用。任一变量值、Bearer token、私钥、JWKS 私钥或 Convex admin key 都不得写入仓库、文档、日志、测试输出或聊天记录。
 
 ## OAuth 与邮件回调不变量
 
@@ -72,7 +74,55 @@ CUSTOM_AUTH_SITE_URL=https://www.iclawstore.com/convex
 
 `SITE_URL` 是 OAuth 完成后的浏览器目的地；邮箱 OTP 在站内输入并验证。`CUSTOM_AUTH_SITE_URL` 是 OAuth provider 回调进入 Convex HTTP 服务的外部地址。各 OAuth App 的 callback URL 必须精确为 `https://www.iclawstore.com/convex/api/auth/callback/<provider>`，其中 `<provider>` 为 `github`、`google` 或 `wechat`。
 
-Web 登录成功后，桌面客户端可使用 Convex Auth 签发的短期 Bearer token 调用受保护接口，并必须先通过 `GET /api/v1/ai-direct-hiring/session` 确认主体与组织 scope。当前尚未发布原生桌面 OAuth/PKCE、custom URI callback、refresh token 或设备注册协议；桌面端不得复制浏览器 Cookie 或自行持久化 token。详细接入边界见 `docs/AI_DIRECT_DESKTOP_CLIENT_API_V1.md`。
+原生桌面身份协议的服务端实现使用独立 issuer `${CUSTOM_AUTH_SITE_URL}/oauth/desktop` 和固定 desktop audience。第一方 public client 仅允许 Authorization Code + PKCE `S256`，注册配置必须同时包含固定 custom URI 与 IP loopback callback；动态 client registration 关闭。Access Token 必须具有 `typ=at+jwt`、`client_id/cid` 和 `jti`，Fastify 以独立 issuer、audience、JWKS、client ID 和 15 分钟最大年龄验证，再调用 `desktopOAuth:getDesktopAccessIdentity` 二次确认授权及账号状态。Web Token 仍走原有复合 subject 链，两类 Token 不混用 subject 解析规则。
+
+OAuth 组件已提供哈希 refresh token、rotation、reuse detection、30 天绝对期限、7 天空闲期限和 authorization revocation。`users` trigger 会在账号首次停用、软删除或物理删除时撤销 authorization，并以每批 100 条的有界任务撤销该用户的 refresh token families；refresh 时会在签发前检查 family 状态，轮换后只推进 idle deadline，不延长 absolute deadline。该能力仍处于实现待发布状态：目标环境静态 client 注册锁定、真实浏览器 custom URI 与 IP loopback 两条授权闭环、生产配置烟测和统一发布门禁尚未完成。因此生产客户端仍不得复制浏览器 Cookie、自行持久化未发布的 refresh token，或在 contract 未返回 `auth` 时启动原生 OAuth。
+
+详细接入边界见 `docs/AI_DIRECT_DESKTOP_CLIENT_API_V1.md`。
+
+## 桌面 OAuth 静态客户端与 QA 验收
+
+本节是原生桌面 OAuth 的生产启用门禁。它与现有 Web 登录 provider 独立，但复用同一受控 Convex 身份源；完成本节前，desktop contract 不得发布 `auth` metadata。
+
+### 固定注册边界
+
+Convex 生产环境必须保存以下非秘密配置，实际私钥、JWKS 私钥、管理员 key 与 token 只能保存在受限秘密存储中：
+
+```dotenv
+# 逗号分隔；值必须与已发布桌面二进制中的回调地址完全一致。
+AI_DIRECT_DESKTOP_OAUTH_REDIRECT_URIS=com.iclawstore.desktop:/oauth/callback,http://127.0.0.1:19873/oauth/callback
+
+# 由首次管理员注册得到，后续不可静默更换。
+AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID=<locked-public-client-id>
+```
+
+示例仅说明格式，不是可直接复制到生产的回调地址。`AI_DIRECT_DESKTOP_OAUTH_REDIRECT_URIS` 必须同时包含一个 custom scheme 和一个 IP loopback URI；不接受任意端口、浏览器 HTTPS 回调、`file:`、`data:` 或带凭据/fragment 的 URI。客户端类型必须为 `public`，token endpoint authentication method 必须为 `none`，授权模式只能为 Authorization Code + PKCE `S256`。
+
+注册顺序必须是：先设置 redirect URIs，暂不设置 client ID；管理员调用 `desktopOAuth:ensureDesktopClient`；将返回的 client ID 写入生产环境；重新部署后再次调用同一 mutation，必须返回相同 `clientId` 和 `created=false`。如果已存在的客户端类型、scope 或 redirect URI 不一致，操作必须失败，不得删除或宽松修改现有客户端来绕过校验。
+
+Fastify `/home/ubuntu/.config/iclawstore/api.env` 必须设置下列非秘密值，并与 Convex 注册保持一致：
+
+```dotenv
+CONVEX_DESKTOP_AUTH_ISSUER=https://www.iclawstore.com/convex/oauth/desktop
+CONVEX_DESKTOP_AUTH_AUDIENCE=https://www.iclawstore.com/api/v1/ai-direct-hiring
+AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID=<locked-public-client-id>
+```
+
+发布 Convex backend 后，只能重载 API；通过 `GET /api/v1/desktop/contract` 核验 `auth` 元数据。issuer、authorization/token/userinfo/revoke endpoints、JWKS URI、client ID 与 audience 必须精确匹配，不匹配则立即移除桌面 OAuth discovery 配置并停止验收。
+
+### 可回收 QA 夹具与验收顺序
+
+使用团队控制的专用邮箱创建 QA 身份，例如 `qa-desktop-oauth@<controlled-domain>`。该身份不得是个人账号、日常管理员账号或共享 token 账号；设置到期日并在验收完成后删除或停用。为它创建独立组织，例如 `qa-desktop-oauth-<date>`，授予完成验证所需的最小 owner 权限，并记录组织 ID 但不写入公开文档。
+
+验收按下列顺序执行，每步只改变一个变量：
+
+1. 获取 OIDC discovery 和 JWKS，检查 issuer、audience 与固定 client ID；
+2. 使用 custom URI 和 loopback 分别完成浏览器 Authorization Code + PKCE `S256` 回调；
+3. 用短期 access token 调用 `/api/v1/ai-direct-hiring/session`，验证 `200`、QA 身份和指定组织；
+4. 在 QA 组织设置明确 `AI_DIRECT_FEATURE_FLAGS` 覆盖，对每个 flag 分别验证 enabled/disabled 行为及 `runtimeCapabilities`；
+5. 调用 revoke endpoint，确认 refresh family 失效；删除 flag 覆盖、QA 组织与 QA 身份。
+
+`providerExecution` 必须在整个验收中保持关闭；不能通过启动真实 Provider、保留 refresh token、保存浏览器 cookie，或制造不可回收生产业务数据来完成测试。测试记录只能保留时间、脱敏身份标签、组织夹具标签、HTTP 状态与断言结果。
 
 ## 配置与发布顺序
 

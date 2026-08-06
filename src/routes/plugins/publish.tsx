@@ -389,7 +389,7 @@ export function PublishPluginRoute() {
         <Container size="narrow">
           <EmptyState
             title="Sign in to publish a plugin"
-            description="You need to be signed in to publish plugins on 龙虾市场."
+            description="You need to be signed in to publish plugins on AI直聘."
           >
             <SignInButton />
           </EmptyState>

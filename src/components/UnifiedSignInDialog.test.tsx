@@ -39,6 +39,10 @@ describe("UnifiedSignInDialog", () => {
     expect(screen.getByRole("button", { name: "Google" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "微信" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "获取验证码" })).toBeTruthy();
+    const emailInput = screen.getByLabelText("邮箱地址");
+    expect(emailInput.getAttribute("type")).toBe("email");
+    expect(emailInput.getAttribute("maxlength")).toBe("38");
+    expect(screen.getByLabelText("8 位验证码")).toBeTruthy();
     expect(screen.queryByText("发送登录链接")).toBeNull();
   });
 
@@ -46,7 +50,7 @@ describe("UnifiedSignInDialog", () => {
     render(<UnifiedSignInDialog locale="zh-CN" redirectTo="/dashboard" />);
 
     fireEvent.change(screen.getByLabelText("邮箱地址"), {
-      target: { value: " USER@Example.COM " },
+      target: { value: "USER@Example.COM" },
     });
     fireEvent.click(screen.getByRole("button", { name: "获取验证码" }));
 
@@ -66,6 +70,31 @@ describe("UnifiedSignInDialog", () => {
         redirectTo: "/dashboard",
       });
     });
+  });
+
+  it("uses native email validation before requesting a code", () => {
+    render(<UnifiedSignInDialog locale="zh-CN" />);
+
+    fireEvent.change(screen.getByLabelText("邮箱地址"), {
+      target: { value: "not-an-email" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "获取验证码" }));
+
+    expect(signInMock).not.toHaveBeenCalled();
+  });
+
+  it("prevents concurrent code requests from replacing the valid code", () => {
+    signInMock.mockReturnValue(new Promise(() => {}));
+    render(<UnifiedSignInDialog locale="zh-CN" />);
+
+    fireEvent.change(screen.getByLabelText("邮箱地址"), {
+      target: { value: "user@example.com" },
+    });
+    const sendButton = screen.getByRole("button", { name: "获取验证码" });
+    fireEvent.click(sendButton);
+    fireEvent.click(sendButton);
+
+    expect(signInMock).toHaveBeenCalledTimes(1);
   });
 
   it.each([

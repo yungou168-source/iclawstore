@@ -558,8 +558,8 @@ export function Upload() {
       <main className="py-10">
         <Container size="narrow">
           <EmptyState
-            title={`Sign in to publish a ${contentLabel}`}
-            description="You need to be signed in to publish skills on 龙虾市场."
+            title={t("publish.sign_in_title", locale, { content: contentLabel })}
+            description={t("publish.sign_in_description", locale)}
           >
             <SignInButton />
           </EmptyState>
@@ -758,10 +758,10 @@ export function Upload() {
         <header className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-2xl font-bold text-[color:var(--ink)]">
-              Publish a {contentLabel}
+              {t("publish.title", locale, { content: contentLabel })}
             </h1>
             <p className="text-sm text-[color:var(--ink-soft)]">
-              Drop or select a {contentLabel} folder
+              {t("publish.subtitle", locale, { content: contentLabel })}
             </p>
           </div>
           <Button asChild variant="outline" size="sm" className="w-fit">
@@ -812,16 +812,16 @@ export function Upload() {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <strong className="text-sm text-[color:var(--ink)]">
-                        Skill folder selected
+                        {t("publish.folder_selected", locale)}
                       </strong>
                       <span className="text-xs text-[color:var(--ink-soft)]">
-                        {files.length} files · {sizeLabel}
+                        {t("publish.file_count", locale, { count: files.length, size: sizeLabel })}
                       </span>
                     </div>
                     {unsupportedFileEntries.length > 0 ? (
                       <div className="mt-3 flex flex-wrap gap-1.5">
                         <Badge variant="warning" size="sm">
-                          {unsupportedFileEntries.length} unsupported
+                          {t("publish.unsupported_count", locale, { count: unsupportedFileEntries.length })}
                         </Badge>
                       </div>
                     ) : null}
@@ -835,7 +835,7 @@ export function Upload() {
                       type="button"
                       onClick={removeUnsupportedFiles}
                     >
-                      Remove unsupported
+                      {t("publish.remove_unsupported", locale)}
                     </Button>
                   ) : null}
                   <Button
@@ -844,14 +844,14 @@ export function Upload() {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    Replace folder
+                    {t("publish.replace_folder", locale)}
                   </Button>
                   <button
                     type="button"
                     className="cursor-pointer text-xs font-medium text-[color:var(--ink-soft)] transition-colors hover:text-[color:var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bg)]"
                     onClick={clearSelectedFiles}
                   >
-                    Clear files
+                    {t("publish.clear_files", locale)}
                   </button>
                 </div>
               </div>
@@ -969,10 +969,10 @@ export function Upload() {
                   <div className="relative z-[1] flex flex-col items-center gap-2 text-center">
                     <div className="flex items-center gap-3">
                       <UploadIcon className="h-5 w-5 text-[color:var(--ink-soft)]" />
-                      <strong>Drop a skill folder</strong>
+                      <strong>{t("publish.drop_folder", locale)}</strong>
                     </div>
                     <span className="text-xs text-[color:var(--ink-soft)]">
-                      We keep inner paths and remove the top-level folder automatically.
+                      {t("publish.drop_folder_description", locale)}
                     </span>
                     <Button
                       variant="outline"
@@ -980,7 +980,7 @@ export function Upload() {
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                     >
-                      Choose folder
+                      {t("publish.choose_folder", locale)}
                     </Button>
                   </div>
                 </div>
@@ -993,7 +993,7 @@ export function Upload() {
             <CardContent className="gap-5">
               <div className="grid gap-x-4 gap-y-4 md:grid-cols-2">
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="displayName">Display name</Label>
+                  <Label htmlFor="displayName">{t("publish.display_name", locale)}</Label>
                   <Input
                     id="displayName"
                     value={displayName}
@@ -1073,7 +1073,7 @@ export function Upload() {
                   {/* The picker is a custom radiogroup; the visible "Icon"
                       heading is decorative and does not need `htmlFor` —
                       `SkillIconPicker` exposes its own `aria-label`. */}
-                  <Label>Icon</Label>
+                  <Label>{t("publish.icon", locale)}</Label>
                   <SkillIconPicker
                     value={iconName}
                     onChange={(next) => {
@@ -1090,7 +1090,7 @@ export function Upload() {
 
               {!isSoulMode ? (
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="ownerHandle">Owner</Label>
+                  <Label htmlFor="ownerHandle">{t("publish.owner", locale)}</Label>
                   <PublisherOwnerSelect
                     id="ownerHandle"
                     value={ownerHandle}
@@ -1126,7 +1126,7 @@ export function Upload() {
               ) : null}
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="version">Version</Label>
+                <Label htmlFor="version">{t("publish.version", locale)}</Label>
                 <VersionInput
                   id="version"
                   value={version}
@@ -1142,7 +1142,7 @@ export function Upload() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="tags">Tags</Label>
+                <Label htmlFor="tags">{t("publish.tags", locale)}</Label>
                 <Input
                   id="tags"
                   value={tags}
@@ -1168,18 +1168,20 @@ export function Upload() {
             <Card>
               <CardContent className="gap-4">
                 <div>
-                  <CardTitle>License</CardTitle>
+                  <CardTitle>{t("publish.license", locale)}</CardTitle>
                   <p className="text-sm text-[color:var(--ink-soft)]">
                     {PLATFORM_SKILL_LICENSE} · {PLATFORM_SKILL_LICENSE_NAME}
                   </p>
                 </div>
                 <div className="flex flex-col gap-1 text-sm text-[color:var(--ink-soft)]">
                   <p>
-                    All skills published on ClawHub are licensed under {PLATFORM_SKILL_LICENSE}.{" "}
-                    {PLATFORM_SKILL_LICENSE_SUMMARY}
+                    {t("publish.license_description", locale, {
+                      license: PLATFORM_SKILL_LICENSE,
+                      summary: PLATFORM_SKILL_LICENSE_SUMMARY,
+                    })}
                   </p>
                   <p>
-                    ClawHub does not support paid skills, per-skill pricing, or paywalled releases.
+                    {t("publish.no_paid_skills", locale)}
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -1193,7 +1195,7 @@ export function Upload() {
                       }}
                     />
                     <span>
-                      I have the rights to publish this skill under {PLATFORM_SKILL_LICENSE}.
+                      {t("publish.accept_license", locale, { license: PLATFORM_SKILL_LICENSE })}
                     </span>
                   </label>
                 </div>
@@ -1205,9 +1207,9 @@ export function Upload() {
             <Card>
               <CardContent>
                 <div>
-                  <CardTitle>Changelog</CardTitle>
+                  <CardTitle>{t("publish.changelog", locale)}</CardTitle>
                   <p className="text-sm text-[color:var(--ink-soft)]">
-                    Summarize what changed in this version.
+                    {t("publish.changelog_description", locale)}
                   </p>
                 </div>
                 <Label htmlFor="changelog" className="sr-only">
@@ -1266,7 +1268,7 @@ export function Upload() {
               {!validation.ready && !isSubmitting ? (
                 <Lock className="h-4 w-4" aria-hidden="true" />
               ) : null}
-              Publish {contentLabel}
+              {t("publish.submit", locale, { content: contentLabel })}
             </Button>
           </div>
         </form>

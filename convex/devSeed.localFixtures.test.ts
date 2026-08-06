@@ -7,7 +7,7 @@ import {
   seedGitHubBackedSkillSourceMutation,
   seedLocalFixtures,
   seedLocalModerationFixturesHandler,
-  seedPublicCorpusBatchMutation,
+  seedPublicCorpusMutation,
   seedSkillMutation,
 } from "./devSeed";
 
@@ -27,8 +27,8 @@ const seedGitHubBackedSkillSourceHandler = (
 const seedLocalFixturesHandler = (
   seedLocalFixtures as unknown as WrappedHandler<{ reset?: boolean }>
 )._handler;
-const seedPublicCorpusBatchHandler = (
-  seedPublicCorpusBatchMutation as unknown as WrappedHandler<Record<string, unknown>>
+const seedPublicCorpusHandler = (
+  seedPublicCorpusMutation as unknown as WrappedHandler<Record<string, unknown>>
 )._handler;
 
 function chainEq(constraints: Record<string, unknown>) {
@@ -232,7 +232,7 @@ describe("devSeed local fixtures", () => {
   it("does not copy publisher ownership onto public corpus skill embeddings", async () => {
     const { db, tables } = createDb();
 
-    await seedPublicCorpusBatchHandler(
+    await seedPublicCorpusHandler(
       createMutationCtx(db) as never,
       {
         rows: [

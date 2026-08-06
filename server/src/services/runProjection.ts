@@ -12,7 +12,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'mysql2/promise';
-import type { RunStatus, StepStatus } from './jobQueue.js';
+import { RUN_STATUSES, type RunStatus, type StepStatus } from './jobQueue.js';
 
 export interface RunSummary {
   runId: string;
@@ -70,6 +70,56 @@ function safeBigIntToString(value: unknown): string | null {
   return String(value);
 }
 
+export type RunCursor = Readonly<{
+  createdAt: string;
+  runId: string;
+}>;
+
+export type RunPage = Readonly<{
+  items: RunSummary[];
+  nextCursor: string | null;
+}>;
+
+export const encodeRunCursor = (cursor: RunCursor): string =>
+  Buffer.from(JSON.stringify(cursor), 'utf8').toString('base64url');
+
+export function decodeRunCursor(value: string | undefined): RunCursor | null {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as Partial<RunCursor>;
+    if (typeof parsed.createdAt !== 'string' || typeof parsed.runId !== 'string' || !parsed.runId) {
+      return null;
+    }
+    const createdAt = new Date(parsed.createdAt);
+    if (!Number.isFinite(createdAt.getTime())) return null;
+    return { createdAt: createdAt.toISOString(), runId: parsed.runId };
+  } catch {
+    return null;
+  }
+}
+
+function asIsoDate(value: unknown): string {
+  return value instanceof Date ? value.toISOString() : new Date(String(value)).toISOString();
+}
+
+function runSummary(row: any): RunSummary {
+  return {
+    runId: row.runId,
+    workflowKey: row.workflowKey,
+    status: row.status as RunStatus,
+    requestedByUserId: row.requestedByUserId,
+    employmentId: row.employmentId,
+    agentVersionId: row.agentVersionId,
+    stepCount: Number(row.stepCount ?? 0),
+    completedSteps: Number(row.completedSteps ?? 0),
+    failedSteps: Number(row.failedSteps ?? 0),
+    createdAt: asIsoDate(row.createdAt),
+    startedAt: row.startedAt ? asIsoDate(row.startedAt) : null,
+    finishedAt: row.finishedAt ? asIsoDate(row.finishedAt) : null,
+    failureCode: row.failureCode ?? null,
+  };
+}
+
 export class RunProjectionService {
   constructor(private readonly pool: Pool) {}
 
@@ -91,21 +141,46 @@ export class RunProjectionService {
        LIMIT 100`,
       [organizationId],
     )) as any;
-    return (rows as any[]).map((row) => ({
-      runId: row.runId,
-      workflowKey: row.workflowKey,
-      status: row.status as RunStatus,
-      requestedByUserId: row.requestedByUserId,
-      employmentId: row.employmentId,
-      agentVersionId: row.agentVersionId,
-      stepCount: Number(row.stepCount ?? 0),
-      completedSteps: Number(row.completedSteps ?? 0),
-      failedSteps: Number(row.failedSteps ?? 0),
-      createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
-      startedAt: row.startedAt instanceof Date ? row.startedAt.toISOString() : row.startedAt ? String(row.startedAt) : null,
-      finishedAt: row.finishedAt instanceof Date ? row.finishedAt.toISOString() : row.finishedAt ? String(row.finishedAt) : null,
-      failureCode: row.failureCode ?? null,
-    }));
+    return (rows as any[]).map(runSummary);
+  }
+
+  async listRuns(
+    organizationId: string,
+    input: Readonly<{ limit: number; cursor: RunCursor | null; statuses: readonly RunStatus[] }>,
+  ): Promise<RunPage> {
+    const limit = Math.min(Math.max(input.limit, 1), 50);
+    const statuses = input.statuses.length ? input.statuses : RUN_STATUSES;
+    const placeholders = statuses.map(() => '?').join(', ');
+    const params: unknown[] = [organizationId, ...statuses];
+    const cursorClause = input.cursor
+      ? ' AND (r.createdAt < ? OR (r.createdAt = ? AND r.id < ?))'
+      : '';
+    if (input.cursor) {
+      const createdAt = new Date(input.cursor.createdAt);
+      params.push(createdAt, createdAt, input.cursor.runId);
+    }
+    params.push(limit + 1);
+    const [rows] = (await this.pool.query(
+      `SELECT r.id AS runId, r.workflowKey, r.status, r.requestedByUserId,
+              r.employmentId, r.agentVersionId, r.failureCode,
+              r.createdAt, r.startedAt, r.finishedAt,
+              (SELECT COUNT(*) FROM ai_direct_workflow_run_steps s WHERE s.runId = r.id) AS stepCount,
+              (SELECT COUNT(*) FROM ai_direct_workflow_run_steps s WHERE s.runId = r.id AND s.status = 'succeeded') AS completedSteps,
+              (SELECT COUNT(*) FROM ai_direct_workflow_run_steps s WHERE s.runId = r.id AND s.status = 'failed') AS failedSteps
+       FROM ai_direct_workflow_runs r
+       WHERE r.organizationId = ? AND r.status IN (${placeholders})${cursorClause}
+       ORDER BY r.createdAt DESC, r.id DESC
+       LIMIT ?`,
+      params,
+    )) as any;
+    const pageRows = (rows as any[]).slice(0, limit);
+    const last = pageRows.at(-1);
+    return {
+      items: pageRows.map(runSummary),
+      nextCursor: (rows as any[]).length > limit && last
+        ? encodeRunCursor({ createdAt: asIsoDate(last.createdAt), runId: last.runId })
+        : null,
+    };
   }
 
   /**

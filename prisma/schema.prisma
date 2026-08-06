@@ -700,6 +700,7 @@ model aiDirectModelRunAudits {
 
   @@unique([stepId, attempt])
   @@index([runId, createdAt])
+  @@index([runId, createdAt, id], map: "ai_direct_model_audit_run_time_cursor_idx")
   @@index([stepId, createdAt])
   @@index([providerKey, createdAt])
   @@index([agentId, createdAt])
@@ -790,9 +791,59 @@ model aiDirectAuditEvents {
   createdAt      DateTime @default(now())
 
   @@index([organizationId, createdAt])
+  @@index([organizationId, createdAt, id], map: "ai_direct_audit_org_time_cursor_idx")
+  @@index([organizationId, actorUserId, createdAt, id], map: "ai_direct_audit_org_actor_time_cursor_idx")
+  @@index([organizationId, targetType, targetId, createdAt, id], map: "ai_direct_audit_org_resource_time_cursor_idx")
+  @@index([organizationId, action, createdAt, id], map: "ai_direct_audit_org_action_time_cursor_idx")
+  @@index([organizationId, requestId, createdAt, id], map: "ai_direct_audit_org_request_time_cursor_idx")
   @@index([targetType, targetId, createdAt])
   @@index([actorUserId, createdAt])
   @@map("ai_direct_audit_events")
+}
+
+model aiDirectAuditExportJobs {
+  id                   String    @id @db.VarChar(36)
+  organizationId       String    @db.VarChar(36)
+  requestedByUserId    String    @db.VarChar(191)
+  status               String    @default("queued") @db.VarChar(32)
+  filters              Json
+  watermark            String    @db.VarChar(512)
+  requestId            String?   @db.VarChar(128)
+  attemptCount         Int       @default(0)
+  leaseOwner           String?   @db.VarChar(128)
+  leaseExpiresAt       DateTime?
+  artifact             Bytes?    @db.LongBlob
+  artifactMimeType     String?   @db.VarChar(255)
+  artifactFileName     String?   @db.VarChar(255)
+  artifactSizeBytes    BigInt?   @db.UnsignedBigInt
+  artifactSha256       String?   @db.Char(64)
+  failureCode          String?   @db.VarChar(128)
+  startedAt            DateTime?
+  completedAt          DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([organizationId, createdAt, id], map: "ai_direct_audit_exports_org_created_idx")
+  @@index([organizationId, requestedByUserId, createdAt, id], map: "ai_direct_audit_exports_org_requester_created_idx")
+  @@index([status, leaseExpiresAt, createdAt, id], map: "ai_direct_audit_exports_queue_idx")
+  @@index([organizationId, requestId], map: "ai_direct_audit_exports_request_idx")
+  @@map("ai_direct_audit_export_jobs")
+}
+
+model aiDirectAuditExportDownloadTokens {
+  id               String    @id @db.VarChar(36)
+  exportJobId      String    @db.VarChar(36)
+  organizationId   String    @db.VarChar(36)
+  tokenPrefix      String    @db.VarChar(12)
+  tokenHash        String    @unique(map: "ai_direct_audit_download_token_hash_key") @db.Char(64)
+  issuedToUserId   String    @db.VarChar(191)
+  expiresAt        DateTime
+  usedAt           DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([exportJobId, expiresAt, usedAt], map: "ai_direct_audit_download_job_expiry_idx")
+  @@index([organizationId, issuedToUserId, createdAt], map: "ai_direct_audit_download_org_user_created_idx")
+  @@map("ai_direct_audit_export_download_tokens")
 }
 
 model aiDirectMemoryBindings {
@@ -996,6 +1047,7 @@ model aiDirectCapabilityGrants {
   revokeReason     String?   @db.Text
 
   @@index([subjectType, subjectId, resourceType, resourceId, revokedAt])
+  @@index([subjectType, subjectId, resourceType, resourceId, action, revokedAt, expiresAt], map: "ai_direct_capability_audit_permission_idx")
   @@index([resourceType, resourceId, revokedAt])
   @@index([revokedAt])
   @@map("ai_direct_capability_grants")
@@ -1048,6 +1100,32 @@ model aiDirectEmployments {
   @@map("ai_direct_employments")
 }
 
+model aiDirectWorkforceEmployeeDigests {
+  employmentId      String   @id @db.VarChar(36)
+  organizationId    String   @db.VarChar(36)
+  companyId         String   @db.VarChar(36)
+  departmentId      String   @db.VarChar(36)
+  positionId        String   @db.VarChar(36)
+  roleId            String   @db.VarChar(36)
+  agentId           String   @db.VarChar(36)
+  agentVersionId    String   @db.VarChar(36)
+  agentDisplayName  String   @db.VarChar(160)
+  avatarAssetId     String?  @db.VarChar(36)
+  departmentName    String   @db.VarChar(160)
+  positionName      String   @db.VarChar(160)
+  roleName          String   @db.VarChar(160)
+  employmentStatus  String   @db.VarChar(32)
+  startedAt         DateTime?
+  revision          String   @db.Char(64)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([companyId, employmentStatus, updatedAt, employmentId], map: "workforce_employee_digests_company_cursor_idx")
+  @@index([companyId, departmentId, updatedAt, employmentId], map: "workforce_employee_digests_company_department_cursor_idx")
+  @@index([organizationId, companyId], map: "workforce_employee_digests_organization_company_idx")
+  @@map("ai_direct_workforce_employee_digests")
+}
+
 model aiDirectEmploymentEvents {
   id            String    @id @default(cuid())
   employmentId  String    @db.VarChar(36)
@@ -1082,9 +1160,146 @@ model aiDirectApprovals {
   updatedAt           DateTime  @updatedAt
 
   @@index([organizationId, status, updatedAt])
+  @@index([status, expiresAt, id], map: "ai_direct_approvals_pending_expiry_idx")
   @@index([targetType, targetId, status])
   @@index([approverUserId, status, updatedAt])
   @@map("ai_direct_approvals")
+}
+
+model aiDirectApprovalEvents {
+  id             String    @id @db.VarChar(36)
+  approvalId     String    @db.VarChar(36)
+  organizationId String?   @db.VarChar(36)
+  sequence       Int
+  eventType      String    @db.VarChar(64)
+  actorUserId    String?   @db.VarChar(191)
+  requestId      String    @db.VarChar(128)
+  metadata       Json?
+  occurredAt     DateTime  @default(now())
+
+  @@unique([approvalId, sequence], map: "ai_direct_approval_events_approval_sequence_key")
+  @@index([approvalId, occurredAt, id], map: "ai_direct_approval_events_approval_occurred_idx")
+  @@index([organizationId, occurredAt, id], map: "ai_direct_approval_events_org_occurred_idx")
+  @@map("ai_direct_approval_events")
+}
+
+model aiDirectApprovalDelegations {
+  id                String   @id @db.VarChar(36)
+  approvalId        String   @db.VarChar(36)
+  organizationId    String   @db.VarChar(36)
+  fromUserId        String?  @db.VarChar(191)
+  toUserId          String   @db.VarChar(191)
+  delegatedByUserId String   @db.VarChar(191)
+  reason            String?  @db.VarChar(500)
+  createdAt         DateTime @default(now())
+
+  @@index([approvalId, createdAt, id], map: "ai_direct_approval_delegations_approval_created_idx")
+  @@index([organizationId, toUserId, createdAt, id], map: "ai_direct_approval_delegations_org_to_created_idx")
+  @@map("ai_direct_approval_delegations")
+}
+
+model aiDirectInterviewRetentionPolicies {
+  organizationId      String   @id @db.VarChar(36)
+  bodyRetentionDays   Int      @default(90)
+  modelConsentMode    String   @default("organization_default_opt_in") @db.VarChar(64)
+  attachmentPolicy    String   @default("image_pdf_only") @db.VarChar(64)
+  attachmentMaxBytes  Int      @default(10485760)
+  version             Int      @default(1)
+  updatedByUserId     String   @db.VarChar(191)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("ai_direct_interview_retention_policies")
+}
+
+model aiDirectInterviewConversations {
+  id             String   @id @db.VarChar(36)
+  organizationId String   @db.VarChar(36)
+  agentVersionId String   @db.VarChar(36)
+  createdByUserId String  @db.VarChar(191)
+  status         String   @default("active") @db.VarChar(32)
+  latestSequence Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId, status, updatedAt])
+  @@map("ai_direct_interview_conversations")
+}
+
+model aiDirectInterviewParticipants {
+  id                 String    @id @db.VarChar(36)
+  conversationId     String    @db.VarChar(36)
+  userId             String    @db.VarChar(191)
+  status             String    @default("active") @db.VarChar(32)
+  modelUseOptedOutAt DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@unique([conversationId, userId])
+  @@index([userId, status, updatedAt])
+  @@map("ai_direct_interview_participants")
+}
+
+model aiDirectInterviewMessages {
+  id                 String    @id @db.VarChar(36)
+  conversationId     String    @db.VarChar(36)
+  sequence           Int
+  senderUserId       String    @db.VarChar(191)
+  body               String    @db.Text
+  retentionExpiresAt DateTime
+  deletedAt          DateTime?
+  deletedByUserId    String?   @db.VarChar(191)
+  createdAt          DateTime  @default(now())
+
+  @@unique([conversationId, sequence])
+  @@index([conversationId, sequence])
+  @@index([retentionExpiresAt, deletedAt])
+  @@map("ai_direct_interview_messages")
+}
+
+model aiDirectInterviewReadCursors {
+  conversationId String   @db.VarChar(36)
+  userId         String   @db.VarChar(191)
+  sequence       Int      @default(0)
+  updatedAt      DateTime @updatedAt
+
+  @@id([conversationId, userId])
+  @@index([userId, updatedAt])
+  @@map("ai_direct_interview_read_cursors")
+}
+
+model aiDirectInterviewLegalHolds {
+  id             String    @id @db.VarChar(36)
+  organizationId String    @db.VarChar(36)
+  conversationId String?   @db.VarChar(36)
+  messageId      String?   @db.VarChar(36)
+  reason         String    @db.VarChar(500)
+  status         String    @default("active") @db.VarChar(32)
+  createdByUserId String   @db.VarChar(191)
+  releasedByUserId String? @db.VarChar(191)
+  releasedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([organizationId, status])
+  @@index([conversationId, status])
+  @@index([messageId, status])
+  @@map("ai_direct_interview_legal_holds")
+}
+
+model aiDirectInterviewAttachments {
+  id                 String    @id @db.VarChar(36)
+  messageId          String    @db.VarChar(36)
+  storageKey         String    @unique @db.VarChar(512)
+  mimeType           String    @db.VarChar(128)
+  sizeBytes          BigInt
+  sha256             String    @db.Char(64)
+  retentionExpiresAt DateTime
+  deletedAt          DateTime?
+  createdAt          DateTime  @default(now())
+
+  @@index([messageId])
+  @@index([retentionExpiresAt, deletedAt])
+  @@map("ai_direct_interview_attachments")
 }
 
 model aiDirectWorkflowRuns {
@@ -1120,6 +1335,7 @@ model aiDirectWorkflowRuns {
   updatedAt               DateTime  @updatedAt
 
   @@index([organizationId, createdAt])
+  @@index([organizationId, createdAt, id], map: "ai_direct_workflow_runs_organization_cursor_idx")
   @@index([employmentId, createdAt])
   @@index([status, updatedAt])
   @@index([requestedByUserId, status, updatedAt])
@@ -1228,6 +1444,7 @@ model desktopTemplates {
   name            String   @db.VarChar(160)
   description     String   @db.Text
   status          String   @default("draft") @db.VarChar(32)
+  catalogStatus   String   @default("unpublished") @db.VarChar(32)
   pricingMode     String   @default("free") @db.VarChar(32)
   priceMicros     BigInt?
   currency        String?  @db.Char(3)
@@ -1238,6 +1455,8 @@ model desktopTemplates {
 
   @@unique([publisherId, slug], map: "desktop_templates_publisher_slug_key")
   @@index([status, updatedAt], map: "desktop_templates_status_updated_idx")
+  @@index([catalogStatus, updatedAt], map: "desktop_templates_catalog_updated_idx")
+  @@index([publisherId, catalogStatus, updatedAt], map: "desktop_templates_publisher_catalog_updated_idx")
   @@index([publisherId, status, updatedAt], map: "desktop_templates_publisher_status_updated_idx")
   @@map("desktop_templates")
 }
@@ -1247,6 +1466,11 @@ model desktopTemplateVersions {
   templateId        String    @db.VarChar(36)
   version           String    @db.VarChar(64)
   status            String    @default("draft") @db.VarChar(32)
+  reviewStatus      String    @default("draft") @db.VarChar(32)
+  publicationStatus String    @default("unpublished") @db.VarChar(32)
+  reviewDecisionId  String?   @db.VarChar(36)
+  submittedAt       DateTime?
+  reviewedAt        DateTime?
   manifest          Json
   dataSchemaVersion Int       @default(1)
   storageKey        String    @unique(map: "desktop_template_versions_storage_key") @db.VarChar(512)
@@ -1260,7 +1484,56 @@ model desktopTemplateVersions {
 
   @@unique([templateId, version], map: "desktop_template_versions_template_version_key")
   @@index([templateId, status, createdAt], map: "desktop_template_versions_template_status_created_idx")
+  @@index([reviewStatus, submittedAt, id], map: "desktop_template_versions_review_queue_idx")
+  @@index([templateId, publicationStatus, createdAt], map: "desktop_template_versions_template_publication_created_idx")
+  @@index([reviewDecisionId], map: "desktop_template_versions_decision_idx")
   @@map("desktop_template_versions")
+}
+
+model desktopTemplateReviewDecisions {
+  id                String   @id @db.VarChar(36)
+  templateVersionId String   @db.VarChar(36)
+  decision          String   @db.VarChar(32)
+  reason            String?  @db.Text
+  actorUserId       String   @db.VarChar(191)
+  requestId         String   @db.VarChar(128)
+  createdAt         DateTime @default(now())
+
+  @@index([templateVersionId, createdAt, id], map: "desktop_template_review_version_created_idx")
+  @@index([actorUserId, createdAt], map: "desktop_template_review_actor_created_idx")
+  @@map("desktop_template_review_decisions")
+}
+
+model desktopTemplateOutbox {
+  id            String    @id @db.VarChar(36)
+  topic         String    @db.VarChar(128)
+  aggregateType String    @db.VarChar(64)
+  aggregateId   String    @db.VarChar(191)
+  payload       Json
+  status        String    @default("pending") @db.VarChar(32)
+  attempts      Int       @default(0)
+  availableAt   DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  publishedAt   DateTime?
+
+  @@index([status, availableAt, createdAt], map: "desktop_template_outbox_dispatch_idx")
+  @@index([aggregateType, aggregateId, createdAt], map: "desktop_template_outbox_aggregate_idx")
+  @@map("desktop_template_outbox")
+}
+
+model desktopTemplateDownloadEvents {
+  id                String   @id @db.VarChar(36)
+  templateId        String   @db.VarChar(36)
+  templateVersionId String   @db.VarChar(36)
+  userId            String   @db.VarChar(191)
+  entitlementSource String   @db.VarChar(32)
+  requestId         String   @db.VarChar(128)
+  downloadedAt      DateTime @default(now())
+
+  @@index([templateId, downloadedAt, id], map: "desktop_template_download_template_created_idx")
+  @@index([templateVersionId, downloadedAt, id], map: "desktop_template_download_version_created_idx")
+  @@index([userId, downloadedAt], map: "desktop_template_download_user_created_idx")
+  @@map("desktop_template_download_events")
 }
 
 model desktopTemplateScreenshots {
@@ -1297,8 +1570,9 @@ model desktopTemplateEntitlements {
 }
 
 model desktopTemplateAuditEvents {
-  id          String   @id @db.VarChar(36)
-  actorUserId String   @db.VarChar(191)
+  id             String   @id @db.VarChar(36)
+  organizationId String?  @db.VarChar(36)
+  actorUserId    String   @db.VarChar(191)
   action      String   @db.VarChar(128)
   targetType  String   @db.VarChar(64)
   targetId    String   @db.VarChar(191)
@@ -1309,5 +1583,10 @@ model desktopTemplateAuditEvents {
 
   @@index([targetType, targetId, createdAt], map: "desktop_template_audit_target_created_idx")
   @@index([actorUserId, createdAt], map: "desktop_template_audit_actor_created_idx")
+  @@index([organizationId, createdAt, id], map: "desktop_template_audit_org_time_cursor_idx")
+  @@index([organizationId, actorUserId, createdAt, id], map: "desktop_template_audit_org_actor_time_cursor_idx")
+  @@index([organizationId, targetType, targetId, createdAt, id], map: "desktop_template_audit_org_resource_time_cursor_idx")
+  @@index([organizationId, action, createdAt, id], map: "desktop_template_audit_org_action_time_cursor_idx")
+  @@index([organizationId, requestId, createdAt, id], map: "desktop_template_audit_org_request_time_cursor_idx")
   @@map("desktop_template_audit_events")
 }

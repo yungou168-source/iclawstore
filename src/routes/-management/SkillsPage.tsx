@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
+import { useLocale } from "../../lib/i18n/context";
 import {
   Select,
   SelectContent,
@@ -89,15 +90,16 @@ export function SkillsPage({
   onSetOfficialBadge: (skillId: Id<"skills">, official: boolean) => void;
   onToggleSkillHidden: (skill: Doc<"skills">) => void;
 }) {
+  const { locale, t } = useLocale();
   return (
     <div className="management-view">
-      <h2 className="section-title text-[1.2rem] m-0">Skill tools</h2>
+      <h2 className="section-title text-[1.2rem] m-0">{t("management.skills.title")}</h2>
       <p className="section-subtitle m-0 mt-1">
-        Look up a skill by slug to manage moderation overrides and view its audit history.
+        {t("management.skills.subtitle")}
       </p>
       <div className="management-controls">
         <div className="management-control management-search">
-          <span className="mono">Skill</span>
+          <span className="mono">{t("management.skills.skill")}</span>
           <input
             type="search"
             placeholder="skill-slug"
@@ -112,12 +114,12 @@ export function SkillsPage({
           />
         </div>
         <Button type="button" onClick={onManageSkill} disabled={!skillSearch.trim()}>
-          Manage
+          {t("management.manage")}
         </Button>
       </div>
       {selectedSlug ? (
         <div className="section-subtitle mt-2">
-          Managing "{selectedSlug}" ·{" "}
+          {t("management.skills.managing", { name: selectedSlug })} ·{" "}
           <Link
             to="/management"
             search={{
@@ -126,19 +128,19 @@ export function SkillsPage({
               plugin: undefined,
             }}
           >
-            Clear selection
+            {t("management.clear_selection")}
           </Link>
         </div>
       ) : null}
       <div className="management-list">
         {!selectedSlug ? (
-          <div className="management-empty">
-            Enter a skill slug above, or use the Manage button on a skill in another view.
-          </div>
+          <div className="management-empty">{t("management.skills.enter")}</div>
         ) : selectedSkill === undefined ? (
-          <div className="management-empty">Loading skill…</div>
+          <div className="management-empty">{t("management.skills.loading")}</div>
         ) : !selectedSkill?.skill ? (
-          <div className="management-empty">No skill found for "{selectedSlug}".</div>
+          <div className="management-empty">
+            {t("management.skills.not_found", { name: selectedSlug })}
+          </div>
         ) : (
           (() => {
             const { skill, latestVersion, owner, canonical, overrideReviewer, auditLogs } =
@@ -168,7 +170,8 @@ export function SkillsPage({
                   </Link>
                   <div className="section-subtitle m-0">
                     @{owner?.handle ?? owner?.displayName ?? "user"} · v
-                    {latestVersion?.version ?? "—"} · updated {formatTimestamp(skill.updatedAt)} ·{" "}
+                    {latestVersion?.version ?? "—"} ·{" "}
+                    {t("management.skills.updated", { time: formatTimestamp(skill.updatedAt, locale) })} ·{" "}
                     {moderationStatus}
                     {badges.length ? ` · ${badges.join(", ").toLowerCase()}` : ""}
                   </div>
@@ -180,31 +183,46 @@ export function SkillsPage({
                     </div>
                   ) : null}
                   <div className="management-sublist">
-                    <div className="section-subtitle m-0">Manual overrides</div>
+                    <div className="section-subtitle m-0">
+                      {t("management.skills.manual_overrides")}
+                    </div>
                     <section className="management-override-panel">
                       <div className="management-report-item">
-                        <span className="management-report-meta">Current override</span>
+                        <span className="management-report-meta">
+                          {t("management.skills.current_override")}
+                        </span>
                         <span>
-                          {formatManualOverrideState(skill.manualOverride, overrideReviewer)}
+                          {formatManualOverrideState(
+                            skill.manualOverride,
+                            overrideReviewer,
+                            t,
+                            locale,
+                          )}
                         </span>
                       </div>
                       <div className="management-report-item">
-                        <span className="management-report-meta">Latest version</span>
+                        <span className="management-report-meta">
+                          {t("management.skills.latest_version")}
+                        </span>
                         <span>
-                          {latestVersion ? `v${latestVersion.version}` : "No published version."}
+                          {latestVersion
+                            ? `v${latestVersion.version}`
+                            : t("management.skills.no_version")}
                         </span>
                       </div>
                       <div className="management-report-item">
-                        <span className="management-report-meta">Behavior</span>
-                        <span>Applies to the full skill until a moderator clears it.</span>
+                        <span className="management-report-meta">
+                          {t("management.skills.behavior")}
+                        </span>
+                        <span>{t("management.skills.behavior_desc")}</span>
                       </div>
                       <textarea
                         className="form-input management-textarea"
                         rows={4}
                         placeholder={
                           skill.manualOverride
-                            ? "Audit note required to update or clear the okay override"
-                            : "Audit note required to mark this skill okay"
+                            ? t("management.skills.note_update")
+                            : t("management.skills.note_mark")
                         }
                         value={skillOverrideNote}
                         onChange={(event) => onChangeSkillOverrideNote(event.target.value)}
@@ -216,7 +234,9 @@ export function SkillsPage({
                           disabled={!skillOverrideNote.trim()}
                           onClick={onApplySkillOverride}
                         >
-                          {skill.manualOverride ? "Update okay override" : "Mark skill okay"}
+                          {skill.manualOverride
+                            ? t("management.skills.update_override")
+                            : t("management.skills.mark_okay")}
                         </Button>
                         {skill.manualOverride ? (
                           <Button
@@ -225,37 +245,46 @@ export function SkillsPage({
                             disabled={!skillOverrideNote.trim()}
                             onClick={onClearSkillOverride}
                           >
-                            Clear skill override
+                            {t("management.skills.clear_override")}
                           </Button>
                         ) : null}
                       </div>
                     </section>
                   </div>
                   <div className="management-sublist">
-                    <div className="section-subtitle m-0">Recent audit activity</div>
+                    <div className="section-subtitle m-0">
+                      {t("management.skills.recent_audit")}
+                    </div>
                     <section className="management-override-panel management-audit-panel">
                       <div className="management-report-item">
-                        <span className="management-report-meta">Window</span>
-                        <span>Last {SKILL_AUDIT_LOG_LIMIT} entries for this skill.</span>
+                        <span className="management-report-meta">
+                          {t("management.skills.window")}
+                        </span>
+                        <span>
+                          {t("management.skills.last_entries", { count: SKILL_AUDIT_LOG_LIMIT })}
+                        </span>
                       </div>
                       {auditLogs.length === 0 ? (
-                        <div className="section-subtitle m-0">No audit activity yet.</div>
+                        <div className="section-subtitle m-0">
+                          {t("management.skills.no_audit")}
+                        </div>
                       ) : (
                         <div className="management-audit-list">
                           {auditLogs.map((entry) => {
                             const auditSummary = formatAuditMetadataSummary(
                               entry.action,
                               entry.metadata,
+                              t,
                             );
                             return (
                               <div key={entry._id} className="management-audit-item">
                                 <div className="management-report-item">
                                   <span className="management-report-meta">
-                                    {formatTimestamp(entry.createdAt)} ·{" "}
-                                    {formatManagementUserLabel(entry.actor)}
+                                    {formatTimestamp(entry.createdAt, locale)} ·{" "}
+                                    {formatManagementUserLabel(entry.actor, undefined, t)}
                                   </span>
                                   <span>
-                                    {formatAuditActionLabel(entry.action, entry.metadata)}
+                                    {formatAuditActionLabel(entry.action, entry.metadata, t)}
                                   </span>
                                 </div>
                                 {auditSummary ? (
@@ -265,7 +294,7 @@ export function SkillsPage({
                                 ) : null}
                                 {entry.metadata ? (
                                   <details className="management-audit-details">
-                                    <summary>metadata</summary>
+                                    <summary>{t("management.skills.metadata")}</summary>
                                     <pre className="management-audit-json">
                                       {JSON.stringify(entry.metadata, null, 2)}
                                     </pre>
@@ -280,16 +309,16 @@ export function SkillsPage({
                   </div>
                   <div className="management-tool-grid">
                     <label className="management-control management-control-stack">
-                      <span className="mono">duplicate of</span>
+                      <span className="mono">{t("management.skills.duplicate_of")}</span>
                       <input
                         className="management-field"
                         value={selectedDuplicate}
                         onChange={(event) => onChangeSelectedDuplicate(event.target.value)}
-                        placeholder={canonical?.skill?.slug ?? "canonical slug"}
+                        placeholder={canonical?.skill?.slug ?? t("management.skills.canonical_slug")}
                       />
                     </label>
                     <div className="management-control management-control-stack">
-                      <span className="mono">duplicate action</span>
+                      <span className="mono">{t("management.skills.duplicate_action")}</span>
                       <Button
                         className="management-action-btn"
                         type="button"
@@ -297,24 +326,24 @@ export function SkillsPage({
                           onSetDuplicate(skill._id, selectedDuplicate.trim() || undefined)
                         }
                       >
-                        Set duplicate
+                        {t("management.skills.set_duplicate")}
                       </Button>
                     </div>
                     {admin ? (
                       <>
                         <label className="management-control management-control-stack">
-                          <span className="mono">owner search</span>
+                          <span className="mono">{t("management.skills.owner_search")}</span>
                           <input
                             className="management-field"
                             type="search"
-                            placeholder="Search users by handle"
+                            placeholder={t("management.skills.search_owner")}
                             value={ownerSearch}
                             onChange={(event) => onChangeOwnerSearch(event.target.value)}
                           />
                           <span className="management-count">{ownerSummary}</span>
                         </label>
                         <label className="management-control management-control-stack">
-                          <span className="mono">owner</span>
+                          <span className="mono">{t("management.skills.owner")}</span>
                           <Select
                             value={selectedOwner}
                             onValueChange={(value) => {
@@ -337,7 +366,7 @@ export function SkillsPage({
                           </Select>
                         </label>
                         <div className="management-control management-control-stack">
-                          <span className="mono">owner action</span>
+                          <span className="mono">{t("management.skills.owner_action")}</span>
                           <Button
                             className="management-action-btn"
                             type="button"
@@ -346,7 +375,7 @@ export function SkillsPage({
                               onChangeOwner(skill._id, selectedOwner);
                             }}
                           >
-                            Change owner
+                            {t("management.skills.change_owner")}
                           </Button>
                         </div>
                       </>
@@ -356,7 +385,7 @@ export function SkillsPage({
                 <div className="management-actions management-action-grid">
                   <Button asChild className="management-action-btn">
                     <Link to="/$owner/$slug" params={{ owner: ownerParam, slug: skill.slug }}>
-                      View
+                      {t("management.view")}
                     </Link>
                   </Button>
                   <Button
@@ -364,14 +393,14 @@ export function SkillsPage({
                     type="button"
                     onClick={() => onToggleSkillHidden(skill)}
                   >
-                    {skill.softDeletedAt ? "Restore" : "Hide"}
+                    {skill.softDeletedAt ? t("management.restore") : t("management.hide")}
                   </Button>
                   <Button
                     className="management-action-btn"
                     type="button"
                     onClick={() => onSetBatch(skill._id, isHighlighted ? undefined : "highlighted")}
                   >
-                    {isHighlighted ? "Unhighlight" : "Highlight"}
+                    {isHighlighted ? t("management.unhighlight") : t("management.highlight")}
                   </Button>
                   {admin ? (
                     <Button
@@ -380,7 +409,7 @@ export function SkillsPage({
                       variant="destructive"
                       onClick={() => onHardDeleteSkill(skill)}
                     >
-                      Hard delete
+                      {t("management.hard_delete")}
                     </Button>
                   ) : null}
                   {staff ? (
@@ -394,7 +423,7 @@ export function SkillsPage({
                         onBanUser(ownerUserId, `@${ownerHandle}`);
                       }}
                     >
-                      Ban user
+                      {t("management.ban_user")}
                     </Button>
                   ) : null}
                   {admin ? (
@@ -404,14 +433,18 @@ export function SkillsPage({
                         type="button"
                         onClick={() => onSetOfficialBadge(skill._id, !isOfficial)}
                       >
-                        {isOfficial ? "Remove official" : "Mark official"}
+                        {isOfficial
+                          ? t("management.skills.remove_official")
+                          : t("management.skills.mark_official")}
                       </Button>
                       <Button
                         className="management-action-btn"
                         type="button"
                         onClick={() => onSetDeprecatedBadge(skill._id, !isDeprecated)}
                       >
-                        {isDeprecated ? "Remove deprecated" : "Mark deprecated"}
+                        {isDeprecated
+                          ? t("management.skills.remove_deprecated")
+                          : t("management.skills.mark_deprecated")}
                       </Button>
                     </>
                   ) : null}

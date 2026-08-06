@@ -1,5 +1,8 @@
 import { FEATURE_SOULS } from "./features";
 
+export const AI_WORK_REPOSITORY_URL = "https://github.com/yungou168-source/iclawstore";
+export const AI_WORK_RELEASES_URL = `${AI_WORK_REPOSITORY_URL}/releases`;
+
 /**
  * Shared navigation configuration used by Header and Footer to eliminate
  * triple duplication of nav link definitions.
@@ -31,6 +34,8 @@ interface RouteNavItem extends NavItemBase {
   href?: never;
   /** Optional search params object passed to `<Link search>` */
   search?: Record<string, unknown>;
+  /** Optional hash fragment passed to `Link`. */
+  hash?: string;
   /** Optional lucide icon name shown beside the label in navbar tabs */
   icon?: NavIconName;
 }
@@ -89,7 +94,7 @@ export const PRIMARY_NAV_ITEMS: NavItem[] = [
     to: "/skills",
     search: SKILLS_SEARCH,
     icon: "wrench",
-    authRequired: false,
+    authRequired: true,
     staffOnly: false,
     soulModeOnly: false,
     soulModeHide: true,
@@ -99,7 +104,7 @@ export const PRIMARY_NAV_ITEMS: NavItem[] = [
     label: "Plugins",
     to: "/plugins",
     icon: "plug",
-    authRequired: false,
+    authRequired: true,
     staffOnly: false,
     soulModeOnly: false,
     soulModeHide: false,
@@ -150,6 +155,7 @@ type FooterNavItem =
       label: string;
       to: string;
       search?: Record<string, unknown>;
+      hash?: string;
       featureFlag?: boolean;
     }
   | { kind: "external"; label: string; href: string; featureFlag?: boolean }
@@ -159,54 +165,16 @@ export const FOOTER_NAV_SECTIONS: FooterNavSection[] = [
   {
     title: "Browse",
     items: [
+      { kind: "link", label: "Home", to: "/" },
+      { kind: "link", label: "Hire AI employees", to: "/recruit-ai" },
+      { kind: "link", label: "Desktop client", to: "/desktop-client" },
+    ],
+  },
+  {
+    title: "Developers",
+    items: [
       { kind: "link", label: "Skills", to: "/skills", search: SKILLS_SEARCH },
       { kind: "link", label: "Plugins", to: "/plugins" },
-      { kind: "link", label: "Audits", to: "/audits", search: { type: undefined } },
-      {
-        kind: "link",
-        label: "Souls",
-        to: "/souls",
-        search: SOULS_SEARCH,
-        featureFlag: FEATURE_SOULS,
-      },
-    ],
-  },
-  {
-    title: "Publish",
-    items: [
-      {
-        kind: "link",
-        label: "Publish Skill",
-        to: "/skills/publish",
-        search: { updateSlug: undefined },
-      },
-      {
-        kind: "link",
-        label: "Publish Plugin",
-        to: "/plugins/publish",
-        search: {
-          ownerHandle: undefined,
-          name: undefined,
-          displayName: undefined,
-          family: undefined,
-          nextVersion: undefined,
-          sourceRepo: undefined,
-        },
-      },
-    ],
-  },
-  {
-    title: "Community",
-    items: [
-      { kind: "external", label: "GitHub", href: "https://github.com/openclaw/clawhub" },
-      { kind: "external", label: "OpenClaw", href: "https://openclaw.ai" },
-    ],
-  },
-  {
-    title: "Platform",
-    items: [
-      { kind: "external", label: "Deployed on Vercel", href: "https://vercel.com" },
-      { kind: "external", label: "Powered by Convex", href: "https://www.convex.dev" },
     ],
   },
 ];

@@ -3,12 +3,15 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { getFunctionName } from "convex/server";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Locale } from "../lib/i18n/config";
+import { t as translate, type TranslationKey } from "../lib/i18n/translations";
 import { Management } from "./management";
 
 const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
 const useActionMock = vi.fn();
 const navigateMock = vi.fn();
+let localeState: Locale = "en";
 let searchState: Record<string, string | undefined> = {};
 let authUser: { _id: string; handle: string; role: "admin" | "moderator" | "user" } = {
   _id: "users:admin",
@@ -167,6 +170,15 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => navigateMock,
 }));
 
+vi.mock("../lib/i18n/context", () => ({
+  useLocale: () => ({
+    locale: localeState,
+    setLocale: vi.fn(),
+    t: (key: string, vars?: Record<string, string | number>) =>
+      translate(key as TranslationKey, localeState, vars),
+  }),
+}));
+
 vi.mock("../lib/useAuthStatus", () => ({
   useAuthStatus: () => ({
     me: authUser,
@@ -181,6 +193,7 @@ describe("Management", () => {
     useMutationMock.mockReset();
     useActionMock.mockReset();
     navigateMock.mockReset();
+    localeState = "en";
     searchState = {};
     authUser = {
       _id: "users:admin",
@@ -216,6 +229,18 @@ describe("Management", () => {
     expect(screen.getByRole("heading", { name: "Publisher abuse review" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Users" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: /Users 0/ })).toBeNull();
+  });
+
+  it("renders the management dashboard in Simplified Chinese", () => {
+    localeState = "zh-CN";
+
+    render(<Management />);
+
+    expect(screen.getByRole("navigation", { name: "后台管理分区" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "发布者滥用审核" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "用户" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "运行新扫描" })).toBeTruthy();
+    expect(screen.getByText("尚无扫描")).toBeTruthy();
   });
 
   it("shows an empty scan state after the abuse dashboard loads without a run", () => {

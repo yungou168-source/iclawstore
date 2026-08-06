@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SoulCard } from "../components/SoulCard";
+import { HomeWorkspace } from "../components/HomeWorkspace";
 import { SoulStatsTripletLine } from "../components/SoulStats";
 import { fetchFeaturedPlugins } from "../lib/featuredCatalog";
 import { FEATURE_SOULS } from "../lib/features";
@@ -155,7 +156,7 @@ const HOME_TRANSLATIONS = {
 function Home() {
   const { locale } = useLocale();
   const mode = getSiteMode();
-  return mode === "souls" ? <OnlyCrabsHome locale={locale} /> : <SkillsHome locale={locale} />;
+  return mode === "souls" ? <OnlyCrabsHome locale={locale} /> : <HomeWorkspace />;
 }
 
 const SLOT_WORDS = [
@@ -175,7 +176,7 @@ const SLOT_WORDS = [
 ];
 const HACK_INDEX = SLOT_WORDS.indexOf("Hack");
 
-function SkillsHome({ locale }: { locale: string }) {
+export function LegacySkillsHome({ locale }: { locale: string }) {
   type SkillPageEntry = {
     skill: PublicSkill;
     ownerHandle?: string | null;

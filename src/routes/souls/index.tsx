@@ -58,7 +58,7 @@ function SoulsHoldingPage() {
         <div>
           <span className="about-callout-label">In the meantime</span>
           <p className="about-lead mb-0">
-            龙虾市场 already handles skills and plugins. Souls will get the same discovery treatment
+            AI直聘 already handles skills and plugins. Souls will get the same discovery treatment
             once the publishing flow is ready.
           </p>
         </div>

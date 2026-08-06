@@ -71,13 +71,52 @@ A source edit is **not** live until both stages below complete. The running
 Node process loads `.output/server/index.mjs` at start-up and does not watch or
 hot-reload that file.
 
+### Low-memory release guard
+
+Builds on the self-hosted server must be serialized. Before starting, confirm
+that no `vite build`, `bun run build`, `tsc`, or package-install process is
+already running and that at least 2 GiB of memory is available. Do not run the
+full CI matrix, Convex deployment, dependency installation, and frontend build
+in parallel on this host.
+
+Run focused tests first, let them exit, and only then start one `bun --smol`
+build. If available memory falls below 512 MiB, swap begins growing quickly, or
+the kernel reports an OOM kill, stop the build and investigate instead of
+starting a second attempt.
+
+A failed Vite/Nitro build may leave `.output/` present but without
+`.output/server/index.mjs`. Preserve the last known-good output under a
+separate, timestamped path before building. Never restart the service merely
+because the build command exited: first require the new entry file to exist. If
+it does not, isolate the incomplete directory, restore `.output` from the
+known-good copy, and keep serving that prior release. This recovery is a
+runtime artifact rollback; it must not revert source files or unrelated working
+copy changes.
+
 ```bash
 cd /www/wwwroot/iclawstore.com
-bun --smol run build
+pgrep -af 'vite build|bun run build|tsc|bun install'
+awk '/MemAvailable/ { printf "MemAvailable: %.1f GiB\n", $2 / 1024 / 1024 }' /proc/meminfo
+release_dir=".output.release-$(date +%Y%m%d-%H%M%S)"
+NITRO_OUTPUT_DIR="$release_dir" bun --smol run build
+test -f "$release_dir/server/index.mjs"
+ln -s "$release_dir" .output.next
+mv -Tf .output.next .output
 sudo systemctl restart iclawstore.service
 sudo systemctl is-active iclawstore.service
 curl --fail --silent --show-error https://www.iclawstore.com/ > /dev/null
 ```
+
+`NITRO_OUTPUT_DIR` applies to both the Nitro build and the required OG runtime
+asset copy, so a release build never writes through the live `.output` symlink.
+Record the previous `.output` target before the atomic link replacement. If the
+new entry check, restart, or smoke check fails, atomically restore that target
+and restart the service; retain both outputs until the new release is verified.
+
+An empty `pgrep` result is expected. If it reports another build or install,
+wait for that process to finish rather than running concurrently. If the entry
+file check fails, do not restart; keep the last known-good output linked and
+verify that the existing service remains healthy.
 
 For homepage navigation or authentication UI changes, verify the public HTML
 includes the expected labels before handoff. The unauthenticated homepage must
@@ -182,7 +221,7 @@ Ensure Convex env is set (auth + embeddings):
   domain
 - `SITE_URL` (your canonical web app URL)
 - `CUSTOM_AUTH_SITE_URL` (the externally reachable Convex HTTP URL; self-hosted production uses `https://www.iclawstore.com/convex`)
-- `AUTH_RESEND_KEY` and `AUTH_EMAIL_FROM` for magic-link sign-in
+- `AUTH_RESEND_KEY` and `AUTH_EMAIL_FROM` for 8-digit email OTP sign-in
 - Optional webhook env (see `docs/webhook.md`)
 - Recommended GitHub App env for authenticated GitHub API reads used by publish
   gates and backups:

@@ -1,6 +1,11 @@
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
-import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
+import {
+  createRemoteJWKSet,
+  jwtVerify,
+  type JWTHeaderParameters,
+  type JWTPayload,
+} from "jose";
 import type { Pool, PoolConnection, RowDataPacket } from "mysql2/promise";
 import { AuthRequiredError, type AuthenticatedUser } from "../middleware/aiDirectAuth.js";
 
@@ -22,16 +27,44 @@ type IdentityRow = RowDataPacket & {
   deletedAt: Date | null;
 };
 
+export type DesktopOAuthIdentityConfig = {
+  issuer: string;
+  audience: string;
+  clientId: string;
+  jwksUri?: string;
+};
+
 export type ConvexIdentityBridgeConfig = {
   issuer: string;
   audience: string;
   convexUrl: string;
   jwksUri?: string;
+  desktopOAuth?: DesktopOAuthIdentityConfig;
 };
 
 const meReference = makeFunctionReference<"query", Record<string, never>, ConvexUser | null>(
   "users:me",
 );
+const desktopMeReference = makeFunctionReference<
+  "query",
+  Record<string, never>,
+  ConvexUser | null
+>("desktopOAuth:getDesktopAccessIdentity");
+
+type TrustedTokenIdentity = {
+  issuer: string;
+  subject: string;
+  convexUser: ConvexUser;
+};
+
+type TokenVerifier = {
+  config: {
+    issuer: string;
+    audience: string;
+    jwksUri?: string;
+  };
+  jwks: ReturnType<typeof createRemoteJWKSet>;
+};
 
 const requiredUrl = (value: string | undefined, name: string): string => {
   const normalized = value?.trim().replace(/\/$/, "");
@@ -41,12 +74,37 @@ const requiredUrl = (value: string | undefined, name: string): string => {
 
 export const identityBridgeConfigFromEnvironment = (
   env: NodeJS.ProcessEnv = process.env,
-): ConvexIdentityBridgeConfig => ({
-  issuer: requiredUrl(env.CONVEX_AUTH_ISSUER ?? env.CONVEX_SITE_URL, "CONVEX_AUTH_ISSUER"),
-  audience: env.CONVEX_AUTH_AUDIENCE?.trim() || "convex",
-  convexUrl: requiredUrl(env.CONVEX_URL ?? env.VITE_CONVEX_URL, "CONVEX_URL"),
-  jwksUri: env.CONVEX_AUTH_JWKS_URI?.trim() || undefined,
-});
+): ConvexIdentityBridgeConfig => {
+  const issuer = requiredUrl(
+    env.CONVEX_AUTH_ISSUER ?? env.CONVEX_SITE_URL,
+    "CONVEX_AUTH_ISSUER",
+  );
+  const desktopIssuer = env.CONVEX_DESKTOP_AUTH_ISSUER?.trim();
+  const desktopClientId = env.AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID?.trim();
+  if ((desktopIssuer && !desktopClientId) || (!desktopIssuer && desktopClientId)) {
+    throw new Error(
+      "CONVEX_DESKTOP_AUTH_ISSUER and AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID must be configured together",
+    );
+  }
+
+  return {
+    issuer,
+    audience: env.CONVEX_AUTH_AUDIENCE?.trim() || "convex",
+    convexUrl: requiredUrl(env.CONVEX_URL ?? env.VITE_CONVEX_URL, "CONVEX_URL"),
+    jwksUri: env.CONVEX_AUTH_JWKS_URI?.trim() || undefined,
+    desktopOAuth:
+      desktopIssuer && desktopClientId
+        ? {
+            issuer: requiredUrl(desktopIssuer, "CONVEX_DESKTOP_AUTH_ISSUER"),
+            audience:
+              env.CONVEX_DESKTOP_AUTH_AUDIENCE?.trim() ||
+              "https://www.iclawstore.com/api/v1/ai-direct-hiring",
+            clientId: desktopClientId,
+            jwksUri: env.CONVEX_DESKTOP_AUTH_JWKS_URI?.trim() || undefined,
+          }
+        : undefined,
+  };
+};
 
 const bearerToken = (authorization: string | undefined): string => {
   const match = authorization?.match(/^Bearer\s+([^\s]+)$/i);
@@ -80,16 +138,112 @@ export const assertConvexAuthUserIdMatches = (
   }
 };
 
-const loadJwksUri = async (config: ConvexIdentityBridgeConfig): Promise<string> => {
-  if (config.jwksUri) return requiredUrl(config.jwksUri, "CONVEX_AUTH_JWKS_URI");
+const loadJwksUri = async (config: {
+  issuer: string;
+  jwksUri?: string;
+}): Promise<string> => {
+  if (config.jwksUri) return requiredUrl(config.jwksUri, "OIDC_JWKS_URI");
   const response = await fetch(`${config.issuer}/.well-known/openid-configuration`, {
     headers: { accept: "application/json" },
     signal: AbortSignal.timeout(5_000),
   });
-  if (!response.ok) throw new Error(`Convex OIDC discovery failed with HTTP ${response.status}`);
+  if (!response.ok) throw new Error(`OIDC discovery failed with HTTP ${response.status}`);
   const discovery = (await response.json()) as { issuer?: string; jwks_uri?: string };
-  if (discovery.issuer !== config.issuer) throw new Error("Convex OIDC discovery issuer mismatch");
+  if (discovery.issuer !== config.issuer) throw new Error("OIDC discovery issuer mismatch");
   return requiredUrl(discovery.jwks_uri, "OIDC jwks_uri");
+};
+
+const createTokenVerifier = async (
+  config: TokenVerifier["config"],
+): Promise<TokenVerifier> => {
+  const jwksUri = await loadJwksUri(config);
+  return {
+    config,
+    jwks: createRemoteJWKSet(new URL(jwksUri), {
+      timeoutDuration: 5_000,
+      cooldownDuration: 30_000,
+    }),
+  };
+};
+
+const verifyToken = async (
+  token: string,
+  verifier: TokenVerifier,
+  maxTokenAge: string,
+): Promise<{ payload: JWTPayload; protectedHeader: JWTHeaderParameters }> =>
+  jwtVerify(token, verifier.jwks, {
+    issuer: verifier.config.issuer,
+    audience: verifier.config.audience,
+    algorithms: ["RS256"],
+    clockTolerance: 5,
+    maxTokenAge,
+  });
+
+const queryActiveConvexUser = async (
+  convexUrl: string,
+  token: string,
+  reference: typeof meReference | typeof desktopMeReference,
+): Promise<ConvexUser> => {
+  const convex = new ConvexHttpClient(convexUrl);
+  convex.setAuth(token);
+  let convexUser: ConvexUser | null;
+  try {
+    convexUser = await convex.query(reference, {});
+  } catch {
+    throw new AuthRequiredError("Unable to confirm current account status");
+  }
+  if (!convexUser || convexUser.deletedAt || convexUser.deactivatedAt) {
+    throw new AuthRequiredError("Account is no longer active");
+  }
+  return convexUser;
+};
+
+const authenticateWebToken = async (
+  token: string,
+  verifier: TokenVerifier,
+  convexUrl: string,
+): Promise<TrustedTokenIdentity> => {
+  const { payload } = await verifyToken(token, verifier, "15m");
+  const subject = convexAuthUserIdFromSubject(assertSubject(payload));
+  const convexUser = await queryActiveConvexUser(convexUrl, token, meReference);
+  assertConvexAuthUserIdMatches(subject, convexUser._id);
+  return { issuer: verifier.config.issuer, subject, convexUser };
+};
+
+const desktopTokenClientId = (payload: JWTPayload): string | null => {
+  if (typeof payload.client_id === "string") return payload.client_id;
+  return typeof payload.cid === "string" ? payload.cid : null;
+};
+
+export const assertDesktopAccessTokenClaims = (
+  payload: JWTPayload,
+  protectedHeader: JWTHeaderParameters,
+  expectedClientId: string,
+): void => {
+  if (protectedHeader.typ !== "at+jwt" && protectedHeader.typ !== "application/at+jwt") {
+    throw new AuthRequiredError("Desktop authentication token has invalid type");
+  }
+  if (desktopTokenClientId(payload) !== expectedClientId) {
+    throw new AuthRequiredError("Desktop authentication token has invalid client");
+  }
+  if (typeof payload.jti !== "string" || !payload.jti.trim()) {
+    throw new AuthRequiredError("Desktop authentication token has no token identifier");
+  }
+};
+
+const authenticateDesktopToken = async (
+  token: string,
+  verifier: TokenVerifier,
+  desktopConfig: DesktopOAuthIdentityConfig,
+  convexUrl: string,
+): Promise<TrustedTokenIdentity> => {
+  const { payload, protectedHeader } = await verifyToken(token, verifier, "15m");
+  assertDesktopAccessTokenClaims(payload, protectedHeader, desktopConfig.clientId);
+
+  const subject = assertSubject(payload);
+  const convexUser = await queryActiveConvexUser(convexUrl, token, desktopMeReference);
+  assertConvexAuthUserIdMatches(subject, convexUser._id);
+  return { issuer: desktopConfig.issuer, subject, convexUser };
 };
 
 const syncBusinessUser = async (
@@ -158,50 +312,42 @@ export const createConvexIdentityBridge = async (
   pool: Pool,
   config: ConvexIdentityBridgeConfig,
 ): Promise<{ authenticate(authorization: string | undefined): Promise<AuthenticatedUser> }> => {
-  const jwksUri = await loadJwksUri(config);
-  const jwks = createRemoteJWKSet(new URL(jwksUri), {
-    timeoutDuration: 5_000,
-    cooldownDuration: 30_000,
-  });
+  const webVerifier = await createTokenVerifier(config);
+  const desktopVerifier = config.desktopOAuth
+    ? await createTokenVerifier(config.desktopOAuth)
+    : undefined;
 
   return {
     async authenticate(authorization) {
       const token = bearerToken(authorization);
-      let payload: JWTPayload;
-      try {
-        ({ payload } = await jwtVerify(token, jwks, {
-          issuer: config.issuer,
-          audience: config.audience,
-          algorithms: ["RS256"],
-          clockTolerance: 5,
-          maxTokenAge: "15m",
-        }));
-      } catch {
-        throw new AuthRequiredError("Invalid or expired authentication token");
-      }
-      const tokenSubject = assertSubject(payload);
-      const subject = convexAuthUserIdFromSubject(tokenSubject);
+      let identity: TrustedTokenIdentity | null = null;
 
-      const convex = new ConvexHttpClient(config.convexUrl);
-      convex.setAuth(token);
-      let convexUser: ConvexUser | null;
       try {
-        convexUser = await convex.query(meReference, {});
-      } catch {
-        throw new AuthRequiredError("Unable to confirm current account status");
+        identity = await authenticateWebToken(token, webVerifier, config.convexUrl);
+      } catch (webError) {
+        if (!desktopVerifier || !config.desktopOAuth) {
+          if (webError instanceof AuthRequiredError) throw webError;
+          throw new AuthRequiredError("Invalid or expired authentication token");
+        }
+        try {
+          identity = await authenticateDesktopToken(
+            token,
+            desktopVerifier,
+            config.desktopOAuth,
+            config.convexUrl,
+          );
+        } catch {
+          throw new AuthRequiredError("Invalid or expired authentication token");
+        }
       }
-      if (!convexUser || convexUser.deletedAt || convexUser.deactivatedAt) {
-        throw new AuthRequiredError("Account is no longer active");
-      }
-      assertConvexAuthUserIdMatches(subject, convexUser._id);
 
       const connection = await pool.getConnection();
       try {
         await connection.beginTransaction();
         const user = await syncBusinessUser(
           connection,
-          { issuer: config.issuer, subject },
-          convexUser,
+          { issuer: identity.issuer, subject: identity.subject },
+          identity.convexUser,
         );
         await connection.commit();
         return user;

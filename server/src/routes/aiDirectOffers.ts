@@ -24,6 +24,7 @@ import {
   transitionOffer,
   type OfferStatus,
 } from '../services/offerStateMachine.js';
+import { synchronizeWorkforceEmployeeDigest } from '../services/workforceEmployeeDigestSync.js';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -258,6 +259,24 @@ export async function aiDirectOffersRoutes(fastify: FastifyInstance) {
     );
     if (!(roleRows as any[]).length) {
       throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '角色不存在或不属于该公司');
+    }
+
+    const [positionRows] = await pool.query(
+      `SELECT p.id, p.status
+       FROM ai_direct_position_agent_roles pr
+       JOIN ai_direct_positions p ON p.id = pr.positionId
+       JOIN ai_direct_departments d ON d.id = p.departmentId
+       WHERE pr.roleId = ? AND d.companyId = ? AND d.status = 'active'
+       LIMIT 1`,
+      [roleId, companyId],
+    );
+    const position = (positionRows as any[])[0];
+    if (!position || position.status !== 'open') {
+      throw new AiDirectHiringError(
+        ErrorCodes.INVALID_TRANSITION,
+        'Role 必须绑定到同公司 open 状态的 Position 才能创建 Offer',
+        409,
+      );
     }
 
     const offerId = randomUUID();
@@ -509,7 +528,7 @@ export async function aiDirectOffersRoutes(fastify: FastifyInstance) {
       await requireCompanyRole(pool, offer.companyId, user.id, 'recruiter');
     }
 
-    if (offer.status !== 'sent') {
+    if (!['sent', 'accepted'].includes(offer.status)) {
       throw new AiDirectHiringError(
         ErrorCodes.INVALID_TRANSITION,
         `只有 sent 状态的 Offer 可以接受`,
@@ -520,11 +539,107 @@ export async function aiDirectOffersRoutes(fastify: FastifyInstance) {
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
-      const updated = await advanceOfferStatus(
-        conn, offer, 'accepted', 'accept', user.id, reqId,
+      const [lockedOfferRows] = await conn.query(
+        `SELECT * FROM ai_direct_offers WHERE id = ? LIMIT 1 FOR UPDATE`,
+        [id],
       );
+      const lockedOffer = (lockedOfferRows as any[])[0];
+      if (!lockedOffer) {
+        throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Offer 不存在', 404);
+      }
+      const [existingRows] = await conn.query(
+        `SELECT id, status FROM ai_direct_employments WHERE offerId = ? LIMIT 1 FOR UPDATE`,
+        [id],
+      );
+      const existing = (existingRows as any[])[0];
+      if (existing) {
+        if (lockedOffer.status !== 'accepted') {
+          throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, 'Offer 与 Employment 状态不一致', 409);
+        }
+        await conn.commit();
+        return reply.status(200).send({ ...lockedOffer, employmentId: existing.id, employmentStatus: existing.status, replayed: true });
+      }
+      if (lockedOffer.status !== 'sent') {
+        throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, 'Offer 已被并发更新', 409);
+      }
+      const [versionRows] = await conn.query(
+        `SELECT agentId FROM ai_direct_agent_versions WHERE id = ? LIMIT 1`,
+        [lockedOffer.agentVersionId],
+      );
+      const version = (versionRows as any[])[0];
+      if (!version) throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Agent 版本不存在', 404);
+      // A stable parent-row lock also covers the no-profile-yet case, where locking a missing profile cannot serialize competitors.
+      const [agentRows] = await conn.query(
+        `SELECT id FROM ai_direct_agents WHERE id = ? LIMIT 1 FOR UPDATE`,
+        [version.agentId],
+      );
+      if (!(agentRows as any[])[0]) {
+        throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Agent 不存在', 404);
+      }
+      const employmentId = randomUUID();
+      const [profileRows] = await conn.query(
+        `SELECT controllerEmploymentId FROM ai_direct_agent_appearance_profiles WHERE agentId = ? LIMIT 1 FOR UPDATE`,
+        [version.agentId],
+      );
+      const profile = (profileRows as any[])[0];
+      if (profile?.controllerEmploymentId) {
+        throw new AiDirectHiringError(ErrorCodes.APPEARANCE_CONTROL_CONFLICT, '该 Agent 的形象控制权已由另一 Employment 持有', 409, { controllerEmploymentId: profile.controllerEmploymentId });
+      }
+      const [positionRows] = await conn.query(
+        `SELECT p.id, p.status, p.headcountTarget, p.headcountFilled
+         FROM ai_direct_position_agent_roles pr
+         JOIN ai_direct_positions p ON p.id = pr.positionId
+         JOIN ai_direct_departments d ON d.id = p.departmentId
+         WHERE pr.roleId = ? AND d.companyId = ? AND d.status = 'active'
+         LIMIT 1 FOR UPDATE`,
+        [lockedOffer.roleId, lockedOffer.companyId],
+      );
+      const position = (positionRows as any[])[0];
+      if (!position || position.status !== 'open') {
+        throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, 'Offer 对应 Position 不再开放', 409);
+      }
+      const [headcountUpdate] = await conn.query(
+        `UPDATE ai_direct_positions
+         SET headcountFilled = headcountFilled + 1, updatedAt = NOW(3)
+         WHERE id = ? AND headcountFilled < headcountTarget`,
+        [position.id],
+      );
+      if ((headcountUpdate as any).affectedRows !== 1) {
+        throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, 'Position 编制已满', 409);
+      }
+      const updated = await advanceOfferStatus(
+        conn, lockedOffer, 'accepted', 'accept', user.id, reqId,
+      );
+      await conn.query(
+        `INSERT INTO ai_direct_employments
+         (id, companyId, agentId, agentVersionId, roleId, projectId, offerId, requestedByUserId, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'accepted')`,
+        [employmentId, lockedOffer.companyId, version.agentId, lockedOffer.agentVersionId, lockedOffer.roleId, lockedOffer.projectId, lockedOffer.id, user.id],
+      );
+      await synchronizeWorkforceEmployeeDigest(conn, employmentId);
+      await conn.query(
+        `INSERT INTO ai_direct_organization_candidate_catalog_counts (organizationId, agentId, isEmployed)
+         SELECT organizationId, ?, TRUE FROM ai_direct_companies WHERE id = ?
+         ON DUPLICATE KEY UPDATE isEmployed = TRUE`,
+        [version.agentId, lockedOffer.companyId],
+      );
+      await conn.query(
+        `INSERT INTO ai_direct_agent_appearance_profiles
+         (agentId, avatarAssetId, defaultMode, controllerEmploymentId, controllerCompanyId, revision, updatedByUserId, createdAt, updatedAt)
+         VALUES (?, NULL, 'image_2d', ?, ?, 1, ?, NOW(3), NOW(3))
+         ON DUPLICATE KEY UPDATE controllerEmploymentId = VALUES(controllerEmploymentId), controllerCompanyId = VALUES(controllerCompanyId), revision = revision + 1, updatedByUserId = VALUES(updatedByUserId), updatedAt = NOW(3)`,
+        [version.agentId, employmentId, lockedOffer.companyId, user.id],
+      );
+      await conn.query(
+        `INSERT INTO ai_direct_employment_events
+         (id, employmentId, sequence, fromStatus, toStatus, actorUserId, reason, metadata)
+         VALUES (?, ?, 1, NULL, 'accepted', ?, ?, ?)`,
+        [randomUUID(), employmentId, user.id, 'Employment created from accepted offer', JSON.stringify({ offerId: lockedOffer.id })],
+      );
+      await writeAudit(conn, { organizationId: null, actorUserId: user.id, action: 'employment.created_from_offer', targetType: 'employment', targetId: employmentId, requestId: reqId, metadata: { offerId: lockedOffer.id, companyId: lockedOffer.companyId } });
+      await publishOutboxEvent(conn, { organizationId: null, aggregateType: 'employment', aggregateId: employmentId, eventType: 'employment.created_from_offer.v1', payload: { employmentId, offerId: lockedOffer.id, companyId: lockedOffer.companyId, actorUserId: user.id } });
       await conn.commit();
-      return reply.status(200).send(updated);
+      return reply.status(200).send({ ...updated, employmentId, employmentStatus: 'accepted' });
     } catch (err) {
       await conn.rollback();
       throw err;

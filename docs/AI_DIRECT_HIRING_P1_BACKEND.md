@@ -12,7 +12,9 @@
 >
 > 本文主体是早期 Agent 交付记录，分支、worktree、未迁移、缺表和未验证等描述不再代表当前状态。招聘核心现已由 `server/src/routes/aiDirectCore.ts` 聚合并在 `server/src/index.ts` 挂载；`ai_direct_company_members`、运行队列字段、`requestedByUserId` 和 Employment/Offer 唯一约束均已通过后续加法迁移落地。服务端 TypeScript 零错误，核心定向单测 `47/47`，全新临时 MySQL HTTP e2e `44/44`，生产迁移和烟测均完成。旧 `aiDirectHiring.ts` 因包含延后的 Provider/凭据/Worker 依赖而未挂载，这是有意的模块边界，不是招聘核心阻塞。
 >
-> 当前生产迁移链还包括 `20260802_ai_direct_runtime_contract`、`20260803_ai_direct_employment_offer_unique` 和 `20260804_ai_direct_worker_runtime`。运行时 Dispatcher 与受鉴权 Worker 路由已独立上线。
+> 当前生产迁移链还包括 `20260802_ai_direct_runtime_contract`、`20260803_ai_direct_employment_offer_unique`、`20260804_ai_direct_worker_runtime`，以及已于 2026-08-05 部署的 `20260808_ai_direct_desktop_jobs_cursor`、`20260809_ai_direct_interviews_policy`、`20260810_agent_publication_catalog`、`20260811_ai_direct_workforce`。Prisma 状态为 up to date，运行时 Dispatcher 与受鉴权 Worker 路由已独立上线。
+>
+> Desktop `1.1.0` 的统一 manifest、OpenAPI 一致性测试与启动路由校验已进入生产门禁。当前 API 构建完成并经 PM2 reload 保持 `online`，生产 discovery/OpenAPI 与全部 protected operation 非 `404` 烟测通过。此证据只确认路由契约发布：生产无专用 smoke token，`candidateCatalog` 默认关闭，也没有已启用组织的完整隔离测试链，因此 Candidate Catalog、Departments、Positions、Candidate Matching 的带认证 `2xx` 业务烟测仍未完成。
 >
 > 当前分支已实现后续 Provider runtime：加密凭据、金沙 adapter、单并发 Executor、预算/限流/重试与幂等成本审计。实现通过 `aiDirectCore.ts` 的独立 feature gate 接线，Provider 调用不进入 API 或队列服务。`20260805_ai_direct_provider_runtime` 已于后续生产发布中部署，但执行能力仍未生产启用：没有真实金沙 canary、生产 keyring、`executor.env` 或 Executor 进程，执行 kill switch 保持关闭。
 >

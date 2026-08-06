@@ -3,6 +3,7 @@ type SiteMode = "skills" | "souls";
 import { getRuntimeEnv } from "./runtimeEnv";
 
 const DEFAULT_CLAWHUB_SITE_URL = "https://clawhub.ai";
+const DEFAULT_AI_WORK_SITE_URL = "https://www.iclawstore.com";
 const DEFAULT_ONLYCRABS_SITE_URL = "https://onlycrabs.ai";
 const DEFAULT_ONLYCRABS_HOST = "onlycrabs.ai";
 const LEGACY_CLAWDHUB_HOSTS = new Set(["clawdhub.com", "www.clawdhub.com", "auth.clawdhub.com"]);
@@ -33,6 +34,10 @@ export function isClawHubHost(host?: string | null) {
 
 export function getClawHubSiteUrl() {
   return normalizeClawHubSiteOrigin(getRuntimeEnv("VITE_SITE_URL")) ?? DEFAULT_CLAWHUB_SITE_URL;
+}
+
+export function getAiWorkSiteUrl() {
+  return normalizeClawHubSiteOrigin(getRuntimeEnv("VITE_AI_WORK_SITE_URL")) ?? DEFAULT_AI_WORK_SITE_URL;
 }
 
 export function getOnlyCrabsSiteUrl() {
@@ -97,15 +102,15 @@ export function getSiteMode(): SiteMode {
 }
 
 export function getSiteName(mode: SiteMode = getSiteMode()) {
-  return mode === "souls" ? "SoulHub" : "龙虾市场";
+  return mode === "souls" ? "SoulHub" : "AI直聘";
 }
 
 export function getSiteDescription(mode: SiteMode = getSiteMode()) {
   return mode === "souls"
     ? "SoulHub — the home for SOUL.md bundles and personal system lore."
-    : "龙虾市场 — agents 的技能市场，带向量搜索。";
+    : "AI直聘（Ai Work）— 招聘、授权与管理 AI Agent 的工作平台。";
 }
 
 export function getSiteUrlForMode(mode: SiteMode = getSiteMode()) {
-  return mode === "souls" ? getOnlyCrabsSiteUrl() : getClawHubSiteUrl();
+  return mode === "souls" ? getOnlyCrabsSiteUrl() : getAiWorkSiteUrl();
 }

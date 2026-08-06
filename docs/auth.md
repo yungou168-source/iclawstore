@@ -15,13 +15,23 @@ account.
 ## Web sign-in
 
 Enter your email address to receive an 8-digit one-time verification code, then
-enter that code in the sign-in dialog. You can also choose **GitHub**,
-**Google**, or **WeChat**. These methods create the same type of authenticated
-session; there is no password-based account.
+enter that code in the sign-in dialog. The verification-code field remains
+visible before and after sending so password managers and browser OTP autofill
+can target a stable form. Email addresses use the browser's email validation
+and are limited to 38 characters.
+
+A code is bound to the normalized email address that requested it. Changing the
+email clears the entered code and invalidates the dialog's pending verification
+state; request a new code for the new address. The client accepts digits only
+and enables verification only after all 8 digits are present. You can also
+choose **GitHub**, **Google**, or **WeChat**. These methods create the same type
+of authenticated session; there is no password-based account.
 
 If a verification code does not arrive, check the address and spam folder, then
-retry after a short wait. Codes expire after 20 minutes. Contact the site
-operator if the UI reports a server error or a valid code cannot be verified.
+retry after a short wait. Codes expire after 20 minutes and a successful newer
+request replaces the code that was previously valid for that address. Contact
+the site operator if the UI reports a server error or a valid code cannot be
+verified.
 
 Deleted, banned, or disabled accounts cannot complete normal ClawHub sign-in.
 If sign-in returns you to a logged-out state, your account may not be in good

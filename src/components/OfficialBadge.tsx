@@ -10,9 +10,9 @@ export function OfficialTag() {
   );
 }
 
-export function OfficialBadge() {
+export function OfficialBadge({ label = "Official" }: { label?: string }) {
   return (
-    <span className="official-badge" aria-label="Official" title="Official">
+    <span className="official-badge" aria-label={label} title={label}>
       <BadgeCheck size={12} aria-hidden="true" />
     </span>
   );

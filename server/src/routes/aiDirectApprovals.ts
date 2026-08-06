@@ -13,11 +13,13 @@ import { randomUUID } from 'node:crypto';
 import { AiDirectHiringError, ErrorCodes } from '../services/aiDirectErrors.js';
 import { publishOutboxEvent } from '../utils/outbox.js';
 import { requireAuth } from '../middleware/aiDirectAuth.js';
+import { requireOrganizationRole } from '../middleware/aiDirectRbac.js';
 import {
   transitionApproval,
   isApprovalTerminal,
   type ApprovalStatus,
 } from '../services/approvalStateMachine.js';
+import { appendApprovalEvent } from '../services/approvalEvents.js';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -92,6 +94,18 @@ async function writeAudit(
   );
 }
 
+async function requireDecisionAuthority(
+  pool: any,
+  approval: { organizationId: string | null; approverUserId: string | null },
+  userId: string,
+): Promise<void> {
+  if (approval.approverUserId === userId) return;
+  if (!approval.organizationId) {
+    throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '平台级审批必须指定审批人', 403);
+  }
+  await requireOrganizationRole(pool, approval.organizationId, userId, 'admin');
+}
+
 async function advanceApprovalStatus(
   conn: any,
   approval: any,
@@ -117,8 +131,20 @@ async function advanceApprovalStatus(
     updateParams.push(reason);
   }
 
-  const updateQuery = `UPDATE ai_direct_approvals SET ${updateFields.join(', ')} WHERE id = ?`;
-  await conn.query(updateQuery, [...updateParams, approval.id]);
+  const updateQuery = `UPDATE ai_direct_approvals SET ${updateFields.join(', ')} WHERE id = ? AND status = ?`;
+  const [updateResult] = await conn.query(updateQuery, [...updateParams, approval.id, transition.from]);
+  if (Number((updateResult as { affectedRows?: number }).affectedRows ?? 0) !== 1) {
+    throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, 'Approval 已被其他操作更新', 409);
+  }
+
+  await appendApprovalEvent(conn, {
+    approvalId: approval.id,
+    organizationId: approval.organizationId,
+    eventType: `approval.${event}`,
+    actorUserId,
+    requestId: reqId,
+    metadata: { from: transition.from, to: transition.to, targetType: approval.targetType, targetId: approval.targetId, reason },
+  });
 
   await writeAudit(conn, {
     organizationId: approval.organizationId,
@@ -159,34 +185,87 @@ export async function aiDirectApprovalsRoutes(fastify: FastifyInstance) {
   const pool = (fastify as any).mysql as any;
   const auth = [(fastify as any).authenticate];
 
-  // GET /api/v1/ai-direct-hiring/approvals — list approvals
+  // GET /api/v1/ai-direct-hiring/approvals — organization-scoped work queue.
   fastify.get('/approvals', { onRequest: auth }, async (request: any) => {
     const user = await requireAuth(fastify, request);
+    const organizationId = readString(request.query?.organizationId, 'organizationId', 36);
     const status = typeof request.query?.status === 'string' ? request.query.status : null;
+    const scope = request.query?.scope === 'mine' ? 'mine' : 'organization';
+    await requireOrganizationRole(pool, organizationId, user.id, scope === 'mine' ? 'member' : 'manager');
 
-    let sql = `
-      SELECT a.id, a.organizationId, a.targetType, a.targetId, a.requestedByUserId,
-             a.approverUserId, a.status, a.decision, a.decisionReason,
-             a.expiresAt, a.decidedAt, a.metadata, a.createdAt, a.updatedAt
-      FROM ai_direct_approvals a
-      WHERE (
-        a.requestedByUserId = ?
-        OR a.approverUserId = ?
-        OR a.organizationId IN (
-          SELECT organizationId FROM ai_direct_organization_members
-          WHERE userId = ? AND status = 'active'
-        )
-      )`;
-    const params: unknown[] = [user.id, user.id, user.id];
-
+    let sql = `SELECT a.id, a.organizationId, a.targetType, a.targetId, a.requestedByUserId,
+                      a.approverUserId, a.status, a.decision, a.decisionReason,
+                      a.expiresAt, a.decidedAt, a.metadata, a.createdAt, a.updatedAt
+               FROM ai_direct_approvals a WHERE a.organizationId = ?`;
+    const params: unknown[] = [organizationId];
+    if (scope === 'mine') {
+      sql += ' AND (a.requestedByUserId = ? OR a.approverUserId = ?)';
+      params.push(user.id, user.id);
+    }
     if (status) {
-      sql += ` AND a.status = ?`;
+      sql += ' AND a.status = ?';
       params.push(status);
     }
-    sql += ` ORDER BY a.updatedAt DESC LIMIT 100`;
-
+    sql += ' ORDER BY a.updatedAt DESC, a.id DESC LIMIT 100';
     const [rows] = await pool.query(sql, params);
     return { items: rows };
+  });
+
+  fastify.post('/approvals/:id/delegate', { onRequest: auth }, async (request: any, reply) => {
+    const user = await requireAuth(fastify, request);
+    const body = readBody(request.body ?? {});
+    rejectExtra(body, ['toUserId', 'reason'], 'POST /approvals/:id/delegate');
+    const toUserId = readString(body.toUserId, 'toUserId', 191);
+    const reason = body.reason === undefined ? null : readString(body.reason, 'reason', 500);
+    const [rows] = await pool.query('SELECT * FROM ai_direct_approvals WHERE id = ? LIMIT 1', [request.params.id]);
+    const approval = (rows as any[])[0];
+    if (!approval) throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Approval 不存在', 404);
+    if (approval.status !== 'pending' || !approval.organizationId) {
+      throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, '只有组织范围内的 pending Approval 可以委派', 409);
+    }
+    await requireOrganizationRole(pool, approval.organizationId, user.id, 'admin');
+    const [memberRows] = await pool.query(
+      `SELECT 1 FROM ai_direct_organization_members
+       WHERE organizationId = ? AND userId = ? AND status = 'active' LIMIT 1`,
+      [approval.organizationId, toUserId],
+    );
+    if (!(memberRows as any[])[0]) throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '受委派人不是该组织的活跃成员', 403);
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      const [lockedRows] = await conn.query(
+        'SELECT * FROM ai_direct_approvals WHERE id = ? LIMIT 1 FOR UPDATE',
+        [approval.id],
+      );
+      const lockedApproval = (lockedRows as any[])[0];
+      if (!lockedApproval || lockedApproval.status !== 'pending') {
+        throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, 'Approval 已不处于可委派状态', 409);
+      }
+      const delegationId = randomUUID();
+      const reqId = requestIdFrom(request);
+      await conn.query(
+        `INSERT INTO ai_direct_approval_delegations
+         (id, approvalId, organizationId, fromUserId, toUserId, delegatedByUserId, reason)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [delegationId, lockedApproval.id, lockedApproval.organizationId, lockedApproval.approverUserId, toUserId, user.id, reason],
+      );
+      await conn.query(
+        'UPDATE ai_direct_approvals SET approverUserId = ?, updatedAt = NOW(3) WHERE id = ? AND status = \'pending\'',
+        [toUserId, lockedApproval.id],
+      );
+      await appendApprovalEvent(conn, {
+        approvalId: lockedApproval.id,
+        organizationId: lockedApproval.organizationId,
+        eventType: 'approval.delegated',
+        actorUserId: user.id,
+        requestId: reqId,
+        metadata: { delegationId, fromUserId: lockedApproval.approverUserId, toUserId, reason },
+      });
+      await writeAudit(conn, { organizationId: lockedApproval.organizationId, actorUserId: user.id, action: 'approval.delegated', targetType: 'approval', targetId: lockedApproval.id, requestId: reqId, metadata: { delegationId, fromUserId: lockedApproval.approverUserId, toUserId, reason } });
+      await publishOutboxEvent(conn, { organizationId: lockedApproval.organizationId, aggregateType: 'approval', aggregateId: lockedApproval.id, eventType: 'approval.delegated.v1', payload: { approvalId: lockedApproval.id, delegationId, fromUserId: lockedApproval.approverUserId, toUserId, delegatedByUserId: user.id } });
+      await conn.commit();
+      return reply.status(201).send({ id: delegationId, approvalId: lockedApproval.id, toUserId });
+    } catch (error) { await conn.rollback(); throw error; } finally { conn.release(); }
   });
 
   // POST /api/v1/ai-direct-hiring/approvals/:id/approve — approve
@@ -210,14 +289,7 @@ export async function aiDirectApprovalsRoutes(fastify: FastifyInstance) {
       );
     }
 
-    // Must be the assigned approver or an org admin
-    if (approval.approverUserId && approval.approverUserId !== user.id) {
-      throw new AiDirectHiringError(
-        ErrorCodes.FORBIDDEN_SCOPE,
-        '只有指定的审批人可以审批此请求',
-        403,
-      );
-    }
+    await requireDecisionAuthority(pool, approval, user.id);
 
     const conn = await pool.getConnection();
     try {
@@ -284,13 +356,7 @@ export async function aiDirectApprovalsRoutes(fastify: FastifyInstance) {
       );
     }
 
-    if (approval.approverUserId && approval.approverUserId !== user.id) {
-      throw new AiDirectHiringError(
-        ErrorCodes.FORBIDDEN_SCOPE,
-        '只有指定的审批人可以拒绝此请求',
-        403,
-      );
-    }
+    await requireDecisionAuthority(pool, approval, user.id);
 
     const conn = await pool.getConnection();
     try {

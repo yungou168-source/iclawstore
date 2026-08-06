@@ -5,11 +5,12 @@ import {
   setLocaleToStorage,
   type Locale,
 } from "./config";
+import { getTranslations } from "./translations";
 
 interface I18nContextValue {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: string) => string;
+  t: (key: string, vars?: Record<string, string | number>) => string;
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null);
@@ -27,10 +28,14 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const t = useCallback(
-    (key: string): string => {
-      const { translations } = require("./translations");
-      const dict = translations[locale] ?? translations["zh-CN"];
-      return (dict as Record<string, string>)[key] ?? key;
+    (key: string, vars?: Record<string, string | number>): string => {
+      const dict = getTranslations(locale) as Record<string, string>;
+      const template = dict[key] ?? key;
+      return vars
+        ? template.replace(/\{(\w+)\}/g, (_: string, name: string) =>
+            String(vars[name] ?? `{${name}}`),
+          )
+        : template;
     },
     [locale],
   );

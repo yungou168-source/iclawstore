@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
-import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
+import type { RowDataPacket } from 'mysql2/promise';
 import { requireAuth, type AuthenticatedUser } from '../middleware/aiDirectAuth.js';
 import { AiDirectHiringError, ErrorCodes } from '../services/aiDirectErrors.js';
 import {
@@ -36,6 +36,7 @@ interface TemplateRow extends RowDataPacket {
   packageSizeBytes: string | number | bigint | null;
   packageSha256: string | null;
   entitlementStatus?: string | null;
+  entitlementSource?: string | null;
 }
 
 interface ScreenshotRow extends RowDataPacket {
@@ -77,6 +78,24 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
       const row = await findTemplate(fastify, id, user);
       const screenshots = await loadScreenshots(fastify, row.versionId ? [row.versionId] : []);
       return reply.status(200).send(templateResponse(row, screenshots));
+    });
+
+    fastify.get('/publisher/templates', async (request, reply) => {
+      const user = await requireAuth(fastify, request);
+      const [rows] = await fastify.mysql.query<RowDataPacket[]>(
+        `SELECT template.id, template.publisherId, template.slug, template.name, template.description,
+                template.status, template.catalogStatus, template.pricingMode, template.updatedAt,
+                version.id AS versionId, version.version, version.reviewStatus,
+                version.publicationStatus, version.submittedAt, version.reviewedAt, version.createdAt AS versionCreatedAt,
+                decision.reason AS latestReviewReason
+         FROM desktop_templates template
+         LEFT JOIN desktop_template_versions version ON version.templateId = template.id
+         LEFT JOIN desktop_template_review_decisions decision ON decision.id = version.reviewDecisionId
+         WHERE template.createdByUserId = ?
+         ORDER BY template.updatedAt DESC, template.id, version.createdAt DESC`,
+        [user.id],
+      );
+      return reply.status(200).send({ items: rows });
     });
 
     fastify.post('/templates', async (request, reply) => {
@@ -273,51 +292,60 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
           '独立截图数量必须与 manifest 的 1–4 张截图一致',
         );
       }
-      await fastify.mysql.query(
-        `UPDATE desktop_template_versions SET status = 'pending_review'
-         WHERE id = ? AND templateId = ? AND status = 'draft'`,
+      const [submitResult] = await fastify.mysql.query(
+        `UPDATE desktop_template_versions
+         SET reviewStatus = 'pending_review', submittedAt = NOW(3), reviewedAt = NULL
+         WHERE id = ? AND templateId = ? AND status = 'draft' AND reviewStatus = 'draft'`,
         [versionId, templateId],
       );
-      return reply.status(200).send({ id: versionId, status: 'pending_review' });
+      if (affectedRows(submitResult) !== 1) {
+        throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, '模板版本不能从当前状态提交审核', 409);
+      }
+      return reply.status(200).send({ id: versionId, reviewStatus: 'pending_review', publicationStatus: 'unpublished' });
     });
 
-    fastify.post('/templates/:id/versions/:versionId/approve', async (request, reply) => {
+    fastify.post('/templates/:id/versions/:versionId/resubmit', async (request, reply) => {
       const user = await requireAuth(fastify, request);
-      await requirePlatformAdmin(fastify, user.id);
       const { id: templateId, versionId } = request.params as { id: string; versionId: string };
-      const connection = await fastify.mysql.getConnection();
-      try {
-        await connection.beginTransaction();
-        const [rows] = await connection.query<RowDataPacket[]>(
-          `SELECT id FROM desktop_template_versions
-           WHERE id = ? AND templateId = ? AND status = 'pending_review'
-           LIMIT 1 FOR UPDATE`,
-          [versionId, templateId],
-        );
-        if (!rows[0]) {
-          throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, '模板版本不在待审核状态', 409);
-        }
-        await connection.query(
-          `UPDATE desktop_template_versions
-           SET status = 'published', publishedAt = NOW(3)
-           WHERE id = ?`,
-          [versionId],
-        );
-        await connection.query(
-          `UPDATE desktop_templates
-           SET status = 'published', activeVersionId = ?, updatedAt = NOW(3)
-           WHERE id = ?`,
-          [versionId, templateId],
-        );
-        await writeTemplateAudit(connection, user.id, 'template.version.approved', 'template_version', versionId, request.id);
-        await connection.commit();
-      } catch (error) {
-        await connection.rollback().catch(() => undefined);
-        throw error;
-      } finally {
-        connection.release();
+      await requireDraftOwner(fastify, templateId, user.id);
+      const [result] = await fastify.mysql.query(
+        `UPDATE desktop_template_versions
+         SET reviewStatus = 'pending_review', submittedAt = NOW(3), reviewedAt = NULL
+         WHERE id = ? AND templateId = ? AND status = 'draft' AND reviewStatus = 'rejected'`,
+        [versionId, templateId],
+      );
+      if (affectedRows(result) !== 1) {
+        throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, '只有被拒绝的模板版本可以重新提交', 409);
       }
-      return reply.status(200).send({ id: versionId, status: 'published' });
+      return reply.status(200).send({ id: versionId, reviewStatus: 'pending_review', publicationStatus: 'unpublished' });
+    });
+
+    fastify.get('/templates/:id/versions', async (request, reply) => {
+      const user = await requireAuth(fastify, request);
+      const { id: templateId } = request.params as { id: string };
+      await requireDraftOwner(fastify, templateId, user.id);
+      const [rows] = await fastify.mysql.query<RowDataPacket[]>(
+        `SELECT id, version, reviewStatus, publicationStatus, submittedAt, reviewedAt,
+                publishedAt, sha256, sizeBytes, createdAt
+         FROM desktop_template_versions WHERE templateId = ? ORDER BY createdAt DESC, id DESC`,
+        [templateId],
+      );
+      return reply.status(200).send({ items: rows });
+    });
+
+    fastify.get('/templates/:id/downloads', async (request, reply) => {
+      const user = await requireAuth(fastify, request);
+      const { id: templateId } = request.params as { id: string };
+      await requireDraftOwner(fastify, templateId, user.id);
+      const query = request.query as { limit?: string };
+      const limit = boundedInteger(query.limit, 1, 100, 50);
+      const [rows] = await fastify.mysql.query<RowDataPacket[]>(
+        `SELECT id, templateVersionId, userId, entitlementSource, downloadedAt
+         FROM desktop_template_download_events
+         WHERE templateId = ? ORDER BY downloadedAt DESC, id DESC LIMIT ?`,
+        [templateId, limit],
+      );
+      return reply.status(200).send({ items: rows });
     });
 
     fastify.get('/templates/:id/package', async (request, reply) => {
@@ -340,6 +368,24 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
         );
       }
       const opened = await assetStore.open(template.packageStorageKey);
+      try {
+        await fastify.mysql.query(
+          `INSERT INTO desktop_template_download_events
+             (id, templateId, templateVersionId, userId, entitlementSource, requestId, downloadedAt)
+           VALUES (?, ?, ?, ?, ?, ?, NOW(3))`,
+          [
+            randomUUID(),
+            template.id,
+            template.versionId,
+            user.id,
+            template.pricingMode === 'free' ? 'free' : (template.entitlementSource ?? 'owner'),
+            request.id,
+          ],
+        );
+      } catch (error) {
+        opened.stream.destroy();
+        throw error;
+      }
       reply.headers(managedAssetDownloadHeaders({
         mimeType: template.packageMimeType,
         sha256: template.packageSha256,
@@ -372,35 +418,6 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
       return reply.send(opened.stream);
     });
 
-    fastify.put('/templates/:id/entitlements/:userId', async (request, reply) => {
-      const actor = await requireAuth(fastify, request);
-      await requirePlatformAdmin(fastify, actor.id);
-      const { id: templateId, userId } = request.params as { id: string; userId: string };
-      const input = parseEntitlementBody(request.body);
-      const entitlementId = randomUUID();
-      await fastify.mysql.query(
-        `INSERT INTO desktop_template_entitlements
-           (id, templateId, userId, source, reference, status, grantedByUserId, createdAt, updatedAt)
-         VALUES (?, ?, ?, 'admin_grant', ?, 'active', ?, NOW(3), NOW(3))
-         ON DUPLICATE KEY UPDATE source = 'admin_grant', reference = VALUES(reference),
-           status = 'active', grantedByUserId = VALUES(grantedByUserId), revokedAt = NULL, updatedAt = NOW(3)`,
-        [entitlementId, templateId, userId, input.reference, actor.id],
-      );
-      return reply.status(200).send({ templateId, userId, status: 'active', source: 'admin_grant' });
-    });
-
-    fastify.delete('/templates/:id/entitlements/:userId', async (request, reply) => {
-      const actor = await requireAuth(fastify, request);
-      await requirePlatformAdmin(fastify, actor.id);
-      const { id: templateId, userId } = request.params as { id: string; userId: string };
-      await fastify.mysql.query(
-        `UPDATE desktop_template_entitlements
-         SET status = 'revoked', revokedAt = NOW(3), updatedAt = NOW(3)
-         WHERE templateId = ? AND userId = ?`,
-        [templateId, userId],
-      );
-      return reply.status(204).send();
-    });
   };
 }
 
@@ -414,7 +431,8 @@ function templateSelectSql(): string {
     version.mimeType AS packageMimeType,
     version.sizeBytes AS packageSizeBytes,
     version.sha256 AS packageSha256,
-    entitlement.status AS entitlementStatus
+    entitlement.status AS entitlementStatus,
+    entitlement.source AS entitlementSource
   FROM desktop_templates template
   JOIN publishers publisher ON publisher.id = template.publisherId
   LEFT JOIN desktop_template_versions version ON version.id = template.activeVersionId
@@ -535,12 +553,12 @@ async function requireDraftOwner(
        NULL AS packageMimeType, NULL AS packageSizeBytes, NULL AS packageSha256
      FROM desktop_templates template
      JOIN publishers publisher ON publisher.id = template.publisherId
-     WHERE template.id = ? AND template.createdByUserId = ? AND template.status = 'draft'
+     WHERE template.id = ? AND template.createdByUserId = ?
      LIMIT 1`,
     [templateId, userId],
   );
   if (!rows[0]) {
-    throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '只有模板所有者可修改草稿', 403);
+    throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '只有模板所有者可管理模板', 403);
   }
   return rows[0];
 }
@@ -560,32 +578,6 @@ async function requireDraftVersion(
     throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, '草稿模板版本不存在', 404);
   }
   return rows[0];
-}
-
-async function requirePlatformAdmin(fastify: FastifyInstance, userId: string): Promise<void> {
-  const [rows] = await fastify.mysql.query<RowDataPacket[]>(
-    `SELECT id FROM users WHERE id = ? AND role = 'admin' AND deletedAt IS NULL LIMIT 1`,
-    [userId],
-  );
-  if (!rows[0]) {
-    throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '需要平台管理员权限', 403);
-  }
-}
-
-async function writeTemplateAudit(
-  connection: PoolConnection,
-  actorUserId: string,
-  action: string,
-  targetType: string,
-  targetId: string,
-  requestId: string,
-): Promise<void> {
-  await connection.query(
-    `INSERT INTO desktop_template_audit_events
-       (id, actorUserId, action, targetType, targetId, requestId, outcome, createdAt)
-     VALUES (?, ?, ?, ?, ?, ?, 'success', NOW(3))`,
-    [randomUUID(), actorUserId, action, targetType, targetId, requestId],
-  );
 }
 
 function parseCreateTemplate(value: unknown) {
@@ -638,12 +630,6 @@ function parsePricing(body: Record<string, unknown>) {
   return { pricingMode: 'paid' as const, priceMicros: body.priceMicros as number, currency: body.currency };
 }
 
-function parseEntitlementBody(value: unknown): { reference: string | null } {
-  const body = requireObject(value, ['reference']);
-  if (body.reference === undefined || body.reference === null) return { reference: null };
-  return { reference: requiredString(body.reference, 'reference', 191) };
-}
-
 function requireObject(value: unknown, keys: string[]): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) invalid('请求正文必须是对象');
   const body = value as Record<string, unknown>;
@@ -678,6 +664,12 @@ function boundedInteger(
   if (value === undefined) return fallback;
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed >= minimum && parsed <= maximum ? parsed : fallback;
+}
+
+function affectedRows(result: unknown): number {
+  return typeof result === 'object' && result !== null && 'affectedRows' in result
+    ? Number(result.affectedRows)
+    : 0;
 }
 
 function isDuplicateEntry(error: unknown): boolean {

@@ -13,7 +13,7 @@ export type PublisherOgSvgParams = {
 };
 
 function statBlock(stats: RegistryOgStat[] | undefined, x: number, y: number) {
-  const stat = stats?.[0] ?? { value: "ClawHub", label: "Publisher" };
+  const stat = stats?.[0] ?? { value: "AI直聘", label: "Publisher" };
   return `<g>
     <text x="${x}" y="${y}"
       fill="#9D9692"
@@ -30,7 +30,7 @@ function statBlock(stats: RegistryOgStat[] | undefined, x: number, y: number) {
 
 export function buildPublisherOgSvg(params: PublisherOgSvgParams) {
   const rawTitle = params.title.trim() || params.handleLabel;
-  const rawDescription = params.description.trim() || "Publisher on ClawHub.";
+  const rawDescription = params.description.trim() || "Publisher on Ai Work.";
   const avatar = params.avatarDataUrl || params.markDataUrl;
   const watermark = params.watermarkDataUrl || params.markDataUrl;
   const avatarShape = params.avatarShape ?? "circle";
@@ -67,9 +67,9 @@ export function buildPublisherOgSvg(params: PublisherOgSvgParams) {
 <svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bgBase" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#12090A"/>
-      <stop offset="0.46" stop-color="#08090A"/>
-      <stop offset="1" stop-color="#07100E"/>
+      <stop stop-color="#071D20"/>
+      <stop offset="0.46" stop-color="#08282A"/>
+      <stop offset="1" stop-color="#0B383A"/>
     </linearGradient>
     <radialGradient id="bgAccent" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1064 78) rotate(152) scale(520 260)">
       <stop stop-color="${OPENCLAW_RED}" stop-opacity="0.17"/>
@@ -80,8 +80,8 @@ export function buildPublisherOgSvg(params: PublisherOgSvgParams) {
       <stop offset="1" stop-color="#0D7A67" stop-opacity="0"/>
     </radialGradient>
     <radialGradient id="bgCorner" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(96 84) rotate(24) scale(440 240)">
-      <stop stop-color="#7F1D2D" stop-opacity="0.2"/>
-      <stop offset="1" stop-color="#6C1B2B" stop-opacity="0"/>
+      <stop stop-color="#0D958F" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#0D958F" stop-opacity="0"/>
     </radialGradient>
     <clipPath id="publisherAvatarCircleClip">
       <circle cx="211" cy="305" r="139"/>
@@ -105,7 +105,7 @@ export function buildPublisherOgSvg(params: PublisherOgSvgParams) {
         fill="#F7F1EA"
         font-size="28"
         font-weight="800"
-        font-family="${FONT_SANS}, sans-serif">ClawHub</text>
+        font-family="${FONT_SANS}, sans-serif">AI直聘</text>
     </g>
 
     <text x="${contentX}" y="132"

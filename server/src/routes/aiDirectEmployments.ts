@@ -19,6 +19,8 @@ import {
   transitionEmployment,
   type EmploymentStatus,
 } from '../services/employmentStateMachine.js';
+import { countsTowardHeadcount } from '../services/workforceStateMachine.js';
+import { synchronizeWorkforceEmployeeDigest } from '../services/workforceEmployeeDigestSync.js';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -130,6 +132,28 @@ async function advanceEmploymentStatus(
 
   const updateQuery = `UPDATE ai_direct_employments SET ${updateFields.join(', ')} WHERE id = ?`;
   await conn.query(updateQuery, [...updateParams, employment.id]);
+  await synchronizeWorkforceEmployeeDigest(conn, employment.id);
+
+  if (countsTowardHeadcount(transition.from) && !countsTowardHeadcount(transition.to)) {
+    const [positionRows] = await conn.query(
+      `SELECT p.id FROM ai_direct_position_agent_roles pr
+       JOIN ai_direct_positions p ON p.id = pr.positionId
+       WHERE pr.roleId = ? LIMIT 1 FOR UPDATE`,
+      [employment.roleId],
+    );
+    const position = (positionRows as any[])[0];
+    if (position) {
+      const [headcountUpdate] = await conn.query(
+        `UPDATE ai_direct_positions
+         SET headcountFilled = headcountFilled - 1, updatedAt = NOW(3)
+         WHERE id = ? AND headcountFilled > 0`,
+        [position.id],
+      );
+      if ((headcountUpdate as any).affectedRows !== 1) {
+        throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, 'Position 编制投影不一致', 409);
+      }
+    }
+  }
 
   // Get next sequence for employment events
   const [seqRows] = await conn.query(
@@ -337,8 +361,8 @@ export async function aiDirectEmploymentsRoutes(fastify: FastifyInstance) {
     return { items: rows };
   });
 
-  // POST /api/v1/ai-direct-hiring/employments — create from accepted offer
-  fastify.post('/employments', { onRequest: auth }, async (request: any, reply) => {
+  // Legacy implementation kept unmounted; the public route below is the single creation boundary.
+  fastify.post('/internal/employments/from-accepted-offer', { onRequest: auth }, async (request: any, reply) => {
     const user = await requireAuth(fastify, request);
     const reqId = requestIdFrom(request);
     const body = readBody(request.body);
@@ -452,6 +476,16 @@ export async function aiDirectEmploymentsRoutes(fastify: FastifyInstance) {
     } finally {
       conn.release();
     }
+  });
+
+  // POST /api/v1/ai-direct-hiring/employments is retained only as a compatibility guard.
+  // Employment creation belongs to the offer-accept transaction so no accepted Offer can exist without it.
+  fastify.post('/employments', { onRequest: auth }, async (_request: any) => {
+    throw new AiDirectHiringError(
+      ErrorCodes.INVALID_TRANSITION,
+      'Employment 只能由 POST /offers/:id/accept 原子创建',
+      409,
+    );
   });
 
   // GET /api/v1/ai-direct-hiring/employments/:id — employment detail

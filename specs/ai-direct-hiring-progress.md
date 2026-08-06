@@ -1,5 +1,37 @@
-# AI直聘开发进度跟踪(2026-08-01)
 
+> **QA 组织与公司实测（2026-03-14，以浏览器实际行为为准）**
+>
+> - 可回收 QA 身份已通过邮箱 OTP 登录，并在受保护组织管理页面创建隔离组织 `QA-EmployeeDirectory-2026-03-14`；该身份在组织中显示为 `owner`。这证明 Web Bearer 身份桥与组织创建写路径可用，但不等同于生产发布完成。
+> - 已在该组织创建 active 公司 `company-A`。组织成员与公司实体是两类资源：误把 `company-A` 填入“组织成员用户 ID”只会创建成员关系，不能替代公司创建。
+> - 当前 Web 管理页支持组织、公司、公司成员、项目和 Agent 岗位管理；它不提供真实 Agent 雇佣表单。`/recruit-ai` 仅在浏览器内选择目录项，选择不持久化，且“在客户端继续招聘”只跳转桌面客户端下载页。
+> - 员工目录的下一条可验证链路必须是：为 `company-A` 建立 QA 的 `recruiter` 成员关系 → 创建有效 Employment → 同事务写入 workforce employee digest → 以该 QA 身份请求目录。仅在完整链路具备可清理 fixture 后，分别断言有数据 `200`、授权空列表 `200` 与无成员公司 `403`。
+> - 不得索取、复制或记录 QA 的密码、OTP、Bearer token、JWT 或任何凭据；fixture 只能通过已认证受保护 API 创建和清理，禁止直接写数据库。
+
+> **审批治理与生产迁移更新（2026-08-14，以实时结果为准）**
+>
+> - `20260814_ai_direct_approval_governance` 已应用。生产 `prisma migrate status` 显示 migration 链共 17 段，数据库 schema 为最新状态。
+> - 审批委派与超时均有独立的不可变领域历史：委派同时写入 delegation、审批事件、中央审计与 outbox；超时在行锁和 `pending` 条件更新成功后才写入 `approval.expired` 事件、审计与 outbox。当前审批记录只保存当前审批人和当前状态。
+> - `iclawstore-approval-timeout` 未启动。`APPROVAL_TIMEOUT_ENABLED` 未配置，避免在没有显式运维确认时启用自动决策进程。
+> - timeout worker 定向测试 `2/2` 通过；本轮早期服务端 TypeScript 检查通过。后续可用内存仅约 507 MiB，swap 约使用 1.7 GiB，未执行额外前端构建、全量测试或隔离 MySQL；这不是测试失败。
+> - 本轮未执行 PM2 restart、reload 或 start。复核时 API、runtime dispatcher 与审计导出 worker 均为 `online`。审批业务仍待真实身份、委派链、并发裁决、Offer 联动与 timeout worker 显式启用后的运行验收。
+
+> **当前运行态验收（2026-08-05，以实时结果为准）**
+>
+> - `iclawstore-api` 已恢复并以 PM2 受限配置运行，内存上限 `256M`；本机 `/health` 与公网 `/api/v1/desktop/contract` 均返回 `200`，契约版本为 `1.1.0`。本次恢复同时补齐了 manifest 已声明但未装配的模板审核/授权契约路径，并通过 server 构建与 Desktop 契约测试 `7/7`。
+> - `iclawstore-runtime-dispatcher` 独立 `online`，内存上限 `128M`；只读队列核验为空，近期运行指标在内存预算内。历史 closed-connection 日志不构成当前失败证据。
+> - Prisma 使用本机受限 DDL 迁移账号核验为 `Database schema is up to date`，`20260812_ai_direct_template_review` 与 `20260813_ai_direct_audit_governance` 已应用。
+> - 原生桌面 OAuth、认证 Session 成功链路和 Feature Flag 正反行为**均未完成真实验收**：运行环境缺少桌面 OAuth issuer/client ID/audience 配置，公网 discovery 不含 `auth`；仅确认未认证 `/session` 返回 `401`；没有可回收测试身份或隔离组织用于验证 `/session` 的 `200` 以及开关启用、禁用和组织覆盖。
+> - 因此状态仍是 **部分发布，业务验收未完成**。后续必须按 OAuth discovery/JWKS → PKCE → 认证 `/session` → 各 Feature Flag enabled/disabled 的顺序完成真实闭环；在此之前不得把路由可达、迁移完成或未认证 `401` 记录为 OAuth/Session/Feature Flag 通过。
+>
+
+> 完整缺口顺序、状态定义和后续后台工作包见 [`ai-direct-admin-capability-gaps.md`](./ai-direct-admin-capability-gaps.md)。
+>
+> - 后台管理：组织/公司、模板审核、中央审计、经营总览、AI 员工目录、成本账本、审批中心与系统状态均已完成代码整合；模板审核、中央审计和审批治理迁移已应用。
+> - 中央审计的导出 consumer 以 `iclawstore-audit-export` 单实例运行；审批 timeout worker 已实现并在 PM2 配置中保持 opt-in，但因 `APPROVAL_TIMEOUT_ENABLED` 未配置而未启动。
+> - 审批中心新增不可变审批事件与委派记录。委派、裁决和超时的状态变更必须在同一事务写领域事件、中央审计与 outbox；当前审批记录不是历史载体。
+> - 验证证据：组织管理、模板审核、审计路由/导出 worker 的定向测试已通过；timeout worker 定向测试 `2/2` 与本轮早期服务端 TypeScript 检查通过。其后可用内存低于门槛，前端构建、全量测试及隔离 MySQL 未执行。
+> - 当前状态只能记为 **部分发布，业务验收未完成**：迁移已应用不代表审批 worker 已启用，也不代表真实身份/RBAC、委派链和 Offer 联动已通过生产验收。
+>
 > **对外品牌与兼容边界（2026-08-04）**
 >
 > - 对外平台中文名固定为 `AI直聘`，英文名固定为 `Ai Work`；网站标题、导航、登录、PWA、SEO 与分享图均使用该品牌，主交互色为青绿色。
@@ -7,6 +39,38 @@
 > - `clawhub`、`clawdhub` 的 CLI、npm 包名、公开 API 路径、发现协议及内部历史标识为兼容层，禁止因本次改名修改；Soul 模式跳转到兼容站点时可继续展示其原名称。
 > - 官方静态 Logo 源为仓库根目录 `ai-work-icon.svg`，发布资产为 `public/ai-work-icon.svg`；根页分享图为 `public/og.svg`。不得继续引用旧红色 OG 或龙虾 Logo 资产。
 
+
+> **Desktop 1.1.0 生产发布更新（2026-08-05）**
+>
+> - 已创建迁移前 AES-256 加密全库备份 `/home/ubuntu/backups/iclawstore/production-migrations/iclawstore-before-desktop-1.1-20260804T172510Z.sql.gz.enc`，并通过解密、`gzip -t` 与 SHA-256 完整性校验。
+> - `20260808_ai_direct_desktop_jobs_cursor`、`20260809_ai_direct_interviews_policy`、`20260810_agent_publication_catalog`、`20260811_ai_direct_workforce` 已按 Prisma 顺序部署；迁移状态为 up to date，关键表、字段和索引只读核验通过。
+> - Server TypeScript 构建通过，`iclawstore-api` 已 reload 并保持 `online`；启动 manifest 校验未发现缺失路由。
+> - 生产 discovery/OpenAPI 与逐 protected operation 烟测通过：`1` 个测试文件通过，`2 passed | 3 skipped`，原 Candidate Catalog、Workforce 和 Candidate Matching 的 8 个 `404` 已消除。
+> - 以上证据只解除路由契约发布阻塞。生产没有专用 smoke token，`candidateCatalog` 默认关闭，且没有已启用组织的完整隔离测试数据链；因此 Candidate Catalog、Departments、Positions、Candidate Matching 的带认证 `2xx` 业务烟测未执行。未修改 feature flag，未创建或清理生产业务数据。
+>
+> **当前任务核对快照（以当前工作区代码、已挂载路由、测试与规格为证据）**
+>
+> 本节覆盖 `oauth-identity`、`session-capabilities`、`jobs-artifacts`、`agent-publication`、`candidate-catalog`、`interviews`、`hiring-closure`、`workforce-audit` 与 `release-gate`。状态含义：
+>
+> - **实现完成，待发布验收**：核心代码和定向测试已存在，但尚未通过真实客户端闭环与统一发布门禁；
+> - **部分完成**：已有可复用实现，但 DTO、状态机、测试或机器契约仍缺；
+> - **未实现**：当前核心入口没有该领域能力；旧的未挂载源码和仅有表结构不算完成。
+>
+> | 任务 | 当前状态 | 已有证据 | 尚缺 |
+> | --- | --- | --- | --- |
+> | `oauth-identity` | **实现完成，待发布验收** | Convex OAuth/OIDC Provider、Authorization Code + PKCE S256、固定 public client 注册逻辑、双 redirect 类型、refresh rotation/reuse detection、30 天绝对期限、7 天空闲期限、账号停用/删除触发 family revoke、RFC 7009 revoke、Fastify Web/Desktop 双 issuer bridge 与定向测试均已落盘。 | 在目标环境执行并锁定静态 client 注册；真实桌面浏览器授权、custom URI 与 loopback 两条闭环；生产配置烟测；统一静态、类型、迁移和发布门禁。 |
+> | `session-capabilities` | **路由已发布，业务验收部分完成** | `/session` 已挂载，按 active membership 返回用户、组织、显式选择结果、`grantVersion`、角色权限、组织级 flags 与 `runtimeCapabilities`；既有真实 GitHub token `/session` 成功路径与定向路由测试已通过。 | 真实 native OAuth token 的管理员组织权限闭环；Candidate Catalog/Workforce 场景的专用 token + 隔离组织验收。 |
+> | `jobs-artifacts` | **路由契约已发布，业务验收待补** | Jobs cursor 列表/详情、受控 artifact metadata 与内容流式读取已挂载并进入 Desktop OpenAPI；`20260808_ai_direct_desktop_jobs_cursor` 已部署，完整路由烟测通过。 | 配置并验证真实 `AI_DIRECT_ARTIFACT_ROOT`、跨组织可见性与篡改对象的带认证端到端门禁。 |
+> | `agent-publication` | **迁移与路由发布完成，业务验收待补** | 独立 `AgentPublicationModule` 已挂入 core；草稿、版本、审核提交/裁决、发布、审计/outbox 和发布时 digest 更新均已实现；`20260810_agent_publication_catalog` 已部署。 | 补真实认证、RBAC、写入幂等与事务的受控生产验收。 |
+> | `candidate-catalog` | **路由发布完成，组织能力默认关闭** | digest 服务、目录/详情/分类路由、服务端全文搜索、稳定 cursor、组织 membership + feature flag 授权和安全 DTO 已存在；迁移已部署且生产路由不再 `404`。 | 当前无启用 `candidateCatalog` 的组织或专用 smoke token；带认证 `2xx`、跨组织、撤权和投影回归仍待验收。 |
+> | `interviews` | **迁移与路由发布完成，组织能力默认关闭** | 独立路由、保留策略、legal hold、用户删除队列、受管图片/PDF 附件与低资源 cleanup consumer 均已实现；`20260809_ai_direct_interviews_policy` 已部署。 | 按组织显式开启 `interviews`，完成真实认证业务与清理任务验收。 |
+> | `hiring-closure` | **代码完成，待发布验收** | `POST /offers/:id/accept` 是唯一 Employment 创建入口；Offer/Employment 同事务、`offerId` 唯一、重放幂等，并同步更新组织 `isEmployed` 投影。 | 补全撤销、取消、交接和 `transferring` 业务规则；完成统一发布与生产回归。 |
+> | `runtime-guardrails` | **受控运行中，验收未完成** | API/dispatcher/executor 已拆分进程预算与连接池：API pool 6、dispatcher pool 2、executor pool 1 且并发 1；executor 保持关闭。 | 完成 30 分钟 RSS/heap/swap/队列深度观测；低内存拒绝与排队压测尚未执行。 |
+> | `workforce` | **迁移与路由发布完成，业务验收待补** | 独立 WorkforceModule、Department → Position → AgentRole、开放职位校验、Candidate Matching 和 Employment 编制投影已实现；`20260811_ai_direct_workforce` 已部署且生产路由不再 `404`。 | 当前无完整隔离测试组织链和短期 token；补 Departments、Positions、Matching 的带认证 `2xx`，以及跨公司、编制满额、重放和终止释放回归。 |
+> | `workforce-audit` | **三个后台核心包代码完成，待验证** | 组织/公司统一 DTO、cursor、状态机和 `/management` 页面已整合；独立模板审核模块具备待审/拒绝/发布/下架、审计/outbox；中央审计具备组织权限、脱敏、cursor、异步导出 Job、短时 token 和单连接 CSV consumer，新路由已挂载且加法迁移/Prisma 声明已落盘。 | 串行完成 schema、服务器定向测试（含导出 worker）、管理前端测试、TypeScript 与隔离 MySQL；将 opt-in consumer 接入生产进程配置；为平台模板事件建立真实组织归属前不得混入组织审计；完成迁移和生产验收。 |
+> | `release-gate` | **路由发布门禁已完成** | Desktop `1.1.0` 使用单一 method/path manifest；OpenAPI 完整一致性测试、Fastify 启动路由校验、故意缺路由失败测试、四段生产迁移和逐 operation 非 `404` 烟测均通过。 | 真实 native OAuth 与 artifact 闭环；对需声明业务可用的组织能力补专用 token + 隔离组织的认证 `2xx` 门禁。 |
+>
+> **下一开发顺序**：先准备专用短期生产 token 和可回收的隔离组织夹具，以组织级 flag 灰度完成 Candidate Catalog、Departments、Positions、Candidate Matching 的带认证 `2xx`、RBAC 与关闭路径验收；未完成前不得把“路由已发布”升级为“业务已启用”。OAuth Provider 的 custom URI/loopback 真实授权闭环与 artifact 受管存储验收继续独立推进，Executor 保持关闭。内存受限服务器不得并行运行构建、MySQL 集成测试或全量测试。
 
 > **统一 Web / AI 直聘身份（2026-08-03）**
 >
@@ -40,7 +104,7 @@
 > **桌面端文档对齐结论（2026-08-03）**
 >
 > - 已以 `AI直聘桌面端/docs/` 为产品真值完成服务器侧契约分层和差距盘点，新增 `specs/ai-direct-desktop-platform-integration.md`。
-> - 当前生产 `Desktop Client API 1.0.0` 只覆盖 Agent 形象、账号侧栏和桌面模板；桌面端 `PLATFORM_BACKEND_INTEGRATION_CONTRACT.md` 是 proposed 企业契约，不能整体标记为已上线。
+> - 当前生产 discovery/OpenAPI 声明 `Desktop Client API 1.1.0`；`20260808` 至 `20260811` 迁移、当前 API 构建部署、启动 manifest 校验和逐 operation 非 `404` 烟测均已完成，原 Candidate Catalog、Workforce 与 Candidate Matching 的 8 个路由漂移已解除。该结论不代表组织能力已启用：`candidateCatalog` 默认关闭，相关带认证 `2xx` 业务烟测仍待专用 token 和隔离测试组织。
 > - 当前挂载服务已有组织、公司、项目、岗位、Offer、Employment、审批、能力授权、Jobs 和 Worker runtime，但这些能力并未全部进入桌面 OpenAPI；未挂载的 `aiDirectHiring.ts` 中 Agent 发布路由不算生产能力。
 > - 后端下一优先级调整为：`/session` 与 OAuth/OIDC PKCE 契约、按组织 feature flags、Jobs 桌面 OpenAPI、Agent publication 拆分、候选目录、面试和非支付招聘闭环。支付、设备真实性认证、签名更新、团队/皮肤商业化继续后置。
 > - 桌面本地 `projectId`、队列、产物、审批责任标签、`.aidhbackup`、模板业务数据和本地记忆不得静默上传，也不得被解释为企业身份、授权或中央审计。
@@ -288,3 +352,9 @@
 
 _更新时间: 2026-08-01 03:14 UTC+8_
 _运行中心 commit: `8284931`_
+
+## 当前工作区与生产能力快照
+
+- `CandidateMatchingModule` 已实现并挂载：仅对 recruiter 可读的 `GET /workforce/positions/{positionId}/candidate-matches`，从 Position/Role 需求和 Candidate Catalog digest 计算固定的 `capability-coverage-v1` 匹配评分。
+- 输出不含 Agent prompt、模型策略、审核信息或 Employment 明细；仅含匹配能力、缺失能力、可用性和组织范围 employment disclosure。
+- `20260810_agent_publication_catalog` 与 `20260811_ai_direct_workforce` 已部署，Candidate Matching 已进入生产 `1.1.0` route contract 并通过非 `404` 烟测。实际 `2xx` 仍依赖 open Position、recruiter RBAC 与显式组织 `candidateCatalog` flag；当前生产默认 flag 关闭且未执行带认证业务烟测。

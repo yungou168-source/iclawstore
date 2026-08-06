@@ -48,38 +48,22 @@ const notoSansSc500Source = await resolveExistingPath(
   ),
 );
 
+const outputDir = path.resolve(process.env.NITRO_OUTPUT_DIR ?? ".output");
+
 const copies = [
   {
-    source: path.resolve("public/clawd-logo.png"),
+    source: path.resolve("public/ai-work-icon.svg"),
     targets: [
-      path.resolve(".output/server/clawd-logo.png"),
-      path.resolve(".output/server/public/clawd-logo.png"),
-      path.resolve(".vercel/output/functions/__server.func/clawd-logo.png"),
-      path.resolve(".vercel/output/functions/__server.func/public/clawd-logo.png"),
-    ],
-  },
-  {
-    source: path.resolve("public/og-clawhub-watermark.png"),
-    targets: [
-      path.resolve(".output/server/og-clawhub-watermark.png"),
-      path.resolve(".output/server/public/og-clawhub-watermark.png"),
-      path.resolve(".vercel/output/functions/__server.func/og-clawhub-watermark.png"),
-      path.resolve(".vercel/output/functions/__server.func/public/og-clawhub-watermark.png"),
-    ],
-  },
-  {
-    source: path.resolve("public/clawd-mark.png"),
-    targets: [
-      path.resolve(".output/server/clawd-mark.png"),
-      path.resolve(".output/server/public/clawd-mark.png"),
-      path.resolve(".vercel/output/functions/__server.func/clawd-mark.png"),
-      path.resolve(".vercel/output/functions/__server.func/public/clawd-mark.png"),
+      path.resolve(outputDir, "server/ai-work-icon.svg"),
+      path.resolve(outputDir, "server/public/ai-work-icon.svg"),
+      path.resolve(".vercel/output/functions/__server.func/ai-work-icon.svg"),
+      path.resolve(".vercel/output/functions/__server.func/public/ai-work-icon.svg"),
     ],
   },
   {
     source: resvgWasmSource,
     targets: [
-      path.resolve(".output/server/node_modules/@resvg/resvg-wasm/index_bg.wasm"),
+      path.resolve(outputDir, "server/node_modules/@resvg/resvg-wasm/index_bg.wasm"),
       path.resolve(
         ".vercel/output/functions/__server.func/node_modules/@resvg/resvg-wasm/index_bg.wasm",
       ),
@@ -89,7 +73,8 @@ const copies = [
     source: bricolage800Source,
     targets: [
       path.resolve(
-        ".output/server/node_modules/@fontsource/bricolage-grotesque/files/bricolage-grotesque-latin-800-normal.woff2",
+        outputDir,
+        "server/node_modules/@fontsource/bricolage-grotesque/files/bricolage-grotesque-latin-800-normal.woff2",
       ),
       path.resolve(
         ".vercel/output/functions/__server.func/node_modules/@fontsource/bricolage-grotesque/files/bricolage-grotesque-latin-800-normal.woff2",
@@ -100,7 +85,8 @@ const copies = [
     source: bricolage500Source,
     targets: [
       path.resolve(
-        ".output/server/node_modules/@fontsource/bricolage-grotesque/files/bricolage-grotesque-latin-500-normal.woff2",
+        outputDir,
+        "server/node_modules/@fontsource/bricolage-grotesque/files/bricolage-grotesque-latin-500-normal.woff2",
       ),
       path.resolve(
         ".vercel/output/functions/__server.func/node_modules/@fontsource/bricolage-grotesque/files/bricolage-grotesque-latin-500-normal.woff2",
@@ -111,7 +97,8 @@ const copies = [
     source: ibmPlex500Source,
     targets: [
       path.resolve(
-        ".output/server/node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2",
+        outputDir,
+        "server/node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2",
       ),
       path.resolve(
         ".vercel/output/functions/__server.func/node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2",
@@ -122,7 +109,8 @@ const copies = [
     source: notoSansSc800Source,
     targets: [
       path.resolve(
-        ".output/server/node_modules/@fontsource/noto-sans-sc/files/noto-sans-sc-chinese-simplified-800-normal.woff2",
+        outputDir,
+        "server/node_modules/@fontsource/noto-sans-sc/files/noto-sans-sc-chinese-simplified-800-normal.woff2",
       ),
       path.resolve(
         ".vercel/output/functions/__server.func/node_modules/@fontsource/noto-sans-sc/files/noto-sans-sc-chinese-simplified-800-normal.woff2",
@@ -133,7 +121,8 @@ const copies = [
     source: notoSansSc500Source,
     targets: [
       path.resolve(
-        ".output/server/node_modules/@fontsource/noto-sans-sc/files/noto-sans-sc-chinese-simplified-500-normal.woff2",
+        outputDir,
+        "server/node_modules/@fontsource/noto-sans-sc/files/noto-sans-sc-chinese-simplified-500-normal.woff2",
       ),
       path.resolve(
         ".vercel/output/functions/__server.func/node_modules/@fontsource/noto-sans-sc/files/noto-sans-sc-chinese-simplified-500-normal.woff2",

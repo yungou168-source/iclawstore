@@ -33,9 +33,8 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 
-# Convex (will be migrated)
+# Convex runtime state
 .convex/
-convex/_generated/
 
 # Temporary files
 *.tmp

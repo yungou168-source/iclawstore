@@ -1,7 +1,7 @@
 # AI 直聘 Web 与服务器 P1/P2 开发路线图
 
 > **文档状态**：待开发工作包与验收基准
-> **最近更新**：2026-08-13
+> **最近更新**：2026-08-14
 > **适用范围**：Web 管理端、`/api/v1/ai-direct-hiring`、MySQL/Prisma、受管资产和远端运行时
 > **状态真值**：生产运行行为 → 已挂载路由 → Prisma migration status → 本文档。本文中的“可开发”不代表已经实现或上线。
 > **后台缺口索引**：三个核心管理工作包和后续后台能力的逐项状态见 [`ai-direct-admin-capability-gaps.md`](./ai-direct-admin-capability-gaps.md)。
@@ -27,7 +27,7 @@
 4. 高风险写入在单一 MySQL 事务中提交业务状态、状态事件、审计事件和 outbox。
 5. 未挂载的 `server/src/routes/aiDirectHiring.ts` 不算可用 API，不得直接让 Web 调用，也不得整体重新挂载。
 6. 数据表或迁移存在不代表功能启用。Provider、支付、目录、面试等能力必须由独立 feature flag 和运行状态明确返回。
-7. 本期不实现支付成功。价格只能是 `free`、`internal_use`、`quote_required` 或 `purchase_unavailable` 等服务器状态，客户端不得虚构金额或支付结果。
+7. 招聘闭环包含真实支付。用户完成 Agent 雇佣费用支付并发放 Offer 后即视为雇佣成功；同一幂等业务闭环必须生成不可撤回的 Offer 凭证、Employment、支付账本、平台 20% 收入和 Agent 开发者 80% 应付。客户端不得自行声明支付成功，支付渠道回调必须验签、去重并由服务器确认。
 8. 新列表接口采用稳定 cursor 分页、服务端过滤和明确排序；禁止先全表扫描再由 Web 过滤授权数据。
 
 ### 当前服务端能力与优化状态
@@ -38,8 +38,8 @@
 | --- | --- | --- | --- |
 | Session / Jobs / 产物读取 | 候选实现完成 | Jobs 使用稳定 cursor；产物下载重验组织可见性并流式核验 hash/size，不暴露 `storagePath`。 | native OAuth 发布、`AI_DIRECT_ARTIFACT_ROOT` 配置和端到端验收。 |
 | Agent 发布 / 候选目录 | 代码完成，待迁移与发布验收 | 独立写模块；发布事务原子写审计/outbox；目录只读 digest 与组织计数投影，SQL 全文搜索与稳定 cursor 避免 N+1。 | 应用 `20260810_agent_publication_catalog`，显式开启组织 `candidateCatalog`。 |
-| Offer 接受 / Employment | 代码完成，待发布验收 | 唯一接受入口在同一事务创建或复用 Employment；`offerId` 唯一且重放幂等；同步更新组织已聘计数。 | 统一发布门禁和生产回归。 |
-| Approval 裁决 / Offer 联动 | 授权、委派与统一事务的隔离 MySQL 已验证，待生产身份验收 | 授权策略独立于路由并在 Approval 行锁后读取当前审批人与组织成员事实；委派和批准、拒绝、取消、超时均由领域事务原子提交状态、不可变事件、审计和 outbox。 | 使用可回收真实 Bearer 身份重放授权矩阵；timeout worker 仅在显式启用后运行。 |
+| Offer / 支付 / Employment | **代码与隔离 MySQL 闭环已验证，待生产发布验收** | 版本化开发者定价；订单固化 AgentVersion、开发者、价格、明确 Position 和 20%/80% 金额；支付宝 RSA2 验签与商户/交易/金额核对；支付成功单事务创建唯一 Offer、Employment、账本、事件、审计与 outbox；旧 Offer 写操作和直接 Employment 创建入口已关闭。 | 应用 `20260815_ai_direct_paid_hiring`，完成真实 Bearer/RBAC 烟测与支付宝沙箱/商户联调，核对重复通知和错误商户/金额路径后再开启支付能力。 |
+| Approval 治理 / 付款前雇佣意图 | **目标语义与隔离事务已验证，待生产身份验收** | 授权、委派、不可变事件、审计和 outbox 事务基础继续复用；Approval 已不再驱动 Offer 终态，批准进入待支付，拒绝/取消/超时只终止付款前意图。 | 使用可回收真实 Bearer 身份重放授权矩阵；显式确认 timeout worker 配置。 |
 | Workforce：部门 / 职位 / 编制 | 代码完成，待迁移与发布验收 | Company → Department → Position → AgentRole；Offer/Employment 继续仅引用 `roleId`。开放职位与编制计数在招聘事务中锁定并维护，列表使用稳定 cursor。 | 应用 `20260811_ai_direct_workforce`，补真实 MySQL 事务门禁与生产发布。 |
 | 面试合规与清理 | 代码完成，待迁移与发布验收 | 90 天保留、用户删除立即不可见、legal hold 延迟物理删除；清理进程单连接、批次不超过 20。 | 应用面试策略 migration；按组织显式开启 `interviews`。 |
 | 低内存运行 | 受控运行中 | API、dispatcher、executor 独立进程预算与连接池；API 默认 pool 6，dispatcher pool 2，executor pool 1/并发 1。 | 完成 30 分钟观测；低内存拒绝/排队压测尚未执行。 |
@@ -97,8 +97,8 @@ SessionDto
 ### 当前 Workforce 实现
 
 - `WorkforceModule` 独立于 Company/Project 路由，提供 company-scoped Department、Department-scoped Position 与 Position–AgentRole 绑定接口。
-- Position 是编制与职位状态的权威模型；既有 Offer/Employment 不迁移外键，仍通过 `roleId` 找到唯一绑定 Position。
-- 新 Offer 只允许使用绑定到 active Department、`open` Position 的 Role；接受 Offer 时原子占用编制，Employment 离开在编状态时原子释放编制。
+- Position 是编制与职位状态的权威模型；HiringIntent 与 PaymentOrder 在下单时固化明确 `positionId`，Offer/Employment 仍保留 `roleId` 以兼容既有领域关系，履约时禁止从一个 Role 的多个 Position 中猜测目标。
+- 创建付费雇佣订单只允许使用绑定到 active Department、`open` Position 的 Role；可信支付成功事务依据订单快照创建 Offer 与 Employment。Employment 离开在编状态时仍需按 Workforce 状态机释放编制。
 - `20260811_ai_direct_workforce` 尚未应用，以上能力不能标记为生产可用。
 
 ### 当前分支实现状态
@@ -200,47 +200,52 @@ priceStatus
 - `CandidateCatalogModule` 已通过 `aiDirectCore.ts` 挂载，提供 `/catalog/agents`、`/catalog/agents/:agentId` 与 `/catalog/categories`；这是 `1.1.0` candidate，不属于生产 `1.0.0` discovery。
 - 列表和详情只读取 `ai_direct_candidate_catalog_digests` 与组织维度计数投影；不逐条联查 Agent、版本、形象、Employment 或成员关系。列表以 `displayName, agentId` 固定排序，opaque cursor 不可由客户端推导。
 - category 和全文搜索在 SQL 中过滤；可见性由 active membership、授权的 `X-Organization-Id` 和显式 `candidateCatalog` flag 共同决定。该 flag 默认关闭。
-- 发布事务仅在 `org_authenticated`、`available` 的受控目录字段下写 digest；Offer 接受创建 Employment 时在同一事务更新当前组织的 `isEmployed` 投影。
+- 支付成功事务创建 Employment 后通过同一事务的 outbox 驱动候选目录 `isEmployed` 等后续投影；不得恢复旧 Offer accept 触发方式，也不得让投影失败形成订单 `paid` 但核心履约缺失的状态。
 - 返回 DTO 仅含安全显示字段、能力摘要、获准形象引用、availability、`priceStatus` 与当前组织的 viewer disclosure；不得返回 prompt、模型/执行策略、内部审核内容、Employment 明细、storage path 或支付金额。
 - `20260810_agent_publication_catalog` 尚未应用。未完成迁移、未开启 flag、撤销 membership、不可用或没有 digest 的候选必须被排除，而不是由客户端过滤。
 
-## 6. 工作包 D：非支付招聘闭环（P1）
+## 6. 工作包 D：支付即雇佣与开发者分账闭环（P1）
 
 ### 目标流程
 
 ```text
-选择候选 -> 评估 -> 创建 Offer -> 审批 -> 发送 Offer
--> 接受 Offer -> 创建 Employment -> onboarding -> active
+选择 Agent → 创建雇佣意图 → 必要时完成内部审批 → 支付雇佣费用
+→ 服务器确认支付成功并发放 Offer → 原子创建 Employment → onboarding → active
 ```
 
-### 已有基础
+Offer 不是等待 Agent 接受的邀请，而是支付成功后生成的不可撤回雇佣凭证。不存在 Offer 拒绝、过期或撤回流程。
 
-- Offer 创建与状态操作；
-- Employment 创建、读取、事件和事务状态迁移；
-- `accepted` 时形象控制权原子接管，`terminated` 时条件释放；
-- 第二家公司控制权冲突；
-- approval 与 capability grant 基础。
+### 已实现范围与发布缺口
 
-### 当前实现与剩余边界
+- `aiDirectAgentPrices`、HiringIntent、PaymentOrder、平台/开发者账本和人工 settlement 数据已由 `20260815_ai_direct_paid_hiring` 与 Prisma schema 定义。
+- 创建订单时由服务器校验 Agent 可雇佣性、开发者归属、版本化价格和明确 Position；客户端金额不作为真值，订单固化 AgentVersion、开发者、价格版本、`positionId` 与 20%/80% 金额。
+- 支付宝适配层负责参数构造、RSA2 签名/验签和通知字段验证。缺少真实商户配置时不得伪造成功；支付宝下单成功或客户端同步跳转均不构成支付成功。
+- 可信通知必须核对 `app_id`、`seller_id`、`out_trade_no`、`trade_no`、`trade_status` 和 `total_amount`。支付成功事务锁定订单并原子更新订单、创建唯一 Offer/Employment、平台收入、开发者应付、事件、审计和 outbox。
+- 任一事务步骤失败时整体回滚并向支付宝返回 `failure`，等待可信重复通知重试；重复、乱序和并发通知只能返回同一履约结果，`trade_no` 不一致不能作为合法重放。
+- Offer 读取继续可用，accept/decline/reject/expire/revoke 写操作稳定返回 `409`；旧直接创建 Employment 的公开入口已关闭。Approval 只更新付款前雇佣意图，不再映射旧 Offer 终态。
+- Prisma validate、服务端 TypeScript、定向 Biome、单元/契约测试和全新隔离 MySQL 迁移/事务测试均已通过。生产仍需应用迁移、完成真实 Bearer/RBAC 烟测和支付宝沙箱/商户联调。
 
-- `POST /offers/:id/accept` 是唯一的 Offer 接受入口；它与 Employment 创建或幂等复用、审计/outbox 和组织 `isEmployed` 计数投影在同一事务内完成。
-- Approval 的授权策略独立于路由，并在 Approval 行锁之后读取最新当前审批人和组织成员事实。批准/拒绝允许当前审批人或组织 `admin/owner`，取消仅允许请求者或当前审批人，委派仅允许组织 `admin/owner` 且目标必须是同组织活跃成员。
-- 委派使用独立领域事务原子写当前审批人、不可变委派记录、审批事件、中央审计和 outbox。委派不是终态：终态先提交则委派失败；委派先提交则旧审批人立即失权，新审批人或 timeout 继续按最新状态处理。
-- Approval 裁决同样只有一个领域事务入口。人工批准、人工拒绝、人工取消和 timeout worker 必须锁定并重读最新 Approval，仅允许 `pending` 胜出；关联 Offer 固定映射为 `approved → sent`、`rejected → rejected`、`cancelled → revoked`、`expired → expired`。
-- `targetType = offer` 时，Offer 联动必须同时满足目标 ID、同一 `approvalId` 和 `pending_approval` 状态。联动、审批事件、中央审计或 outbox 任一步失败时整个裁决回滚；禁止吞掉异常后留下单边 Approval 终态。非 Offer 目标不更新 Offer，仍在同一事务写入自身治理记录。
-- timeout worker 只负责扫描到期候选 ID，每个候选进入独立裁决事务；它与人工批准、拒绝或取消竞争时由 Approval 行锁决定唯一胜者，后到者不生成第二份历史。
-- `offerId` 在 Employment 侧唯一；重复接受同一 Offer 返回既有 Employment，不能制造并发重复雇佣。
-- 无 appearance profile 的 Agent 在接受事务中加锁，避免跨 Offer 的形象控制权竞争；这不改变 Agent 所有权或版本发布权。
-- Approval 相关定向测试 `24/24` 已通过；全新隔离 MySQL 的裁决事务 `6/6`、授权与委派闭环 `4/4` 通过。授权闭环覆盖指定审批人、组织 admin、越权成员、请求者取消、无关 owner 取消、委派后旧审批人失权、委派/终态竞争和委派后 timeout；核心招聘 fixture 隔离闭环 `1/1` 通过。
-- 仍须在生产前使用可回收真实 Bearer 身份重放同一授权矩阵；不得把隔离 JWT/MySQL 证据记为生产身份验收。
-- 失败/撤销/交接与 `transferring` 的完整业务语义仍未闭合，Web 必须明确区分“Offer 已接受”“onboarding”与“active”。
+### 领域边界
 
-### 禁止行为
+- 付款前使用 `HiringIntent`、Approval 和 `PaymentOrder` 表达候选选择、内部审批与待支付状态；此阶段没有正式 Offer。
+- Approval 可以批准、拒绝、取消或超时付款前的雇佣意图，但这些结果不得创建 `rejected/expired/revoked` Offer。
+- 只有服务器验签并幂等确认支付成功后，才发放正式 Offer；该 Offer 是不可变雇佣凭证，不需要 Agent 接受，也不能拒绝、过期或撤回。
+- 支付成功处理必须以 PaymentOrder 为幂等聚合根，在一个数据库事务内更新订单并创建 Offer、Employment、平台收入、开发者应付、领域事件、中央审计和 outbox。重复回调只能返回同一结果；后续编制、员工目录或形象投影必须由明确的事务内端口或 outbox 消费者衔接，不能在回调路由中形成隐式副作用。
+- 首期支付渠道固定为支付宝，仅支持人民币 `CNY`；渠道能力必须封装在 PaymentProvider 适配层，核心雇佣事务不得依赖支付宝 SDK DTO。
+- Agent 雇佣价格由 Agent 开发者设置；生效价格必须经过服务器校验并形成版本化价格记录，PaymentOrder 保存下单时的价格与开发者收款主体快照，后续改价不能影响既有订单。
+- 首期不自动向外部账户打款。支付成功后把 80%记入开发者应付余额，由后台人工审核和结算；每次结算必须引用原始应付分录并追加不可变 settlement 记录。
+- 支付订单必须保存服务器裁决的 Agent 版本、开发者收款主体、币种和价格快照；支付宝回调不得重新读取可变目录价格后计算分账。
+- 金额一律使用整数最小货币单位。平台金额按总额的 20% 四舍五入到分，开发者金额取剩余部分，并始终满足 `grossAmount = platformFee + developerPayable`；禁止使用浮点数或由客户端计算。
+- 开发者应付与实际打款是两个状态：支付成功先形成不可变应付账，之后由独立结算流程打款并记录 settlement；API 请求或支付回调中不得同步执行不可重试的外部打款。
+- Agent 开发者收款主体必须来自已验证的 Agent/版本发布归属，不能由付款请求传入任意收款账号。
+- 退款、拒付、税费、支付渠道费、结算周期和最低打款额仍需单独确认；未确认前不得修改原始支付与分账账目，只能追加冲正或调整分录。
 
-- 不创建虚假 payment/order/webhook；
-- 不把 Offer accepted 直接渲染为 active Employment；
-- 不由前端跳过中间状态；
-- 不用形象控制权代替 Agent 所有权或版本发布权。
+### 并发与失败边界
+
+- 客户端支付结果、跳转参数或本地状态不能证明支付成功；只信任服务器主动查询或验签后的渠道回调。
+- 同一支付订单只能生成一个 Offer 和一个 Employment；回调重放、乱序和并发处理必须幂等。
+- Offer、Employment、账本、事件、审计或 outbox 任一步失败时，包含 PaymentOrder `paid` 更新在内的本地事务全部回滚；渠道支付事实仍由支付宝持有，通知入口返回 `failure`，由后续可信重复通知重新履约，禁止留下“订单已 paid 但未履约”的本地中间状态。
+- 不用形象控制权代替 Agent 所有权、开发者收款权或版本发布权。
 
 ## 7. 工作包 E：面试会话与未读消息（P1）
 
@@ -399,11 +404,11 @@ Web 只消费服务端控制权 DTO，不自行推导 Employment。该页面不�
 ```text
 身份/OIDC生产恢复 + Session/RBAC门禁
   -> A 组织/公司 Web
-  -> D 非支付招聘闭环
+  -> D 支付即雇佣与开发者分账闭环
 
 B Agent publication
   -> C 候选市场
-  -> D 非支付招聘闭环
+  -> D 支付即雇佣与开发者分账闭环
 
 G 形象 Web --------------------┐
 F 运行中心 Web -----------------+-> I 中央审计与治理
@@ -431,5 +436,5 @@ E 面试模块可与 F/G/H 并行，但必须先冻结保留、删除、脱敏�
 5. 401、403、跨组织、撤权、状态冲突和幂等测试通过；
 6. 高风险写入同时产生审计和 outbox；
 7. 空态、禁用态、失败态和恢复建议在 Web 可见；
-8. 明确排除支付、桌面本地数据和未启用 Provider 能力；
+8. 明确排除未启用的 Provider、退款/拒付、自动结算和桌面本地数据；涉及真实支付的工作包必须额外通过商户配置、验签、金额核对、重复通知与失败关闭门禁；
 9. 生产发布、烟测和回滚记录完成后，才能从“代码完成”改为“已上线”。

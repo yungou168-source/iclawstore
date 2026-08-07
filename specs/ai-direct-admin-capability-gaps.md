@@ -25,10 +25,12 @@
 | 4 | 经营总览 | **代码完成，待验证、待发布验收** | 新增组织范围只读聚合 DTO：在职 AI 员工、运行队列、近 30 天 Token/成本和待审批数量；管理端 `/management?view=overview` 已接入。 | 补定向路由/页面测试和真实组织权限烟测；不得在前端跨列表拼接指标。 |
 | 5 | AI 员工目录 | **隔离闭环已验证，待生产真实身份验收** | `ai_direct_workforce_employee_digests` 已部署；Offer 接受和 Employment 状态迁移在同一事务同步投影。员工目录 API 仅从 digest 读取，按公司 recruiter RBAC、状态/部门/职位和稳定 opaque cursor 返回安全展示字段；路由、分页、越权测试和 TypeScript 构建已通过。新增可回收的受保护 API fixture：依次创建 Agent、组织、公司成员、项目、Role、Department、Position、Offer、Approval 和 Employment，不直写业务表；在全新隔离 MySQL 的 17 段迁移链上，有数据 `200`、授权空列表 `200`、无成员公司 `403` 三项验收 `3/3` 通过，测试库已自动删除。 | 仍需使用可回收 QA 真实身份在生产或等价目标环境重放同一受保护 API 链路，确认 Convex Bearer 身份桥和生产配置；不得把隔离 JWT/MySQL 验收记为生产真实身份通过。 |
 | 6 | AI Job / 运行成本账本 | **代码完成，待验证、待发布验收** | 从 WorkflowRun + Provider model run audit 生成最多 31 天的稳定 cursor 成本明细，金额保持微美元整数语义，展示层才格式化 USD。 | 补时间窗口、跨组织和空账本测试；预算限额/异常告警仍需独立交付。 |
-| 7 | 审批中心 | **授权、委派与统一裁决隔离闭环已验证，待生产身份验收** | 审批列表使用显式组织范围；授权策略独立于路由并在 Approval 行锁后读取最新事实：批准/拒绝允许当前审批人或组织 `admin/owner`，取消仅允许请求者或当前审批人，委派仅允许组织 `admin/owner` 且目标必须是活跃成员。委派和四种终态均原子写不可变事件、中央审计与 outbox；Offer 映射为 `approved → sent`、`rejected → rejected`、`cancelled → revoked`、`expired → expired`，任一步失败整体回滚。 | 使用可回收真实 Bearer 身份在目标环境重放授权矩阵；仅在配置 `APPROVAL_TIMEOUT_ENABLED=true` 后才允许启动 worker。 |
+| 7 | 审批中心 | **付款前意图语义与隔离事务已验证，待生产身份验收** | 审批继续复用锁后授权、委派、不可变事件、中央审计和 outbox；Approval 已不再更新旧 Offer 终态。批准后的雇佣意图进入待支付，拒绝、取消和超时仅终止付款前意图。 | 使用可回收真实 Bearer 身份重放授权矩阵；仅在配置 `APPROVAL_TIMEOUT_ENABLED=true` 后才允许启动 worker。 |
 | 8 | 系统状态 | **代码完成，待验证、待发布验收** | 新增组织范围只读状态 DTO：运行队列、过期 lease、活跃 Worker 和 outbox 堆积；管理端 `/management?view=system` 已接入。 | 补告警分级、定向测试和生产身份/RBAC 烟测；禁止向浏览器返回密钥、内部路径或完整错误载荷。 |
 
-## 本轮审批治理与验证记录（2026-08-14）
+## 本轮审批治理与验证记录（2026-08-14，历史实现证据）
+
+> 以下证明旧 Approval 事务实现的并发与原子性，可作为付款前雇佣意图审批的重构基础；其中 Approval→Offer 状态映射已被新的“支付即雇佣”产品契约废弃。
 
 - `20260814_ai_direct_approval_governance` 已应用；生产 `prisma migrate status` 显示 17 个 migration，数据库 schema 为最新状态。
 - 委派与裁决共享锁后授权边界：先锁定并重读 Approval，再锁定组织成员事实。批准/拒绝允许当前审批人或组织 `admin/owner`；取消仅允许请求者或当前审批人；委派仅允许组织 `admin/owner`，受委派人必须是同组织活跃成员。委派事务原子写当前审批人、不可变 `ai_direct_approval_delegations`、`approval.delegated` 事件、中央审计和 outbox，路由不再执行事务外预查。
@@ -37,6 +39,14 @@
 - timeout worker 只扫描到期候选 ID，每个 Approval 使用独立裁决事务；人工批准、拒绝、取消与超时并发时由 Approval 行锁串行化，后到者按终态冲突退出，不生成第二份历史。`APPROVAL_TIMEOUT_ENABLED` 保持未配置，PM2 未启动该 worker。
 - Approval 相关定向测试 `24/24` 通过，其中统一裁决 `11/11`、授权策略、委派事务与路由边界 `13/13`；全新隔离 MySQL 的裁决事务 `6/6`、授权与委派闭环 `4/4` 通过。后者覆盖指定审批人、组织 admin、越权成员、请求者取消、无关 owner 取消、委派后旧审批人失权、委派/终态竞争和委派后 timeout。核心招聘 MySQL fixture 闭环 `1/1` 通过。
 - 本轮仅执行 migration 与只读复核，没有执行 PM2 restart/reload/start。复核时 API、runtime dispatcher、审计导出 worker 均为 `online`。
+
+## 付费雇佣实现与验证记录（2026-08-15）
+
+- `20260815_ai_direct_paid_hiring` 与 Prisma schema 已增加 Agent 版本化价格、HiringIntent、PaymentOrder、平台/开发者账本及人工 settlement 数据；订单创建时必须固化明确 `positionId`、AgentVersion、开发者归属、价格版本和 20%/80% 金额。
+- 支付宝通知只有在 RSA2 验签及 `app_id`、`seller_id`、`out_trade_no`、`trade_no`、`trade_status`、`total_amount` 全部核对通过后才可履约。支付宝下单成功或客户端跳转不构成支付成功。
+- 支付成功事务原子更新订单、创建唯一 Offer 和 Employment、写平台收入与开发者应付、领域事件、中央审计及 outbox。任何写入失败整体回滚；重复或并发通知只能得到同一份履约结果。
+- Approval 已改为付款前雇佣意图语义，不再更新 Offer 的 accepted/rejected/expired/revoked 状态。旧 Offer 写操作与直接创建 Employment 的公开入口均已关闭。
+- Prisma validate、服务端 TypeScript、定向 Biome、单元/契约测试和全新隔离 MySQL 迁移/事务门禁均通过。生产仍需真实 Bearer 授权矩阵、迁移发布和支付宝沙箱/商户联调。
 
 
 ## 架构边界

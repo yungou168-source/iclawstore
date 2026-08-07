@@ -2,7 +2,9 @@
 
 > **后续 Web / 服务器工作包（2026-08-03）**
 >
-> 完整范围、依赖、状态边界和验收统一以 `specs/ai-direct-web-server-roadmap.md` 为准，覆盖：组织/公司管理、Agent publication、候选市场、非支付招聘、面试、运行中心、形象管理、模板发布审核及中央审计。桌面数据边界继续以 `specs/ai-direct-desktop-platform-integration.md` 为准。
+> 完整范围、依赖、状态边界和验收统一以 `specs/ai-direct-web-server-roadmap.md` 为准，覆盖：组织/公司管理、Agent publication、候选市场、支付即雇佣与开发者分账、面试、运行中心、形象管理、模板发布审核及中央审计。桌面数据边界继续以 `specs/ai-direct-desktop-platform-integration.md` 为准。
+>
+> 付费雇佣后续实现已于 2026-08-15 落地：创建订单时固化 AgentVersion、开发者、价格、Position 与 20%/80% 金额；只有通过 RSA2 验签并核对商户、订单、交易号和金额的支付宝成功通知，才能在单一事务内创建不可撤回 Offer、Employment、账本、事件、审计与 outbox。实现已通过隔离 MySQL 原子回滚和重复通知门禁，生产迁移与真实支付宝联调仍是发布前置。
 >
 > 服务器模块必须继续按领域拆分：`IdentitySessionModule`、`OrganizationModule`、`CompanyModule`、`WorkforceModule`、`AgentPublicationModule`、`CandidateCatalogModule`、`HiringModule`、`InterviewModule`、`RuntimeModule`、`TemplatePublication/ReviewModule` 和 `AuditModule`。`aiDirectCore.ts` 只聚合模块；禁止重新挂载整个 `aiDirectHiring.ts`。
 >

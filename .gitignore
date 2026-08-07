@@ -5,6 +5,10 @@ node_modules/
 
 # Build outputs
 .output/
+/.output
+/.output.*
+/.nitro-next/
+/.vercel/
 dist/
 build/
 
@@ -53,8 +57,13 @@ uploads/
 # package-lock.json
 # yarn.lock
 
-# Test coverage
+# Test coverage and generated results
 coverage/
+/test-results/
+
+# Root-level generated archives
+/docs_*.tar.gz
+/iclawstore.com_*.tar.gz
 
 # Debug
 .debug/

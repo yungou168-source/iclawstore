@@ -1,5 +1,9 @@
 # AI 直聘功能整合报告(2026-08-01)
 
+> **历史实现说明（2026-08-14）**：本文记录 2026-08-01 的分支整合事实，不再代表当前产品契约。当前规则为：用户通过支付宝以人民币支付 Agent 雇佣费用并发放 Offer 即雇佣成功；Offer 不接受、不拒绝、不过期、不可撤回；价格由 Agent 开发者设置，平台收入 20%，开发者 80%先记应付余额并由后台人工结算。目标架构与迁移边界以 `specs/ai-direct-web-server-roadmap.md` 为准。
+>
+> **当前实现更新（2026-08-15）**：付费雇佣代码已在 `96e71be` 落地，包括版本化价格、固化 `positionId` 的 PaymentOrder、支付宝 RSA2 验签、支付成功原子履约、20%/80% 账本以及旧 Offer 写入口收敛。Prisma 校验、服务端 TypeScript、定向测试和全新隔离 MySQL 迁移/事务门禁均通过；生产迁移、真实 Bearer 授权烟测和支付宝商户联调仍未完成。
+
 ## 1. 整合概览
 
 | 项 | 值 |
@@ -106,9 +110,9 @@ bun run ci:static
 | `/tmp/wt-baseline` | `feature/baseline-mysql-migration-fix` | 保留(基线) |
 | `/www/wwwroot/iclawstore.com` | `feature/ai-direct-hire-foundation` | 未切换(用户决策) |
 
-## 8. 集成后的状态机
+## 8. 集成时的历史状态机
 
-P1 模型覆盖了招聘完整流程:
+以下仅表示 2026-08-01 被整合的旧模型，不是当前目标产品流程：
 - **公司/项目/岗位**:aiDirectCompanies → aiDirectProjects → aiDirectAgentRoles
 - **能力与凭据**:aiDirectCapabilityGrants(主体=employment/user/agent_version)、aiDirectUserCredentials(已在 P0)
 - **Offer 生命周期**:aiDirectOffers(draft → pending_approval → sent → accepted/rejected/expired/revoked)

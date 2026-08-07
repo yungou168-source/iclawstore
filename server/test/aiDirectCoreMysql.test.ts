@@ -142,6 +142,34 @@ integration('AI Direct recruitment core MySQL closure', () => {
     });
     expect(role.status).toBe(201);
 
+    const department = await request('POST', '/workforce/departments', {
+      companyId: company.body.id,
+      name: 'Integration Engineering',
+      sortOrder: 1,
+    });
+    expect(department.status).toBe(201);
+
+    const position = await request('POST', '/workforce/positions', {
+      departmentId: department.body.id,
+      name: 'Integration Analyst',
+      headcountTarget: 1,
+      requirementsSummary: { capabilities: ['http'] },
+      sortOrder: 1,
+    });
+    expect(position.status).toBe(201);
+    const openedPosition = await request(
+      'PATCH',
+      `/workforce/positions/${position.body.id}`,
+      { toStatus: 'open' },
+    );
+    expect(openedPosition.status).toBe(200);
+    const roleBinding = await request(
+      'POST',
+      `/workforce/positions/${position.body.id}/roles`,
+      { roleId: role.body.id },
+    );
+    expect(roleBinding.status).toBe(201);
+
     const offer = await request('POST', '/offers', {
       roleId: role.body.id,
       agentVersionId: '00000000-0000-4000-8000-000000000002',
@@ -164,7 +192,10 @@ integration('AI Direct recruitment core MySQL closure', () => {
     expect(bypassSend.status).toBe(409);
     expect(bypassSend.body.code).toBe('INVALID_TRANSITION');
 
-    const approvals = await request('GET', '/approvals?status=pending');
+    const approvals = await request(
+      'GET',
+      `/approvals?organizationId=${organization.body.id}&status=pending`,
+    );
     expect(approvals.status).toBe(200);
     const approval = approvals.body.items.find((item: any) => item.targetId === offer.body.id);
     expect(approval?.id).toBe(submitted.body.approvalId);
@@ -179,12 +210,10 @@ integration('AI Direct recruitment core MySQL closure', () => {
     expect(accepted.body.status).toBe('accepted');
     expect(accepted.body.acceptedAt).not.toBeNull();
 
-    const employment = await request('POST', '/employments', { offerId: offer.body.id });
-    expect(employment.status).toBe(201);
-
+    const employment = { body: { id: accepted.body.employmentId } };
     const duplicateEmployment = await request('POST', '/employments', { offerId: offer.body.id });
     expect(duplicateEmployment.status).toBe(409);
-    expect(duplicateEmployment.body.code).toBe('DUPLICATE_ENTRY');
+    expect(duplicateEmployment.body.code).toBe('INVALID_TRANSITION');
 
     const secondCompanyId = '00000000-0000-4000-8000-000000000010';
     const secondRoleId = '00000000-0000-4000-8000-000000000011';
@@ -222,11 +251,15 @@ integration('AI Direct recruitment core MySQL closure', () => {
       [secondEmploymentId],
     );
 
+    const competingAttempt = await request(
+      'POST',
+      `/employments/${secondEmploymentId}/transition`,
+      { toStatus: 'accepted', reason: 'integration:competing-accept' },
+    );
+    expect(competingAttempt.status).toBe(409);
+    expect(competingAttempt.body.code).toBe('APPEARANCE_CONTROL_CONFLICT');
+
     for (const toStatus of [
-      'evaluating',
-      'offer_pending',
-      'offered',
-      'accepted',
       'onboarding',
       'active',
       'paused',
@@ -234,48 +267,11 @@ integration('AI Direct recruitment core MySQL closure', () => {
       'offboarding',
       'terminated',
     ]) {
-      let transition;
-      if (toStatus === 'accepted') {
-        const [primaryAttempt, competingAttempt] = await Promise.all([
-          request(
-            'POST',
-            `/employments/${employment.body.id}/transition`,
-            { toStatus, reason: 'integration:concurrent-primary-accept' },
-          ),
-          request(
-            'POST',
-            `/employments/${secondEmploymentId}/transition`,
-            { toStatus, reason: 'integration:concurrent-competing-accept' },
-          ),
-        ]);
-        expect([primaryAttempt.status, competingAttempt.status].sort()).toEqual([200, 409]);
-        const rejectedAttempt = primaryAttempt.status === 409 ? primaryAttempt : competingAttempt;
-        expect(rejectedAttempt.body.code).toBe('APPEARANCE_CONTROL_CONFLICT');
-
-        if (competingAttempt.status === 200) {
-          for (const competingStatus of ['onboarding', 'active', 'offboarding', 'terminated']) {
-            const release = await request(
-              'POST',
-              `/employments/${secondEmploymentId}/transition`,
-              { toStatus: competingStatus, reason: `integration:release-competing-${competingStatus}` },
-            );
-            expect(release.status).toBe(200);
-          }
-          transition = await request(
-            'POST',
-            `/employments/${employment.body.id}/transition`,
-            { toStatus, reason: 'integration:accept-after-competing-release' },
-          );
-        } else {
-          transition = primaryAttempt;
-        }
-      } else {
-        transition = await request(
-          'POST',
-          `/employments/${employment.body.id}/transition`,
-          { toStatus, reason: `integration:${toStatus}` },
-        );
-      }
+      const transition = await request(
+        'POST',
+        `/employments/${employment.body.id}/transition`,
+        { toStatus, reason: `integration:${toStatus}` },
+      );
       if (transition.status !== 200) {
         throw new Error(
           `Employment transition to ${toStatus} failed (${transition.status}): ${JSON.stringify(transition.body)}`,
@@ -283,7 +279,7 @@ integration('AI Direct recruitment core MySQL closure', () => {
       }
       expect(transition.body.status).toBe(toStatus);
 
-      if (toStatus === 'accepted') {
+      if (toStatus === 'onboarding') {
         const developerView = await request(
           'GET',
           '/agents/00000000-0000-4000-8000-000000000001/appearance',
@@ -367,7 +363,7 @@ integration('AI Direct recruitment core MySQL closure', () => {
 
     const events = await request('GET', `/employments/${employment.body.id}/events`);
     expect(events.status).toBe(200);
-    expect(events.body.items).toHaveLength(11);
+    expect(events.body.items).toHaveLength(7);
     expect(events.body.items.at(-1).toStatus).toBe('terminated');
 
     const [appearanceAuditRows] = await pool.query<any[]>(
@@ -378,7 +374,6 @@ integration('AI Direct recruitment core MySQL closure', () => {
     );
     const appearanceAuditActions = appearanceAuditRows.map((row) => row.action);
     for (const expectedAction of [
-      'agent_appearance.control.transferred.v1',
       'agent_appearance.default_mode.updated.v1',
       'agent_appearance.control.released.v1',
     ]) {

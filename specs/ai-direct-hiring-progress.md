@@ -10,10 +10,13 @@
 > **审批治理与生产迁移更新（2026-08-14，以实时结果为准）**
 >
 > - `20260814_ai_direct_approval_governance` 已应用。生产 `prisma migrate status` 显示 migration 链共 17 段，数据库 schema 为最新状态。
-> - 审批委派与超时均有独立的不可变领域历史：委派同时写入 delegation、审批事件、中央审计与 outbox；超时在行锁和 `pending` 条件更新成功后才写入 `approval.expired` 事件、审计与 outbox。当前审批记录只保存当前审批人和当前状态。
+> - 审批授权策略已从路由抽离，并在 Approval 行锁后读取最新审批人和组织成员事实。批准/拒绝允许当前审批人或组织 `admin/owner`；取消仅允许请求者或当前审批人；委派仅允许组织 `admin/owner`，目标必须是同组织活跃成员。
+> - 委派使用独立领域事务原子写当前审批人、不可变委派记录、审批事件、中央审计和 outbox。终态先提交时委派失败；委派先提交时旧审批人立即失权，新审批人或 timeout 按最新状态继续。
+> - 人工批准、人工拒绝、人工取消与超时过期统一进入单 Approval 裁决事务。事务锁定并重读最新 Approval，仅允许 `pending` 胜出，并按 `approved → Offer sent`、`rejected → Offer rejected`、`cancelled → Offer revoked`、`expired → Offer expired` 联动关联 Offer 后写审批事件、中央审计与 outbox。
+> - Offer 必须仍以同一 `approvalId` 处于 `pending_approval`。联动状态不符、SQL 异常、事件、审计或 outbox 写入失败时整个裁决回滚，禁止留下单边 Approval 终态，也禁止吞掉 Offer 更新错误。
 > - `iclawstore-approval-timeout` 未启动。`APPROVAL_TIMEOUT_ENABLED` 未配置，避免在没有显式运维确认时启用自动决策进程。
-> - timeout worker 定向测试 `2/2` 通过；本轮早期服务端 TypeScript 检查通过。后续可用内存仅约 507 MiB，swap 约使用 1.7 GiB，未执行额外前端构建、全量测试或隔离 MySQL；这不是测试失败。
-> - 本轮未执行 PM2 restart、reload 或 start。复核时 API、runtime dispatcher 与审计导出 worker 均为 `online`。审批业务仍待真实身份、委派链、并发裁决、Offer 联动与 timeout worker 显式启用后的运行验收。
+> - Approval 相关定向测试 `24/24` 通过；全新隔离 MySQL 的裁决事务 `6/6`、授权与委派闭环 `4/4` 通过。授权闭环覆盖指定审批人、组织 admin、越权成员、请求者取消、无关 owner 取消、委派后旧审批人失权、委派/终态竞争及委派后 timeout。核心招聘 MySQL fixture 闭环 `1/1` 通过。
+> - 本轮未执行 PM2 restart、reload 或 start。审批业务仍待使用可回收真实 Bearer 身份在目标环境重放授权矩阵，并在显式启用 timeout worker 后完成运行验收。
 
 > **当前运行态验收（2026-08-05，以实时结果为准）**
 >
@@ -28,9 +31,9 @@
 >
 > - 后台管理：组织/公司、模板审核、中央审计、经营总览、AI 员工目录、成本账本、审批中心与系统状态均已完成代码整合；模板审核、中央审计和审批治理迁移已应用。
 > - 中央审计的导出 consumer 以 `iclawstore-audit-export` 单实例运行；审批 timeout worker 已实现并在 PM2 配置中保持 opt-in，但因 `APPROVAL_TIMEOUT_ENABLED` 未配置而未启动。
-> - 审批中心新增不可变审批事件与委派记录。委派、裁决和超时的状态变更必须在同一事务写领域事件、中央审计与 outbox；当前审批记录不是历史载体。
-> - 验证证据：组织管理、模板审核、审计路由/导出 worker 的定向测试已通过；timeout worker 定向测试 `2/2` 与本轮早期服务端 TypeScript 检查通过。其后可用内存低于门槛，前端构建、全量测试及隔离 MySQL 未执行。
-> - 当前状态只能记为 **部分发布，业务验收未完成**：迁移已应用不代表审批 worker 已启用，也不代表真实身份/RBAC、委派链和 Offer 联动已通过生产验收。
+> - 审批中心新增不可变审批事件与委派记录。授权策略在 Approval 行锁后读取最新审批人和组织成员事实；委派与批准、拒绝、取消、超时均通过领域事务原子提交状态、领域事件、中央审计与 outbox。
+> - 验证证据：Approval 相关定向测试 `24/24` 通过；全新隔离 MySQL 的裁决事务 `6/6`、授权与委派闭环 `4/4` 通过，核心招聘 MySQL fixture 闭环 `1/1` 通过。
+> - 当前状态只能记为 **部分发布，业务验收未完成**：迁移与隔离 MySQL 通过不代表审批 worker 已启用，也不代表真实 Bearer 身份已在目标环境重放授权矩阵。
 >
 > **对外品牌与兼容边界（2026-08-04）**
 >
@@ -64,7 +67,7 @@
 > | `agent-publication` | **迁移与路由发布完成，业务验收待补** | 独立 `AgentPublicationModule` 已挂入 core；草稿、版本、审核提交/裁决、发布、审计/outbox 和发布时 digest 更新均已实现；`20260810_agent_publication_catalog` 已部署。 | 补真实认证、RBAC、写入幂等与事务的受控生产验收。 |
 > | `candidate-catalog` | **路由发布完成，组织能力默认关闭** | digest 服务、目录/详情/分类路由、服务端全文搜索、稳定 cursor、组织 membership + feature flag 授权和安全 DTO 已存在；迁移已部署且生产路由不再 `404`。 | 当前无启用 `candidateCatalog` 的组织或专用 smoke token；带认证 `2xx`、跨组织、撤权和投影回归仍待验收。 |
 > | `interviews` | **迁移与路由发布完成，组织能力默认关闭** | 独立路由、保留策略、legal hold、用户删除队列、受管图片/PDF 附件与低资源 cleanup consumer 均已实现；`20260809_ai_direct_interviews_policy` 已部署。 | 按组织显式开启 `interviews`，完成真实认证业务与清理任务验收。 |
-> | `hiring-closure` | **代码完成，待发布验收** | `POST /offers/:id/accept` 是唯一 Employment 创建入口；Offer/Employment 同事务、`offerId` 唯一、重放幂等，并同步更新组织 `isEmployed` 投影。 | 补全撤销、取消、交接和 `transferring` 业务规则；完成统一发布与生产回归。 |
+> | `hiring-closure` | **授权、委派与统一事务的隔离闭环已验证，待生产身份验收** | Approval 授权在行锁后读取最新审批人与组织成员事实；委派和批准/拒绝/取消/超时使用领域事务原子写治理记录并联动 Offer。定向测试 `24/24`、裁决隔离 MySQL `6/6`、授权委派隔离 MySQL `4/4`，核心招聘 fixture 隔离 MySQL `1/1`。`POST /offers/:id/accept` 仍是唯一 Employment 创建入口。 | 使用可回收真实 Bearer 身份在目标环境重放授权矩阵；补全撤销、交接和 `transferring` 规则。 |
 > | `runtime-guardrails` | **受控运行中，验收未完成** | API/dispatcher/executor 已拆分进程预算与连接池：API pool 6、dispatcher pool 2、executor pool 1 且并发 1；executor 保持关闭。 | 完成 30 分钟 RSS/heap/swap/队列深度观测；低内存拒绝与排队压测尚未执行。 |
 > | `workforce` | **迁移与路由发布完成，业务验收待补** | 独立 WorkforceModule、Department → Position → AgentRole、开放职位校验、Candidate Matching 和 Employment 编制投影已实现；`20260811_ai_direct_workforce` 已部署且生产路由不再 `404`。 | 当前无完整隔离测试组织链和短期 token；补 Departments、Positions、Matching 的带认证 `2xx`，以及跨公司、编制满额、重放和终止释放回归。 |
 > | `workforce-audit` | **三个后台核心包代码完成，待验证** | 组织/公司统一 DTO、cursor、状态机和 `/management` 页面已整合；独立模板审核模块具备待审/拒绝/发布/下架、审计/outbox；中央审计具备组织权限、脱敏、cursor、异步导出 Job、短时 token 和单连接 CSV consumer，新路由已挂载且加法迁移/Prisma 声明已落盘。 | 串行完成 schema、服务器定向测试（含导出 worker）、管理前端测试、TypeScript 与隔离 MySQL；将 opt-in consumer 接入生产进程配置；为平台模板事件建立真实组织归属前不得混入组织审计；完成迁移和生产验收。 |

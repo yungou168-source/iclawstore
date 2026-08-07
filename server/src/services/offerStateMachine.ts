@@ -32,7 +32,7 @@ export interface TransitionResult {
 
 const allowedFrom: Record<OfferStatus, Set<OfferStatus>> = {
   draft: new Set(['pending_approval']),
-  pending_approval: new Set(['sent', 'revoked']),
+  pending_approval: new Set(['sent', 'rejected', 'expired', 'revoked']),
   sent: new Set(['accepted', 'rejected', 'expired', 'revoked']),
   accepted: new Set([]),
   rejected: new Set([]),

@@ -25,15 +25,17 @@
 | 4 | 经营总览 | **代码完成，待验证、待发布验收** | 新增组织范围只读聚合 DTO：在职 AI 员工、运行队列、近 30 天 Token/成本和待审批数量；管理端 `/management?view=overview` 已接入。 | 补定向路由/页面测试和真实组织权限烟测；不得在前端跨列表拼接指标。 |
 | 5 | AI 员工目录 | **隔离闭环已验证，待生产真实身份验收** | `ai_direct_workforce_employee_digests` 已部署；Offer 接受和 Employment 状态迁移在同一事务同步投影。员工目录 API 仅从 digest 读取，按公司 recruiter RBAC、状态/部门/职位和稳定 opaque cursor 返回安全展示字段；路由、分页、越权测试和 TypeScript 构建已通过。新增可回收的受保护 API fixture：依次创建 Agent、组织、公司成员、项目、Role、Department、Position、Offer、Approval 和 Employment，不直写业务表；在全新隔离 MySQL 的 17 段迁移链上，有数据 `200`、授权空列表 `200`、无成员公司 `403` 三项验收 `3/3` 通过，测试库已自动删除。 | 仍需使用可回收 QA 真实身份在生产或等价目标环境重放同一受保护 API 链路，确认 Convex Bearer 身份桥和生产配置；不得把隔离 JWT/MySQL 验收记为生产真实身份通过。 |
 | 6 | AI Job / 运行成本账本 | **代码完成，待验证、待发布验收** | 从 WorkflowRun + Provider model run audit 生成最多 31 天的稳定 cursor 成本明细，金额保持微美元整数语义，展示层才格式化 USD。 | 补时间窗口、跨组织和空账本测试；预算限额/异常告警仍需独立交付。 |
-| 7 | 审批中心 | **代码完成，已迁移，待验证、待发布验收** | 审批列表改为显式组织范围；`mine` 仅返回请求人或指定审批人的事项，组织待办要求 `manager`；裁决仅允许指定审批人或组织 `admin/owner`。新增不可变审批事件与委派记录；组织 admin 可将 pending 审批委派给活跃成员。默认关闭的单实例 timeout worker 使用行锁和条件更新，将到期审批在同一事务转为 `expired` 并写审批事件、中央审计/outbox。 | 补授权矩阵、委派链、并发裁决、超时幂等和 Offer 联动测试；仅在配置 `APPROVAL_TIMEOUT_ENABLED=true` 后才允许启动 worker。 |
+| 7 | 审批中心 | **授权、委派与统一裁决隔离闭环已验证，待生产身份验收** | 审批列表使用显式组织范围；授权策略独立于路由并在 Approval 行锁后读取最新事实：批准/拒绝允许当前审批人或组织 `admin/owner`，取消仅允许请求者或当前审批人，委派仅允许组织 `admin/owner` 且目标必须是活跃成员。委派和四种终态均原子写不可变事件、中央审计与 outbox；Offer 映射为 `approved → sent`、`rejected → rejected`、`cancelled → revoked`、`expired → expired`，任一步失败整体回滚。 | 使用可回收真实 Bearer 身份在目标环境重放授权矩阵；仅在配置 `APPROVAL_TIMEOUT_ENABLED=true` 后才允许启动 worker。 |
 | 8 | 系统状态 | **代码完成，待验证、待发布验收** | 新增组织范围只读状态 DTO：运行队列、过期 lease、活跃 Worker 和 outbox 堆积；管理端 `/management?view=system` 已接入。 | 补告警分级、定向测试和生产身份/RBAC 烟测；禁止向浏览器返回密钥、内部路径或完整错误载荷。 |
 
 ## 本轮审批治理与验证记录（2026-08-14）
 
 - `20260814_ai_direct_approval_governance` 已应用；生产 `prisma migrate status` 显示 17 个 migration，数据库 schema 为最新状态。
-- 委派不再仅修改当前审批人：同一事务写入不可变 `ai_direct_approval_delegations`、`approval.delegated` 领域事件、中央审计和 outbox。审批人字段只表示当前责任人，不承载历史。
-- timeout worker 以单连接、单实例、行锁与条件更新处理到期 `pending` 审批；仅在成功抢占时写入 `approval.expired` 领域事件、中央审计和 outbox，重复轮询不会生成重复历史。`APPROVAL_TIMEOUT_ENABLED` 保持未配置，PM2 未启动该 worker。
-- timeout worker 定向测试 `2/2` 通过；本轮早期受限堆服务端 TypeScript 检查通过。随后可用内存降至约 507 MiB、swap 使用约 1.7 GiB，未执行新的前端构建、全量测试或隔离 MySQL。
+- 委派与裁决共享锁后授权边界：先锁定并重读 Approval，再锁定组织成员事实。批准/拒绝允许当前审批人或组织 `admin/owner`；取消仅允许请求者或当前审批人；委派仅允许组织 `admin/owner`，受委派人必须是同组织活跃成员。委派事务原子写当前审批人、不可变 `ai_direct_approval_delegations`、`approval.delegated` 事件、中央审计和 outbox，路由不再执行事务外预查。
+- 委派不是 Approval 终态：终态先提交时后续委派失败；委派先提交时旧审批人立即失权，新审批人可以裁决，timeout 仍可基于最新委派状态过期。Approval 行锁保证这些顺序可解释且不会使用旧授权。
+- Approval 裁决只有一个事务入口：人工批准、人工拒绝、人工取消和 timeout worker 都必须先锁定并重读 Approval，只有最新状态仍为 `pending` 才能继续。关联 Offer 的固定映射为 `approved → sent`、`rejected → rejected`、`cancelled → revoked`、`expired → expired`；`targetType = offer` 时 Offer 必须仍以同一 `approvalId` 处于 `pending_approval`，否则 Approval 状态、事件、审计和 outbox 全部回滚，禁止捕获并忽略联动错误。非 Offer 目标没有关联 Offer 更新，仍在同一裁决事务内提交自身治理记录。
+- timeout worker 只扫描到期候选 ID，每个 Approval 使用独立裁决事务；人工批准、拒绝、取消与超时并发时由 Approval 行锁串行化，后到者按终态冲突退出，不生成第二份历史。`APPROVAL_TIMEOUT_ENABLED` 保持未配置，PM2 未启动该 worker。
+- Approval 相关定向测试 `24/24` 通过，其中统一裁决 `11/11`、授权策略、委派事务与路由边界 `13/13`；全新隔离 MySQL 的裁决事务 `6/6`、授权与委派闭环 `4/4` 通过。后者覆盖指定审批人、组织 admin、越权成员、请求者取消、无关 owner 取消、委派后旧审批人失权、委派/终态竞争和委派后 timeout。核心招聘 MySQL fixture 闭环 `1/1` 通过。
 - 本轮仅执行 migration 与只读复核，没有执行 PM2 restart/reload/start。复核时 API、runtime dispatcher、审计导出 worker 均为 `online`。
 
 

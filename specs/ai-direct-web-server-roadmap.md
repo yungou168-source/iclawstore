@@ -39,6 +39,7 @@
 | Session / Jobs / 产物读取 | 候选实现完成 | Jobs 使用稳定 cursor；产物下载重验组织可见性并流式核验 hash/size，不暴露 `storagePath`。 | native OAuth 发布、`AI_DIRECT_ARTIFACT_ROOT` 配置和端到端验收。 |
 | Agent 发布 / 候选目录 | 代码完成，待迁移与发布验收 | 独立写模块；发布事务原子写审计/outbox；目录只读 digest 与组织计数投影，SQL 全文搜索与稳定 cursor 避免 N+1。 | 应用 `20260810_agent_publication_catalog`，显式开启组织 `candidateCatalog`。 |
 | Offer 接受 / Employment | 代码完成，待发布验收 | 唯一接受入口在同一事务创建或复用 Employment；`offerId` 唯一且重放幂等；同步更新组织已聘计数。 | 统一发布门禁和生产回归。 |
+| Approval 裁决 / Offer 联动 | 授权、委派与统一事务的隔离 MySQL 已验证，待生产身份验收 | 授权策略独立于路由并在 Approval 行锁后读取当前审批人与组织成员事实；委派和批准、拒绝、取消、超时均由领域事务原子提交状态、不可变事件、审计和 outbox。 | 使用可回收真实 Bearer 身份重放授权矩阵；timeout worker 仅在显式启用后运行。 |
 | Workforce：部门 / 职位 / 编制 | 代码完成，待迁移与发布验收 | Company → Department → Position → AgentRole；Offer/Employment 继续仅引用 `roleId`。开放职位与编制计数在招聘事务中锁定并维护，列表使用稳定 cursor。 | 应用 `20260811_ai_direct_workforce`，补真实 MySQL 事务门禁与生产发布。 |
 | 面试合规与清理 | 代码完成，待迁移与发布验收 | 90 天保留、用户删除立即不可见、legal hold 延迟物理删除；清理进程单连接、批次不超过 20。 | 应用面试策略 migration；按组织显式开启 `interviews`。 |
 | 低内存运行 | 受控运行中 | API、dispatcher、executor 独立进程预算与连接池；API 默认 pool 6，dispatcher pool 2，executor pool 1/并发 1。 | 完成 30 分钟观测；低内存拒绝/排队压测尚未执行。 |
@@ -223,9 +224,16 @@ priceStatus
 ### 当前实现与剩余边界
 
 - `POST /offers/:id/accept` 是唯一的 Offer 接受入口；它与 Employment 创建或幂等复用、审计/outbox 和组织 `isEmployed` 计数投影在同一事务内完成。
+- Approval 的授权策略独立于路由，并在 Approval 行锁之后读取最新当前审批人和组织成员事实。批准/拒绝允许当前审批人或组织 `admin/owner`，取消仅允许请求者或当前审批人，委派仅允许组织 `admin/owner` 且目标必须是同组织活跃成员。
+- 委派使用独立领域事务原子写当前审批人、不可变委派记录、审批事件、中央审计和 outbox。委派不是终态：终态先提交则委派失败；委派先提交则旧审批人立即失权，新审批人或 timeout 继续按最新状态处理。
+- Approval 裁决同样只有一个领域事务入口。人工批准、人工拒绝、人工取消和 timeout worker 必须锁定并重读最新 Approval，仅允许 `pending` 胜出；关联 Offer 固定映射为 `approved → sent`、`rejected → rejected`、`cancelled → revoked`、`expired → expired`。
+- `targetType = offer` 时，Offer 联动必须同时满足目标 ID、同一 `approvalId` 和 `pending_approval` 状态。联动、审批事件、中央审计或 outbox 任一步失败时整个裁决回滚；禁止吞掉异常后留下单边 Approval 终态。非 Offer 目标不更新 Offer，仍在同一事务写入自身治理记录。
+- timeout worker 只负责扫描到期候选 ID，每个候选进入独立裁决事务；它与人工批准、拒绝或取消竞争时由 Approval 行锁决定唯一胜者，后到者不生成第二份历史。
 - `offerId` 在 Employment 侧唯一；重复接受同一 Offer 返回既有 Employment，不能制造并发重复雇佣。
 - 无 appearance profile 的 Agent 在接受事务中加锁，避免跨 Offer 的形象控制权竞争；这不改变 Agent 所有权或版本发布权。
-- 仍须在生产前补齐失败/撤销/取消/交接与 `transferring` 的完整业务语义，并由 Web 明确区分“Offer 已接受”“onboarding”与“active”。
+- Approval 相关定向测试 `24/24` 已通过；全新隔离 MySQL 的裁决事务 `6/6`、授权与委派闭环 `4/4` 通过。授权闭环覆盖指定审批人、组织 admin、越权成员、请求者取消、无关 owner 取消、委派后旧审批人失权、委派/终态竞争和委派后 timeout；核心招聘 fixture 隔离闭环 `1/1` 通过。
+- 仍须在生产前使用可回收真实 Bearer 身份重放同一授权矩阵；不得把隔离 JWT/MySQL 证据记为生产身份验收。
+- 失败/撤销/交接与 `transferring` 的完整业务语义仍未闭合，Web 必须明确区分“Offer 已接受”“onboarding”与“active”。
 
 ### 禁止行为
 

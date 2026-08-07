@@ -6,6 +6,7 @@ import { createConnection } from 'mysql2/promise';
 const COMMAND_TIMEOUT_MS = 120_000;
 const DEFAULT_TEST_FILES = [
   'test/aiDirectCoreMysql.test.ts',
+  'test/approvalDecisionMysql.test.ts',
   'test/aiDirectWorkforceEmployeeDirectoryMysql.test.ts',
   'test/desktopPreferencesMysql.test.ts',
   'test/outboxDispatcherMysql.test.ts',

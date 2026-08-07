@@ -16,6 +16,7 @@ import { aiDirectInterviewRoutes } from './aiDirectInterviews.js';
 import { aiDirectManagementInsightsRoutes } from './aiDirectManagementInsights.js';
 import { createAiDirectJobsRoutes } from './aiDirectJobs.js';
 import { aiDirectOffersRoutes } from "./aiDirectOffers.js";
+import { aiDirectPaidHiringRoutes } from './aiDirectPaidHiring.js';
 import { aiDirectOrganizationsRoutes } from "./aiDirectOrganizations.js";
 import { aiDirectRuntimeAdminRoutes } from "./aiDirectRuntimeAdmin.js";
 import { aiDirectSessionRoutes } from "./aiDirectSession.js";
@@ -39,6 +40,7 @@ export function createAiDirectCoreRoutes(
     await fastify.register(aiDirectOrganizationsRoutes);
     await fastify.register(aiDirectCompaniesRoutes);
     await fastify.register(aiDirectWorkforceRoutes);
+    await fastify.register(aiDirectPaidHiringRoutes);
     await fastify.register(aiDirectOffersRoutes);
     await fastify.register(aiDirectEmploymentsRoutes);
     await fastify.register(aiDirectInterviewRoutes);

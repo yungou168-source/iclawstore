@@ -362,120 +362,12 @@ export async function aiDirectEmploymentsRoutes(fastify: FastifyInstance) {
   });
 
   // Legacy implementation kept unmounted; the public route below is the single creation boundary.
-  fastify.post('/internal/employments/from-accepted-offer', { onRequest: auth }, async (request: any, reply) => {
-    const user = await requireAuth(fastify, request);
-    const reqId = requestIdFrom(request);
-    const body = readBody(request.body);
-    rejectExtra(body, ['offerId'], 'POST /employments');
-
-    const offerId = readString(body.offerId, 'offerId', 36);
-
-    // Fetch the accepted offer
-    const [offerRows] = await pool.query(
-      `SELECT o.*, r.name AS roleName, c.name AS companyName
-       FROM ai_direct_offers o
-       JOIN ai_direct_agent_roles r ON r.id = o.roleId
-       JOIN ai_direct_companies c ON c.id = o.companyId
-       WHERE o.id = ? LIMIT 1`,
-      [offerId],
+  fastify.post('/internal/employments/from-accepted-offer', { onRequest: auth }, async (_request: any) => {
+    throw new AiDirectHiringError(
+      ErrorCodes.INVALID_TRANSITION,
+      '旧的 accepted Offer 创建 Employment 流程已停用；Employment 仅由支付成功履约事务创建',
+      409,
     );
-    const offer = (offerRows as any[])[0];
-    if (!offer) throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Offer 不存在', 404);
-    if (offer.status !== 'accepted') {
-      throw new AiDirectHiringError(
-        ErrorCodes.VALIDATION_ERROR,
-        `只能基于 accepted 状态的 Offer 创建 Employment，当前状态: '${offer.status}'`,
-        409,
-      );
-    }
-    const [existingRows] = await pool.query(
-      `SELECT id FROM ai_direct_employments WHERE offerId = ? LIMIT 1`,
-      [offerId],
-    );
-    if ((existingRows as any[]).length) {
-      throw new AiDirectHiringError(
-        ErrorCodes.DUPLICATE_ENTRY,
-        '该 Offer 已创建 Employment',
-        409,
-      );
-    }
-
-    // Get agent info from agentVersionId
-    const [versionRows] = await pool.query(
-      `SELECT agentId FROM ai_direct_agent_versions WHERE id = ? LIMIT 1`,
-      [offer.agentVersionId],
-    );
-    const version = (versionRows as any[])[0];
-    if (!version) throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Agent 版本不存在', 404);
-
-    const employmentId = randomUUID();
-    const conn = await pool.getConnection();
-    try {
-      await conn.beginTransaction();
-
-      await conn.query(
-        `INSERT INTO ai_direct_employments
-         (id, companyId, agentId, agentVersionId, roleId, projectId, offerId, requestedByUserId, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'candidate')`,
-        [
-          employmentId,
-          offer.companyId,
-          version.agentId,
-          offer.agentVersionId,
-          offer.roleId,
-          offer.projectId,
-          offerId,
-          user.id,
-        ],
-      );
-
-      // Record initial event
-      await conn.query(
-        `INSERT INTO ai_direct_employment_events
-         (id, employmentId, sequence, fromStatus, toStatus, actorUserId, reason, metadata)
-         VALUES (?, ?, 1, NULL, 'candidate', ?, ?, ?)`,
-        [
-          randomUUID(),
-          employmentId,
-          user.id,
-          'Employment created from accepted offer',
-          JSON.stringify({ offerId }),
-        ],
-      );
-
-      await writeAudit(conn, {
-        organizationId: null,
-        actorUserId: user.id,
-        action: 'employment.created',
-        targetType: 'employment',
-        targetId: employmentId,
-        requestId: reqId,
-        metadata: { offerId, companyId: offer.companyId },
-      });
-
-      await publishOutboxEvent(conn, {
-        organizationId: null,
-        aggregateType: 'employment',
-        aggregateId: employmentId,
-        eventType: 'employment.created.v1',
-        payload: { employmentId, offerId, companyId: offer.companyId },
-      });
-
-      await conn.commit();
-      return reply.status(201).send({ id: employmentId, status: 'candidate' });
-    } catch (err) {
-      await conn.rollback();
-      if ((err as { code?: string })?.code === 'ER_DUP_ENTRY') {
-        throw new AiDirectHiringError(
-          ErrorCodes.DUPLICATE_ENTRY,
-          '该 Offer 已创建 Employment',
-          409,
-        );
-      }
-      throw err;
-    } finally {
-      conn.release();
-    }
   });
 
   // POST /api/v1/ai-direct-hiring/employments is retained only as a compatibility guard.
@@ -483,7 +375,7 @@ export async function aiDirectEmploymentsRoutes(fastify: FastifyInstance) {
   fastify.post('/employments', { onRequest: auth }, async (_request: any) => {
     throw new AiDirectHiringError(
       ErrorCodes.INVALID_TRANSITION,
-      'Employment 只能由 POST /offers/:id/accept 原子创建',
+      'Employment 只能由支付成功履约事务原子创建',
       409,
     );
   });

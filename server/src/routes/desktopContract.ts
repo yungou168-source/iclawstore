@@ -68,6 +68,7 @@ export async function desktopContractRoutes(fastify: FastifyInstance): Promise<v
       openapi: DESKTOP_CLIENT_OPENAPI_PATH,
       documentation: '/docs/AI_DIRECT_DESKTOP_CLIENT_API_V1.md',
       purchaseSupported: false,
+      paidHiringSupported: true,
       ...(auth ? { auth } : {}),
     });
   });

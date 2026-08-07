@@ -675,6 +675,26 @@ model aiDirectAgentVersions {
   @@map("ai_direct_agent_versions")
 }
 
+model aiDirectAgentPrices {
+  id              String    @id @db.VarChar(36)
+  agentId         String    @db.VarChar(36)
+  agentVersionId  String    @db.VarChar(36)
+  developerUserId String    @db.VarChar(191)
+  version         Int
+  currency        String    @default("CNY") @db.Char(3)
+  amountFen       BigInt    @db.UnsignedBigInt
+  status          String    @default("active") @db.VarChar(32)
+  createdByUserId String    @db.VarChar(191)
+  effectiveAt     DateTime  @default(now())
+  supersededAt    DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@unique([agentId, version], map: "ai_direct_agent_prices_agent_version_key")
+  @@index([agentId, status, version], map: "ai_direct_agent_prices_agent_status_version_idx")
+  @@index([developerUserId, status], map: "ai_direct_agent_prices_developer_status_idx")
+  @@map("ai_direct_agent_prices")
+}
+
 model aiDirectModelRunAudits {
   id                String   @id @db.VarChar(36)
   runId             String?  @db.VarChar(36)
@@ -1053,6 +1073,105 @@ model aiDirectCapabilityGrants {
   @@map("ai_direct_capability_grants")
 }
 
+model aiDirectHiringIntents {
+  id                     String   @id @db.VarChar(36)
+  organizationId         String   @db.VarChar(36)
+  companyId              String   @db.VarChar(36)
+  projectId              String?  @db.VarChar(36)
+  roleId                 String   @db.VarChar(36)
+  positionId             String   @db.VarChar(36)
+  agentId                String   @db.VarChar(36)
+  agentVersionId         String   @db.VarChar(36)
+  priceId                String   @db.VarChar(36)
+  requestedByUserId      String   @db.VarChar(191)
+  status                 String   @default("awaiting_payment") @db.VarChar(32)
+  approvalId             String?  @db.VarChar(36)
+  idempotencyKey         String   @db.VarChar(128)
+  idempotencyFingerprint String   @db.Char(64)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@unique([requestedByUserId, idempotencyKey], map: "ai_direct_hiring_intents_requester_idempotency_key")
+  @@index([companyId, status, createdAt], map: "ai_direct_hiring_intents_company_status_created_idx")
+  @@index([positionId, status], map: "ai_direct_hiring_intents_position_status_idx")
+  @@index([approvalId], map: "ai_direct_hiring_intents_approval_idx")
+  @@map("ai_direct_hiring_intents")
+}
+
+model aiDirectPaymentOrders {
+  id                  String    @id @db.VarChar(36)
+  outTradeNo          String    @unique(map: "ai_direct_payment_orders_out_trade_no_key") @db.VarChar(64)
+  hiringIntentId      String    @unique(map: "ai_direct_payment_orders_hiring_intent_key") @db.VarChar(36)
+  provider            String    @default("alipay") @db.VarChar(32)
+  currency            String    @default("CNY") @db.Char(3)
+  grossAmountFen      BigInt    @db.UnsignedBigInt
+  platformFeeFen      BigInt    @db.UnsignedBigInt
+  developerPayableFen BigInt    @db.UnsignedBigInt
+  developerUserId     String    @db.VarChar(191)
+  priceId             String    @db.VarChar(36)
+  priceVersion        Int
+  status              String    @default("pending") @db.VarChar(32)
+  providerTradeNo     String?   @db.VarChar(128)
+  rawNotifySha256     String?   @db.Char(64)
+  paidAt              DateTime?
+  fulfilledAt         DateTime?
+  offerId             String?   @db.VarChar(36)
+  employmentId        String?   @db.VarChar(36)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@unique([provider, providerTradeNo], map: "ai_direct_payment_orders_provider_trade_no_key")
+  @@index([status, updatedAt], map: "ai_direct_payment_orders_status_updated_idx")
+  @@index([developerUserId, status, updatedAt], map: "ai_direct_payment_orders_developer_status_idx")
+  @@map("ai_direct_payment_orders")
+}
+
+model aiDirectRevenueLedgerEntries {
+  id                 String   @id @db.VarChar(36)
+  entryKey           String   @unique(map: "ai_direct_revenue_ledger_entry_key") @db.VarChar(191)
+  paymentOrderId     String   @db.VarChar(36)
+  accountType        String   @db.VarChar(32)
+  accountOwnerUserId String?  @db.VarChar(191)
+  direction          String   @default("credit") @db.VarChar(16)
+  currency           String   @default("CNY") @db.Char(3)
+  amountFen          BigInt   @db.UnsignedBigInt
+  status             String   @default("posted") @db.VarChar(32)
+  metadata           Json?
+  createdAt          DateTime @default(now())
+
+  @@index([paymentOrderId, createdAt], map: "ai_direct_revenue_ledger_order_idx")
+  @@index([accountOwnerUserId, accountType, status, createdAt], map: "ai_direct_revenue_ledger_owner_status_idx")
+  @@map("ai_direct_revenue_ledger_entries")
+}
+
+model aiDirectDeveloperSettlements {
+  id                   String    @id @db.VarChar(36)
+  developerUserId      String    @db.VarChar(191)
+  currency             String    @default("CNY") @db.Char(3)
+  amountFen            BigInt    @db.UnsignedBigInt
+  status               String    @default("pending") @db.VarChar(32)
+  externalReference    String?   @db.VarChar(191)
+  createdByUserId      String    @db.VarChar(191)
+  completedByUserId    String?   @db.VarChar(191)
+  completedAt          DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([developerUserId, status, createdAt], map: "ai_direct_developer_settlements_developer_status_idx")
+  @@map("ai_direct_developer_settlements")
+}
+
+model aiDirectDeveloperSettlementItems {
+  settlementId String   @db.VarChar(36)
+  ledgerEntryId String  @unique(map: "ai_direct_settlement_items_ledger_key") @db.VarChar(36)
+  amountFen    BigInt   @db.UnsignedBigInt
+  createdAt    DateTime @default(now())
+
+  @@id([settlementId, ledgerEntryId])
+  @@index([settlementId], map: "ai_direct_settlement_items_settlement_idx")
+  @@map("ai_direct_developer_settlement_items")
+}
+
 model aiDirectOffers {
   id               String    @id @default(cuid())
   roleId           String    @db.VarChar(36)
@@ -1068,6 +1187,8 @@ model aiDirectOffers {
   acceptedAt       DateTime?
   rejectedAt       DateTime?
   rejectedReason   String?   @db.Text
+  paymentOrderId   String?   @unique(map: "ai_direct_offers_payment_order_key") @db.VarChar(36)
+  issuedAt         DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -1085,6 +1206,7 @@ model aiDirectEmployments {
   roleId           String    @db.VarChar(36)
   projectId        String?   @db.VarChar(36)
   offerId          String    @unique @db.VarChar(36)
+  paymentOrderId   String?   @unique(map: "ai_direct_employments_payment_order_key") @db.VarChar(36)
   requestedByUserId String?  @db.VarChar(191)
   status           String    @default("candidate") @db.VarChar(32)
   startedAt        DateTime?

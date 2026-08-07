@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import { generateKeyPairSync } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -8,6 +9,7 @@ import { createPool, type Pool } from 'mysql2/promise';
 import { createAiDirectCoreRoutes } from '../src/routes/aiDirectCore.js';
 import { AiDirectHiringError, errorResponse } from '../src/services/aiDirectErrors.js';
 import { ManagedAssetStore } from '../src/services/managedAssetStore.js';
+import { fulfillPaidHiring } from '../src/services/paidHiring.js';
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const integration = databaseUrl ? describe : describe.skip;
@@ -20,7 +22,14 @@ integration('AI Direct recruitment core MySQL closure', () => {
   let assetRoot: string;
 
   beforeAll(async () => {
-    pool = createPool({ uri: databaseUrl!, connectionLimit: 1 });
+    const alipayKeys = generateKeyPairSync('rsa', { modulusLength: 2048 });
+    process.env.ALIPAY_PAID_HIRING_ENABLED = 'true';
+    process.env.ALIPAY_APP_ID = 'integration-alipay-app';
+    process.env.ALIPAY_SELLER_ID = 'integration-alipay-seller';
+    process.env.ALIPAY_PRIVATE_KEY = alipayKeys.privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
+    process.env.ALIPAY_PUBLIC_KEY = alipayKeys.publicKey.export({ type: 'spki', format: 'pem' }).toString();
+    process.env.ALIPAY_NOTIFY_URL = 'https://integration.invalid/alipay/notify';
+    pool = createPool({ uri: databaseUrl!, connectionLimit: 2 });
     app = Fastify({ logger: false });
     await app.register(jwt, { secret: 'ai-direct-core-integration-secret' });
     app.decorate('mysql', pool);
@@ -49,9 +58,9 @@ integration('AI Direct recruitment core MySQL closure', () => {
     const versionId = '00000000-0000-4000-8000-000000000002';
     await pool.query(
       `INSERT INTO ai_direct_agents
-       (id, ownerUserId, name, status, createdAt, updatedAt)
-       VALUES (?, ?, 'Integration Agent', 'active', NOW(), NOW())`,
-      [agentId, developerId],
+       (id, ownerUserId, name, status, activeVersionId, catalogVisibility, availability, createdAt, updatedAt)
+       VALUES (?, ?, 'Integration Agent', 'active', ?, 'org_authenticated', 'available', NOW(), NOW())`,
+      [agentId, developerId, versionId],
     );
     await pool.query(
       `INSERT INTO ai_direct_agent_versions
@@ -170,50 +179,157 @@ integration('AI Direct recruitment core MySQL closure', () => {
     );
     expect(roleBinding.status).toBe(201);
 
-    const offer = await request('POST', '/offers', {
-      roleId: role.body.id,
-      agentVersionId: '00000000-0000-4000-8000-000000000002',
-      companyId: company.body.id,
-      projectId: project.body.id,
-      terms: { rateMicros: 500000 },
-    });
-    expect(offer.status).toBe(201);
-
-    const submitted = await request('POST', `/offers/${offer.body.id}/submit`);
-    expect(submitted.status).toBe(200);
-    expect(submitted.body.status).toBe('pending_approval');
-    expect(submitted.body.approvalId).toBeString();
-
-    const bypassApproval = await request('POST', `/offers/${offer.body.id}/approve`);
-    expect(bypassApproval.status).toBe(409);
-    expect(bypassApproval.body.code).toBe('INVALID_TRANSITION');
-
-    const bypassSend = await request('POST', `/offers/${offer.body.id}/send`);
-    expect(bypassSend.status).toBe(409);
-    expect(bypassSend.body.code).toBe('INVALID_TRANSITION');
-
-    const approvals = await request(
-      'GET',
-      `/approvals?organizationId=${organization.body.id}&status=pending`,
+    const price = await request(
+      'POST',
+      '/agents/00000000-0000-4000-8000-000000000001/prices',
+      {
+        agentVersionId: '00000000-0000-4000-8000-000000000002',
+        amountFen: '10003',
+        currency: 'CNY',
+      },
+      { authorization: developerAuthorization },
     );
-    expect(approvals.status).toBe(200);
-    const approval = approvals.body.items.find((item: any) => item.targetId === offer.body.id);
-    expect(approval?.id).toBe(submitted.body.approvalId);
+    expect(price.status).toBe(201);
+    expect(price.body).toMatchObject({
+      currency: 'CNY',
+      amountFen: '10003',
+      version: 1,
+    });
 
-    const approved = await request('POST', `/approvals/${approval.id}/approve`);
-    expect(approved.status).toBe(200);
-    expect(approved.body.status).toBe('approved');
-    expect(approved.body.decision).toBe('approved');
+    const order = await request(
+      'POST',
+      '/paid-hiring/orders',
+      {
+        companyId: company.body.id,
+        projectId: project.body.id,
+        roleId: role.body.id,
+        positionId: position.body.id,
+        agentId: '00000000-0000-4000-8000-000000000001',
+      },
+      { 'idempotency-key': 'integration-paid-hiring-1' },
+    );
+    expect(order.status).toBe(201);
+    expect(order.body).toMatchObject({
+      provider: 'alipay',
+      status: 'pending',
+      currency: 'CNY',
+      grossAmountFen: '10003',
+      platformFeeFen: '2001',
+      developerPayableFen: '8002',
+      replayed: false,
+    });
+    expect(order.body.payUrl).toContain('openapi.alipay.com');
 
-    const accepted = await request('POST', `/offers/${offer.body.id}/accept`);
-    expect(accepted.status).toBe(200);
-    expect(accepted.body.status).toBe('accepted');
-    expect(accepted.body.acceptedAt).not.toBeNull();
+    const orderReplay = await request(
+      'POST',
+      '/paid-hiring/orders',
+      {
+        companyId: company.body.id,
+        projectId: project.body.id,
+        roleId: role.body.id,
+        positionId: position.body.id,
+        agentId: '00000000-0000-4000-8000-000000000001',
+      },
+      { 'idempotency-key': 'integration-paid-hiring-1' },
+    );
+    expect(orderReplay.status).toBe(200);
+    expect(orderReplay.body.id).toBe(order.body.id);
+    expect(orderReplay.body.replayed).toBe(true);
 
-    const employment = { body: { id: accepted.body.employmentId } };
-    const duplicateEmployment = await request('POST', '/employments', { offerId: offer.body.id });
-    expect(duplicateEmployment.status).toBe(409);
-    expect(duplicateEmployment.body.code).toBe('INVALID_TRANSITION');
+    const failureInjectingPool = {
+      getConnection: async () => {
+        const connection = await pool.getConnection();
+        return {
+          beginTransaction: () => connection.beginTransaction(),
+          commit: () => connection.commit(),
+          rollback: () => connection.rollback(),
+          release: () => connection.release(),
+          query: (sql: string, values?: unknown[]) => {
+            if (sql.includes('INSERT INTO ai_direct_outbox_events') && values?.[4] === 'paid_hiring.fulfilled.v1') {
+              throw new Error('forced fulfillment outbox failure');
+            }
+            return connection.query(sql, values);
+          },
+        };
+      },
+    };
+    await expect(
+      fulfillPaidHiring(failureInjectingPool as any, {
+        outTradeNo: order.body.outTradeNo,
+        tradeNo: 'integration-alipay-trade-1',
+        totalAmountFen: 10_003n,
+        rawNotifySha256: 'a'.repeat(64),
+      }),
+    ).rejects.toThrow('forced fulfillment outbox failure');
+    const [rolledBackRows] = await pool.query<any[]>(
+      `SELECT po.status,
+              (SELECT COUNT(*) FROM ai_direct_offers WHERE paymentOrderId = po.id) AS offerCount,
+              (SELECT COUNT(*) FROM ai_direct_employments WHERE paymentOrderId = po.id) AS employmentCount,
+              (SELECT COUNT(*) FROM ai_direct_revenue_ledger_entries WHERE paymentOrderId = po.id) AS ledgerCount
+       FROM ai_direct_payment_orders po WHERE po.id = ?`,
+      [order.body.id],
+    );
+    expect({
+      status: rolledBackRows[0].status,
+      offerCount: Number(rolledBackRows[0].offerCount),
+      employmentCount: Number(rolledBackRows[0].employmentCount),
+      ledgerCount: Number(rolledBackRows[0].ledgerCount),
+    }).toEqual({ status: 'pending', offerCount: 0, employmentCount: 0, ledgerCount: 0 });
+    const notifications = await Promise.all([
+      fulfillPaidHiring(pool, {
+        outTradeNo: order.body.outTradeNo,
+        tradeNo: 'integration-alipay-trade-1',
+        totalAmountFen: 10_003n,
+        rawNotifySha256: 'a'.repeat(64),
+      }),
+      fulfillPaidHiring(pool, {
+        outTradeNo: order.body.outTradeNo,
+        tradeNo: 'integration-alipay-trade-1',
+        totalAmountFen: 10_003n,
+        rawNotifySha256: 'a'.repeat(64),
+      }),
+    ]);
+    expect(notifications.map(({ replayed }) => replayed).sort()).toEqual([false, true]);
+    expect(new Set(notifications.map(({ offerId }) => offerId)).size).toBe(1);
+    expect(new Set(notifications.map(({ employmentId }) => employmentId)).size).toBe(1);
+    const fulfillment = notifications.find(({ replayed }) => !replayed)!;
+    expect(fulfillment.employmentStatus).toBe('onboarding');
+    const fulfillmentReplay = notifications.find(({ replayed }) => replayed)!;
+    expect(fulfillmentReplay).toMatchObject({
+      offerId: fulfillment.offerId,
+      employmentId: fulfillment.employmentId,
+      replayed: true,
+    });
+
+    const issuedOffer = await request('GET', `/offers/${fulfillment.offerId}`);
+    expect(issuedOffer.status).toBe(200);
+    expect(issuedOffer.body).toMatchObject({
+      id: fulfillment.offerId,
+      status: 'issued',
+      paymentOrderId: order.body.id,
+      employmentId: fulfillment.employmentId,
+      grossAmountFen: '10003',
+    });
+    const retiredAcceptance = await request('POST', `/offers/${fulfillment.offerId}/accept`);
+    expect(retiredAcceptance.status).toBe(409);
+    expect(retiredAcceptance.body.code).toBe('INVALID_TRANSITION');
+
+    const [ledgerRows] = await pool.query<any[]>(
+      `SELECT accountType, accountOwnerUserId, amountFen
+       FROM ai_direct_revenue_ledger_entries
+       WHERE paymentOrderId = ? ORDER BY accountType`,
+      [order.body.id],
+    );
+    expect(ledgerRows.map((row) => ({
+      accountType: row.accountType,
+      accountOwnerUserId: row.accountOwnerUserId,
+      amountFen: String(row.amountFen),
+    }))).toEqual([
+      { accountType: 'developer_payable', accountOwnerUserId: 'integration-developer', amountFen: '8002' },
+      { accountType: 'platform_revenue', accountOwnerUserId: null, amountFen: '2001' },
+    ]);
+
+    const employment = { body: { id: fulfillment.employmentId } };
 
     const secondCompanyId = '00000000-0000-4000-8000-000000000010';
     const secondRoleId = '00000000-0000-4000-8000-000000000011';
@@ -259,8 +375,8 @@ integration('AI Direct recruitment core MySQL closure', () => {
     expect(competingAttempt.status).toBe(409);
     expect(competingAttempt.body.code).toBe('APPEARANCE_CONTROL_CONFLICT');
 
+    let appearanceControlVerified = false;
     for (const toStatus of [
-      'onboarding',
       'active',
       'paused',
       'active',
@@ -279,7 +395,8 @@ integration('AI Direct recruitment core MySQL closure', () => {
       }
       expect(transition.body.status).toBe(toStatus);
 
-      if (toStatus === 'onboarding') {
+      if (toStatus === 'active' && !appearanceControlVerified) {
+        appearanceControlVerified = true;
         const developerView = await request(
           'GET',
           '/agents/00000000-0000-4000-8000-000000000001/appearance',
@@ -363,7 +480,7 @@ integration('AI Direct recruitment core MySQL closure', () => {
 
     const events = await request('GET', `/employments/${employment.body.id}/events`);
     expect(events.status).toBe(200);
-    expect(events.body.items).toHaveLength(7);
+    expect(events.body.items).toHaveLength(6);
     expect(events.body.items.at(-1).toStatus).toBe('terminated');
 
     const [appearanceAuditRows] = await pool.query<any[]>(

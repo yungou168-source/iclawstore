@@ -1,11 +1,11 @@
 openapi: 3.1.0
 info:
   title: ClawHub Desktop Client API
-  version: 1.1.0
+  version: 1.2.0
   description: |
-    Versioned contract for Agent appearance, account-synchronized desktop sidebar
-    preferences, and the desktop template catalog. Template business data remains
-    local to the desktop client and is never accepted by these APIs.
+    Versioned contract for Agent appearance, paid hiring, account-synchronized
+    desktop sidebar preferences, and the desktop template catalog. Offer is an
+    immutable receipt created only after verified payment succeeds.
 servers:
   - url: https://iclawstore.com
 security:
@@ -212,37 +212,79 @@ paths:
             model/gltf-binary: { schema: { type: string, format: binary } }
         '401': { $ref: '#/components/responses/AuthRequired' }
         '404': { $ref: '#/components/responses/NotFound' }
-  /api/v1/ai-direct-hiring/offers/{offerId}/accept:
+  /api/v1/ai-direct-hiring/agents/{agentId}/prices:
     post:
       tags: [Offers]
-      summary: Accept an Offer and create its sole Employment atomically
-      description: |
-        This is the only Employment creation endpoint. One committed transaction
-        marks the Offer accepted, creates exactly one accepted Employment, assigns
-        appearance control, and writes its state, audit, and outbox records.
-        A repeated request after a committed acceptance returns the same Employment
-        with `replayed: true`; it never creates a second Employment.
-      operationId: acceptOffer
+      summary: Set the developer-owned CNY hiring price for a published Agent version
+      operationId: setAgentHiringPrice
+      parameters:
+        - { name: agentId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [agentVersionId, amountFen]
+              properties:
+                agentVersionId: { type: string, maxLength: 36 }
+                amountFen: { type: string, pattern: '^[0-9]+$' }
+                currency: { type: string, const: CNY }
+      responses:
+        '201': { description: New active immutable price version }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/ai-direct-hiring/paid-hiring/orders:
+    post:
+      tags: [Offers]
+      summary: Create an idempotent Alipay hiring order from the server-side price
+      operationId: createPaidHiringOrder
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, maxLength: 128 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [companyId, roleId, positionId, agentId]
+              properties:
+                companyId: { type: string, maxLength: 36 }
+                projectId: { type: [string, 'null'], maxLength: 36 }
+                roleId: { type: string, maxLength: 36 }
+                positionId: { type: string, maxLength: 36 }
+                agentId: { type: string, maxLength: 36 }
+      responses:
+        '201': { description: Pending Alipay order with a server-signed payUrl }
+        '200': { description: Replay of the same idempotent pending order }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { description: Alipay merchant configuration is unavailable }
+  /api/v1/ai-direct-hiring/offers:
+    get:
+      tags: [Offers]
+      summary: List immutable Offer receipts created by verified payment fulfillment
+      operationId: listIssuedOffers
+      responses:
+        '200': { description: Issued Offer receipts visible to the current organization member }
+        '401': { $ref: '#/components/responses/AuthRequired' }
+  /api/v1/ai-direct-hiring/offers/{offerId}:
+    get:
+      tags: [Offers]
+      summary: Read an immutable Offer receipt and its payment split
+      operationId: getIssuedOffer
       parameters:
         - { name: offerId, in: path, required: true, schema: { type: string, maxLength: 36 } }
       responses:
-        '200':
-          description: Accepted Offer and its sole Employment
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [id, status, employmentId, employmentStatus]
-                properties:
-                  id: { type: string, maxLength: 36 }
-                  status: { type: string, const: accepted }
-                  employmentId: { type: string, maxLength: 36 }
-                  employmentStatus: { type: string, const: accepted }
-                  replayed: { type: boolean }
+        '200': { description: Issued Offer receipt }
         '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
   /api/v1/ai-direct-hiring/employments/{employmentId}/transition:
     post:
       tags: [Employments]
@@ -978,13 +1020,14 @@ components:
   schemas:
     ContractMetadata:
       type: object
-      required: [contract, version, openapi, documentation, purchaseSupported]
+      required: [contract, version, openapi, documentation, purchaseSupported, paidHiringSupported]
       properties:
         contract: { type: string, const: clawhub-desktop-client }
-        version: { type: string, const: 1.1.0 }
+        version: { type: string, const: 1.2.0 }
         openapi: { type: string }
         documentation: { type: string }
         purchaseSupported: { type: boolean, const: false }
+        paidHiringSupported: { type: boolean, const: true }
         auth:
           $ref: '#/components/schemas/DesktopAuthDiscovery'
     DesktopAuthDiscovery:

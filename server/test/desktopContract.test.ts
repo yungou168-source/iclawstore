@@ -78,6 +78,7 @@ describe('desktop client contract', () => {
       openapi: '/api/v1/desktop/openapi.yaml',
       documentation: '/docs/AI_DIRECT_DESKTOP_CLIENT_API_V1.md',
       purchaseSupported: false,
+      paidHiringSupported: true,
     });
   });
 
@@ -106,7 +107,7 @@ describe('desktop client contract', () => {
     expect(extractOpenApiRoutes(document)).toEqual(manifestRoutes);
   });
 
-  it('accepts the complete 1.1.0 runtime route surface', async () => {
+  it('accepts the complete 1.2.0 runtime route surface', async () => {
     const app = await createCompleteContractApp();
 
     expect(missingDesktopContractRoutes(app)).toEqual([]);

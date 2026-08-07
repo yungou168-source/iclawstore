@@ -8,7 +8,6 @@ import {
   transitionApproval,
   type ApprovalStatus,
 } from './approvalStateMachine.js';
-import { transitionOffer, type OfferStatus } from './offerStateMachine.js';
 
 export type ApprovalDecision = Extract<
   ApprovalStatus,
@@ -18,14 +17,13 @@ export type ApprovalDecision = Extract<
 type DecisionSpec = {
   event: 'approve' | 'reject' | 'expire' | 'cancel';
   eventType: 'approved' | 'rejected' | 'expired' | 'cancelled';
-  offerStatus: Extract<OfferStatus, 'sent' | 'rejected' | 'expired' | 'revoked'>;
 };
 
 const decisionSpecs: Record<ApprovalDecision, DecisionSpec> = {
-  approved: { event: 'approve', eventType: 'approved', offerStatus: 'sent' },
-  rejected: { event: 'reject', eventType: 'rejected', offerStatus: 'rejected' },
-  expired: { event: 'expire', eventType: 'expired', offerStatus: 'expired' },
-  cancelled: { event: 'cancel', eventType: 'cancelled', offerStatus: 'revoked' },
+  approved: { event: 'approve', eventType: 'approved' },
+  rejected: { event: 'reject', eventType: 'rejected' },
+  expired: { event: 'expire', eventType: 'expired' },
+  cancelled: { event: 'cancel', eventType: 'cancelled' },
 };
 
 export type DecideApprovalInput = {
@@ -37,36 +35,26 @@ export type DecideApprovalInput = {
   authorize?: (approval: ApprovalRow, connection: PoolConnection) => Promise<void>;
 };
 
-async function updateLinkedOffer(
+async function updateLinkedHiringIntent(
   connection: PoolConnection,
   approval: ApprovalRow,
   decision: ApprovalDecision,
-  reason: string | null,
 ): Promise<void> {
-  if (approval.targetType !== 'offer' || !approval.targetId) return;
+  if (approval.targetType !== 'hiring_intent' || !approval.targetId) return;
 
-  const targetStatus = decisionSpecs[decision].offerStatus;
-  transitionOffer('pending_approval', targetStatus, `approval.${decisionSpecs[decision].event}`);
-
-  const fields = ['status = ?', 'updatedAt = NOW(3)'];
-  const values: unknown[] = [targetStatus];
-  if (targetStatus === 'rejected') {
-    fields.push('rejectedAt = NOW(3)', 'rejectedReason = ?');
-    values.push(reason ?? 'Approval rejected');
-  }
-
+  const targetStatus = decision === 'approved' ? 'awaiting_payment' : 'cancelled';
   const [result] = await connection.query<ResultSetHeader>(
-    `UPDATE ai_direct_offers
-     SET ${fields.join(', ')}
+    `UPDATE ai_direct_hiring_intents
+     SET status = ?, updatedAt = NOW(3)
      WHERE id = ? AND approvalId = ? AND status = 'pending_approval'`,
-    [...values, approval.targetId, approval.id],
+    [targetStatus, approval.targetId, approval.id],
   );
   if (result.affectedRows !== 1) {
     throw new AiDirectHiringError(
       ErrorCodes.INVALID_TRANSITION,
-      '关联 Offer 不存在、审批关系不匹配或已不处于 pending_approval 状态',
+      '关联雇佣意图不存在、审批关系不匹配或已不处于 pending_approval 状态',
       409,
-      { approvalId: approval.id, offerId: approval.targetId, targetStatus },
+      { approvalId: approval.id, hiringIntentId: approval.targetId, targetStatus },
     );
   }
 }
@@ -142,7 +130,7 @@ async function decideApprovalInTransaction(
     throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, 'Approval 已被其他操作更新', 409);
   }
 
-  await updateLinkedOffer(connection, approval, input.decision, input.reason ?? null);
+  await updateLinkedHiringIntent(connection, approval, input.decision);
 
   const eventMetadata = {
     from: transition.from,
@@ -173,7 +161,12 @@ async function decideApprovalInTransaction(
       to: transition.to,
       actorUserId: input.actorUserId,
       reason: input.reason ?? null,
-      linkedOfferStatus: approval.targetType === 'offer' ? spec.offerStatus : null,
+      linkedHiringIntentStatus:
+        approval.targetType === 'hiring_intent'
+          ? input.decision === 'approved'
+            ? 'awaiting_payment'
+            : 'cancelled'
+          : null,
     },
   });
 

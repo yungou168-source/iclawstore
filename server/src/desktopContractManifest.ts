@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 
-export const DESKTOP_CLIENT_CONTRACT_VERSION = '1.1.0';
+export const DESKTOP_CLIENT_CONTRACT_VERSION = '1.2.0';
 export const DESKTOP_CLIENT_OPENAPI_PATH = '/api/v1/desktop/openapi.yaml';
 
 export type DesktopContractRoute = {
@@ -21,7 +21,7 @@ const publicRoute = (
 ): DesktopContractRoute => ({ method: 'GET', openApiPath, probePath: openApiPath, public: true });
 
 /**
- * Complete method/path surface promised by Desktop Client API 1.1.0.
+ * Complete method/path surface promised by Desktop Client API 1.2.0.
  * OpenAPI publication, server startup validation, and production smoke tests
  * must all agree with this manifest before the version can be released.
  */
@@ -34,7 +34,10 @@ export const DESKTOP_CLIENT_CONTRACT_ROUTES = [
   protectedRoute('POST', '/api/v1/ai-direct-hiring/agents/{agentId}/appearance/assets/reorder'),
   protectedRoute('DELETE', '/api/v1/ai-direct-hiring/agents/{agentId}/appearance/assets/{assetId}'),
   protectedRoute('GET', '/api/v1/ai-direct-hiring/appearance-assets/{assetId}/content'),
-  protectedRoute('POST', '/api/v1/ai-direct-hiring/offers/{offerId}/accept'),
+  protectedRoute('POST', '/api/v1/ai-direct-hiring/agents/{agentId}/prices'),
+  protectedRoute('POST', '/api/v1/ai-direct-hiring/paid-hiring/orders'),
+  protectedRoute('GET', '/api/v1/ai-direct-hiring/offers'),
+  protectedRoute('GET', '/api/v1/ai-direct-hiring/offers/{offerId}'),
   protectedRoute('POST', '/api/v1/ai-direct-hiring/employments/{employmentId}/transition'),
   protectedRoute('GET', '/api/v1/desktop/sidebar'),
   protectedRoute('PUT', '/api/v1/desktop/sidebar'),

@@ -1,754 +1,99 @@
-/**
- * AI Direct Hiring — Offers routes (P2).
- *
- * Endpoints:
- *   GET  /api/v1/ai-direct-hiring/offers                    — list offers
- *   POST /api/v1/ai-direct-hiring/offers                    — create offer (draft)
- *   POST /api/v1/ai-direct-hiring/offers/:id/submit         — submit for approval
- *   POST /api/v1/ai-direct-hiring/offers/:id/approve        — approve
- *   POST /api/v1/ai-direct-hiring/offers/:id/reject          — reject
- *   POST /api/v1/ai-direct-hiring/offers/:id/send            — send to candidate
- *   POST /api/v1/ai-direct-hiring/offers/:id/accept         — candidate accepts
- *   POST /api/v1/ai-direct-hiring/offers/:id/decline         — candidate declines
- *   POST /api/v1/ai-direct-hiring/offers/:id/revoke          — revoke
- *   POST /api/v1/ai-direct-hiring/offers/:id/expire         — mark expired
- */
-
-import { FastifyInstance } from 'fastify';
-import { randomUUID } from 'node:crypto';
-import { AiDirectHiringError, ErrorCodes } from '../services/aiDirectErrors.js';
-import { publishOutboxEvent } from '../utils/outbox.js';
+import type { FastifyInstance } from 'fastify';
 import { requireAuth } from '../middleware/aiDirectAuth.js';
-import { requireCompanyRole } from '../middleware/aiDirectRbac.js';
-import {
-  transitionOffer,
-  type OfferStatus,
-} from '../services/offerStateMachine.js';
-import { synchronizeWorkforceEmployeeDigest } from '../services/workforceEmployeeDigestSync.js';
+import { AiDirectHiringError, ErrorCodes } from '../services/aiDirectErrors.js';
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
+const RETIRED_OFFER_WRITE_MESSAGE =
+  'Offer 是支付成功后生成的不可变雇佣凭证，不支持创建、提交、审批、发送、接受、拒绝、撤回或过期操作';
 
-function requestIdFrom(request: { headers: Record<string, unknown> }): string {
-  const value = request.headers['x-request-id'];
-  return typeof value === 'string' && value.length > 0 && value.length <= 128
-    ? value
-    : randomUUID();
-}
-
-function readBody(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '请求体必须是对象');
-  }
-  return value as Record<string, unknown>;
-}
-
-function readString(value: unknown, field: string, maxLength: number): string {
-  if (typeof value !== 'string') {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, `${field} 必须是字符串`);
-  }
-  const result = value.trim();
-  if (!result || result.length > maxLength) {
-    throw new AiDirectHiringError(
-      ErrorCodes.VALIDATION_ERROR,
-      `${field} 长度必须为 1 到 ${maxLength}`,
-    );
-  }
-  return result;
-}
-
-function rejectExtra(body: Record<string, unknown>, allowed: string[], caller: string): void {
-  const extra = Object.keys(body).filter((k) => !allowed.includes(k));
-  if (extra.length > 0) {
-    throw new AiDirectHiringError(
-      ErrorCodes.VALIDATION_ERROR,
-      `${caller} 不接受以下字段: ${extra.join(', ')}`,
-      400,
-      { extraFields: extra },
-    );
-  }
-}
-
-async function writeAudit(
-  conn: { query(sql: string, values?: unknown[]): Promise<unknown> },
-  input: {
-    organizationId: string | null;
-    actorUserId: string;
-    action: string;
-    targetType: string;
-    targetId: string;
-    requestId: string;
-    outcome?: string;
-    metadata?: Record<string, unknown>;
-  },
-): Promise<void> {
-  await conn.query(
-    `INSERT INTO ai_direct_audit_events
-     (id, organizationId, actorUserId, action, targetType, targetId, requestId, outcome, metadata)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      randomUUID(),
-      input.organizationId,
-      input.actorUserId,
-      input.action,
-      input.targetType,
-      input.targetId,
-      input.requestId,
-      input.outcome ?? 'success',
-      input.metadata ? JSON.stringify(input.metadata) : null,
-    ],
+const retiredOfferWrite = async (): Promise<never> => {
+  throw new AiDirectHiringError(
+    ErrorCodes.INVALID_TRANSITION,
+    RETIRED_OFFER_WRITE_MESSAGE,
+    409,
+    { replacement: 'POST /paid-hiring/orders' },
   );
-}
+};
 
-async function fetchOffer(
-  pool: any,
-  offerId: string,
-): Promise<any> {
-  const [rows] = await pool.query(
-    `SELECT o.*, r.name AS roleName, c.name AS companyName
-     FROM ai_direct_offers o
-     JOIN ai_direct_agent_roles r ON r.id = o.roleId
-     JOIN ai_direct_companies c ON c.id = o.companyId
-     WHERE o.id = ? LIMIT 1`,
-    [offerId],
-  );
-  return (rows as any[])[0];
-}
+export async function aiDirectOffersRoutes(fastify: FastifyInstance): Promise<void> {
+  const pool = (fastify as any).mysql;
+  const auth = [fastify.authenticate];
 
-async function advanceOfferStatus(
-  conn: any,
-  offer: any,
-  toStatus: OfferStatus,
-  event: string,
-  actorUserId: string,
-  reqId: string,
-  extra?: Record<string, unknown>,
-): Promise<any> {
-  if (
-    event === 'send' ||
-    (offer.status === 'pending_approval' && (event === 'approve' || event === 'reject'))
-  ) {
-    throw new AiDirectHiringError(
-      ErrorCodes.INVALID_TRANSITION,
-      'Offer 审批状态只能通过 Approval API 变更',
-      409,
-    );
-  }
-  const transition = transitionOffer(offer.status as OfferStatus, toStatus, event);
-
-  const updateFields: string[] = ['status = ?', 'updatedAt = NOW()'];
-  const updateParams: unknown[] = [toStatus];
-
-  if (toStatus === 'sent' && offer.expiresAt) {
-    updateFields.push('expiresAt = ?');
-    updateParams.push(offer.expiresAt);
-  }
-  if (toStatus === 'accepted') {
-    updateFields.push('acceptedAt = NOW()');
-  }
-  if (toStatus === 'rejected') {
-    updateFields.push('rejectedAt = NOW()');
-  }
-
-  const updateQuery = `UPDATE ai_direct_offers SET ${updateFields.join(', ')} WHERE id = ?`;
-  await conn.query(updateQuery, [...updateParams, offer.id]);
-
-  await writeAudit(conn, {
-    organizationId: null,
-    actorUserId,
-    action: `offer.${event}`,
-    targetType: 'offer',
-    targetId: offer.id,
-    requestId: reqId,
-    metadata: { from: transition.from, to: transition.to, ...extra },
-  });
-
-  await publishOutboxEvent(conn, {
-    organizationId: null,
-    aggregateType: 'offer',
-    aggregateId: offer.id,
-    eventType: `offer.${event}.v1`,
-    payload: {
-      offerId: offer.id,
-      roleId: offer.roleId,
-      agentVersionId: offer.agentVersionId,
-      companyId: offer.companyId,
-      from: transition.from,
-      to: transition.to,
-      actorUserId,
-      ...extra,
-    },
-  });
-
-  // Read through the transaction connection so the response reflects uncommitted writes.
-  const [rows] = await conn.query(
-    `SELECT o.*, r.name AS roleName, c.name AS companyName
-     FROM ai_direct_offers o
-     JOIN ai_direct_agent_roles r ON r.id = o.roleId
-     JOIN ai_direct_companies c ON c.id = o.companyId
-     WHERE o.id = ? LIMIT 1`,
-    [offer.id],
-  );
-  return (rows as any[])[0];
-}
-
-// ─── Routes ────────────────────────────────────────────────────────────────────
-
-export async function aiDirectOffersRoutes(fastify: FastifyInstance) {
-  const pool = (fastify as any).mysql as any;
-  const auth = [(fastify as any).authenticate];
-
-  // GET /api/v1/ai-direct-hiring/offers — list offers (mine + my company)
-  fastify.get('/offers', { onRequest: auth }, async (request: any) => {
+  fastify.get('/offers', { onRequest: auth }, async (request) => {
     const user = await requireAuth(fastify, request);
-    const status = typeof request.query?.status === 'string' ? request.query.status : null;
-
-    let sql = `
-      SELECT o.id, o.roleId, o.agentVersionId, o.companyId, o.projectId, o.status,
-             o.terms, o.approvalId, o.proposedByUserId, o.proposedAt,
-             o.expiresAt, o.acceptedAt, o.rejectedAt, o.rejectedReason,
-             o.createdAt, o.updatedAt,
-             r.name AS roleName, c.name AS companyName
-      FROM ai_direct_offers o
-      JOIN ai_direct_agent_roles r ON r.id = o.roleId
-      JOIN ai_direct_companies c ON c.id = o.companyId
-      WHERE (
-        o.proposedByUserId = ?
-        OR c.organizationId IN (
-          SELECT organizationId FROM ai_direct_organization_members WHERE userId = ? AND status = 'active'
-        )
-      )`;
-    const params: unknown[] = [user.id, user.id];
-
-    if (status) {
-      sql += ` AND o.status = ?`;
-      params.push(status);
+    const query = request.query as { status?: unknown };
+    const status = typeof query?.status === 'string' ? query.status : null;
+    if (status && status !== 'issued') {
+      throw new AiDirectHiringError(
+        ErrorCodes.VALIDATION_ERROR,
+        "支付即雇佣模式下 Offer 状态仅支持 'issued'",
+      );
     }
-    sql += ` ORDER BY o.updatedAt DESC LIMIT 100`;
-
-    const [rows] = await pool.query(sql, params);
-    return { items: rows };
+    const [rows] = await pool.query(
+      `SELECT o.id, o.roleId, o.agentVersionId, o.companyId, o.projectId, o.status,
+              o.terms, o.proposedByUserId, o.proposedAt, o.paymentOrderId, o.issuedAt,
+              o.createdAt, o.updatedAt, r.name AS roleName, c.name AS companyName,
+              po.currency, po.grossAmountFen, po.platformFeeFen, po.developerPayableFen,
+              po.employmentId
+       FROM ai_direct_offers o
+       JOIN ai_direct_agent_roles r ON r.id = o.roleId
+       JOIN ai_direct_companies c ON c.id = o.companyId
+       JOIN ai_direct_payment_orders po ON po.id = o.paymentOrderId AND po.status = 'fulfilled'
+       WHERE o.status = 'issued' AND (
+         o.proposedByUserId = ? OR EXISTS (
+           SELECT 1 FROM ai_direct_organization_members member
+           WHERE member.organizationId = c.organizationId
+             AND member.userId = ? AND member.status = 'active'
+         )
+       )
+       ORDER BY o.issuedAt DESC, o.id DESC
+       LIMIT 100`,
+      [user.id, user.id],
+    );
+    return {
+      items: (rows as Array<Record<string, unknown>>).map((row) => ({
+        ...row,
+        grossAmountFen: String(row.grossAmountFen),
+        platformFeeFen: String(row.platformFeeFen),
+        developerPayableFen: String(row.developerPayableFen),
+      })),
+    };
   });
 
-  // POST /api/v1/ai-direct-hiring/offers — create offer (draft)
-  fastify.post('/offers', { onRequest: auth }, async (request: any, reply) => {
+  fastify.get('/offers/:id', { onRequest: auth }, async (request) => {
     const user = await requireAuth(fastify, request);
-    const reqId = requestIdFrom(request);
-    const body = readBody(request.body);
-    rejectExtra(body, ['roleId', 'agentVersionId', 'companyId', 'projectId', 'terms', 'expiresAt'], 'POST /offers');
-
-    const roleId = readString(body.roleId, 'roleId', 36);
-    const agentVersionId = readString(body.agentVersionId, 'agentVersionId', 36);
-    const companyId = readString(body.companyId, 'companyId', 36);
-    const projectId =
-      typeof body.projectId === 'string' && body.projectId.length > 0
-        ? readString(body.projectId, 'projectId', 36)
-        : null;
-    const terms =
-      body.terms && typeof body.terms === 'object' ? body.terms : {};
-    const expiresAt =
-      typeof body.expiresAt === 'string' && body.expiresAt.length > 0
-        ? new Date(body.expiresAt)
-        : null;
-
-    // Verify role and company access
-    await requireCompanyRole(pool, companyId, user.id, 'recruiter');
-
-    const [roleRows] = await pool.query(
-      `SELECT id FROM ai_direct_agent_roles WHERE id = ? AND companyId = ? LIMIT 1`,
-      [roleId, companyId],
-    );
-    if (!(roleRows as any[]).length) {
-      throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '角色不存在或不属于该公司');
-    }
-
-    const [positionRows] = await pool.query(
-      `SELECT p.id, p.status
-       FROM ai_direct_position_agent_roles pr
-       JOIN ai_direct_positions p ON p.id = pr.positionId
-       JOIN ai_direct_departments d ON d.id = p.departmentId
-       WHERE pr.roleId = ? AND d.companyId = ? AND d.status = 'active'
+    const { id } = request.params as { id: string };
+    const [rows] = await pool.query(
+      `SELECT o.id, o.roleId, o.agentVersionId, o.companyId, o.projectId, o.status,
+              o.terms, o.proposedByUserId, o.proposedAt, o.paymentOrderId, o.issuedAt,
+              o.createdAt, o.updatedAt, r.name AS roleName, c.name AS companyName,
+              po.currency, po.grossAmountFen, po.platformFeeFen, po.developerPayableFen,
+              po.employmentId
+       FROM ai_direct_offers o
+       JOIN ai_direct_agent_roles r ON r.id = o.roleId
+       JOIN ai_direct_companies c ON c.id = o.companyId
+       JOIN ai_direct_payment_orders po ON po.id = o.paymentOrderId AND po.status = 'fulfilled'
+       WHERE o.id = ? AND o.status = 'issued' AND (
+         o.proposedByUserId = ? OR EXISTS (
+           SELECT 1 FROM ai_direct_organization_members member
+           WHERE member.organizationId = c.organizationId
+             AND member.userId = ? AND member.status = 'active'
+         )
+       )
        LIMIT 1`,
-      [roleId, companyId],
+      [id, user.id, user.id],
     );
-    const position = (positionRows as any[])[0];
-    if (!position || position.status !== 'open') {
-      throw new AiDirectHiringError(
-        ErrorCodes.INVALID_TRANSITION,
-        'Role 必须绑定到同公司 open 状态的 Position 才能创建 Offer',
-        409,
-      );
-    }
-
-    const offerId = randomUUID();
-    const conn = await pool.getConnection();
-    try {
-      await conn.beginTransaction();
-
-      await conn.query(
-        `INSERT INTO ai_direct_offers
-         (id, roleId, agentVersionId, companyId, projectId, status, terms,
-          proposedByUserId, proposedAt, expiresAt)
-         VALUES (?, ?, ?, ?, ?, 'draft', ?, ?, NOW(), ?)`,
-        [offerId, roleId, agentVersionId, companyId, projectId, JSON.stringify(terms), user.id, expiresAt],
-      );
-
-      await writeAudit(conn, {
-        organizationId: null,
-        actorUserId: user.id,
-        action: 'offer.created',
-        targetType: 'offer',
-        targetId: offerId,
-        requestId: reqId,
-        metadata: { roleId, agentVersionId, companyId },
-      });
-
-      await publishOutboxEvent(conn, {
-        organizationId: null,
-        aggregateType: 'offer',
-        aggregateId: offerId,
-        eventType: 'offer.created.v1',
-        payload: { offerId, roleId, agentVersionId, companyId },
-      });
-
-      await conn.commit();
-      return reply.status(201).send({ id: offerId, status: 'draft' });
-    } catch (err) {
-      await conn.rollback();
-      if ((err as any)?.code === 'ER_DUP_ENTRY') {
-        return reply.status(409).send({
-          code: ErrorCodes.DUPLICATE_ENTRY,
-          error: '相同的 Offer 已存在',
-        });
-      }
-      throw err;
-    } finally {
-      conn.release();
-    }
+    const row = (rows as Array<Record<string, unknown>>)[0];
+    if (!row) throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Offer 凭证不存在', 404);
+    return {
+      ...row,
+      grossAmountFen: String(row.grossAmountFen),
+      platformFeeFen: String(row.platformFeeFen),
+      developerPayableFen: String(row.developerPayableFen),
+    };
   });
 
-  // POST /api/v1/ai-direct-hiring/offers/:id/submit — submit for approval (draft → pending_approval)
-  fastify.post('/offers/:id/submit', { onRequest: auth }, async (request: any, reply) => {
-    const user = await requireAuth(fastify, request);
-    const reqId = requestIdFrom(request);
-    const { id } = request.params;
-
-    const offer = await fetchOffer(pool, id);
-    if (!offer) throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Offer 不存在', 404);
-    await requireCompanyRole(pool, offer.companyId, user.id, 'recruiter');
-
-    const conn = await pool.getConnection();
-    try {
-      await conn.beginTransaction();
-      const approvalId = randomUUID();
-      const [approvalInsert] = await conn.query(
-        `INSERT INTO ai_direct_approvals
-         (id, organizationId, targetType, targetId, requestedByUserId, status, metadata)
-         SELECT ?, c.organizationId, 'offer', ?, ?, 'pending', ?
-         FROM ai_direct_companies c WHERE c.id = ?`,
-        [
-          approvalId,
-          offer.id,
-          user.id,
-          JSON.stringify({ offerId: offer.id, companyId: offer.companyId }),
-          offer.companyId,
-        ],
-      );
-      if (Number((approvalInsert as { affectedRows?: number }).affectedRows ?? 0) !== 1) {
-        throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Offer 所属公司不存在', 404);
-      }
-      await conn.query(
-        `UPDATE ai_direct_offers SET approvalId = ?, updatedAt = NOW() WHERE id = ?`,
-        [approvalId, offer.id],
-      );
-      await writeAudit(conn, {
-        organizationId: null,
-        actorUserId: user.id,
-        action: 'approval.requested',
-        targetType: 'approval',
-        targetId: approvalId,
-        requestId: reqId,
-        metadata: { targetType: 'offer', targetId: offer.id },
-      });
-      await publishOutboxEvent(conn, {
-        organizationId: null,
-        aggregateType: 'approval',
-        aggregateId: approvalId,
-        eventType: 'approval.requested.v1',
-        payload: { approvalId, targetType: 'offer', targetId: offer.id, requestedByUserId: user.id },
-      });
-      const updated = await advanceOfferStatus(
-        conn, { ...offer, approvalId }, 'pending_approval', 'submit', user.id, reqId,
-        { proposedByUserId: offer.proposedByUserId, approvalId },
-      );
-      await conn.commit();
-      return reply.status(200).send(updated);
-    } catch (err) {
-      await conn.rollback();
-      throw err;
-    } finally {
-      conn.release();
-    }
-  });
-
-  // POST /api/v1/ai-direct-hiring/offers/:id/approve — approve (pending_approval → sent)
-  fastify.post('/offers/:id/approve', { onRequest: auth }, async (request: any, reply) => {
-    const user = await requireAuth(fastify, request);
-    const reqId = requestIdFrom(request);
-    const { id } = request.params;
-
-    const offer = await fetchOffer(pool, id);
-    if (!offer) throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Offer 不存在', 404);
-    // Approvers need manager or higher
-    await requireCompanyRole(pool, offer.companyId, user.id, 'manager');
-
-    if (offer.status !== 'pending_approval') {
-      throw new AiDirectHiringError(
-        ErrorCodes.INVALID_TRANSITION,
-        `只有 pending_approval 状态的 Offer 可以审批`,
-        409,
-      );
-    }
-
-    const conn = await pool.getConnection();
-    try {
-      await conn.beginTransaction();
-      const updated = await advanceOfferStatus(
-        conn, offer, 'sent', 'approve', user.id, reqId,
-      );
-      await conn.commit();
-      return reply.status(200).send(updated);
-    } catch (err) {
-      await conn.rollback();
-      throw err;
-    } finally {
-      conn.release();
-    }
-  });
-
-  // POST /api/v1/ai-direct-hiring/offers/:id/reject — reject approval (pending_approval → rejected)
-  fastify.post('/offers/:id/reject', { onRequest: auth }, async (request: any, reply) => {
-    const user = await requireAuth(fastify, request);
-    const reqId = requestIdFrom(request);
-    const { id } = request.params;
-    const body = readBody(request.body ?? {});
-    const reason =
-      typeof body.reason === 'string' ? body.reason.slice(0, 500) : null;
-
-    const offer = await fetchOffer(pool, id);
-    if (!offer) throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Offer 不存在', 404);
-    await requireCompanyRole(pool, offer.companyId, user.id, 'manager');
-
-    if (offer.status !== 'pending_approval') {
-      throw new AiDirectHiringError(
-        ErrorCodes.INVALID_TRANSITION,
-        `只有 pending_approval 状态的 Offer 可以拒绝`,
-        409,
-      );
-    }
-
-    const conn = await pool.getConnection();
-    try {
-      await conn.beginTransaction();
-      const updated = await advanceOfferStatus(
-        conn, offer, 'rejected', 'reject', user.id, reqId,
-        { reason },
-      );
-      await conn.commit();
-      return reply.status(200).send(updated);
-    } catch (err) {
-      await conn.rollback();
-      throw err;
-    } finally {
-      conn.release();
-    }
-  });
-
-  // POST /api/v1/ai-direct-hiring/offers/:id/send — send to candidate (pending_approval → sent)
-  fastify.post('/offers/:id/send', { onRequest: auth }, async (request: any, reply) => {
-    const user = await requireAuth(fastify, request);
-    const reqId = requestIdFrom(request);
-    const { id } = request.params;
-    const body = readBody(request.body ?? {});
-    const expiresAt =
-      typeof body.expiresAt === 'string' && body.expiresAt.length > 0
-        ? new Date(body.expiresAt)
-        : null;
-
-    const offer = await fetchOffer(pool, id);
-    if (!offer) throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Offer 不存在', 404);
-    await requireCompanyRole(pool, offer.companyId, user.id, 'recruiter');
-
-    // Also allow transition from pending_approval → sent directly (skip approval workflow)
-    if (!['pending_approval', 'draft'].includes(offer.status)) {
-      throw new AiDirectHiringError(
-        ErrorCodes.INVALID_TRANSITION,
-        `Offer 当前状态 '${offer.status}' 不能发送`,
-        409,
-      );
-    }
-
-    const conn = await pool.getConnection();
-    try {
-      await conn.beginTransaction();
-
-      // Set expires if provided
-      if (expiresAt) {
-        await conn.query(
-          `UPDATE ai_direct_offers SET expiresAt = ?, updatedAt = NOW() WHERE id = ?`,
-          [expiresAt, id],
-        );
-      }
-
-      const updated = await advanceOfferStatus(
-        conn, { ...offer, expiresAt: expiresAt ?? offer.expiresAt },
-        'sent', 'send', user.id, reqId,
-      );
-      await conn.commit();
-      return reply.status(200).send(updated);
-    } catch (err) {
-      await conn.rollback();
-      throw err;
-    } finally {
-      conn.release();
-    }
-  });
-
-  // POST /api/v1/ai-direct-hiring/offers/:id/accept — candidate accepts (sent → accepted)
-  fastify.post('/offers/:id/accept', { onRequest: auth }, async (request: any, reply) => {
-    const user = await requireAuth(fastify, request);
-    const reqId = requestIdFrom(request);
-    const { id } = request.params;
-
-    const offer = await fetchOffer(pool, id);
-    if (!offer) throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Offer 不存在', 404);
-
-    // Only the offer proposer or an org member can accept
-    const isProposer = offer.proposedByUserId === user.id;
-    if (!isProposer) {
-      await requireCompanyRole(pool, offer.companyId, user.id, 'recruiter');
-    }
-
-    if (!['sent', 'accepted'].includes(offer.status)) {
-      throw new AiDirectHiringError(
-        ErrorCodes.INVALID_TRANSITION,
-        `只有 sent 状态的 Offer 可以接受`,
-        409,
-      );
-    }
-
-    const conn = await pool.getConnection();
-    try {
-      await conn.beginTransaction();
-      const [lockedOfferRows] = await conn.query(
-        `SELECT * FROM ai_direct_offers WHERE id = ? LIMIT 1 FOR UPDATE`,
-        [id],
-      );
-      const lockedOffer = (lockedOfferRows as any[])[0];
-      if (!lockedOffer) {
-        throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Offer 不存在', 404);
-      }
-      const [existingRows] = await conn.query(
-        `SELECT id, status FROM ai_direct_employments WHERE offerId = ? LIMIT 1 FOR UPDATE`,
-        [id],
-      );
-      const existing = (existingRows as any[])[0];
-      if (existing) {
-        if (lockedOffer.status !== 'accepted') {
-          throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, 'Offer 与 Employment 状态不一致', 409);
-        }
-        await conn.commit();
-        return reply.status(200).send({ ...lockedOffer, employmentId: existing.id, employmentStatus: existing.status, replayed: true });
-      }
-      if (lockedOffer.status !== 'sent') {
-        throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, 'Offer 已被并发更新', 409);
-      }
-      const [versionRows] = await conn.query(
-        `SELECT agentId FROM ai_direct_agent_versions WHERE id = ? LIMIT 1`,
-        [lockedOffer.agentVersionId],
-      );
-      const version = (versionRows as any[])[0];
-      if (!version) throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Agent 版本不存在', 404);
-      // A stable parent-row lock also covers the no-profile-yet case, where locking a missing profile cannot serialize competitors.
-      const [agentRows] = await conn.query(
-        `SELECT id FROM ai_direct_agents WHERE id = ? LIMIT 1 FOR UPDATE`,
-        [version.agentId],
-      );
-      if (!(agentRows as any[])[0]) {
-        throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Agent 不存在', 404);
-      }
-      const employmentId = randomUUID();
-      const [profileRows] = await conn.query(
-        `SELECT controllerEmploymentId FROM ai_direct_agent_appearance_profiles WHERE agentId = ? LIMIT 1 FOR UPDATE`,
-        [version.agentId],
-      );
-      const profile = (profileRows as any[])[0];
-      if (profile?.controllerEmploymentId) {
-        throw new AiDirectHiringError(ErrorCodes.APPEARANCE_CONTROL_CONFLICT, '该 Agent 的形象控制权已由另一 Employment 持有', 409, { controllerEmploymentId: profile.controllerEmploymentId });
-      }
-      const [positionRows] = await conn.query(
-        `SELECT p.id, p.status, p.headcountTarget, p.headcountFilled
-         FROM ai_direct_position_agent_roles pr
-         JOIN ai_direct_positions p ON p.id = pr.positionId
-         JOIN ai_direct_departments d ON d.id = p.departmentId
-         WHERE pr.roleId = ? AND d.companyId = ? AND d.status = 'active'
-         LIMIT 1 FOR UPDATE`,
-        [lockedOffer.roleId, lockedOffer.companyId],
-      );
-      const position = (positionRows as any[])[0];
-      if (!position || position.status !== 'open') {
-        throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, 'Offer 对应 Position 不再开放', 409);
-      }
-      const [headcountUpdate] = await conn.query(
-        `UPDATE ai_direct_positions
-         SET headcountFilled = headcountFilled + 1, updatedAt = NOW(3)
-         WHERE id = ? AND headcountFilled < headcountTarget`,
-        [position.id],
-      );
-      if ((headcountUpdate as any).affectedRows !== 1) {
-        throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, 'Position 编制已满', 409);
-      }
-      const updated = await advanceOfferStatus(
-        conn, lockedOffer, 'accepted', 'accept', user.id, reqId,
-      );
-      await conn.query(
-        `INSERT INTO ai_direct_employments
-         (id, companyId, agentId, agentVersionId, roleId, projectId, offerId, requestedByUserId, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'accepted')`,
-        [employmentId, lockedOffer.companyId, version.agentId, lockedOffer.agentVersionId, lockedOffer.roleId, lockedOffer.projectId, lockedOffer.id, user.id],
-      );
-      await synchronizeWorkforceEmployeeDigest(conn, employmentId);
-      await conn.query(
-        `INSERT INTO ai_direct_organization_candidate_catalog_counts (organizationId, agentId, isEmployed)
-         SELECT organizationId, ?, TRUE FROM ai_direct_companies WHERE id = ?
-         ON DUPLICATE KEY UPDATE isEmployed = TRUE`,
-        [version.agentId, lockedOffer.companyId],
-      );
-      await conn.query(
-        `INSERT INTO ai_direct_agent_appearance_profiles
-         (agentId, avatarAssetId, defaultMode, controllerEmploymentId, controllerCompanyId, revision, updatedByUserId, createdAt, updatedAt)
-         VALUES (?, NULL, 'image_2d', ?, ?, 1, ?, NOW(3), NOW(3))
-         ON DUPLICATE KEY UPDATE controllerEmploymentId = VALUES(controllerEmploymentId), controllerCompanyId = VALUES(controllerCompanyId), revision = revision + 1, updatedByUserId = VALUES(updatedByUserId), updatedAt = NOW(3)`,
-        [version.agentId, employmentId, lockedOffer.companyId, user.id],
-      );
-      await conn.query(
-        `INSERT INTO ai_direct_employment_events
-         (id, employmentId, sequence, fromStatus, toStatus, actorUserId, reason, metadata)
-         VALUES (?, ?, 1, NULL, 'accepted', ?, ?, ?)`,
-        [randomUUID(), employmentId, user.id, 'Employment created from accepted offer', JSON.stringify({ offerId: lockedOffer.id })],
-      );
-      await writeAudit(conn, { organizationId: null, actorUserId: user.id, action: 'employment.created_from_offer', targetType: 'employment', targetId: employmentId, requestId: reqId, metadata: { offerId: lockedOffer.id, companyId: lockedOffer.companyId } });
-      await publishOutboxEvent(conn, { organizationId: null, aggregateType: 'employment', aggregateId: employmentId, eventType: 'employment.created_from_offer.v1', payload: { employmentId, offerId: lockedOffer.id, companyId: lockedOffer.companyId, actorUserId: user.id } });
-      await conn.commit();
-      return reply.status(200).send({ ...updated, employmentId, employmentStatus: 'accepted' });
-    } catch (err) {
-      await conn.rollback();
-      throw err;
-    } finally {
-      conn.release();
-    }
-  });
-
-  // POST /api/v1/ai-direct-hiring/offers/:id/decline — candidate declines (sent → rejected)
-  fastify.post('/offers/:id/decline', { onRequest: auth }, async (request: any, reply) => {
-    const user = await requireAuth(fastify, request);
-    const reqId = requestIdFrom(request);
-    const { id } = request.params;
-    const body = readBody(request.body ?? {});
-    const reason =
-      typeof body.reason === 'string' ? body.reason.slice(0, 500) : null;
-
-    const offer = await fetchOffer(pool, id);
-    if (!offer) throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Offer 不存在', 404);
-
-    if (offer.status !== 'sent') {
-      throw new AiDirectHiringError(
-        ErrorCodes.INVALID_TRANSITION,
-        `只有 sent 状态的 Offer 可以拒绝`,
-        409,
-      );
-    }
-
-    const conn = await pool.getConnection();
-    try {
-      await conn.beginTransaction();
-      const updated = await advanceOfferStatus(
-        conn, offer, 'rejected', 'decline', user.id, reqId,
-        { reason, isCandidateAction: true },
-      );
-      await conn.commit();
-      return reply.status(200).send(updated);
-    } catch (err) {
-      await conn.rollback();
-      throw err;
-    } finally {
-      conn.release();
-    }
-  });
-
-  // POST /api/v1/ai-direct-hiring/offers/:id/revoke — revoke (pending_approval/draft → revoked)
-  fastify.post('/offers/:id/revoke', { onRequest: auth }, async (request: any, reply) => {
-    const user = await requireAuth(fastify, request);
-    const reqId = requestIdFrom(request);
-    const { id } = request.params;
-
-    const offer = await fetchOffer(pool, id);
-    if (!offer) throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Offer 不存在', 404);
-    await requireCompanyRole(pool, offer.companyId, user.id, 'manager');
-
-    if (!['draft', 'pending_approval', 'sent'].includes(offer.status)) {
-      throw new AiDirectHiringError(
-        ErrorCodes.INVALID_TRANSITION,
-        `Offer 当前状态 '${offer.status}' 不能撤回`,
-        409,
-      );
-    }
-
-    const conn = await pool.getConnection();
-    try {
-      await conn.beginTransaction();
-      const updated = await advanceOfferStatus(
-        conn, offer, 'revoked', 'revoke', user.id, reqId,
-      );
-      await conn.commit();
-      return reply.status(200).send(updated);
-    } catch (err) {
-      await conn.rollback();
-      throw err;
-    } finally {
-      conn.release();
-    }
-  });
-
-  // POST /api/v1/ai-direct-hiring/offers/:id/expire — mark expired
-  fastify.post('/offers/:id/expire', { onRequest: auth }, async (request: any, reply) => {
-    const user = await requireAuth(fastify, request);
-    const reqId = requestIdFrom(request);
-    const { id } = request.params;
-
-    const offer = await fetchOffer(pool, id);
-    if (!offer) throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Offer 不存在', 404);
-
-    if (offer.status !== 'sent') {
-      throw new AiDirectHiringError(
-        ErrorCodes.INVALID_TRANSITION,
-        `只有 sent 状态的 Offer 可以标记为过期`,
-        409,
-      );
-    }
-
-    const conn = await pool.getConnection();
-    try {
-      await conn.beginTransaction();
-      const updated = await advanceOfferStatus(
-        conn, offer, 'expired', 'expire', user.id, reqId,
-      );
-      await conn.commit();
-      return reply.status(200).send(updated);
-    } catch (err) {
-      await conn.rollback();
-      throw err;
-    } finally {
-      conn.release();
-    }
-  });
+  fastify.post('/offers', { onRequest: auth }, retiredOfferWrite);
+  for (const action of ['submit', 'approve', 'reject', 'send', 'accept', 'decline', 'revoke', 'expire']) {
+    fastify.post(`/offers/:id/${action}`, { onRequest: auth }, retiredOfferWrite);
+  }
 }

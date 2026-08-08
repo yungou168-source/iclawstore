@@ -1,16 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import {
-  DEFAULT_LOCALE,
-  getLocaleFromStorage,
-  setLocaleToStorage,
-  type Locale,
-} from "./config";
-import { getTranslations } from "./translations";
+import { DEFAULT_LOCALE, getLocaleFromStorage, setLocaleToStorage, type Locale } from "./config";
+import { getTranslations, type TranslationKey } from "./translations";
 
 interface I18nContextValue {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: string, vars?: Record<string, string | number>) => string;
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null);
@@ -28,8 +23,8 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const t = useCallback(
-    (key: string, vars?: Record<string, string | number>): string => {
-      const dict = getTranslations(locale) as Record<string, string>;
+    (key: TranslationKey, vars?: Record<string, string | number>): string => {
+      const dict = getTranslations(locale) as Record<TranslationKey, string>;
       const template = dict[key] ?? key;
       return vars
         ? template.replace(/\{(\w+)\}/g, (_: string, name: string) =>
@@ -40,11 +35,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     [locale],
   );
 
-  return (
-    <I18nContext.Provider value={{ locale, setLocale, t }}>
-      {children}
-    </I18nContext.Provider>
-  );
+  return <I18nContext.Provider value={{ locale, setLocale, t }}>{children}</I18nContext.Provider>;
 }
 
 export function useLocale() {

@@ -1,16 +1,16 @@
 import { Globe } from "lucide-react";
 import { LOCALES, type Locale } from "../lib/i18n/config";
 import { useLocale } from "../lib/i18n/context";
+import { Button } from "./ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Button } from "./ui/button";
 
 export function LanguageSwitcher() {
-  const { locale, setLocale } = useLocale();
+  const { locale, setLocale, t } = useLocale();
   const currentLocale = LOCALES.find((l) => l.value === locale) ?? LOCALES[0];
 
   return (
@@ -20,8 +20,8 @@ export function LanguageSwitcher() {
           variant="ghost"
           size="sm"
           className="language-switcher-button"
-          aria-label="切换语言"
-          title="切换语言"
+          aria-label={t("language.switcher")}
+          title={t("language.current", { language: currentLocale.label })}
         >
           <Globe size={16} aria-hidden="true" />
           <span className="language-switcher-label">{currentLocale.label}</span>

@@ -534,9 +534,11 @@ export async function transitionDeveloperSettlement(
     failureReason?: string;
   },
 ): Promise<void> {
-  if (input.action === "completed" && !input.externalReference?.trim())
+  const externalReference = input.externalReference?.trim().slice(0, 191);
+  const failureReason = input.failureReason?.trim().slice(0, 512);
+  if (input.action === "completed" && !externalReference)
     throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "完成人工结算必须提供外部参考号");
-  if (input.action === "failed" && !input.failureReason?.trim())
+  if (input.action === "failed" && !failureReason)
     throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "标记结算失败必须提供原因");
   const connection = await pool.getConnection();
   try {
@@ -565,11 +567,11 @@ export async function transitionDeveloperSettlement(
       ],
       failed: [
         "UPDATE ai_direct_developer_settlements SET status = 'failed', failureReason = ?, processingByUserId = NULL WHERE id = ?",
-        [input.failureReason!.trim().slice(0, 512), input.settlementId],
+        [failureReason!, input.settlementId],
       ],
       completed: [
         "UPDATE ai_direct_developer_settlements SET status = 'completed', externalReference = ?, completedByUserId = ?, completedAt = NOW(3) WHERE id = ?",
-        [input.externalReference!.trim().slice(0, 191), input.actorUserId, input.settlementId],
+        [externalReference!, input.actorUserId, input.settlementId],
       ],
     };
     const [sql, parameters] = updates[input.action];
@@ -589,8 +591,7 @@ export async function transitionDeveloperSettlement(
         `paid_hiring.settlement.${input.action}`,
         input.settlementId,
         JSON.stringify({
-          failureReason:
-            input.action === "failed" ? input.failureReason!.trim().slice(0, 512) : undefined,
+          failureReason: input.action === "failed" ? failureReason : undefined,
         }),
       ],
     );

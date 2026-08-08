@@ -102,7 +102,7 @@ function DesktopClientPage() {
               </>
             ) : (
               <>
-                用<strong>AI直聘</strong>,给AI员工们分配任务
+                招Ai员工,用<strong>AI直聘</strong>
               </>
             )}
           </h1>

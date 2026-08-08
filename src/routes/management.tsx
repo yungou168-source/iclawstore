@@ -17,12 +17,13 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
-import { ManagementSkeleton } from "../components/skeletons/ProtectedPageSkeletons";
 import { ApprovalCenterPage } from "../components/ai-direct/ApprovalCenterPage";
 import { AuditCenterPage } from "../components/ai-direct/AuditCenterPage";
 import { ManagementInsightsPage } from "../components/ai-direct/ManagementInsightsPage";
 import { OrganizationAdminPage } from "../components/ai-direct/OrganizationAdminPage";
+import { SettlementOperationsPage } from "../components/ai-direct/SettlementOperationsPage";
 import { TemplateReviewPage } from "../components/ai-direct/TemplateReviewPage";
+import { ManagementSkeleton } from "../components/skeletons/ProtectedPageSkeletons";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import {
@@ -34,8 +35,10 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 import { Textarea } from "../components/ui/textarea";
-import { isAdmin, isModerator } from "../lib/roles";
+import { aiDirectPaidHiringApi } from "../lib/aiDirectPaidHiringApi";
 import { useLocale } from "../lib/i18n/context";
+import type { TranslationKey } from "../lib/i18n/translations";
+import { isAdmin, isModerator } from "../lib/roles";
 import { useAuthStatus } from "../lib/useAuthStatus";
 import {
   AbusePage,
@@ -81,6 +84,7 @@ const MANAGEMENT_VIEWS = new Set<string>([
   "recent",
   "organizations",
   "templates",
+  "settlements",
   "audit",
   "system",
   "employees",
@@ -207,6 +211,28 @@ export function Management() {
   const navigate = useNavigate();
   const staff = isModerator(me);
   const admin = isAdmin(me);
+  const [settlementStaff, setSettlementStaff] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if (!me) {
+      setSettlementStaff(false);
+      return () => {
+        active = false;
+      };
+    }
+    void aiDirectPaidHiringApi
+      .listPayableBalances({ limit: 1 })
+      .then(() => {
+        if (active) setSettlementStaff(true);
+      })
+      .catch(() => {
+        if (active) setSettlementStaff(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [me?._id]);
 
   const selectedSlug = search.skill?.trim();
   const selectedPluginName = search.plugin?.trim();
@@ -495,7 +521,9 @@ export function Management() {
       onConfirm: (reason) => {
         void banUser({ userId, reason })
           .then(() => toast.success(t("management.ban.success", { label })))
-          .catch((error) => toast.error(formatMutationError(error, t("management.request_failed"))));
+          .catch((error) =>
+            toast.error(formatMutationError(error, t("management.request_failed"))),
+          );
       },
     });
   };
@@ -513,7 +541,9 @@ export function Management() {
       onConfirm: (reason) => {
         void unbanUser({ userId, reason })
           .then(() => toast.success(t("management.unban.success", { label })))
-          .catch((error) => toast.error(formatMutationError(error, t("management.request_failed"))));
+          .catch((error) =>
+            toast.error(formatMutationError(error, t("management.request_failed"))),
+          );
       },
     });
   };
@@ -524,9 +554,7 @@ export function Management() {
       title: hide
         ? t("management.skill.hide_title", { name: skill.displayName })
         : t("management.skill.restore_title", { name: skill.displayName }),
-      confirmLabel: hide
-        ? t("management.skill.hide_action")
-        : t("management.skill.restore_action"),
+      confirmLabel: hide ? t("management.skill.hide_action") : t("management.skill.restore_action"),
       destructive: hide,
       reason: {
         label: t("management.reason"),
@@ -542,11 +570,11 @@ export function Management() {
           reason: reason ?? "",
         })
           .then(() =>
-            toast.success(
-              hide ? t("management.skill.hidden") : t("management.skill.restored"),
-            ),
+            toast.success(hide ? t("management.skill.hidden") : t("management.skill.restored")),
           )
-          .catch((error) => toast.error(formatMutationError(error, t("management.request_failed"))));
+          .catch((error) =>
+            toast.error(formatMutationError(error, t("management.request_failed"))),
+          );
       },
     });
   };
@@ -560,7 +588,9 @@ export function Management() {
       onConfirm: () => {
         void hardDelete({ skillId: skill._id })
           .then(() => toast.success(t("management.skill.deleted")))
-          .catch((error) => toast.error(formatMutationError(error, t("management.request_failed"))));
+          .catch((error) =>
+            toast.error(formatMutationError(error, t("management.request_failed"))),
+          );
       },
     });
   };
@@ -588,7 +618,9 @@ export function Management() {
             setPublisherAbuseNotes("");
             setSelectedPublisherAbuseNominationId(null);
           })
-          .catch((error) => toast.error(formatMutationError(error, t("management.request_failed"))));
+          .catch((error) =>
+            toast.error(formatMutationError(error, t("management.request_failed"))),
+          );
       },
     });
   };
@@ -598,6 +630,7 @@ export function Management() {
       <ManagementSidebar
         activeView={activeView}
         admin={admin}
+        settlementStaff={settlementStaff}
         abuseCount={
           publisherAbuseDashboard
             ? getPublisherAbuseVisiblePendingItems(publisherAbuseDashboard).length
@@ -612,7 +645,7 @@ export function Management() {
         <div className="management-breadcrumb">
           <span>{t("management.title")}</span>
           <ChevronRight size={13} aria-hidden="true" />
-          <strong>{t(`management.${managementViewKey(activeView)}`)}</strong>
+          <strong>{t(managementViewKey(activeView))}</strong>
         </div>
 
         {activeView === "abuse" ? (
@@ -639,7 +672,9 @@ export function Management() {
                 onConfirm: () => {
                   void startPublisherAbuseScoreRun({})
                     .then(() => toast.success(t("management.abuse.scan_started")))
-                    .catch((error) => toast.error(formatMutationError(error, t("management.request_failed"))));
+                    .catch((error) =>
+                      toast.error(formatMutationError(error, t("management.request_failed"))),
+                    );
                 },
               });
             }}
@@ -762,6 +797,9 @@ export function Management() {
           />
         ) : null}
         {activeView === "organizations" ? <OrganizationAdminPage /> : null}
+        {settlementStaff && activeView === "settlements" ? (
+          <SettlementOperationsPage onStaffAccessChange={setSettlementStaff} />
+        ) : null}
         {activeView === "templates" ? <TemplateReviewPage /> : null}
         {activeView === "audit" ? <AuditCenterPage /> : null}
         {activeView === "approvals" ? <ApprovalCenterPage /> : null}
@@ -791,6 +829,7 @@ function ManagementSidebar({
   abuseCount,
   activeView,
   admin,
+  settlementStaff,
   duplicateCount,
   recentCount,
   reportCount,
@@ -799,6 +838,7 @@ function ManagementSidebar({
   abuseCount?: number;
   activeView: ManagementView;
   admin: boolean;
+  settlementStaff: boolean;
   duplicateCount?: number;
   recentCount?: number;
   reportCount?: number;
@@ -809,13 +849,38 @@ function ManagementSidebar({
     <aside className="management-sidebar">
       <nav aria-label={t("management.sections")}>
         <div className="management-sidebar-heading">{t("management.title")}</div>
-        <div className="management-sidebar-section-title">经营与运行</div>
+        <div className="management-sidebar-section-title">{t("management.operations")}</div>
         <div className="management-sidebar-group">
-          <ManagementSidebarLink active={activeView === "overview"} icon={<ClipboardList size={15} />} label="经营总览" view="overview" />
-          <ManagementSidebarLink active={activeView === "system"} icon={<ShieldCheck size={15} />} label="系统状态" view="system" />
-          <ManagementSidebarLink active={activeView === "employees"} icon={<UserRound size={15} />} label="AI 员工目录" view="employees" />
-          <ManagementSidebarLink active={activeView === "costs"} icon={<FileCheck2 size={15} />} label="成本账本" view="costs" />
-          <ManagementSidebarLink active={activeView === "approvals"} icon={<ShieldCheck size={15} />} label="统一审批中心" view="approvals" />
+          <ManagementSidebarLink
+            active={activeView === "overview"}
+            icon={<ClipboardList size={15} />}
+            label={t("management.overview")}
+            view="overview"
+          />
+          <ManagementSidebarLink
+            active={activeView === "system"}
+            icon={<ShieldCheck size={15} />}
+            label={t("management.system_status")}
+            view="system"
+          />
+          <ManagementSidebarLink
+            active={activeView === "employees"}
+            icon={<UserRound size={15} />}
+            label={t("management.employee_directory")}
+            view="employees"
+          />
+          <ManagementSidebarLink
+            active={activeView === "costs"}
+            icon={<FileCheck2 size={15} />}
+            label={t("management.cost_ledger")}
+            view="costs"
+          />
+          <ManagementSidebarLink
+            active={activeView === "approvals"}
+            icon={<ShieldCheck size={15} />}
+            label={t("management.approval_center")}
+            view="approvals"
+          />
         </div>
         <div className="management-sidebar-section-title">{t("management.review")}</div>
         <div className="management-sidebar-group">
@@ -867,6 +932,14 @@ function ManagementSidebar({
               icon={<FileCheck2 size={15} />}
               label={t("management.template_review")}
               view="templates"
+            />
+          ) : null}
+          {settlementStaff ? (
+            <ManagementSidebarLink
+              active={activeView === "settlements"}
+              icon={<FileCheck2 size={15} />}
+              label={t("management.settlements")}
+              view="settlements"
             />
           ) : null}
           <ManagementSidebarLink
@@ -942,21 +1015,25 @@ function resolveManagementView(
   return view ?? "abuse";
 }
 
-const MANAGEMENT_VIEW_KEYS: Record<ManagementView, string> = {
-  overview: "overview",
-  abuse: "publisher_abuse",
-  reports: "content_reports",
-  users: "users",
-  publishers: "publishers",
-  skills: "skills",
-  plugins: "plugins",
-  duplicates: "duplicate_candidates",
-  recent: "recent_pushes",
-  organizations: "organizations",
-  templates: "template_review",
-  audit: "audit_log",
-  system: "system",
-  settings: "settings",
+const MANAGEMENT_VIEW_KEYS: Record<ManagementView, TranslationKey> = {
+  overview: "management.overview",
+  abuse: "management.publisher_abuse",
+  reports: "management.content_reports",
+  users: "management.users",
+  publishers: "management.publishers",
+  skills: "management.skills",
+  plugins: "management.plugins",
+  duplicates: "management.duplicate_candidates",
+  recent: "management.recent_pushes",
+  organizations: "management.organizations",
+  templates: "management.template_review",
+  settlements: "management.settlements",
+  audit: "management.audit_log",
+  system: "management.system",
+  employees: "management.employee_directory",
+  costs: "management.cost_ledger",
+  approvals: "management.approval_center",
+  settings: "management.settings",
 };
 
 function managementViewKey(view: ManagementView) {

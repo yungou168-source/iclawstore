@@ -110,9 +110,9 @@ JWKS
 
 `JWT_PRIVATE_KEY` 必须是 PKCS#8 PEM RSA 私钥；`JWKS` 必须是同一密钥对的公钥 JWKS JSON。两项均属于生产机密，只能写入 Convex Production deployment 的环境变量，不得提交、粘贴到 issue 或写入工作区文件。密钥轮换必须同时替换两项，再以严格 typecheck 部署。
 
-`SITE_URL` is the final browser destination for OAuth. Email sign-in sends an
-8-digit OTP that is verified inside the login dialog; it must not fall back to
-a magic-link-only flow. `CUSTOM_AUTH_SITE_URL` is the externally reachable
+`SITE_URL` is the final browser destination for OAuth. Email sign-in sends a
+4-digit OTP that expires after 2 minutes and is verified inside the login dialog; it must not
+fall back to a magic-link-only flow. `CUSTOM_AUTH_SITE_URL` is the externally reachable
 Convex HTTP site URL. Do not substitute `RESEND_API_KEY` for
 `AUTH_RESEND_KEY`; they serve different paths.
 

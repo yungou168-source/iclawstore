@@ -49,6 +49,12 @@ export function desktopAuthDiscoveryFromEnvironment(
   };
 }
 
+export function paidHiringSupportedFromEnvironment(
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  return env.PAID_HIRING_RELEASE_READY === "true";
+}
+
 let openApiDocument: Promise<string> | undefined;
 
 function loadOpenApiDocument(): Promise<string> {
@@ -65,7 +71,7 @@ export async function desktopContractRoutes(fastify: FastifyInstance): Promise<v
       openapi: DESKTOP_CLIENT_OPENAPI_PATH,
       documentation: "/docs/AI_DIRECT_DESKTOP_CLIENT_API_V1.md",
       purchaseSupported: false,
-      paidHiringSupported: true,
+      paidHiringSupported: paidHiringSupportedFromEnvironment(),
       ...(auth ? { auth } : {}),
     });
   });

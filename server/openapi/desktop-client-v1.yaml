@@ -1180,7 +1180,10 @@ components:
         openapi: { type: string }
         documentation: { type: string }
         purchaseSupported: { type: boolean, const: false }
-        paidHiringSupported: { type: boolean, const: true }
+        paidHiringSupported:
+          type: boolean
+          default: false
+          description: True only when the paid hiring production release gate is explicitly enabled.
         auth:
           $ref: "#/components/schemas/DesktopAuthDiscovery"
     DesktopAuthDiscovery:

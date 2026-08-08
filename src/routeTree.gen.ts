@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as AccountBannedRouteImport } from './routes/account-banned'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AgentPricingRouteImport } from './routes/agent-pricing'
 import { Route as AuditsRouteImport } from './routes/audits'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DesktopClientRouteImport } from './routes/desktop-client'
@@ -78,6 +79,11 @@ const AccountBannedRoute = AccountBannedRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgentPricingRoute = AgentPricingRouteImport.update({
+  id: '/agent-pricing',
+  path: '/agent-pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuditsRoute = AuditsRouteImport.update({
@@ -322,6 +328,7 @@ export interface FileRoutesByFullPath {
   '/$slug': typeof SlugRoute
   '/account-banned': typeof AccountBannedRoute
   '/admin': typeof AdminRoute
+  '/agent-pricing': typeof AgentPricingRoute
   '/audits': typeof AuditsRoute
   '/dashboard': typeof DashboardRoute
   '/desktop-client': typeof DesktopClientRoute
@@ -374,6 +381,7 @@ export interface FileRoutesByTo {
   '/$slug': typeof SlugRoute
   '/account-banned': typeof AccountBannedRoute
   '/admin': typeof AdminRoute
+  '/agent-pricing': typeof AgentPricingRoute
   '/audits': typeof AuditsRoute
   '/dashboard': typeof DashboardRoute
   '/desktop-client': typeof DesktopClientRoute
@@ -427,6 +435,7 @@ export interface FileRoutesById {
   '/$slug': typeof SlugRoute
   '/account-banned': typeof AccountBannedRoute
   '/admin': typeof AdminRoute
+  '/agent-pricing': typeof AgentPricingRoute
   '/audits': typeof AuditsRoute
   '/dashboard': typeof DashboardRoute
   '/desktop-client': typeof DesktopClientRoute
@@ -481,6 +490,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/account-banned'
     | '/admin'
+    | '/agent-pricing'
     | '/audits'
     | '/dashboard'
     | '/desktop-client'
@@ -533,6 +543,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/account-banned'
     | '/admin'
+    | '/agent-pricing'
     | '/audits'
     | '/dashboard'
     | '/desktop-client'
@@ -585,6 +596,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/account-banned'
     | '/admin'
+    | '/agent-pricing'
     | '/audits'
     | '/dashboard'
     | '/desktop-client'
@@ -638,6 +650,7 @@ export interface RootRouteChildren {
   SlugRoute: typeof SlugRoute
   AccountBannedRoute: typeof AccountBannedRoute
   AdminRoute: typeof AdminRoute
+  AgentPricingRoute: typeof AgentPricingRoute
   AuditsRoute: typeof AuditsRoute
   DashboardRoute: typeof DashboardRoute
   DesktopClientRoute: typeof DesktopClientRoute
@@ -706,6 +719,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agent-pricing': {
+      id: '/agent-pricing'
+      path: '/agent-pricing'
+      fullPath: '/agent-pricing'
+      preLoaderRoute: typeof AgentPricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/audits': {
@@ -1093,6 +1113,7 @@ const rootRouteChildren: RootRouteChildren = {
   SlugRoute: SlugRoute,
   AccountBannedRoute: AccountBannedRoute,
   AdminRoute: AdminRoute,
+  AgentPricingRoute: AgentPricingRoute,
   AuditsRoute: AuditsRoute,
   DashboardRoute: DashboardRoute,
   DesktopClientRoute: DesktopClientRoute,

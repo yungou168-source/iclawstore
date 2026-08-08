@@ -1,12 +1,12 @@
-import { getFastifyAccessToken } from './fastifyAuthToken';
+import { getFastifyAccessToken } from "./fastifyAuthToken";
 
-const BASE = '/api/v1/ai-direct-hiring';
+const BASE = "/api/v1/ai-direct-hiring";
 
-export type OrganizationRole = 'owner' | 'admin' | 'manager' | 'member';
-export type CompanyRole = 'owner' | 'admin' | 'manager' | 'recruiter';
-export type ResourceStatus = 'active' | 'inactive' | 'archived';
+type OrganizationRole = "owner" | "admin" | "manager" | "member";
+type CompanyRole = "owner" | "admin" | "manager" | "recruiter";
+export type ResourceStatus = "active" | "inactive" | "archived";
 
-export interface CursorPage<T> {
+interface CursorPage<T> {
   items: T[];
   nextCursor: string | null;
 }
@@ -25,7 +25,7 @@ export interface OrganizationDto {
 export interface OrganizationMemberDto {
   userId: string;
   role: OrganizationRole;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
   createdAt: string;
   updatedAt: string;
 }
@@ -46,7 +46,7 @@ export interface CompanyDto {
 export interface CompanyMemberDto {
   userId: string;
   role: CompanyRole;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
   createdAt: string;
   updatedAt: string;
 }
@@ -68,19 +68,43 @@ export interface AgentRoleDto {
   companyId: string;
   projectId: string | null;
   name: string;
-  status: 'open' | 'filled' | 'cancelled';
+  status: "open" | "filled" | "cancelled";
   permissions: string[];
   createdAt: string;
   updatedAt: string;
 }
 
+export interface DepartmentDto {
+  id: string;
+  companyId: string;
+  name: string;
+  status: "active" | "inactive" | "archived";
+}
+
+export interface PositionDto {
+  id: string;
+  departmentId: string;
+  name: string;
+  status: "draft" | "open" | "filled" | "archived";
+  headcountTarget: number;
+  headcountFilled: number;
+}
+
+export interface PositionRoleDto {
+  id: string;
+  companyId: string;
+  projectId: string | null;
+  name: string;
+  status: "open" | "filled" | "cancelled";
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const send = async (refresh: boolean) => {
     const headers = new Headers(options.headers);
-    if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+    if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
     const token = await getFastifyAccessToken(refresh);
-    if (token) headers.set('Authorization', `Bearer ${token}`);
-    return fetch(`${BASE}${path}`, { ...options, headers, credentials: 'omit' });
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    return fetch(`${BASE}${path}`, { ...options, headers, credentials: "omit" });
   };
   let response = await send(false);
   if (response.status === 401) response = await send(true);
@@ -101,63 +125,90 @@ function listPath(path: string, query: Record<string, string | undefined>) {
 
 export const aiDirectOrganizationApi = {
   listOrganizations: (status?: ResourceStatus, cursor?: string) =>
-    request<CursorPage<OrganizationDto>>(listPath('/organizations', { status, cursor })),
+    request<CursorPage<OrganizationDto>>(listPath("/organizations", { status, cursor })),
   createOrganization: (name: string) =>
-    request<OrganizationDto>('/organizations', { method: 'POST', body: JSON.stringify({ name }) }),
+    request<OrganizationDto>("/organizations", { method: "POST", body: JSON.stringify({ name }) }),
   listOrganizationMembers: (organizationId: string) =>
-    request<{ items: OrganizationMemberDto[] }>(`/organizations/${encodeURIComponent(organizationId)}/members`),
-  upsertOrganizationMember: (organizationId: string, userId: string, role: OrganizationRole, status = 'active') =>
+    request<{ items: OrganizationMemberDto[] }>(
+      `/organizations/${encodeURIComponent(organizationId)}/members`,
+    ),
+  upsertOrganizationMember: (
+    organizationId: string,
+    userId: string,
+    role: OrganizationRole,
+    status = "active",
+  ) =>
     request<OrganizationMemberDto>(
       `/organizations/${encodeURIComponent(organizationId)}/members/${encodeURIComponent(userId)}`,
-      { method: 'PUT', body: JSON.stringify({ role, status }) },
+      { method: "PUT", body: JSON.stringify({ role, status }) },
     ),
   revokeOrganizationMember: (organizationId: string, userId: string) =>
-    request<void>(`/organizations/${encodeURIComponent(organizationId)}/members/${encodeURIComponent(userId)}`, {
-      method: 'DELETE',
-    }),
+    request<void>(
+      `/organizations/${encodeURIComponent(organizationId)}/members/${encodeURIComponent(userId)}`,
+      {
+        method: "DELETE",
+      },
+    ),
   listCompanies: (organizationId: string, status?: ResourceStatus, cursor?: string) =>
-    request<CursorPage<CompanyDto>>(listPath('/companies', { organizationId, status, cursor })),
+    request<CursorPage<CompanyDto>>(listPath("/companies", { organizationId, status, cursor })),
   createCompany: (organizationId: string, name: string) =>
-    request<CompanyDto>('/companies', { method: 'POST', body: JSON.stringify({ organizationId, name }) }),
+    request<CompanyDto>("/companies", {
+      method: "POST",
+      body: JSON.stringify({ organizationId, name }),
+    }),
   updateCompany: (companyId: string, input: { name?: string; status?: ResourceStatus }) =>
     request<CompanyDto>(`/companies/${encodeURIComponent(companyId)}`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify(input),
     }),
   archiveCompany: (companyId: string) =>
-    request<CompanyDto>(`/companies/${encodeURIComponent(companyId)}`, { method: 'DELETE' }),
+    request<CompanyDto>(`/companies/${encodeURIComponent(companyId)}`, { method: "DELETE" }),
   listCompanyMembers: (companyId: string) =>
     request<{ items: CompanyMemberDto[] }>(`/companies/${encodeURIComponent(companyId)}/members`),
-  upsertCompanyMember: (companyId: string, userId: string, role: CompanyRole, status = 'active') =>
-    request<CompanyMemberDto>(`/companies/${encodeURIComponent(companyId)}/members/${encodeURIComponent(userId)}`, {
-      method: 'PUT',
-      body: JSON.stringify({ role, status }),
-    }),
+  upsertCompanyMember: (companyId: string, userId: string, role: CompanyRole, status = "active") =>
+    request<CompanyMemberDto>(
+      `/companies/${encodeURIComponent(companyId)}/members/${encodeURIComponent(userId)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ role, status }),
+      },
+    ),
   revokeCompanyMember: (companyId: string, userId: string) =>
-    request<void>(`/companies/${encodeURIComponent(companyId)}/members/${encodeURIComponent(userId)}`, {
-      method: 'DELETE',
-    }),
+    request<void>(
+      `/companies/${encodeURIComponent(companyId)}/members/${encodeURIComponent(userId)}`,
+      {
+        method: "DELETE",
+      },
+    ),
   listProjects: (companyId: string, status?: ResourceStatus, cursor?: string) =>
-    request<CursorPage<ProjectDto>>(listPath('/projects', { companyId, status, cursor })),
+    request<CursorPage<ProjectDto>>(listPath("/projects", { companyId, status, cursor })),
+  listDepartments: (companyId: string) =>
+    request<CursorPage<DepartmentDto>>(listPath("/workforce/departments", { companyId })),
+  listPositions: (departmentId: string) =>
+    request<CursorPage<PositionDto>>(listPath("/workforce/positions", { departmentId })),
+  listPositionRoles: (positionId: string) =>
+    request<{ items: PositionRoleDto[] }>(
+      `/workforce/positions/${encodeURIComponent(positionId)}/roles`,
+    ),
   createProject: (companyId: string, name: string) =>
-    request<ProjectDto>('/projects', { method: 'POST', body: JSON.stringify({ companyId, name }) }),
+    request<ProjectDto>("/projects", { method: "POST", body: JSON.stringify({ companyId, name }) }),
   updateProject: (projectId: string, input: { name?: string; status?: ResourceStatus }) =>
     request<ProjectDto>(`/projects/${encodeURIComponent(projectId)}`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify(input),
     }),
-  listRoles: (projectId: string, status?: AgentRoleDto['status'], cursor?: string) =>
+  listRoles: (projectId: string, status?: AgentRoleDto["status"], cursor?: string) =>
     request<CursorPage<AgentRoleDto>>(
       listPath(`/projects/${encodeURIComponent(projectId)}/roles`, { status, cursor }),
     ),
   createRole: (projectId: string, name: string) =>
     request<AgentRoleDto>(`/projects/${encodeURIComponent(projectId)}/roles`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ name }),
     }),
-  updateRole: (roleId: string, input: { name?: string; status?: AgentRoleDto['status'] }) =>
+  updateRole: (roleId: string, input: { name?: string; status?: AgentRoleDto["status"] }) =>
     request<AgentRoleDto>(`/roles/${encodeURIComponent(roleId)}`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify(input),
     }),
 };

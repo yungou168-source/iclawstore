@@ -1,10 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { RecruitAiDirectory } from '../components/RecruitAiDirectory';
+import { createFileRoute } from "@tanstack/react-router";
+import { RecruitPaidHiringFlow } from "../components/RecruitPaidHiringFlow";
 
-export const Route = createFileRoute('/recruit-ai')({
+export const Route = createFileRoute("/recruit-ai")({
   component: RecruitAiPage,
 });
 
 function RecruitAiPage() {
-  return <RecruitAiDirectory />;
+  return <RecruitPaidHiringFlow />;
 }

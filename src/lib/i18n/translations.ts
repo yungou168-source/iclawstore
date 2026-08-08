@@ -23,6 +23,16 @@ const translations = {
     "header.theme_dark": "深色模式",
     "header.open_menu": "打开菜单",
     "header.browse_sections": "浏览分区、切换主题、访问账户操作。",
+    "auth.sign_in_failed": "登录失败，请重试。",
+    "auth.invalid_or_expired_code": "验证码无效或已过期。",
+    "auth.sign_in_title": "登录 AI直聘",
+    "auth.email_verification_code": "邮箱验证码",
+    "auth.email_address": "邮箱地址",
+    "auth.verification_code": "4 位验证码",
+    "auth.code_sent_to": "验证码已发送至 {email}",
+    "auth.code_sent": "已发送",
+    "auth.send_code": "发送",
+    "auth.verify_and_sign_in": "登录",
 
     // Footer
     "footer.browse": "浏览",
@@ -891,6 +901,16 @@ const translations = {
     "header.theme_dark": "Dark theme",
     "header.open_menu": "Open menu",
     "header.browse_sections": "Browse sections, switch theme, and access account actions.",
+    "auth.sign_in_failed": "Sign in failed. Please try again.",
+    "auth.invalid_or_expired_code": "The code is invalid or expired.",
+    "auth.sign_in_title": "Sign in to Ai Work",
+    "auth.email_verification_code": "Email verification code",
+    "auth.email_address": "Email address",
+    "auth.verification_code": "4-digit verification code",
+    "auth.code_sent_to": "We sent a code to {email}",
+    "auth.code_sent": "Sent",
+    "auth.send_code": "Send",
+    "auth.verify_and_sign_in": "Sign in",
 
     // Footer
     "footer.browse": "Browse",

@@ -15824,6 +15824,57 @@ a[class*="rounded-full"] {
 .desktop-home-button-secondary:hover {
   background: #f2f7f7;
 }
+.desktop-client-downloads {
+  display: grid;
+  width: min(100%, 1080px);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 42px;
+  text-align: left;
+}
+.desktop-client-download-group {
+  padding: 22px;
+  border: 1px solid #d5e3e4;
+  border-radius: 16px;
+  background: rgb(255 255 255 / 0.9);
+  box-shadow: 0 12px 30px rgb(25 55 62 / 0.08);
+}
+.desktop-client-download-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.desktop-client-download-heading > span {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 11px;
+  color: #078c90;
+  background: #e0f6f5;
+}
+.desktop-client-download-heading h2 {
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+.desktop-client-download-heading p {
+  margin-top: 3px;
+  color: #6d7b85;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.desktop-client-download-links {
+  display: grid;
+  gap: 9px;
+  margin-top: 18px;
+}
+.desktop-client-download-links .desktop-home-button {
+  width: 100%;
+  justify-content: flex-start;
+  padding-inline: 14px;
+  font-size: 13px;
+}
 .desktop-home-install {
   width: min(100%, 570px);
   margin-top: 31px;
@@ -16217,6 +16268,13 @@ a[class*="rounded-full"] {
   .desktop-home-hero-content > p {
     font-size: 16px;
   }
+  .desktop-client-downloads {
+    grid-template-columns: 1fr;
+    margin-top: 32px;
+  }
+  .desktop-client-download-group {
+    padding: 18px;
+  }
   .desktop-home-stats {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -16456,7 +16514,9 @@ a[class*="rounded-full"] {
   border: 1px solid #e1e5ec;
   border-radius: 16px;
   background: #fff;
-  transition: border-color 160ms ease, box-shadow 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 .ai-employee-card:hover,
 .ai-employee-card.is-selected {

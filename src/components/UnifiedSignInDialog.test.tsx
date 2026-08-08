@@ -32,41 +32,50 @@ describe("UnifiedSignInDialog", () => {
     signInMock.mockResolvedValue({ signingIn: true });
   });
 
-  it("offers GitHub, Google, WeChat, and email verification code sign-in", () => {
+  it("offers GitHub, Google, and a numeric email verification code sign-in", () => {
     render(<UnifiedSignInDialog locale="zh-CN" />);
 
-    expect(screen.getByRole("button", { name: "GitHub" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Google" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "微信" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "获取验证码" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "GitHub" }).querySelector("svg")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Google" }).querySelector("svg")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "微信" })).toBeNull();
+    expect(screen.getByRole("button", { name: "发送" })).toBeTruthy();
+    expect(screen.queryByText("使用邮箱验证码，或通过 GitHub、Google、微信登录。")).toBeNull();
     const emailInput = screen.getByLabelText("邮箱地址");
     expect(emailInput.getAttribute("type")).toBe("email");
     expect(emailInput.getAttribute("maxlength")).toBe("38");
-    expect(screen.getByLabelText("8 位验证码")).toBeTruthy();
+    const codeInput = screen.getByLabelText("4 位验证码");
+    expect(codeInput.getAttribute("inputmode")).toBe("numeric");
+    expect(codeInput.getAttribute("pattern")).toBe("[0-9]*");
+    expect(codeInput.getAttribute("maxlength")).toBe("4");
     expect(screen.queryByText("发送登录链接")).toBeNull();
   });
 
-  it("requests and verifies an 8-digit email code", async () => {
+  it("requests and verifies a 4-digit email code", async () => {
     render(<UnifiedSignInDialog locale="zh-CN" redirectTo="/dashboard" />);
 
     fireEvent.change(screen.getByLabelText("邮箱地址"), {
       target: { value: "USER@Example.COM" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "获取验证码" }));
+    fireEvent.click(screen.getByRole("button", { name: "发送" }));
 
     await waitFor(() => {
       expect(signInMock).toHaveBeenCalledWith("resend-otp", { email: "user@example.com" });
     });
 
-    fireEvent.change(screen.getByLabelText("8 位验证码"), {
-      target: { value: "12345678" },
+    fireEvent.change(screen.getByLabelText("4 位验证码"), {
+      target: { value: "12ab34" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "验证并登录" }));
+    expect((screen.getByLabelText("4 位验证码") as HTMLInputElement).value).toBe("1234");
+    const verifyButton = screen
+      .getAllByRole("button", { name: "登录" })
+      .find((button) => button.getAttribute("value") === "verify-code");
+    expect(verifyButton).toBeTruthy();
+    fireEvent.click(verifyButton as HTMLButtonElement);
 
     await waitFor(() => {
       expect(signInMock).toHaveBeenLastCalledWith("resend-otp", {
         email: "user@example.com",
-        code: "12345678",
+        code: "1234",
         redirectTo: "/dashboard",
       });
     });
@@ -78,7 +87,7 @@ describe("UnifiedSignInDialog", () => {
     fireEvent.change(screen.getByLabelText("邮箱地址"), {
       target: { value: "not-an-email" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "获取验证码" }));
+    fireEvent.click(screen.getByRole("button", { name: "发送" }));
 
     expect(signInMock).not.toHaveBeenCalled();
   });
@@ -90,7 +99,7 @@ describe("UnifiedSignInDialog", () => {
     fireEvent.change(screen.getByLabelText("邮箱地址"), {
       target: { value: "user@example.com" },
     });
-    const sendButton = screen.getByRole("button", { name: "获取验证码" });
+    const sendButton = screen.getByRole("button", { name: "发送" });
     fireEvent.click(sendButton);
     fireEvent.click(sendButton);
 
@@ -100,7 +109,6 @@ describe("UnifiedSignInDialog", () => {
   it.each([
     ["GitHub", "github"],
     ["Google", "google"],
-    ["微信", "wechat"],
   ])("starts %s OAuth sign-in", async (buttonName, provider) => {
     render(<UnifiedSignInDialog locale="zh-CN" redirectTo="/dashboard" />);
 

@@ -26,3 +26,10 @@ After the loading gate resolves:
 
 This prevents flash sequences such as login prompt -> loading state -> real content, and
 empty state -> loaded user content.
+
+## Email verification code contract
+
+Email sign-in uses a four-digit numeric one-time code. The server generates the code and
+expires it after two minutes; client-side length and numeric-input constraints are usability
+controls only and must not replace server-side expiry enforcement. Requesting a new code
+invalidates the prior code through the Convex Auth verification-token flow.

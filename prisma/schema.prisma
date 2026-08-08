@@ -1117,12 +1117,20 @@ model aiDirectPaymentOrders {
   fulfilledAt         DateTime?
   offerId             String?   @db.VarChar(36)
   employmentId        String?   @db.VarChar(36)
+  reconcileAttemptCount Int     @default(0)
+  lastReconciledAt    DateTime?
+  nextReconcileAt     DateTime?
+  lastProviderStatus  String?   @db.VarChar(64)
+  lastReconcileErrorCode String? @db.VarChar(128)
+  reconcileLeaseOwner String?   @db.VarChar(128)
+  reconcileLeaseExpiresAt DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
   @@unique([provider, providerTradeNo], map: "ai_direct_payment_orders_provider_trade_no_key")
   @@index([status, updatedAt], map: "ai_direct_payment_orders_status_updated_idx")
   @@index([developerUserId, status, updatedAt], map: "ai_direct_payment_orders_developer_status_idx")
+  @@index([status, nextReconcileAt, reconcileLeaseExpiresAt], map: "ai_direct_payment_orders_reconcile_queue_idx")
   @@map("ai_direct_payment_orders")
 }
 
@@ -1151,6 +1159,9 @@ model aiDirectDeveloperSettlements {
   amountFen            BigInt    @db.UnsignedBigInt
   status               String    @default("pending") @db.VarChar(32)
   externalReference    String?   @db.VarChar(191)
+  failureReason        String?   @db.VarChar(512)
+  processingByUserId   String?   @db.VarChar(191)
+  processingAt         DateTime?
   createdByUserId      String    @db.VarChar(191)
   completedByUserId    String?   @db.VarChar(191)
   completedAt          DateTime?
@@ -1158,6 +1169,7 @@ model aiDirectDeveloperSettlements {
   updatedAt            DateTime  @updatedAt
 
   @@index([developerUserId, status, createdAt], map: "ai_direct_developer_settlements_developer_status_idx")
+  @@index([status, createdAt], map: "ai_direct_developer_settlements_status_created_idx")
   @@map("ai_direct_developer_settlements")
 }
 
@@ -1170,6 +1182,22 @@ model aiDirectDeveloperSettlementItems {
   @@id([settlementId, ledgerEntryId])
   @@index([settlementId], map: "ai_direct_settlement_items_settlement_idx")
   @@map("ai_direct_developer_settlement_items")
+}
+
+model aiDirectPaidHiringOperationalAlerts {
+  id                String    @id @db.VarChar(36)
+  paymentOrderId    String    @db.VarChar(36)
+  code              String    @db.VarChar(128)
+  severity          String    @default("warning") @db.VarChar(16)
+  status            String    @default("open") @db.VarChar(16)
+  occurrenceCount   Int       @default(1)
+  firstObservedAt   DateTime  @default(now())
+  lastObservedAt    DateTime  @default(now())
+  resolvedAt        DateTime?
+
+  @@unique([paymentOrderId, code], map: "ai_direct_paid_hiring_alert_order_code_key")
+  @@index([status, lastObservedAt], map: "ai_direct_paid_hiring_alert_status_time_idx")
+  @@map("ai_direct_paid_hiring_operational_alerts")
 }
 
 model aiDirectOffers {

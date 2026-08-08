@@ -30,12 +30,12 @@ paths:
       security: []
       operationId: getDesktopContract
       responses:
-        '200':
+        "200":
           description: Contract metadata
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractMetadata'
+                $ref: "#/components/schemas/ContractMetadata"
   /api/v1/desktop/openapi.yaml:
     get:
       tags: [Contract]
@@ -43,7 +43,7 @@ paths:
       security: []
       operationId: getDesktopOpenApi
       responses:
-        '200':
+        "200":
           description: OpenAPI 3.1 YAML
           content:
             application/vnd.oai.openapi:
@@ -51,57 +51,57 @@ paths:
                 type: string
   /api/v1/ai-direct-hiring/agents/{agentId}/appearance:
     parameters:
-      - $ref: '#/components/parameters/AgentId'
+      - $ref: "#/components/parameters/AgentId"
     get:
       tags: [Agent Appearance]
       summary: Read Agent appearance and current write authority
       operationId: getAgentAppearance
       responses:
-        '200':
+        "200":
           description: Appearance profile
           headers:
             ETag:
-              $ref: '#/components/headers/AppearanceEtag'
+              $ref: "#/components/headers/AppearanceEtag"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentAppearance'
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '404': { $ref: '#/components/responses/NotFound' }
+                $ref: "#/components/schemas/AgentAppearance"
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
     patch:
       tags: [Agent Appearance]
       summary: Update avatar reference or default presentation mode
       operationId: updateAgentAppearance
       parameters:
-        - $ref: '#/components/parameters/AppearanceIfMatch'
+        - $ref: "#/components/parameters/AppearanceIfMatch"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AgentAppearancePatch'
+              $ref: "#/components/schemas/AgentAppearancePatch"
       responses:
-        '200':
+        "200":
           description: Updated revision
           headers:
             ETag:
-              $ref: '#/components/headers/AppearanceEtag'
+              $ref: "#/components/headers/AppearanceEtag"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Revision'
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '409': { $ref: '#/components/responses/RevisionConflict' }
-        '428': { $ref: '#/components/responses/PreconditionRequired' }
+                $ref: "#/components/schemas/Revision"
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "409": { $ref: "#/components/responses/RevisionConflict" }
+        "428": { $ref: "#/components/responses/PreconditionRequired" }
   /api/v1/ai-direct-hiring/agents/{agentId}/appearance/assets:
     post:
       tags: [Agent Appearance]
       summary: Upload an Agent appearance asset
       operationId: uploadAgentAppearanceAsset
       parameters:
-        - $ref: '#/components/parameters/AgentId'
-        - $ref: '#/components/parameters/AppearanceIfMatch'
+        - $ref: "#/components/parameters/AgentId"
+        - $ref: "#/components/parameters/AppearanceIfMatch"
       requestBody:
         required: true
         content:
@@ -117,29 +117,29 @@ paths:
                   type: string
                   format: binary
       responses:
-        '201':
+        "201":
           description: Stored asset
           headers:
             ETag:
-              $ref: '#/components/headers/AppearanceEtag'
+              $ref: "#/components/headers/AppearanceEtag"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppearanceAsset'
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '413': { $ref: '#/components/responses/AssetTooLarge' }
-        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
-        '428': { $ref: '#/components/responses/PreconditionRequired' }
+                $ref: "#/components/schemas/AppearanceAsset"
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "413": { $ref: "#/components/responses/AssetTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "428": { $ref: "#/components/responses/PreconditionRequired" }
   /api/v1/ai-direct-hiring/agents/{agentId}/appearance/assets/reorder:
     post:
       tags: [Agent Appearance]
       summary: Replace the complete order for one appearance kind
       operationId: reorderAgentAppearanceAssets
       parameters:
-        - $ref: '#/components/parameters/AgentId'
-        - $ref: '#/components/parameters/AppearanceIfMatch'
+        - $ref: "#/components/parameters/AgentId"
+        - $ref: "#/components/parameters/AppearanceIfMatch"
       requestBody:
         required: true
         content:
@@ -157,11 +157,11 @@ paths:
                   uniqueItems: true
                   items: { type: string, format: uuid }
       responses:
-        '200':
+        "200":
           description: New order and revision
           headers:
             ETag:
-              $ref: '#/components/headers/AppearanceEtag'
+              $ref: "#/components/headers/AppearanceEtag"
           content:
             application/json:
               schema:
@@ -172,35 +172,35 @@ paths:
                   assetIds:
                     type: array
                     items: { type: string, format: uuid }
-                  revision: { type: string, pattern: '^[0-9]+$' }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '409': { $ref: '#/components/responses/RevisionConflict' }
-        '428': { $ref: '#/components/responses/PreconditionRequired' }
+                  revision: { type: string, pattern: "^[0-9]+$" }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "409": { $ref: "#/components/responses/RevisionConflict" }
+        "428": { $ref: "#/components/responses/PreconditionRequired" }
   /api/v1/ai-direct-hiring/agents/{agentId}/appearance/assets/{assetId}:
     delete:
       tags: [Agent Appearance]
       summary: Soft-delete an appearance asset
       operationId: deleteAgentAppearanceAsset
       parameters:
-        - $ref: '#/components/parameters/AgentId'
-        - $ref: '#/components/parameters/AssetId'
-        - $ref: '#/components/parameters/AppearanceIfMatch'
+        - $ref: "#/components/parameters/AgentId"
+        - $ref: "#/components/parameters/AssetId"
+        - $ref: "#/components/parameters/AppearanceIfMatch"
       responses:
-        '204': { description: Asset deleted }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '428': { $ref: '#/components/responses/PreconditionRequired' }
+        "204": { description: Asset deleted }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "428": { $ref: "#/components/responses/PreconditionRequired" }
   /api/v1/ai-direct-hiring/appearance-assets/{assetId}/content:
     get:
       tags: [Agent Appearance]
       summary: Stream an active appearance asset
       operationId: getAgentAppearanceAssetContent
       parameters:
-        - $ref: '#/components/parameters/AssetId'
+        - $ref: "#/components/parameters/AssetId"
       responses:
-        '200':
+        "200":
           description: PNG, JPEG, WebP, or self-contained GLB bytes
           headers:
             ETag: { schema: { type: string } }
@@ -210,9 +210,19 @@ paths:
             image/jpeg: { schema: { type: string, format: binary } }
             image/webp: { schema: { type: string, format: binary } }
             model/gltf-binary: { schema: { type: string, format: binary } }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '404': { $ref: '#/components/responses/NotFound' }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/ai-direct-hiring/agents/{agentId}/prices:
+    get:
+      tags: [Offers]
+      summary: List the authenticated developer's immutable price history
+      operationId: listAgentHiringPrices
+      parameters:
+        - { name: agentId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      responses:
+        "200": { description: Price versions, newest first }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
     post:
       tags: [Offers]
       summary: Set the developer-owned CNY hiring price for a published Agent version
@@ -229,21 +239,26 @@ paths:
               required: [agentVersionId, amountFen]
               properties:
                 agentVersionId: { type: string, maxLength: 36 }
-                amountFen: { type: string, pattern: '^[0-9]+$' }
+                amountFen: { type: string, pattern: "^[0-9]+$" }
                 currency: { type: string, const: CNY }
       responses:
-        '201': { description: New active immutable price version }
-        '400': { $ref: '#/components/responses/ValidationError' }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '409': { $ref: '#/components/responses/Conflict' }
+        "201": { description: New active immutable price version }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /api/v1/ai-direct-hiring/paid-hiring/orders:
     post:
       tags: [Offers]
       summary: Create an idempotent Alipay hiring order from the server-side price
       operationId: createPaidHiringOrder
       parameters:
-        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, maxLength: 128 } }
+        - {
+            name: Idempotency-Key,
+            in: header,
+            required: true,
+            schema: { type: string, maxLength: 128 },
+          }
       requestBody:
         required: true
         content:
@@ -254,26 +269,51 @@ paths:
               required: [companyId, roleId, positionId, agentId]
               properties:
                 companyId: { type: string, maxLength: 36 }
-                projectId: { type: [string, 'null'], maxLength: 36 }
+                projectId: { type: [string, "null"], maxLength: 36 }
                 roleId: { type: string, maxLength: 36 }
                 positionId: { type: string, maxLength: 36 }
                 agentId: { type: string, maxLength: 36 }
       responses:
-        '201': { description: Pending Alipay order with a server-signed payUrl }
-        '200': { description: Replay of the same idempotent pending order }
-        '400': { $ref: '#/components/responses/ValidationError' }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '503': { description: Alipay merchant configuration is unavailable }
+        "201": { description: Pending Alipay order with a server-signed payUrl }
+        "200": { description: Replay of the same idempotent pending order }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { description: Alipay merchant configuration is unavailable }
+  /api/v1/ai-direct-hiring/paid-hiring/orders/{orderId}:
+    get:
+      tags: [Offers]
+      summary: Read the requester's local payment status and fulfilled references
+      operationId: getPaidHiringOrder
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      responses:
+        "200": { description: Local order status only; no provider request is made }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/ai-direct-hiring/paid-hiring/orders/{orderId}/reconcile:
+    post:
+      tags: [Offers]
+      summary: Perform one cooldown-limited server-side Alipay reconciliation
+      operationId: reconcilePaidHiringOrder
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      responses:
+        "200": { description: Updated local order status }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "429": { description: Reconciliation cooldown is active }
+        "503": { description: Alipay merchant configuration is unavailable }
   /api/v1/ai-direct-hiring/offers:
     get:
       tags: [Offers]
       summary: List immutable Offer receipts created by verified payment fulfillment
       operationId: listIssuedOffers
       responses:
-        '200': { description: Issued Offer receipts visible to the current organization member }
-        '401': { $ref: '#/components/responses/AuthRequired' }
+        "200": { description: Issued Offer receipts visible to the current organization member }
+        "401": { $ref: "#/components/responses/AuthRequired" }
   /api/v1/ai-direct-hiring/offers/{offerId}:
     get:
       tags: [Offers]
@@ -282,9 +322,9 @@ paths:
       parameters:
         - { name: offerId, in: path, required: true, schema: { type: string, maxLength: 36 } }
       responses:
-        '200': { description: Issued Offer receipt }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '404': { $ref: '#/components/responses/NotFound' }
+        "200": { description: Issued Offer receipt }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/ai-direct-hiring/employments/{employmentId}/transition:
     post:
       tags: [Employments]
@@ -295,88 +335,88 @@ paths:
         only when this Employment is still the controller.
       operationId: transitionEmployment
       parameters:
-        - $ref: '#/components/parameters/EmploymentId'
+        - $ref: "#/components/parameters/EmploymentId"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EmploymentTransitionRequest'
+              $ref: "#/components/schemas/EmploymentTransitionRequest"
       responses:
-        '200':
+        "200":
           description: Employment after the committed transition
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Employment'
-        '400': { $ref: '#/components/responses/ValidationError' }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409':
+                $ref: "#/components/schemas/Employment"
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
           description: Invalid state transition or Agent appearance already controlled by another Employment
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
   /api/v1/desktop/sidebar:
     get:
       tags: [Desktop Sidebar]
       summary: Read the account-level sidebar override
       operationId: getDesktopSidebar
       responses:
-        '200':
+        "200":
           description: Current override or the revision-zero default marker
           headers:
             ETag:
-              $ref: '#/components/headers/SidebarEtag'
+              $ref: "#/components/headers/SidebarEtag"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SidebarPreference'
-        '401': { $ref: '#/components/responses/AuthRequired' }
+                $ref: "#/components/schemas/SidebarPreference"
+        "401": { $ref: "#/components/responses/AuthRequired" }
     put:
       tags: [Desktop Sidebar]
       summary: Replace the account-level sidebar override
       operationId: putDesktopSidebar
       parameters:
-        - $ref: '#/components/parameters/SidebarIfMatch'
+        - $ref: "#/components/parameters/SidebarIfMatch"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SidebarConfig'
+              $ref: "#/components/schemas/SidebarConfig"
       responses:
-        '200':
+        "200":
           description: Saved override
           headers:
             ETag:
-              $ref: '#/components/headers/SidebarEtag'
+              $ref: "#/components/headers/SidebarEtag"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SidebarPreference'
-        '400': { $ref: '#/components/responses/ValidationError' }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '409': { $ref: '#/components/responses/RevisionConflict' }
-        '428': { $ref: '#/components/responses/PreconditionRequired' }
+                $ref: "#/components/schemas/SidebarPreference"
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "409": { $ref: "#/components/responses/RevisionConflict" }
+        "428": { $ref: "#/components/responses/PreconditionRequired" }
     delete:
       tags: [Desktop Sidebar]
       summary: Delete the override and return to client defaults
       operationId: resetDesktopSidebar
       parameters:
-        - $ref: '#/components/parameters/SidebarIfMatch'
+        - $ref: "#/components/parameters/SidebarIfMatch"
       responses:
-        '204':
+        "204":
           description: Override deleted; response ETag is sidebar-0
           headers:
             ETag:
-              $ref: '#/components/headers/SidebarEtag'
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '409': { $ref: '#/components/responses/RevisionConflict' }
-        '428': { $ref: '#/components/responses/PreconditionRequired' }
+              $ref: "#/components/headers/SidebarEtag"
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "409": { $ref: "#/components/responses/RevisionConflict" }
+        "428": { $ref: "#/components/responses/PreconditionRequired" }
   /api/v1/desktop/sidebar/icons:
     post:
       tags: [Desktop Sidebar]
@@ -392,53 +432,61 @@ paths:
               properties:
                 file: { type: string, format: binary }
       responses:
-        '201':
+        "201":
           description: Stored icon metadata
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ManagedAsset'
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '413': { $ref: '#/components/responses/AssetTooLarge' }
-        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+                $ref: "#/components/schemas/ManagedAsset"
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "413": { $ref: "#/components/responses/AssetTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
   /api/v1/desktop/sidebar/icons/{assetId}/content:
     get:
       tags: [Desktop Sidebar]
       summary: Stream an icon owned by the authenticated account
       operationId: getDesktopSidebarIconContent
       parameters:
-        - $ref: '#/components/parameters/AssetId'
+        - $ref: "#/components/parameters/AssetId"
       responses:
-        '200':
+        "200":
           description: Image bytes
           content:
             image/png: { schema: { type: string, format: binary } }
             image/jpeg: { schema: { type: string, format: binary } }
             image/webp: { schema: { type: string, format: binary } }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '404': { $ref: '#/components/responses/NotFound' }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/desktop/sidebar/icons/{assetId}:
     delete:
       tags: [Desktop Sidebar]
       summary: Delete an unused account-owned icon
       operationId: deleteDesktopSidebarIcon
       parameters:
-        - $ref: '#/components/parameters/AssetId'
+        - $ref: "#/components/parameters/AssetId"
       responses:
-        '204': { description: Icon deleted }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
+        "204": { description: Icon deleted }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /api/v1/desktop/templates:
     get:
       tags: [Desktop Templates]
       summary: List published desktop templates
       operationId: listDesktopTemplates
       parameters:
-        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
-        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 10000, default: 0 } }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 50, default: 20 },
+          }
+        - {
+            name: offset,
+            in: query,
+            schema: { type: integer, minimum: 0, maximum: 10000, default: 0 },
+          }
       responses:
-        '200':
+        "200":
           description: Published templates; purchaseSupported is always false in v1
           content:
             application/json:
@@ -448,11 +496,11 @@ paths:
                 properties:
                   items:
                     type: array
-                    items: { $ref: '#/components/schemas/DesktopTemplate' }
+                    items: { $ref: "#/components/schemas/DesktopTemplate" }
                   limit: { type: integer }
                   offset: { type: integer }
                   purchaseSupported: { type: boolean, const: false }
-        '401': { $ref: '#/components/responses/AuthRequired' }
+        "401": { $ref: "#/components/responses/AuthRequired" }
     post:
       tags: [Desktop Templates]
       summary: Create a Publisher-owned template draft
@@ -462,28 +510,28 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateTemplate'
+              $ref: "#/components/schemas/CreateTemplate"
       responses:
-        '201': { description: Template draft created }
-        '400': { $ref: '#/components/responses/ValidationError' }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '409': { $ref: '#/components/responses/Conflict' }
+        "201": { description: Template draft created }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /api/v1/desktop/templates/{templateId}:
     parameters:
-      - $ref: '#/components/parameters/TemplateId'
+      - $ref: "#/components/parameters/TemplateId"
     get:
       tags: [Desktop Templates]
       summary: Read a published or owned template
       operationId: getDesktopTemplate
       responses:
-        '200':
+        "200":
           description: Template details
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/DesktopTemplate' }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '404': { $ref: '#/components/responses/NotFound' }
+              schema: { $ref: "#/components/schemas/DesktopTemplate" }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
     patch:
       tags: [Desktop Templates]
       summary: Update an owned template draft
@@ -493,19 +541,19 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateTemplate'
+              $ref: "#/components/schemas/UpdateTemplate"
       responses:
-        '200': { description: Draft updated }
-        '400': { $ref: '#/components/responses/ValidationError' }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "200": { description: Draft updated }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/desktop/templates/{templateId}/versions:
     post:
       tags: [Desktop Templates]
       summary: Upload a validated .clawtemplate package for an owned draft
       operationId: uploadDesktopTemplateVersion
       parameters:
-        - $ref: '#/components/parameters/TemplateId'
+        - $ref: "#/components/parameters/TemplateId"
       requestBody:
         required: true
         content:
@@ -516,20 +564,20 @@ paths:
               properties:
                 file: { type: string, format: binary }
       responses:
-        '201': { description: Draft version created }
-        '400': { $ref: '#/components/responses/ValidationError' }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '413': { $ref: '#/components/responses/AssetTooLarge' }
-        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        "201": { description: Draft version created }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "413": { $ref: "#/components/responses/AssetTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
   /api/v1/desktop/templates/{templateId}/versions/{versionId}/screenshots:
     post:
       tags: [Desktop Templates]
       summary: Upload one of 1–4 template screenshots
       operationId: uploadDesktopTemplateScreenshot
       parameters:
-        - $ref: '#/components/parameters/TemplateId'
-        - $ref: '#/components/parameters/VersionId'
+        - $ref: "#/components/parameters/TemplateId"
+        - $ref: "#/components/parameters/VersionId"
         - name: sortOrder
           in: query
           required: true
@@ -544,74 +592,74 @@ paths:
               properties:
                 file: { type: string, format: binary }
       responses:
-        '201': { description: Screenshot stored }
-        '400': { $ref: '#/components/responses/ValidationError' }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '409': { $ref: '#/components/responses/Conflict' }
+        "201": { description: Screenshot stored }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /api/v1/desktop/templates/{templateId}/versions/{versionId}/submit:
     post:
       tags: [Desktop Templates]
       summary: Submit a complete draft version for review
       operationId: submitDesktopTemplateVersion
       parameters:
-        - $ref: '#/components/parameters/TemplateId'
-        - $ref: '#/components/parameters/VersionId'
+        - $ref: "#/components/parameters/TemplateId"
+        - $ref: "#/components/parameters/VersionId"
       responses:
-        '200': { description: Version is pending review }
-        '400': { $ref: '#/components/responses/ValidationError' }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "200": { description: Version is pending review }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/desktop/templates/{templateId}/versions/{versionId}/approve:
     post:
       tags: [Desktop Templates]
       summary: Approve and publish a submitted version (platform admin)
       operationId: approveDesktopTemplateVersion
       parameters:
-        - $ref: '#/components/parameters/TemplateId'
-        - $ref: '#/components/parameters/VersionId'
+        - $ref: "#/components/parameters/TemplateId"
+        - $ref: "#/components/parameters/VersionId"
       responses:
-        '200': { description: Version published }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '409': { $ref: '#/components/responses/Conflict' }
+        "200": { description: Version published }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /api/v1/desktop/templates/{templateId}/package:
     get:
       tags: [Desktop Templates]
       summary: Download a free or entitled published package
       operationId: downloadDesktopTemplatePackage
       parameters:
-        - $ref: '#/components/parameters/TemplateId'
+        - $ref: "#/components/parameters/TemplateId"
       responses:
-        '200':
+        "200":
           description: .clawtemplate ZIP package
           headers:
             Content-Disposition: { schema: { type: string } }
             ETag: { schema: { type: string } }
           content:
             application/zip: { schema: { type: string, format: binary } }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/EntitlementRequired' }
-        '409': { $ref: '#/components/responses/Conflict' }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/EntitlementRequired" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /api/v1/desktop/template-screenshots/{assetId}/content:
     get:
       tags: [Desktop Templates]
       summary: Stream a published template screenshot
       operationId: getDesktopTemplateScreenshot
       parameters:
-        - $ref: '#/components/parameters/AssetId'
+        - $ref: "#/components/parameters/AssetId"
       responses:
-        '200': { description: Screenshot image bytes }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '404': { $ref: '#/components/responses/NotFound' }
+        "200": { description: Screenshot image bytes }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/desktop/templates/{templateId}/entitlements/{userId}:
     put:
       tags: [Desktop Templates]
       summary: Grant a test/admin entitlement (platform admin)
       operationId: grantDesktopTemplateEntitlement
       parameters:
-        - $ref: '#/components/parameters/TemplateId'
-        - $ref: '#/components/parameters/UserId'
+        - $ref: "#/components/parameters/TemplateId"
+        - $ref: "#/components/parameters/UserId"
       requestBody:
         content:
           application/json:
@@ -619,22 +667,22 @@ paths:
               type: object
               additionalProperties: false
               properties:
-                reference: { type: [string, 'null'], maxLength: 191 }
+                reference: { type: [string, "null"], maxLength: 191 }
       responses:
-        '200': { description: Entitlement active }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "200": { description: Entitlement active }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
     delete:
       tags: [Desktop Templates]
       summary: Revoke an entitlement (platform admin)
       operationId: revokeDesktopTemplateEntitlement
       parameters:
-        - $ref: '#/components/parameters/TemplateId'
-        - $ref: '#/components/parameters/UserId'
+        - $ref: "#/components/parameters/TemplateId"
+        - $ref: "#/components/parameters/UserId"
       responses:
-        '204': { description: Entitlement revoked }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "204": { description: Entitlement revoked }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/session:
     get:
       tags: [Session]
@@ -643,27 +691,41 @@ paths:
       parameters:
         - { name: X-Organization-Id, in: header, schema: { type: string, maxLength: 36 } }
       responses:
-        '200':
+        "200":
           description: Server-authoritative desktop session scope
-          content: { application/json: { schema: { $ref: '#/components/schemas/DesktopSession' } } }
-        '401': { $ref: '#/components/responses/AuthRequired' }
+          content: { application/json: { schema: { $ref: "#/components/schemas/DesktopSession" } } }
+        "401": { $ref: "#/components/responses/AuthRequired" }
   /api/v1/ai-direct-hiring/jobs:
     get:
       tags: [Jobs]
       summary: List organization Jobs using a stable cursor
       operationId: listDesktopJobs
       parameters:
-        - { name: organizationId, in: query, required: true, schema: { type: string, maxLength: 36 } }
-        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - {
+            name: organizationId,
+            in: query,
+            required: true,
+            schema: { type: string, maxLength: 36 },
+          }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 50, default: 20 },
+          }
         - { name: cursor, in: query, schema: { type: string } }
-        - { name: status, in: query, description: Comma-separated statuses, schema: { type: string } }
+        - {
+            name: status,
+            in: query,
+            description: Comma-separated statuses,
+            schema: { type: string },
+          }
       responses:
-        '200':
+        "200":
           description: Cursor page of Jobs; newest runs first
-          content: { application/json: { schema: { $ref: '#/components/schemas/JobPage' } } }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '400': { $ref: '#/components/responses/ValidationError' }
+          content: { application/json: { schema: { $ref: "#/components/schemas/JobPage" } } }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "400": { $ref: "#/components/responses/ValidationError" }
   /api/v1/ai-direct-hiring/jobs/{runId}:
     get:
       tags: [Jobs]
@@ -672,12 +734,12 @@ paths:
       parameters:
         - { name: runId, in: path, required: true, schema: { type: string, maxLength: 36 } }
       responses:
-        '200':
+        "200":
           description: Job detail
-          content: { application/json: { schema: { $ref: '#/components/schemas/JobDetail' } } }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '404': { $ref: '#/components/responses/NotFound' }
+          content: { application/json: { schema: { $ref: "#/components/schemas/JobDetail" } } }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/ai-direct-hiring/jobs/{runId}/artifacts:
     get:
       tags: [Jobs]
@@ -686,12 +748,27 @@ paths:
       parameters:
         - { name: runId, in: path, required: true, schema: { type: string, maxLength: 36 } }
       responses:
-        '200':
+        "200":
           description: Artifact metadata with authorized content URLs
-          content: { application/json: { schema: { type: object, required: [items], properties: { items: { type: array, items: { $ref: '#/components/schemas/JobArtifact' } } } } } }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '404': { $ref: '#/components/responses/NotFound' }
+          content:
+            {
+              application/json:
+                {
+                  schema:
+                    {
+                      type: object,
+                      required: [items],
+                      properties:
+                        {
+                          items:
+                            { type: array, items: { $ref: "#/components/schemas/JobArtifact" } },
+                        },
+                    },
+                },
+            }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/ai-direct-hiring/jobs/{runId}/artifacts/{artifactId}/content:
     get:
       tags: [Jobs]
@@ -701,13 +778,13 @@ paths:
         - { name: runId, in: path, required: true, schema: { type: string, maxLength: 36 } }
         - { name: artifactId, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
-        '200':
+        "200":
           description: Verified artifact byte stream
           content: { application/octet-stream: { schema: { type: string, format: binary } } }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '503': { description: Artifact download is disabled }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { description: Artifact download is disabled }
   /api/v1/ai-direct-hiring/interviews:
     post:
       tags: [Interviews]
@@ -724,18 +801,24 @@ paths:
               properties:
                 organizationId: { type: string, maxLength: 36 }
                 agentVersionId: { type: string, maxLength: 36 }
-                participantUserIds: { type: array, maxItems: 20, items: { type: string, maxLength: 191 } }
+                participantUserIds:
+                  { type: array, maxItems: 20, items: { type: string, maxLength: 191 } }
       responses:
-        '201': { description: Conversation created }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "201": { description: Conversation created }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/interviews/{conversationId}/model-consent:
     put:
       tags: [Interviews]
       summary: Let a participant opt out of organization-enabled remote model use
       operationId: updateInterviewModelConsent
       parameters:
-        - { name: conversationId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+        - {
+            name: conversationId,
+            in: path,
+            required: true,
+            schema: { type: string, maxLength: 36 },
+          }
       requestBody:
         required: true
         content:
@@ -746,9 +829,9 @@ paths:
               required: [optedOut]
               properties: { optedOut: { type: boolean } }
       responses:
-        '200': { description: Consent updated }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "200": { description: Consent updated }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/interviews/{conversationId}/messages:
     parameters:
       - { name: conversationId, in: path, required: true, schema: { type: string, maxLength: 36 } }
@@ -758,11 +841,15 @@ paths:
       operationId: listInterviewMessages
       parameters:
         - { name: afterSequence, in: query, schema: { type: integer, minimum: 0, default: 0 } }
-        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 50 },
+          }
       responses:
-        '200': { description: Ordered messages; deleted bodies are null }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "200": { description: Ordered messages; deleted bodies are null }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
     post:
       tags: [Interviews]
       summary: Append a text-only interview message with a 90-day retention deadline
@@ -777,29 +864,39 @@ paths:
               required: [body]
               properties: { body: { type: string, minLength: 1, maxLength: 10000 } }
       responses:
-        '201': { description: Message appended }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "201": { description: Message appended }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/interviews/{conversationId}/messages/{messageId}:
     delete:
       tags: [Interviews]
       summary: Hide the caller's message and enqueue deletion subject to legal hold
       operationId: deleteInterviewMessage
       parameters:
-        - { name: conversationId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+        - {
+            name: conversationId,
+            in: path,
+            required: true,
+            schema: { type: string, maxLength: 36 },
+          }
         - { name: messageId, in: path, required: true, schema: { type: string, maxLength: 36 } }
       responses:
-        '204': { description: Message hidden and deletion requested }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '404': { $ref: '#/components/responses/NotFound' }
+        "204": { description: Message hidden and deletion requested }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/ai-direct-hiring/interviews/{conversationId}/read-cursor:
     put:
       tags: [Interviews]
       summary: Advance the caller's read cursor without decreasing it
       operationId: advanceInterviewReadCursor
       parameters:
-        - { name: conversationId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+        - {
+            name: conversationId,
+            in: path,
+            required: true,
+            schema: { type: string, maxLength: 36 },
+          }
       requestBody:
         required: true
         content:
@@ -810,9 +907,9 @@ paths:
               required: [sequence]
               properties: { sequence: { type: integer, minimum: 0 } }
       responses:
-        '200': { description: Cursor advanced }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "200": { description: Cursor advanced }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/interview-retention-policies/{organizationId}:
     parameters:
       - { name: organizationId, in: path, required: true, schema: { type: string, maxLength: 36 } }
@@ -821,9 +918,14 @@ paths:
       summary: Read the organization interview retention policy
       operationId: getInterviewRetentionPolicy
       responses:
-        '200': { description: Policy defaults to 90-day text retention, organization-default model opt-in, and image/PDF attachments up to 10 MiB }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "200":
+          {
+            description: Policy defaults to 90-day text retention,
+            organization-default model opt-in,
+            and image/PDF attachments up to 10 MiB,
+          }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
     put:
       tags: [Interviews]
       summary: Confirm the fixed v1 interview retention policy
@@ -842,18 +944,18 @@ paths:
                 attachmentPolicy: { type: string, const: image_pdf_only }
                 attachmentMaxBytes: { type: integer, const: 10485760 }
       responses:
-        '200': { description: Policy confirmed }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "200": { description: Policy confirmed }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/interview-legal-holds:
     post:
       tags: [Interviews]
       summary: Create an organization-admin legal hold for a conversation or message
       operationId: createInterviewLegalHold
       responses:
-        '201': { description: Legal hold created }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "201": { description: Legal hold created }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/interview-legal-holds/{holdId}:
     delete:
       tags: [Interviews]
@@ -862,25 +964,41 @@ paths:
       parameters:
         - { name: holdId, in: path, required: true, schema: { type: string, maxLength: 36 } }
       responses:
-        '204': { description: Legal hold released }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '404': { $ref: '#/components/responses/NotFound' }
+        "204": { description: Legal hold released }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/ai-direct-hiring/catalog/agents:
     get:
       tags: [Candidate Catalog]
       summary: List catalog-safe candidates visible to the selected organization
       operationId: listCandidateCatalogAgents
       parameters:
-        - { name: X-Organization-Id, in: header, required: false, schema: { type: string, maxLength: 36 } }
+        - {
+            name: X-Organization-Id,
+            in: header,
+            required: false,
+            schema: { type: string, maxLength: 36 },
+          }
         - { name: category, in: query, required: false, schema: { type: string, maxLength: 80 } }
         - { name: search, in: query, required: false, schema: { type: string, maxLength: 200 } }
         - { name: cursor, in: query, required: false, schema: { type: string } }
-        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - {
+            name: limit,
+            in: query,
+            required: false,
+            schema: { type: integer, minimum: 1, maximum: 50, default: 20 },
+          }
       responses:
-        '200': { description: Digest-backed candidate page; excludes prompts, execution policy, review notes, and employment records }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "200":
+          {
+            description: Digest-backed candidate page; excludes prompts,
+            execution policy,
+            review notes,
+            and employment records,
+          }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/catalog/agents/{agentId}:
     get:
       tags: [Candidate Catalog]
@@ -888,23 +1006,33 @@ paths:
       operationId: getCandidateCatalogAgent
       parameters:
         - { name: agentId, in: path, required: true, schema: { type: string, maxLength: 36 } }
-        - { name: X-Organization-Id, in: header, required: false, schema: { type: string, maxLength: 36 } }
+        - {
+            name: X-Organization-Id,
+            in: header,
+            required: false,
+            schema: { type: string, maxLength: 36 },
+          }
       responses:
-        '200': { description: Digest-backed candidate detail }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '404': { $ref: '#/components/responses/NotFound' }
+        "200": { description: Digest-backed candidate detail }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/ai-direct-hiring/catalog/categories:
     get:
       tags: [Candidate Catalog]
       summary: List categories and visible candidate counts
       operationId: listCandidateCatalogCategories
       parameters:
-        - { name: X-Organization-Id, in: header, required: false, schema: { type: string, maxLength: 36 } }
+        - {
+            name: X-Organization-Id,
+            in: header,
+            required: false,
+            schema: { type: string, maxLength: 36 },
+          }
       responses:
-        '200': { description: Digest-backed category counts }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "200": { description: Digest-backed category counts }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/workforce/employees:
     get:
       tags: [Workforce]
@@ -916,15 +1044,28 @@ paths:
       operationId: listWorkforceEmployees
       parameters:
         - { name: companyId, in: query, required: true, schema: { type: string, maxLength: 36 } }
-        - { name: departmentId, in: query, required: false, schema: { type: string, maxLength: 36 } }
+        - {
+            name: departmentId,
+            in: query,
+            required: false,
+            schema: { type: string, maxLength: 36 },
+          }
         - { name: positionId, in: query, required: false, schema: { type: string, maxLength: 36 } }
         - { name: status, in: query, required: false, schema: { type: string, maxLength: 32 } }
         - { name: cursor, in: query, required: false, schema: { type: string, maxLength: 512 } }
-        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - {
+            name: limit,
+            in: query,
+            required: false,
+            schema: { type: integer, minimum: 1, maximum: 50, default: 20 },
+          }
       responses:
-        '200': { description: Company-scoped employee digest page with an opaque updatedAt/employmentId cursor }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "200":
+          {
+            description: Company-scoped employee digest page with an opaque updatedAt/employmentId cursor,
+          }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/workforce/departments:
     get:
       tags: [Workforce]
@@ -934,17 +1075,17 @@ paths:
         - { name: companyId, in: query, required: true, schema: { type: string, maxLength: 36 } }
         - { name: cursor, in: query, required: false, schema: { type: string } }
       responses:
-        '200': { description: Company-scoped department page }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "200": { description: Company-scoped department page }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
     post:
       tags: [Workforce]
       summary: Create a company-owned department
       operationId: createWorkforceDepartment
       responses:
-        '201': { description: Department created }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "201": { description: Department created }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/workforce/positions:
     get:
       tags: [Workforce]
@@ -954,17 +1095,17 @@ paths:
         - { name: departmentId, in: query, required: true, schema: { type: string, maxLength: 36 } }
         - { name: cursor, in: query, required: false, schema: { type: string } }
       responses:
-        '200': { description: Department-scoped position page with headcount projections }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "200": { description: Department-scoped position page with headcount projections }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
     post:
       tags: [Workforce]
       summary: Create a draft position
       operationId: createWorkforcePosition
       responses:
-        '201': { description: Position created }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
+        "201": { description: Position created }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/workforce/positions/{positionId}/candidate-matches:
     get:
       tags: [Candidate Catalog, Workforce]
@@ -978,13 +1119,23 @@ paths:
       parameters:
         - { name: positionId, in: path, required: true, schema: { type: string, maxLength: 36 } }
         - { name: cursor, in: query, required: false, schema: { type: string, maxLength: 512 } }
-        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - {
+            name: limit,
+            in: query,
+            required: false,
+            schema: { type: integer, minimum: 1, maximum: 50, default: 20 },
+          }
       responses:
-        '200': { description: Candidate digest matches with capability coverage score, viewer-scoped employment disclosure, and an opaque cursor }
-        '401': { $ref: '#/components/responses/AuthRequired' }
-        '403': { $ref: '#/components/responses/ForbiddenScope' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
+        "200":
+          {
+            description: Candidate digest matches with capability coverage score,
+            viewer-scoped employment disclosure,
+            and an opaque cursor,
+          }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
 components:
   securitySchemes:
     bearerAuth:
@@ -993,9 +1144,11 @@ components:
       bearerFormat: JWT
   parameters:
     AgentId: { name: agentId, in: path, required: true, schema: { type: string, format: uuid } }
-    EmploymentId: { name: employmentId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+    EmploymentId:
+      { name: employmentId, in: path, required: true, schema: { type: string, maxLength: 36 } }
     AssetId: { name: assetId, in: path, required: true, schema: { type: string, format: uuid } }
-    TemplateId: { name: templateId, in: path, required: true, schema: { type: string, format: uuid } }
+    TemplateId:
+      { name: templateId, in: path, required: true, schema: { type: string, format: uuid } }
     VersionId: { name: versionId, in: path, required: true, schema: { type: string, format: uuid } }
     UserId: { name: userId, in: path, required: true, schema: { type: string, maxLength: 191 } }
     AppearanceIfMatch:
@@ -1029,11 +1182,23 @@ components:
         purchaseSupported: { type: boolean, const: false }
         paidHiringSupported: { type: boolean, const: true }
         auth:
-          $ref: '#/components/schemas/DesktopAuthDiscovery'
+          $ref: "#/components/schemas/DesktopAuthDiscovery"
     DesktopAuthDiscovery:
       type: object
       additionalProperties: false
-      required: [issuer, authorizationEndpoint, tokenEndpoint, userinfoEndpoint, jwksUri, revocationEndpoint, clientId, audience, scopes, codeChallengeMethods]
+      required:
+        [
+          issuer,
+          authorizationEndpoint,
+          tokenEndpoint,
+          userinfoEndpoint,
+          jwksUri,
+          revocationEndpoint,
+          clientId,
+          audience,
+          scopes,
+          codeChallengeMethods,
+        ]
       properties:
         issuer: { type: string, format: uri }
         authorizationEndpoint: { type: string, format: uri }
@@ -1051,7 +1216,15 @@ components:
           items: { type: string, enum: [S256] }
     DesktopSession:
       type: object
-      required: [user, organizations, currentOrganization, organizationSelection, featureFlags, runtimeCapabilities]
+      required:
+        [
+          user,
+          organizations,
+          currentOrganization,
+          organizationSelection,
+          featureFlags,
+          runtimeCapabilities,
+        ]
       properties:
         user:
           type: object
@@ -1059,29 +1232,29 @@ components:
           properties:
             id: { type: string }
             convexUserId: { type: string }
-            email: { type: [string, 'null'], format: email }
-            name: { type: [string, 'null'] }
-            handle: { type: [string, 'null'] }
-            displayName: { type: [string, 'null'] }
-            image: { type: [string, 'null'], format: uri }
+            email: { type: [string, "null"], format: email }
+            name: { type: [string, "null"] }
+            handle: { type: [string, "null"] }
+            displayName: { type: [string, "null"] }
+            image: { type: [string, "null"], format: uri }
             role: { type: string }
         organizations:
           type: array
           maxItems: 100
-          items: { $ref: '#/components/schemas/OrganizationScope' }
+          items: { $ref: "#/components/schemas/OrganizationScope" }
         currentOrganization:
           oneOf:
-            - $ref: '#/components/schemas/OrganizationScope'
-            - type: 'null'
+            - $ref: "#/components/schemas/OrganizationScope"
+            - type: "null"
         organizationSelection:
           type: object
           required: [requestedOrganizationId, resolvedOrganizationId, source]
           properties:
-            requestedOrganizationId: { type: [string, 'null'] }
-            resolvedOrganizationId: { type: [string, 'null'] }
+            requestedOrganizationId: { type: [string, "null"] }
+            resolvedOrganizationId: { type: [string, "null"] }
             source: { type: string, enum: [requested, default] }
-        featureFlags: { $ref: '#/components/schemas/DesktopFeatureFlags' }
-        runtimeCapabilities: { $ref: '#/components/schemas/DesktopRuntimeCapabilities' }
+        featureFlags: { $ref: "#/components/schemas/DesktopFeatureFlags" }
+        runtimeCapabilities: { $ref: "#/components/schemas/DesktopRuntimeCapabilities" }
     OrganizationScope:
       type: object
       required: [id, name, slug, role, permissions, grantVersion]
@@ -1098,7 +1271,16 @@ components:
           minLength: 1
     DesktopFeatureFlags:
       type: object
-      required: [aiDirectHiring, desktopIdentityBridge, wechatLogin, desktopJobs, candidateCatalog, interviews, providerExecution]
+      required:
+        [
+          aiDirectHiring,
+          desktopIdentityBridge,
+          wechatLogin,
+          desktopJobs,
+          candidateCatalog,
+          interviews,
+          providerExecution,
+        ]
       additionalProperties: { type: boolean }
       properties:
         aiDirectHiring: { type: boolean }
@@ -1122,61 +1304,87 @@ components:
       type: object
       required: [items, nextCursor]
       properties:
-        items: { type: array, items: { $ref: '#/components/schemas/JobSummary' } }
-        nextCursor: { type: [string, 'null'] }
+        items: { type: array, items: { $ref: "#/components/schemas/JobSummary" } }
+        nextCursor: { type: [string, "null"] }
     JobSummary:
       type: object
-      required: [runId, workflowKey, status, requestedByUserId, stepCount, completedSteps, failedSteps, createdAt, startedAt, finishedAt, failureCode]
+      required:
+        [
+          runId,
+          workflowKey,
+          status,
+          requestedByUserId,
+          stepCount,
+          completedSteps,
+          failedSteps,
+          createdAt,
+          startedAt,
+          finishedAt,
+          failureCode,
+        ]
       properties:
         runId: { type: string, maxLength: 36 }
         workflowKey: { type: string }
         status: { type: string, enum: [queued, active, succeeded, failed, cancelled] }
         requestedByUserId: { type: string }
-        employmentId: { type: [string, 'null'] }
-        agentVersionId: { type: [string, 'null'] }
+        employmentId: { type: [string, "null"] }
+        agentVersionId: { type: [string, "null"] }
         stepCount: { type: integer, minimum: 0 }
         completedSteps: { type: integer, minimum: 0 }
         failedSteps: { type: integer, minimum: 0 }
         createdAt: { type: string, format: date-time }
-        startedAt: { type: [string, 'null'], format: date-time }
-        finishedAt: { type: [string, 'null'], format: date-time }
-        failureCode: { type: [string, 'null'] }
+        startedAt: { type: [string, "null"], format: date-time }
+        finishedAt: { type: [string, "null"], format: date-time }
+        failureCode: { type: [string, "null"] }
     JobStep:
       type: object
-      required: [stepId, stepKey, sequence, status, startedAt, finishedAt, latencyMs, costMicros, failureCode, outputSummary]
+      required:
+        [
+          stepId,
+          stepKey,
+          sequence,
+          status,
+          startedAt,
+          finishedAt,
+          latencyMs,
+          costMicros,
+          failureCode,
+          outputSummary,
+        ]
       properties:
         stepId: { type: string, maxLength: 36 }
         stepKey: { type: string }
         sequence: { type: integer, minimum: 1 }
         status: { type: string, enum: [pending, running, succeeded, failed, skipped] }
-        startedAt: { type: [string, 'null'], format: date-time }
-        finishedAt: { type: [string, 'null'], format: date-time }
-        latencyMs: { type: [integer, 'null'], minimum: 0 }
-        costMicros: { type: [string, 'null'], pattern: '^[0-9]+$' }
-        failureCode: { type: [string, 'null'] }
-        outputSummary: { type: [object, 'null'] }
+        startedAt: { type: [string, "null"], format: date-time }
+        finishedAt: { type: [string, "null"], format: date-time }
+        latencyMs: { type: [integer, "null"], minimum: 0 }
+        costMicros: { type: [string, "null"], pattern: "^[0-9]+$" }
+        failureCode: { type: [string, "null"] }
+        outputSummary: { type: [object, "null"] }
     JobDetail:
       allOf:
-        - $ref: '#/components/schemas/JobSummary'
+        - $ref: "#/components/schemas/JobSummary"
         - type: object
           required: [steps, inputSummary, outputIndex, failureReason, leaseOwner, leaseExpiresAt]
           properties:
-            steps: { type: array, items: { $ref: '#/components/schemas/JobStep' } }
-            inputSummary: { type: [object, 'null'] }
-            outputIndex: { type: [object, 'null'] }
-            failureReason: { type: [string, 'null'] }
-            leaseOwner: { type: [string, 'null'] }
-            leaseExpiresAt: { type: [string, 'null'], format: date-time }
+            steps: { type: array, items: { $ref: "#/components/schemas/JobStep" } }
+            inputSummary: { type: [object, "null"] }
+            outputIndex: { type: [object, "null"] }
+            failureReason: { type: [string, "null"] }
+            leaseOwner: { type: [string, "null"] }
+            leaseExpiresAt: { type: [string, "null"], format: date-time }
     JobArtifact:
       type: object
-      required: [artifactId, runId, kind, mimeType, sizeBytes, sha256, visibility, createdAt, contentUrl]
+      required:
+        [artifactId, runId, kind, mimeType, sizeBytes, sha256, visibility, createdAt, contentUrl]
       properties:
         artifactId: { type: string, format: uuid }
         runId: { type: string, maxLength: 36 }
         kind: { type: string }
         mimeType: { type: string }
         sizeBytes: { type: integer, minimum: 0 }
-        sha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+        sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
         visibility: { type: string, enum: [organization, requester] }
         createdAt: { type: string, format: date-time }
         contentUrl: { type: string }
@@ -1186,7 +1394,27 @@ components:
       properties:
         code:
           type: string
-          enum: [AUTH_REQUIRED, FORBIDDEN_SCOPE, NOT_FOUND, VALIDATION_ERROR, INVALID_TRANSITION, RUN_NOT_RECOVERABLE, RUNTIME_CAPABILITY_DISABLED, APPEARANCE_CONTROL_CONFLICT, ASSET_LIMIT_EXCEEDED, ASSET_TOO_LARGE, UNSUPPORTED_MEDIA_TYPE, ASSET_IN_USE, REVISION_CONFLICT, PRECONDITION_REQUIRED, TEMPLATE_ENTITLEMENT_REQUIRED, TEMPLATE_NOT_INSTALLABLE, DUPLICATE_ENTRY, INTERNAL_ERROR]
+          enum:
+            [
+              AUTH_REQUIRED,
+              FORBIDDEN_SCOPE,
+              NOT_FOUND,
+              VALIDATION_ERROR,
+              INVALID_TRANSITION,
+              RUN_NOT_RECOVERABLE,
+              RUNTIME_CAPABILITY_DISABLED,
+              APPEARANCE_CONTROL_CONFLICT,
+              ASSET_LIMIT_EXCEEDED,
+              ASSET_TOO_LARGE,
+              UNSUPPORTED_MEDIA_TYPE,
+              ASSET_IN_USE,
+              REVISION_CONFLICT,
+              PRECONDITION_REQUIRED,
+              TEMPLATE_ENTITLEMENT_REQUIRED,
+              TEMPLATE_NOT_INSTALLABLE,
+              DUPLICATE_ENTRY,
+              INTERNAL_ERROR,
+            ]
         error: { type: string }
         details: {}
     EmploymentTransitionRequest:
@@ -1196,7 +1424,19 @@ components:
       properties:
         toStatus:
           type: string
-          enum: [candidate, evaluating, offer_pending, offered, accepted, onboarding, active, paused, offboarding, terminated]
+          enum:
+            [
+              candidate,
+              evaluating,
+              offer_pending,
+              offered,
+              accepted,
+              onboarding,
+              active,
+              paused,
+              offboarding,
+              terminated,
+            ]
         reason: { type: string, maxLength: 500 }
         approvalId: { type: string, maxLength: 36 }
     Employment:
@@ -1208,22 +1448,34 @@ components:
         agentId: { type: string, maxLength: 36 }
         agentVersionId: { type: string, maxLength: 36 }
         roleId: { type: string, maxLength: 36 }
-        projectId: { type: [string, 'null'], maxLength: 36 }
+        projectId: { type: [string, "null"], maxLength: 36 }
         offerId: { type: string, maxLength: 36 }
         status:
           type: string
-          enum: [candidate, evaluating, offer_pending, offered, accepted, onboarding, active, paused, offboarding, terminated]
+          enum:
+            [
+              candidate,
+              evaluating,
+              offer_pending,
+              offered,
+              accepted,
+              onboarding,
+              active,
+              paused,
+              offboarding,
+              terminated,
+            ]
         roleName: { type: string }
         companyName: { type: string }
-        startedAt: { type: [string, 'null'], format: date-time }
-        endedAt: { type: [string, 'null'], format: date-time }
+        startedAt: { type: [string, "null"], format: date-time }
+        endedAt: { type: [string, "null"], format: date-time }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
     Revision:
       type: object
       required: [revision]
       properties:
-        revision: { type: string, pattern: '^[0-9]+$' }
+        revision: { type: string, pattern: "^[0-9]+$" }
     ManagedAsset:
       type: object
       required: [id, mimeType, sizeBytes, sha256, contentUrl]
@@ -1231,11 +1483,11 @@ components:
         id: { type: string, format: uuid }
         mimeType: { type: string }
         sizeBytes: { type: [string, integer] }
-        sha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+        sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
         contentUrl: { type: string }
     AppearanceAsset:
       allOf:
-        - $ref: '#/components/schemas/ManagedAsset'
+        - $ref: "#/components/schemas/ManagedAsset"
         - type: object
           required: [kind, sortOrder, createdAt]
           properties:
@@ -1247,34 +1499,36 @@ components:
       additionalProperties: false
       minProperties: 1
       properties:
-        avatarAssetId: { type: [string, 'null'], format: uuid }
+        avatarAssetId: { type: [string, "null"], format: uuid }
         defaultMode: { type: string, enum: [image_2d, model_3d] }
     AgentAppearance:
       type: object
       required: [agentId, avatarAssetId, defaultMode, revision, control, assets, presentation]
       properties:
         agentId: { type: string, format: uuid }
-        avatarAssetId: { type: [string, 'null'], format: uuid }
+        avatarAssetId: { type: [string, "null"], format: uuid }
         defaultMode: { type: string, enum: [image_2d, model_3d] }
-        revision: { type: string, pattern: '^[0-9]+$' }
+        revision: { type: string, pattern: "^[0-9]+$" }
         control:
           type: object
-          required: [controllerEmploymentId, controllerCompanyId, canWrite, authority, readOnlyReason]
+          required:
+            [controllerEmploymentId, controllerCompanyId, canWrite, authority, readOnlyReason]
           properties:
-            controllerEmploymentId: { type: [string, 'null'] }
-            controllerCompanyId: { type: [string, 'null'] }
+            controllerEmploymentId: { type: [string, "null"] }
+            controllerCompanyId: { type: [string, "null"] }
             canWrite: { type: boolean }
-            authority: { type: [string, 'null'], enum: [developer, publisher, company, null] }
-            readOnlyReason: { type: [string, 'null'] }
+            authority: { type: [string, "null"], enum: [developer, publisher, company, null] }
+            readOnlyReason: { type: [string, "null"] }
         assets:
           type: object
           required: [avatar, image2d, model3d]
           properties:
-            avatar: { type: array, items: { $ref: '#/components/schemas/AppearanceAsset' } }
-            image2d: { type: array, maxItems: 5, items: { $ref: '#/components/schemas/AppearanceAsset' } }
-            model3d: { type: array, items: { $ref: '#/components/schemas/AppearanceAsset' } }
+            avatar: { type: array, items: { $ref: "#/components/schemas/AppearanceAsset" } }
+            image2d:
+              { type: array, maxItems: 5, items: { $ref: "#/components/schemas/AppearanceAsset" } }
+            model3d: { type: array, items: { $ref: "#/components/schemas/AppearanceAsset" } }
         presentation: { type: object }
-        updatedAt: { type: [string, 'null'], format: date-time }
+        updatedAt: { type: [string, "null"], format: date-time }
     SidebarIcon:
       oneOf:
         - type: object
@@ -1299,7 +1553,7 @@ components:
         order: { type: integer, minimum: 0 }
         label: { type: string, minLength: 1, maxLength: 80 }
         visible: { type: boolean }
-        icon: { $ref: '#/components/schemas/SidebarIcon' }
+        icon: { $ref: "#/components/schemas/SidebarIcon" }
         routeId: { type: string, maxLength: 128 }
         templateId: { type: string, format: uuid }
     SidebarConfig:
@@ -1311,7 +1565,7 @@ components:
         items:
           type: array
           maxItems: 64
-          items: { $ref: '#/components/schemas/SidebarItem' }
+          items: { $ref: "#/components/schemas/SidebarItem" }
     SidebarPreference:
       type: object
       required: [overridden, config, revision]
@@ -1319,17 +1573,17 @@ components:
         overridden: { type: boolean }
         config:
           oneOf:
-            - $ref: '#/components/schemas/SidebarConfig'
-            - type: 'null'
-        revision: { type: string, pattern: '^[0-9]+$' }
-        updatedAt: { type: [string, 'null'], format: date-time }
+            - $ref: "#/components/schemas/SidebarConfig"
+            - type: "null"
+        revision: { type: string, pattern: "^[0-9]+$" }
+        updatedAt: { type: [string, "null"], format: date-time }
     TemplatePricing:
       type: object
       required: [mode, priceMicros, currency, purchaseSupported]
       properties:
         mode: { type: string, enum: [free, paid] }
-        priceMicros: { type: [string, 'null'], pattern: '^[0-9]+$' }
-        currency: { type: [string, 'null'], pattern: '^[A-Z]{3}$' }
+        priceMicros: { type: [string, "null"], pattern: "^[0-9]+$" }
+        currency: { type: [string, "null"], pattern: "^[A-Z]{3}$" }
         purchaseSupported: { type: boolean, const: false }
     DesktopTemplate:
       type: object
@@ -1346,9 +1600,9 @@ components:
         name: { type: string }
         description: { type: string }
         status: { type: string }
-        pricing: { $ref: '#/components/schemas/TemplatePricing' }
+        pricing: { $ref: "#/components/schemas/TemplatePricing" }
         entitled: { type: boolean }
-        activeVersion: { type: [object, 'null'] }
+        activeVersion: { type: [object, "null"] }
         updatedAt: { type: string, format: date-time }
     CreateTemplate:
       type: object
@@ -1356,12 +1610,12 @@ components:
       required: [publisherId, slug, name, description, pricingMode]
       properties:
         publisherId: { type: string, maxLength: 191 }
-        slug: { type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$' }
+        slug: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
         name: { type: string, maxLength: 160 }
         description: { type: string, maxLength: 2000 }
         pricingMode: { type: string, enum: [free, paid] }
-        priceMicros: { type: [integer, 'null'], minimum: 0 }
-        currency: { type: [string, 'null'], pattern: '^[A-Z]{3}$' }
+        priceMicros: { type: [integer, "null"], minimum: 0 }
+        currency: { type: [string, "null"], pattern: "^[A-Z]{3}$" }
     UpdateTemplate:
       type: object
       additionalProperties: false
@@ -1370,36 +1624,36 @@ components:
         name: { type: string, maxLength: 160 }
         description: { type: string, maxLength: 2000 }
         pricingMode: { type: string, enum: [free, paid] }
-        priceMicros: { type: [integer, 'null'], minimum: 0 }
-        currency: { type: [string, 'null'], pattern: '^[A-Z]{3}$' }
+        priceMicros: { type: [integer, "null"], minimum: 0 }
+        currency: { type: [string, "null"], pattern: "^[A-Z]{3}$" }
   responses:
     AuthRequired:
       description: Missing, invalid, or expired JWT
-      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     ForbiddenScope:
       description: The authenticated user lacks the required resource scope
-      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     NotFound:
       description: Resource not found or not visible to this account
-      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     ValidationError:
       description: Request validation failed
-      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     Conflict:
       description: State, ownership, uniqueness, limit, or in-use conflict
-      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     RevisionConflict:
       description: If-Match revision is stale; details contains currentRevision and etag
-      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     PreconditionRequired:
       description: A valid If-Match header is required
-      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     AssetTooLarge:
       description: Upload exceeds the policy for its resource kind
-      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     UnsupportedMediaType:
       description: Declared type, extension, or detected magic bytes are not allowed
-      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     EntitlementRequired:
       description: Paid template download requires an active entitlement; online purchase is unavailable
-      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }

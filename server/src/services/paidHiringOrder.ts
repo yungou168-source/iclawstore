@@ -1,8 +1,8 @@
-import { randomBytes, randomUUID } from 'node:crypto';
-import type { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
-import { publishOutboxEvent } from '../utils/outbox.js';
-import { AiDirectHiringError, ErrorCodes } from './aiDirectErrors.js';
-import { splitPaidHiringAmount } from './paidHiringMoney.js';
+import { randomBytes, randomUUID } from "node:crypto";
+import type { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
+import { publishOutboxEvent } from "../utils/outbox.js";
+import { AiDirectHiringError, ErrorCodes } from "./aiDirectErrors.js";
+import { splitPaidHiringAmount } from "./paidHiringMoney.js";
 
 export type CreatePaidHiringOrderInput = {
   companyId: string;
@@ -20,8 +20,8 @@ export type PaidHiringOrder = {
   id: string;
   outTradeNo: string;
   hiringIntentId: string;
-  status: 'pending';
-  currency: 'CNY';
+  status: "pending";
+  currency: "CNY";
   grossAmountFen: bigint;
   platformFeeFen: bigint;
   developerPayableFen: bigint;
@@ -46,14 +46,15 @@ type HiringContextRow = RowDataPacket & {
   amountFen: bigint;
 };
 
-type ExistingOrderRow = RowDataPacket & Omit<PaidHiringOrder, 'replayed' | 'status' | 'currency'> & {
-  status: string;
-  currency: string;
-  idempotencyFingerprint: string;
-};
+type ExistingOrderRow = RowDataPacket &
+  Omit<PaidHiringOrder, "replayed" | "status" | "currency"> & {
+    status: string;
+    currency: string;
+    idempotencyFingerprint: string;
+  };
 
 const newOutTradeNo = (): string =>
-  `AIH${new Date().toISOString().replace(/\D/g, '').slice(0, 17)}${randomBytes(8).toString('hex').toUpperCase()}`;
+  `AIH${new Date().toISOString().replace(/\D/g, "").slice(0, 17)}${randomBytes(8).toString("hex").toUpperCase()}`;
 
 async function findExistingOrder(
   connection: PoolConnection,
@@ -75,9 +76,13 @@ async function findExistingOrder(
 
 function existingToOrder(row: ExistingOrderRow, fingerprint: string): PaidHiringOrder {
   if (row.idempotencyFingerprint !== fingerprint) {
-    throw new AiDirectHiringError(ErrorCodes.IDEMPOTENCY_KEY_REUSED, '幂等键已用于不同的雇佣支付请求', 409);
+    throw new AiDirectHiringError(
+      ErrorCodes.IDEMPOTENCY_KEY_REUSED,
+      "幂等键已用于不同的雇佣支付请求",
+      409,
+    );
   }
-  if (row.status !== 'pending') {
+  if (row.status !== "pending") {
     throw new AiDirectHiringError(
       ErrorCodes.INVALID_TRANSITION,
       `该幂等请求对应的支付订单已处于 '${row.status}' 状态`,
@@ -88,8 +93,8 @@ function existingToOrder(row: ExistingOrderRow, fingerprint: string): PaidHiring
     id: row.id,
     outTradeNo: row.outTradeNo,
     hiringIntentId: row.hiringIntentId,
-    status: 'pending',
-    currency: 'CNY',
+    status: "pending",
+    currency: "CNY",
     grossAmountFen: BigInt(row.grossAmountFen),
     platformFeeFen: BigInt(row.platformFeeFen),
     developerPayableFen: BigInt(row.developerPayableFen),
@@ -129,27 +134,35 @@ async function loadHiringContext(
        )))
      ORDER BY price.version DESC
      LIMIT 1 FOR SHARE`,
-    [input.roleId, input.positionId, input.agentId, input.companyId, input.projectId, input.projectId, input.projectId],
+    [
+      input.roleId,
+      input.positionId,
+      input.agentId,
+      input.companyId,
+      input.projectId,
+      input.projectId,
+      input.projectId,
+    ],
   );
   const context = rows[0];
   if (!context) {
     throw new AiDirectHiringError(
       ErrorCodes.INVALID_TRANSITION,
-      'Agent、已发布版本、开发者定价、Role、Project 或 Position 当前不可用于雇佣',
+      "Agent、已发布版本、开发者定价、Role、Project 或 Position 当前不可用于雇佣",
       409,
     );
   }
   if (input.projectId !== null && context.projectId !== input.projectId) {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Role 与 projectId 不匹配');
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "Role 与 projectId 不匹配");
   }
-  if (context.currency !== 'CNY') {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '首期雇佣支付仅支持 CNY');
+  if (context.currency !== "CNY") {
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "首期雇佣支付仅支持 CNY");
   }
   return context;
 }
 
 export async function createPaidHiringOrder(
-  pool: Pick<Pool, 'getConnection'>,
+  pool: Pick<Pool, "getConnection">,
   input: CreatePaidHiringOrderInput,
 ): Promise<PaidHiringOrder> {
   const connection = await pool.getConnection();
@@ -227,9 +240,9 @@ export async function createPaidHiringOrder(
     );
     await publishOutboxEvent(connection, {
       organizationId: context.organizationId,
-      aggregateType: 'payment_order',
+      aggregateType: "payment_order",
       aggregateId: paymentOrderId,
-      eventType: 'paid_hiring.order.created.v1',
+      eventType: "paid_hiring.order.created.v1",
       payload: {
         paymentOrderId,
         hiringIntentId,
@@ -237,7 +250,7 @@ export async function createPaidHiringOrder(
         companyId: context.companyId,
         agentId: context.agentId,
         grossAmountFen: String(split.grossAmountFen),
-        currency: 'CNY',
+        currency: "CNY",
       },
     });
     await connection.commit();
@@ -245,8 +258,8 @@ export async function createPaidHiringOrder(
       id: paymentOrderId,
       outTradeNo,
       hiringIntentId,
-      status: 'pending',
-      currency: 'CNY',
+      status: "pending",
+      currency: "CNY",
       ...split,
       developerUserId: context.developerUserId,
       agentName: context.agentName,
@@ -254,7 +267,7 @@ export async function createPaidHiringOrder(
     };
   } catch (error) {
     await connection.rollback();
-    if ((error as { code?: string }).code === 'ER_DUP_ENTRY') {
+    if ((error as { code?: string }).code === "ER_DUP_ENTRY") {
       const existing = await findExistingOrder(connection, input);
       if (existing) return existingToOrder(existing, input.idempotencyFingerprint);
     }
@@ -265,9 +278,9 @@ export async function createPaidHiringOrder(
 }
 
 export async function setActiveAgentPrice(
-  pool: Pick<Pool, 'getConnection'>,
+  pool: Pick<Pool, "getConnection">,
   input: { agentId: string; agentVersionId: string; developerUserId: string; amountFen: bigint },
-): Promise<{ id: string; version: number; currency: 'CNY'; amountFen: bigint }> {
+): Promise<{ id: string; version: number; currency: "CNY"; amountFen: bigint }> {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -280,13 +293,21 @@ export async function setActiveAgentPrice(
     );
     const agent = agentRows[0];
     if (!agent || agent.ownerUserId !== input.developerUserId) {
-      throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '只有 Agent 开发者可以设置雇佣价格', 403);
+      throw new AiDirectHiringError(
+        ErrorCodes.FORBIDDEN_SCOPE,
+        "只有 Agent 开发者可以设置雇佣价格",
+        403,
+      );
     }
-    if (agent.versionStatus !== 'published') {
-      throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, '只能为已发布 Agent 版本设置雇佣价格', 409);
+    if (agent.versionStatus !== "published") {
+      throw new AiDirectHiringError(
+        ErrorCodes.INVALID_TRANSITION,
+        "只能为已发布 Agent 版本设置雇佣价格",
+        409,
+      );
     }
     const [versionRows] = await connection.query<RowDataPacket[]>(
-      'SELECT COALESCE(MAX(version), 0) AS version FROM ai_direct_agent_prices WHERE agentId = ? FOR UPDATE',
+      "SELECT COALESCE(MAX(version), 0) AS version FROM ai_direct_agent_prices WHERE agentId = ? FOR UPDATE",
       [input.agentId],
     );
     const version = Number(versionRows[0]?.version ?? 0) + 1;
@@ -301,10 +322,18 @@ export async function setActiveAgentPrice(
       `INSERT INTO ai_direct_agent_prices
        (id, agentId, agentVersionId, developerUserId, version, currency, amountFen, status, createdByUserId)
        VALUES (?, ?, ?, ?, ?, 'CNY', ?, 'active', ?)`,
-      [priceId, input.agentId, input.agentVersionId, input.developerUserId, version, input.amountFen, input.developerUserId],
+      [
+        priceId,
+        input.agentId,
+        input.agentVersionId,
+        input.developerUserId,
+        version,
+        input.amountFen,
+        input.developerUserId,
+      ],
     );
     await connection.commit();
-    return { id: priceId, version, currency: 'CNY', amountFen: input.amountFen };
+    return { id: priceId, version, currency: "CNY", amountFen: input.amountFen };
   } catch (error) {
     await connection.rollback();
     throw error;

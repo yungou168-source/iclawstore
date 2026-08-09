@@ -90,7 +90,11 @@ const authStatusMock = vi.fn<() => HeaderAuthStatus>(() => ({
 }));
 
 vi.mock("../lib/i18n/context", () => ({
-  useLocale: () => ({ locale: "en" }),
+  useLocale: () => ({
+    locale: "en",
+    setLocale: vi.fn(),
+    t: (key: string) => key,
+  }),
 }));
 
 vi.mock("../components/UnifiedSignInDialog", () => ({

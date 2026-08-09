@@ -358,9 +358,26 @@ export default function Header() {
         <div className="workspace-navbar-actions">
           <LanguageSwitcher />
           {isAuthenticated && me ? (
-            <Link to="/dashboard" className="workspace-account-link">
-              {locale === "zh-CN" ? "工作台" : "Workspace"}
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" className="workspace-account-link">
+                  {locale === "zh-CN" ? "工作台" : "Workspace"}
+                  <ChevronDown size={14} aria-hidden="true" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to="/dashboard">{locale === "zh-CN" ? "仪表盘" : "Dashboard"}</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings">{locale === "zh-CN" ? "设置" : "Settings"}</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => void signOut()}>
+                  {locale === "zh-CN" ? "退出登录" : "Sign out"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <UnifiedSignInDialog
               locale={locale}

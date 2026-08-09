@@ -15,8 +15,9 @@ type HeaderAuthStatus = {
 const siteModeMock = vi.fn(() => "souls");
 const locationMock = vi.fn(() => ({ pathname: "/search" }));
 const navigateMock = vi.fn();
-const { signInMock, useUnifiedSearchMock } = vi.hoisted(() => ({
+const { signInMock, signOutMock, useUnifiedSearchMock } = vi.hoisted(() => ({
   signInMock: vi.fn(),
+  signOutMock: vi.fn(),
   useUnifiedSearchMock: vi.fn(),
 }));
 
@@ -78,7 +79,7 @@ vi.mock("@tanstack/react-router", () => ({
 vi.mock("@convex-dev/auth/react", () => ({
   useAuthActions: () => ({
     signIn: signInMock,
-    signOut: vi.fn(),
+    signOut: signOutMock,
   }),
 }));
 
@@ -147,7 +148,13 @@ vi.mock("../lib/useUnifiedSearch", () => ({
 vi.mock("../components/ui/dropdown-menu", () => ({
   DropdownMenu: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   DropdownMenuContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  DropdownMenuItem: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  DropdownMenuItem: ({
+    children,
+    onClick,
+  }: {
+    children: ReactNode;
+    onClick?: () => void;
+  }) => <div onClick={onClick}>{children}</div>,
   DropdownMenuSeparator: () => <hr />,
   DropdownMenuTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
@@ -276,6 +283,24 @@ describe("Header", () => {
     expect(screen.getByRole("link", { name: "Github" })).toBeTruthy();
     expect(screen.queryByText("Ready")).toBeNull();
     expect(document.querySelector(".workspace-status")).toBeNull();
+  });
+
+  it("offers workspace account navigation and sign-out to authenticated users", () => {
+    siteModeMock.mockReturnValue("skills");
+    locationMock.mockReturnValue({ pathname: "/" });
+    authStatusMock.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      me: { handle: "owner" },
+    });
+
+    render(<Header />);
+
+    expect(screen.getByRole("button", { name: /Workspace/ })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Dashboard" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Settings" })).toBeTruthy();
+    fireEvent.click(screen.getByText("Sign out"));
+    expect(signOutMock).toHaveBeenCalledTimes(1);
   });
 
   it("uses the homepage navigation on public browse and account pages", () => {

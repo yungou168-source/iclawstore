@@ -233,7 +233,7 @@ jobs:
           artifact="$RUNNER_TEMP/iclawstore-ssr.tar.gz"
           artifact_sha="$(< "$RUNNER_TEMP/iclawstore-ssr.tar.gz.sha256")"
           artifact_size="$(< "$RUNNER_TEMP/iclawstore-ssr.tar.gz.size")"
-          timeout --foreground 10m ssh \
+          timeout --foreground 30m ssh \
             -o RequestTTY=no \
             -i "$RUNNER_TEMP/production-ssh/id_ed25519" \
             -o BatchMode=yes \

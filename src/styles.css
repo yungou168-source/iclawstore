@@ -15718,6 +15718,7 @@ a[class*="rounded-full"] {
   position: absolute;
   z-index: -2;
   inset: 0;
+  pointer-events: none;
   opacity: 0.48;
   background-image:
     linear-gradient(#d9e8e8 1px, transparent 1px),
@@ -15732,6 +15733,7 @@ a[class*="rounded-full"] {
   left: 50%;
   width: 820px;
   height: 540px;
+  pointer-events: none;
   border-radius: 50%;
   transform: translateX(-50%);
   background: #b9eeeb;

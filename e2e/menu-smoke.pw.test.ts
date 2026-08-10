@@ -36,6 +36,24 @@ test("workspace header routes render", async ({ page }) => {
 
   await (await workspaceLink(page, "客户端下载")).click();
   await expect(page).toHaveURL(/\/desktop-client$/);
-  await expect(page.getByRole("heading", { name: "把 AI 员工带到你的工作台" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "招Ai员工,用AI直聘" })).toBeVisible();
+  await expectHealthyPage(page, errors);
+});
+
+test("desktop client header controls remain interactive", async ({ page }) => {
+  const errors = trackRuntimeErrors(page);
+
+  await page.goto("/desktop-client", { waitUntil: "domcontentloaded" });
+
+  await page.getByRole("button", { name: "切换语言" }).click();
+  await page.getByRole("menuitem", { name: /English/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Assign work to AI employees with AI Direct Hiring" }),
+  ).toBeVisible();
+
+  const signIn = page.getByRole("button", { name: "Sign In", exact: true });
+  await expect(signIn).toBeEnabled();
+  await signIn.click();
+  await expect(page.getByRole("dialog")).toBeVisible();
   await expectHealthyPage(page, errors);
 });

@@ -233,7 +233,8 @@ jobs:
           artifact="$RUNNER_TEMP/iclawstore-ssr.tar.gz"
           artifact_sha="$(< "$RUNNER_TEMP/iclawstore-ssr.tar.gz.sha256")"
           artifact_size="$(< "$RUNNER_TEMP/iclawstore-ssr.tar.gz.size")"
-          cat "$artifact" | ssh \
+          timeout --foreground 10m ssh \
+            -o RequestTTY=no \
             -i "$RUNNER_TEMP/production-ssh/id_ed25519" \
             -o BatchMode=yes \
             -o IdentitiesOnly=yes \
@@ -241,7 +242,8 @@ jobs:
             -o UserKnownHostsFile="$RUNNER_TEMP/production-ssh/known_hosts" \
             -p "$PRODUCTION_SSH_PORT" \
             "$PRODUCTION_SSH_USER@$PRODUCTION_SSH_HOST" \
-            "deploy $GITHUB_SHA $artifact_sha $artifact_size"
+            "deploy $GITHUB_SHA $artifact_sha $artifact_size" \
+            < "$artifact"
 
       - name: Install Playwright browser
         if: needs.validate-deploy-request.outputs.run_smoke == 'true' && needs.validate-deploy-request.outputs.deploy_frontend == 'true'

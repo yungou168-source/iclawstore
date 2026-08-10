@@ -38,15 +38,15 @@ M1 解决的是**契约 + 流水线 + 审计**，M2+ 才接入 Agent 上下文�
 
 所有路由挂在 `/api/v1/memory/obsidian`。
 
-| Method | Path | 用途 | 鉴权 | 状态码 |
-|--------|------|------|------|--------|
-| `POST` | `/bind` | 创建 / 激活 vault binding | 必登录 | 201 / 200 (replay) |
-| `DELETE` | `/bind` | 撤销绑定 + 同步清表 | 必登录 | 204 |
-| `GET` | `/binding` | 当前 binding 状态（不暴露路径） | 必登录 | 200 |
-| `GET` | `/bindings` | 工作台摘要（noteCount + tagCount + topTags） | 必登录 | 200 |
-| `POST` | `/sync` | 提交摘要 batch | 必登录 + Idempotency-Key | 200 / 422 |
-| `GET` | `/notes?limit=N` | 列出 digest 指针 | 必登录 | 200 |
-| `GET` | `/notes/:notePath` | 单条 digest 摘要 | 必登录 | 200 / 404 |
+| Method   | Path               | 用途                                         | 鉴权                     | 状态码             |
+| -------- | ------------------ | -------------------------------------------- | ------------------------ | ------------------ |
+| `POST`   | `/bind`            | 创建 / 激活 vault binding                    | 必登录                   | 201 / 200 (replay) |
+| `DELETE` | `/bind`            | 撤销绑定 + 同步清表                          | 必登录                   | 204                |
+| `GET`    | `/binding`         | 当前 binding 状态（不暴露路径）              | 必登录                   | 200                |
+| `GET`    | `/bindings`        | 工作台摘要（noteCount + tagCount + topTags） | 必登录                   | 200                |
+| `POST`   | `/sync`            | 提交摘要 batch                               | 必登录 + Idempotency-Key | 200 / 422          |
+| `GET`    | `/notes?limit=N`   | 列出 digest 指针                             | 必登录                   | 200                |
+| `GET`    | `/notes/:notePath` | 单条 digest 摘要                             | 必登录                   | 200 / 404          |
 
 ### 3.1 `POST /sync` 请求体
 
@@ -61,8 +61,8 @@ M1 解决的是**契约 + 流水线 + 审计**，M2+ 才接入 Agent 上下文�
       "size": 1024,
       "hash": "<64-hex>",
       "tags": ["mood", "journal"],
-      "links": ["note-a"]
-    }
+      "links": ["note-a"],
+    },
   ],
   "summaries": [
     {
@@ -72,9 +72,9 @@ M1 解决的是**契约 + 流水线 + 审计**，M2+ 才接入 Agent 上下文�
       "top_headings": ["Heading 1"],
       "summaryBytes": 200,
       "sourceBytes": 1024,
-      "frontmatter": { "title": "Today's notes", "tags": ["mood"] }
-    }
-  ]
+      "frontmatter": { "title": "Today's notes", "tags": ["mood"] },
+    },
+  ],
 }
 ```
 
@@ -101,45 +101,46 @@ M1 解决的是**契约 + 流水线 + 审计**，M2+ 才接入 Agent 上下文�
 
 来源：`server/prisma/schema.prisma`。
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| `id` | VARCHAR(36) PK | UUID |
-| `userId` | VARCHAR(191) | ClawHub user id |
-| `vaultFingerprint` | CHAR(64) | SHA-256 of canonical vault path + config |
-| `status` | VARCHAR(32) | `active` / `revoked` |
-| `extractorVersion` | VARCHAR(64) | 桌面端抽取器版本 |
-| `evidenceVersion` | VARCHAR(64) | 摘要契约版本 |
-| `noteCount` | INT | 派生（每次 sync 后 refetch） |
-| `tagCount` | INT | 派生（本次 batch 唯一 tag 数） |
-| `lastSyncAt` | DATETIME | NULL 允许 |
-| `revokedAt` | DATETIME | NULL 允许 |
+| 字段               | 类型           | 说明                                     |
+| ------------------ | -------------- | ---------------------------------------- |
+| `id`               | VARCHAR(36) PK | UUID                                     |
+| `userId`           | VARCHAR(191)   | ClawHub user id                          |
+| `vaultFingerprint` | CHAR(64)       | SHA-256 of canonical vault path + config |
+| `status`           | VARCHAR(32)    | `active` / `revoked`                     |
+| `extractorVersion` | VARCHAR(64)    | 桌面端抽取器版本                         |
+| `evidenceVersion`  | VARCHAR(64)    | 摘要契约版本                             |
+| `noteCount`        | INT            | 派生（每次 sync 后 refetch）             |
+| `tagCount`         | INT            | 派生（本次 batch 唯一 tag 数）           |
+| `lastSyncAt`       | DATETIME       | NULL 允许                                |
+| `revokedAt`        | DATETIME       | NULL 允许                                |
 
 Unique: `(userId, vaultFingerprint)`。
 
 ### 4.2 `ai_direct_memory_digests`
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| `id` | VARCHAR(36) PK | UUID |
-| `bindingId` | VARCHAR(36) FK | 关联 binding |
-| `userId` | VARCHAR(191) | 冗余，便于按用户过滤 |
-| `vaultFingerprint` | CHAR(64) | 冗余，便于分享跨 binding 检索 |
-| `notePath` | VARCHAR(1024) | vault 相对路径 |
-| `noteHash` | CHAR(64) | SHA-256 of `path + \0 + body` |
-| `title` | VARCHAR(512) | frontmatter 派生或 hint |
-| `tagsJson` / `linksJson` | JSON | 数组 |
-| `summaryMd` | TEXT | 经过 `extractSummary` 校验 |
-| `summaryBytes` / `sourceBytes` | INT | 用于审计 |
-| `redactedAt` / `redactionReason` | DATETIME / VARCHAR | 留 M2+ 红行动词 |
-| `frontmatterJson` | JSON | 仅白名单字段 |
-| `mtime` | DATETIME | NULL 允许 |
-| `size` | INT | 字节 |
+| 字段                             | 类型               | 说明                          |
+| -------------------------------- | ------------------ | ----------------------------- |
+| `id`                             | VARCHAR(36) PK     | UUID                          |
+| `bindingId`                      | VARCHAR(36) FK     | 关联 binding                  |
+| `userId`                         | VARCHAR(191)       | 冗余，便于按用户过滤          |
+| `vaultFingerprint`               | CHAR(64)           | 冗余，便于分享跨 binding 检索 |
+| `notePath`                       | VARCHAR(1024)      | vault 相对路径                |
+| `noteHash`                       | CHAR(64)           | SHA-256 of `path + \0 + body` |
+| `title`                          | VARCHAR(512)       | frontmatter 派生或 hint       |
+| `tagsJson` / `linksJson`         | JSON               | 数组                          |
+| `summaryMd`                      | TEXT               | 经过 `extractSummary` 校验    |
+| `summaryBytes` / `sourceBytes`   | INT                | 用于审计                      |
+| `redactedAt` / `redactionReason` | DATETIME / VARCHAR | 留 M2+ 红行动词               |
+| `frontmatterJson`                | JSON               | 仅白名单字段                  |
+| `mtime`                          | DATETIME           | NULL 允许                     |
+| `size`                           | INT                | 字节                          |
 
 Unique: `(bindingId, notePath(255))`。
 
 ### 4.3 审计
 
 全部走 `ai_direct_audit_events`（已有 schema；`action` 命名空间 `memory.obsidian.*`）：
+
 - `memory.obsidian.bind`
 - `memory.obsidian.bind.replayed`
 - `memory.obsidian.revoked`
@@ -159,6 +160,7 @@ Unique: `(bindingId, notePath(255))`。
 - `FRONTMATTER_ALLOWED_FIELDS = [title, tags, created, modified, aliases]`
 
 功能：
+
 - `parseFrontmatter(body)` — 仅白名单字段；其他字段归入 `extras`，**不上传**。
 - `extractSummary(body, sourceBytes)` — 移除 frontmatter 与 headings 后按**字节**截断（不按字符）。
 - `extractTagsAndLinks(body)` — `[[wiki]]` 链接 + `#tag` 内联标签。
@@ -212,7 +214,7 @@ const submission = await scanVault(vaultRootPath, {
 await fetch("/api/v1/memory/obsidian/sync", {
   method: "POST",
   headers: {
-    "Authorization": `Bearer ${clerkToken}`,
+    Authorization: `Bearer ${clerkToken}`,
     "Idempotency-Key": uuid(),
     "Content-Type": "application/json",
   },

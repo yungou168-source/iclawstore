@@ -106,12 +106,7 @@ import {
 } from "./lib/skillCards";
 import { isPublicSkillVersionAvailableForSkill } from "./lib/skillFileAccess";
 import { normalizeSkillIconValue } from "./lib/skillIcon";
-import {
-  fetchText,
-  type PublishResult,
-  publishVersionForUser,
-  queueHighlightedWebhook,
-} from "./lib/skillPublish";
+import { fetchText, type PublishResult, publishVersionForUser } from "./lib/skillPublish";
 import { getFrontmatterValue, hashSkillFiles } from "./lib/skills";
 import {
   computeIsSuspicious,
@@ -9116,8 +9111,6 @@ export const setBatch = mutation({
     assertModerator(user);
     const skill = await ctx.db.get(args.skillId);
     if (!skill) throw new Error("Skill not found");
-    const existingBadges = await getSkillBadgeMap(ctx, skill._id);
-    const previousHighlighted = isSkillHighlighted({ badges: existingBadges });
     const nextBatch = args.batch?.trim() || undefined;
     const nextHighlighted = nextBatch === "highlighted";
     const now = Date.now();
@@ -9140,10 +9133,6 @@ export const setBatch = mutation({
       metadata: { highlighted: nextHighlighted },
       createdAt: now,
     });
-
-    if (nextHighlighted && !previousHighlighted) {
-      void queueHighlightedWebhook(ctx, skill._id);
-    }
   },
 });
 

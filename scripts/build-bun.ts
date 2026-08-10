@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
-import { createServer as createViteServer, build as viteBuild } from "vite";
-import { loadConfig } from "vite";
 import { resolve } from "path";
 import { fileURLToPath } from "url";
+import { createServer as createViteServer, build as viteBuild } from "vite";
+import { loadConfig } from "vite";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 

@@ -1,7 +1,7 @@
 import { fireEvent, render as renderWithProviders, screen, waitFor } from "@testing-library/react";
-import type { ReactElement } from "react";
 import { getFunctionName } from "convex/server";
 import { strToU8, zipSync } from "fflate";
+import type { ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "../lib/i18n/context";
 import { Upload } from "../routes/skills/publish";

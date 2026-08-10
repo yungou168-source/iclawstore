@@ -93,7 +93,7 @@ export interface PaidHiringOrderDto {
   id: string;
   hiringIntentId?: string;
   outTradeNo: string;
-  provider?: "alipay";
+  provider?: "alipay" | "wallet" | "free";
   status: string;
   currency: "CNY";
   grossAmountFen: CnyFen;
@@ -105,6 +105,30 @@ export interface PaidHiringOrderDto {
   employmentId: string | null;
   nextReconcileAt: string | null;
   lastProviderStatus: string | null;
+}
+
+export interface AgentSaleDto {
+  id: string;
+  saleNo: string;
+  paymentOrderId: string | null;
+  employmentId: string;
+  offerId: string;
+  companyId: string;
+  companyName: string;
+  roleId: string;
+  roleName: string;
+  agentId: string;
+  agentName: string;
+  agentVersionId: string;
+  priceVersion: number;
+  pricingMode: "free" | "paid";
+  currency: "CNY";
+  grossAmountFen: CnyFen;
+  platformRevenueFen: CnyFen;
+  developerRevenueFen: CnyFen;
+  refundedFen: CnyFen;
+  status: string;
+  completedAt: string;
 }
 
 interface DeveloperPayableBalanceDto {
@@ -163,6 +187,15 @@ const request = async <T>(path: string, options: RequestInit = {}): Promise<T> =
   return response.json() as Promise<T>;
 };
 
+const publicRequest = async <T>(path: string): Promise<T> => {
+  const response = await fetch(`${BASE}${path}`, { credentials: "omit" });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => ({}))) as PaidHiringApiErrorData;
+    throw new PaidHiringApiError(response.status, payload);
+  }
+  return response.json() as Promise<T>;
+};
+
 const queryPath = (path: string, query: Record<string, string | number | undefined>): string => {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query))
@@ -180,6 +213,12 @@ export const formatCnyFen = (amountFen: CnyFen, locale = "zh-CN"): string => {
 };
 
 export const aiDirectPaidHiringApi = {
+  listPublicCatalog: (limit = 50) =>
+    publicRequest<CursorPage<CandidateCatalogItemDto>>(queryPath("/public/catalog/agents", { limit })),
+  listPublicAgentsByUser: (userId: string) =>
+    publicRequest<{ items: CandidateCatalogItemDto[] }>(
+      `/public/users/${encodeId(userId)}/agents`,
+    ),
   listCandidateCatalog: (
     organizationId: string,
     input: { search?: string; category?: string; limit?: number } = {},
@@ -192,6 +231,17 @@ export const aiDirectPaidHiringApi = {
       headers: { "X-Organization-Id": organizationId },
     }),
   listOwnedAgents: () => request<{ items: OwnedAgentDto[] }>("/agents"),
+  createAgent: (input: { name: string; description?: string }) =>
+    request<{ id: string; activeVersionId: string; status: string }>("/agents", {
+      method: "POST",
+      headers: { "Idempotency-Key": crypto.randomUUID() },
+      body: JSON.stringify({
+        name: input.name,
+        description: input.description,
+        promptSpec: {},
+        modelPolicy: {},
+      }),
+    }),
   listOwnedAgentVersions: (agentId: string) =>
     request<{ items: OwnedAgentVersionDto[] }>(`/agents/${encodeId(agentId)}/versions`),
   listAgentPrices: (agentId: string) =>
@@ -204,6 +254,9 @@ export const aiDirectPaidHiringApi = {
       method: "POST",
       body: JSON.stringify(input),
     }),
+
+  listAgentSales: (input: { limit?: number } = {}) =>
+    request<{ items: AgentSaleDto[] }>(queryPath("/agent-sales", input)),
 
   createOrder: (
     input: {

@@ -6,8 +6,6 @@ import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
 import type { Doc } from "../../convex/_generated/dataModel";
 import { EmptyState } from "../components/EmptyState";
-import { useLocale } from "../lib/i18n/context";
-import { t } from "../lib/i18n";
 import { SignInPrompt } from "../components/SignInPrompt";
 import { StarsSkeleton } from "../components/skeletons/ProtectedPageSkeletons";
 import { SkillCard } from "../components/SkillCard";
@@ -23,6 +21,8 @@ import {
 } from "../components/ui/select";
 import { Separator } from "../components/ui/separator";
 import { getSkillBadges } from "../lib/badges";
+import { t } from "../lib/i18n";
+import { useLocale } from "../lib/i18n/context";
 import type { PublicSkill } from "../lib/publicUser";
 import { useAuthStatus } from "../lib/useAuthStatus";
 

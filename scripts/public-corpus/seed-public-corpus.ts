@@ -61,8 +61,7 @@ async function main() {
     while (remainingHandles.length > 0 && resetAttempts < MAX_RESET_BATCHES) {
       resetAttempts++;
       const resetArgs = { ownerHandles: remainingHandles };
-      const resetOnce = (a: unknown) =>
-        runConvexMutationOnce("resetPublicCorpusMutation", a);
+      const resetOnce = (a: unknown) => runConvexMutationOnce("resetPublicCorpusMutation", a);
 
       let resetResult: SeedBatchRunResult = { status: 1, output: "" };
       for (let attempt = 1; attempt <= 6; attempt++) {
@@ -208,7 +207,11 @@ export function isRetryableConvexSeedBatchOutput(output: string) {
   return output.includes("Data read or written in this mutation changed while it was being run");
 }
 
-function parseResetResult(output: string): { hasMore: boolean; deletedSkills: number; deletedPackages: number } {
+function parseResetResult(output: string): {
+  hasMore: boolean;
+  deletedSkills: number;
+  deletedPackages: number;
+} {
   const lines = output.split("\n");
   for (const line of lines) {
     if (!line.trim()) continue;

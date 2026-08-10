@@ -1,0 +1,1759 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>海疆 | 运营中控台</title>
+    <style>
+      :root {
+        --canvas: #f4f4ef;
+        --paper: #ffffff;
+        --ink: #18211e;
+        --muted: #6b746f;
+        --line: #d9ddd6;
+        --teal: #0d6c61;
+        --teal-soft: #d9eee9;
+        --orange: #d36b38;
+        --orange-soft: #fff0e8;
+        --lime: #c8dc70;
+        --violet: #7768bc;
+        --radius: 7px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--canvas);
+        font-family: "HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+        line-height: 1.5;
+        overflow-x: hidden;
+      }
+      body::before,
+      body::after {
+        content: "";
+        position: fixed;
+        pointer-events: none;
+        z-index: -1;
+        opacity: 0.6;
+      }
+      body::before {
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(13, 108, 97, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(13, 108, 97, 0.035) 1px, transparent 1px);
+        background-size: 42px 42px;
+      }
+      body::after {
+        width: 66vw;
+        height: 2px;
+        top: 15%;
+        left: -20vw;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--teal),
+          var(--violet),
+          var(--orange),
+          transparent
+        );
+        box-shadow: 0 0 22px rgba(13, 108, 97, 0.32);
+        transform: rotate(-12deg);
+        animation: signalSweep 14s cubic-bezier(0.32, 0.72, 0, 1) infinite;
+      }
+      @keyframes signalSweep {
+        0%,
+        100% {
+          transform: translate3d(-6vw, 0, 0) rotate(-12deg);
+          opacity: 0.15;
+        }
+        50% {
+          transform: translate3d(66vw, 22vh, 0) rotate(-12deg);
+          opacity: 0.56;
+        }
+      }
+      button,
+      input {
+        font: inherit;
+      }
+      button {
+        cursor: pointer;
+      }
+      .shell {
+        width: min(1480px, calc(100% - 40px));
+        margin: 0 auto;
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        border-bottom: 1px solid var(--line);
+        background: rgba(244, 244, 239, 0.9);
+        backdrop-filter: blur(10px);
+      }
+      .topbar {
+        min-height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 800;
+        font-size: 18px;
+      }
+      .mark {
+        width: 30px;
+        height: 30px;
+        object-fit: contain;
+        display: block;
+      }
+      .top-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .saved {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .action {
+        border: 1px solid var(--teal);
+        background: var(--teal);
+        color: white;
+        padding: 8px 13px;
+        border-radius: 4px;
+        font-weight: 800;
+        font-size: 13px;
+        transition:
+          transform 0.5s cubic-bezier(0.32, 0.72, 0, 1),
+          box-shadow 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+      }
+      .action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 28px rgba(13, 108, 97, 0.2);
+      }
+      .action.secondary {
+        background: transparent;
+        color: var(--ink);
+        border-color: var(--line);
+      }
+      a.action {
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 224px minmax(0, 1fr);
+        gap: 34px;
+        padding: 32px 0 56px;
+      }
+      .sidebar {
+        position: sticky;
+        top: 102px;
+        align-self: start;
+      }
+      .side-label {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        margin: 0 0 8px;
+      }
+      nav a {
+        display: block;
+        color: var(--muted);
+        text-decoration: none;
+        padding: 9px 10px;
+        border-left: 2px solid transparent;
+        font-size: 14px;
+      }
+      nav a:hover,
+      nav a:focus {
+        color: var(--teal);
+        border-left-color: var(--teal);
+        background: var(--teal-soft);
+      }
+      nav a.active {
+        color: var(--teal);
+        border-left-color: var(--teal);
+        background: var(--teal-soft);
+        font-weight: 800;
+      }
+      .side-note {
+        border-top: 1px solid var(--line);
+        margin-top: 25px;
+        padding-top: 17px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      main,
+      .sidebar,
+      section,
+      .intro > *,
+      .positioning > * {
+        min-width: 0;
+      }
+      .intro {
+        position: relative;
+        display: block;
+        padding: 0 0 30px;
+        border-bottom: 1px solid var(--line);
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(26px, 2.5vw, 40px);
+        line-height: 1.12;
+        letter-spacing: 0;
+        white-space: nowrap;
+      }
+      .intro p {
+        margin: 14px 150px 0 0;
+        color: var(--muted);
+        max-width: none;
+        font-size: clamp(12px, 1.05vw, 16px);
+        white-space: nowrap;
+      }
+      .status {
+        position: absolute;
+        right: 0;
+        bottom: 30px;
+        border-left: 4px solid var(--teal);
+        padding-left: 14px;
+      }
+      .status strong {
+        display: block;
+        font-size: 25px;
+        line-height: 1.1;
+      }
+      .status span {
+        display: block;
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 4px;
+      }
+      .section {
+        padding: 38px 0;
+        border-bottom: 1px solid var(--line);
+        scroll-margin-top: 90px;
+      }
+      .section-heading {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 18px;
+      }
+      h2 {
+        margin: 0;
+        font-size: 22px;
+        letter-spacing: 0;
+      }
+      .eyeline {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .positioning {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 18px;
+      }
+      .statement {
+        background: var(--ink);
+        color: white;
+        padding: 28px;
+        border-radius: var(--radius);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.07),
+          0 18px 50px rgba(0, 0, 0, 0.08);
+      }
+      .statement .label {
+        color: var(--lime);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 1px;
+      }
+      .statement p {
+        margin: 12px 0 0;
+        font-size: 20px;
+        line-height: 1.45;
+      }
+      .principles {
+        border: 1px solid var(--line);
+        padding: 8px 22px;
+        background: var(--paper);
+        border-radius: var(--radius);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      }
+      .principle {
+        padding: 17px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .principle:last-child {
+        border: 0;
+      }
+      .principle b {
+        display: block;
+        font-size: 14px;
+        margin-bottom: 3px;
+      }
+      .principle span {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        overflow: hidden;
+        background: var(--paper);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      }
+      .metric {
+        min-height: 112px;
+        padding: 19px;
+        border-right: 1px solid var(--line);
+      }
+      .metric:last-child {
+        border: 0;
+      }
+      .metric strong {
+        font-size: 28px;
+        display: block;
+        line-height: 1;
+        color: var(--teal);
+      }
+      .metric span {
+        color: var(--muted);
+        font-size: 13px;
+        display: block;
+        margin-top: 10px;
+      }
+      .phase-list {
+        display: grid;
+        gap: 12px;
+      }
+      .phase {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+        transition:
+          transform 0.7s cubic-bezier(0.32, 0.72, 0, 1),
+          border-color 0.7s cubic-bezier(0.32, 0.72, 0, 1);
+      }
+      .phase:hover {
+        transform: translateX(4px);
+        border-color: rgba(13, 108, 97, 0.38);
+      }
+      .phase-top {
+        padding: 20px 22px 15px;
+        display: grid;
+        grid-template-columns: 110px 1fr auto;
+        gap: 16px;
+        align-items: baseline;
+      }
+      .phase-no {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        color: var(--teal);
+      }
+      .phase h3 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .phase-goal {
+        color: var(--muted);
+        font-size: 13px;
+        text-align: right;
+      }
+      .task-list {
+        margin: 0;
+        padding: 0 22px 18px;
+        list-style: none;
+      }
+      .task {
+        display: grid;
+        grid-template-columns: 26px minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 0;
+        border-top: 1px solid #edf0eb;
+      }
+      .task input {
+        width: 17px;
+        height: 17px;
+        accent-color: var(--teal);
+      }
+      .task-text {
+        outline: 0;
+        font-size: 14px;
+      }
+      .task.done .task-text {
+        text-decoration: line-through;
+        color: var(--muted);
+      }
+      .task-tag {
+        color: var(--muted);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .subtask-list {
+        list-style: none;
+        margin: 3px 0 1px 25px;
+        padding: 0;
+      }
+      .subtask {
+        display: grid;
+        grid-template-columns: 20px minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+        padding: 7px 0 2px;
+        border-top: 1px dashed #e4e8e1;
+        font-size: 12px;
+      }
+      .subtask input {
+        width: 14px;
+        height: 14px;
+        accent-color: var(--teal);
+      }
+      .subtask.done .subtask-text {
+        color: var(--muted);
+        text-decoration: line-through;
+      }
+      .add-subtask {
+        border: 0;
+        color: var(--teal);
+        background: transparent;
+        padding: 2px 0;
+        font-size: 12px;
+        text-align: left;
+      }
+      .delete-task {
+        border: 0;
+        color: #a3a9a5;
+        background: transparent;
+        font-size: 17px;
+        padding: 2px 5px;
+        visibility: hidden;
+      }
+      .task:hover .delete-task {
+        visibility: visible;
+      }
+      .add-task {
+        width: calc(100% - 44px);
+        margin: 0 22px 21px;
+        padding: 10px 12px;
+        border: 1px dashed #abb4ad;
+        border-radius: 4px;
+        color: var(--muted);
+        background: transparent;
+        text-align: left;
+        font-size: 13px;
+      }
+      .add-task:hover {
+        border-color: var(--teal);
+        color: var(--teal);
+        background: var(--teal-soft);
+      }
+      .daily-reset {
+        border: 1px solid var(--line);
+        color: var(--muted);
+        background: transparent;
+        border-radius: 4px;
+        padding: 7px 10px;
+        font-size: 12px;
+        margin: -3px 0 13px;
+      }
+      .daily-reset:hover {
+        color: var(--teal);
+        border-color: var(--teal);
+        background: var(--teal-soft);
+      }
+      .project-list {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+      .project-card {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 20px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      }
+      .project-role {
+        display: block;
+        color: var(--teal);
+        font-size: 12px;
+        letter-spacing: 1px;
+        font-weight: 800;
+        margin-bottom: 7px;
+      }
+      .project-card h3 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .project-goal {
+        margin: 6px 0 15px;
+        color: var(--muted);
+        font-size: 13px;
+        min-height: 40px;
+      }
+      .project-card .task-list {
+        padding: 0;
+      }
+      .project-card .task {
+        grid-template-columns: 22px minmax(0, 1fr) auto;
+      }
+      .project-card .add-task {
+        width: 100%;
+        margin: 6px 0 0;
+      }
+      .matrix {
+        display: grid;
+        grid-template-columns: 0.42fr 0.86fr 1.55fr 0.72fr;
+        border-top: 2px solid var(--teal);
+        background: rgba(255, 255, 255, 0.72);
+      }
+      .matrix > div {
+        padding: 14px 12px;
+        border-bottom: 1px solid var(--line);
+        font-size: 14px;
+      }
+      .matrix .head {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .matrix .emphasis {
+        color: var(--teal);
+        font-weight: 800;
+      }
+      .funnel-note {
+        margin: 14px 0 0;
+        padding: 13px 16px;
+        border-left: 3px solid var(--orange);
+        background: var(--orange-soft);
+        color: var(--ink);
+        font-size: 13px;
+      }
+      .warning {
+        margin-top: 20px;
+        padding: 17px 19px;
+        border-left: 4px solid var(--orange);
+        background: var(--orange-soft);
+        font-size: 14px;
+      }
+      .edit-mode [data-editable="true"] {
+        outline: 2px dashed var(--orange);
+        outline-offset: 3px;
+        cursor: text;
+      }
+      .edit-hint {
+        display: none;
+        color: var(--orange);
+        font-size: 12px;
+        margin: 0 0 16px;
+      }
+      .edit-mode .edit-hint {
+        display: block;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 12px;
+        padding-top: 22px;
+      }
+      .mission-grid {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 18px;
+      }
+      .team-pulse {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 18px;
+        margin-top: 18px;
+      }
+      .mission-card,
+      .scale-card {
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 25px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      }
+      .mission-card {
+        position: relative;
+        overflow: hidden;
+      }
+      .mission-card::after {
+        content: "";
+        position: absolute;
+        right: -16%;
+        bottom: -70%;
+        width: 76%;
+        height: 120%;
+        border: 1px solid rgba(169, 156, 255, 0.55);
+        border-radius: 50%;
+        transform: rotate(-18deg);
+      }
+      .mission-line {
+        font-size: 22px;
+        line-height: 1.35;
+        margin: 0 0 17px;
+        max-width: 650px;
+      }
+      .streak-line {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .streak-count {
+        color: var(--lime);
+        font-weight: 800;
+        font-size: 20px;
+      }
+      .pulse-button {
+        border: 1px solid rgba(216, 242, 99, 0.55);
+        background: rgba(216, 242, 99, 0.08);
+        color: var(--lime);
+        padding: 10px 14px;
+        border-radius: 4px;
+        font-weight: 800;
+        transition:
+          transform 0.5s cubic-bezier(0.32, 0.72, 0, 1),
+          background 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+      }
+      .pulse-button:hover {
+        background: rgba(216, 242, 99, 0.16);
+        transform: translateY(-2px);
+      }
+      .scale-card h3,
+      .mission-card h3 {
+        margin: 0 0 7px;
+        font-size: 17px;
+      }
+      .scale-card p {
+        color: var(--muted);
+        font-size: 13px;
+        margin: 0 0 16px;
+      }
+      .revenue-form {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+      .revenue-form label {
+        display: grid;
+        gap: 5px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .revenue-form input {
+        width: 100%;
+        color: var(--ink);
+        background: #fff;
+        border: 1px solid var(--line);
+        padding: 9px 8px;
+        border-radius: 4px;
+        outline: none;
+      }
+      .revenue-form input:focus {
+        border-color: var(--violet);
+        box-shadow: 0 0 0 3px rgba(169, 156, 255, 0.12);
+      }
+      .revenue-output {
+        margin-top: 16px;
+        padding-top: 15px;
+        border-top: 1px solid var(--line);
+      }
+      .revenue-output strong {
+        color: var(--teal);
+        font-size: 30px;
+        display: block;
+        line-height: 1;
+      }
+      .revenue-output span {
+        font-size: 12px;
+        color: var(--muted);
+        display: block;
+        margin-top: 6px;
+      }
+      .scale-bands {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 15px;
+      }
+      .scale-band {
+        padding: 10px;
+        background: #f5f7f2;
+        border-left: 2px solid var(--teal);
+      }
+      .scale-band b {
+        display: block;
+        color: var(--ink);
+        font-size: 12px;
+      }
+      .scale-band span {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        margin-top: 3px;
+      }
+      .market-wrap {
+        margin-top: 18px;
+        padding-top: 22px;
+        border-top: 1px solid var(--line);
+      }
+      .market-wrap h3 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .market-wrap > p {
+        margin: 5px 0 15px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .market-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border-top: 2px solid var(--violet);
+        background: rgba(255, 255, 255, 0.72);
+      }
+      .market-cell {
+        padding: 15px;
+        border-right: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+      .market-cell:last-child {
+        border-right: 0;
+      }
+      .market-cell b {
+        display: block;
+        font-size: 14px;
+      }
+      .market-signal {
+        display: inline-block;
+        margin: 7px 0;
+        color: var(--orange);
+        font-size: 11px;
+        font-weight: 800;
+      }
+      .market-cell p {
+        margin: 0;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .flash {
+        animation: flash 0.75s cubic-bezier(0.32, 0.72, 0, 1);
+      }
+      @keyframes flash {
+        0% {
+          box-shadow: 0 0 0 rgba(216, 242, 99, 0);
+        }
+        45% {
+          box-shadow: 0 0 38px rgba(216, 242, 99, 0.5);
+        }
+        100% {
+          box-shadow: 0 0 0 rgba(216, 242, 99, 0);
+        }
+      }
+      .spark {
+        position: fixed;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 20;
+        animation: sparkOut 1.1s cubic-bezier(0.16, 0.84, 0.44, 1) forwards;
+      }
+      @keyframes sparkOut {
+        to {
+          transform: translate(var(--x), var(--y)) scale(0);
+          opacity: 0;
+        }
+      }
+      .reveal {
+        opacity: 0;
+        transform: translateY(22px);
+        transition:
+          opacity 0.85s cubic-bezier(0.32, 0.72, 0, 1),
+          transform 0.85s cubic-bezier(0.32, 0.72, 0, 1);
+      }
+      .reveal.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      @media (max-width: 880px) {
+        .shell {
+          width: min(calc(100% - 28px), 720px);
+        }
+        .layout {
+          display: block;
+          padding-top: 23px;
+        }
+        .sidebar {
+          position: static;
+          margin-bottom: 25px;
+        }
+        nav {
+          display: flex;
+          max-width: 100%;
+          overflow-x: auto;
+          border-bottom: 1px solid var(--line);
+        }
+        nav a {
+          white-space: nowrap;
+          border-left: 0;
+          border-bottom: 2px solid transparent;
+        }
+        nav a:hover,
+        nav a:focus {
+          border-left: 0;
+          border-bottom-color: var(--teal);
+        }
+        .side-note {
+          display: none;
+        }
+        .intro,
+        .positioning,
+        .team-pulse,
+        .mission-grid {
+          grid-template-columns: 1fr;
+        }
+        h1,
+        .intro p {
+          white-space: normal;
+        }
+        .intro p {
+          margin-right: 0;
+        }
+        .status {
+          position: static;
+          margin-top: 18px;
+        }
+        .project-list,
+        .market-grid {
+          grid-template-columns: 1fr;
+        }
+        .status {
+          max-width: 260px;
+        }
+      }
+      @media (max-width: 880px) {
+        .topbar {
+          min-height: 61px;
+        }
+        .brand {
+          font-size: 15px;
+        }
+        .mark {
+          width: 24px;
+          height: 24px;
+        }
+        .saved {
+          display: none;
+        }
+        .top-actions .action:not(.secondary) {
+          display: none;
+        }
+        .action {
+          padding: 8px 9px;
+          font-size: 12px;
+        }
+        .metrics {
+          grid-template-columns: 1fr 1fr;
+        }
+        .metric:nth-child(2),
+        .metric:nth-child(4) {
+          border-right: 0;
+        }
+        .metric:nth-child(-n + 4) {
+          border-bottom: 1px solid var(--line);
+        }
+        .metric:nth-child(5) {
+          grid-column: 1 / -1;
+          border-right: 0;
+        }
+        .phase-top {
+          grid-template-columns: 1fr;
+          gap: 5px;
+        }
+        .phase-goal {
+          text-align: left;
+        }
+        .task {
+          grid-template-columns: 24px minmax(0, 1fr);
+        }
+        .task-tag,
+        .delete-task {
+          display: none;
+        }
+        .revenue-form {
+          grid-template-columns: 1fr 1fr;
+        }
+        .matrix {
+          grid-template-columns: 0.4fr 0.7fr 1.25fr 0.7fr;
+        }
+        .matrix > div {
+          padding: 12px 7px;
+          font-size: 12px;
+        }
+        .scale-bands {
+          grid-template-columns: 1fr;
+        }
+        .intro p,
+        .statement p,
+        .principle span,
+        .task-text {
+          overflow-wrap: anywhere;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="shell topbar">
+        <div class="brand">
+          <img
+            class="mark"
+            src="https://www.hji360.com/assets/logo-dark-yMaptxNy.png"
+            alt="海疆"
+          /><span>海疆 · 运营中控台</span>
+        </div>
+        <div class="top-actions">
+          <span id="saveState" class="saved">本地进度已保存</span>
+          <a
+            class="action secondary"
+            href="https://www.hji360.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            >官网</a
+          >
+          <button id="editButton" class="action secondary" type="button">编辑内容</button>
+          <button id="resetButton" class="action" type="button">恢复初始计划</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="shell layout">
+      <aside class="sidebar">
+        <p class="side-label">运营地图</p>
+        <nav aria-label="页面导航">
+          <a href="#north-star">定位与团队</a>
+          <a href="#milestones">本月目标</a>
+          <a href="#specials">本月专项</a>
+          <a href="#channels">获客与转化</a>
+          <a href="#profit">盈利规模</a>
+        </nav>
+      </aside>
+
+      <main>
+        <section class="intro">
+          <div>
+            <h1 data-editable="true">本月先证明海疆能交付可验收的水下作业方案</h1>
+            <p data-editable="true">
+              聚焦水产养殖、船体检查、应急救援与科学探索，以清晰的需求、演示、试点、交付和回款闭环建立客户信任。
+            </p>
+          </div>
+          <div class="status"><strong id="progressValue">0%</strong><span>计划完成度</span></div>
+        </section>
+
+        <section id="north-star" class="section">
+          <div class="section-heading">
+            <h2>北极星定位与团队冲刺</h2>
+            <span class="eyeline">先聚焦，再扩张</span>
+          </div>
+          <p class="edit-hint">
+            编辑状态已开启：直接点击虚线框内的文字修改，完成后点击“完成编辑”。
+          </p>
+          <div class="positioning">
+            <div class="statement">
+              <div class="label">推荐定位</div>
+              <p data-editable="true">
+                海疆：以水下 ROV
+                采集现场数据，以数据平台管理任务与交付，以海洋多模态大模型驱动平台内的智能作业辅助。
+              </p>
+            </div>
+            <div id="missionCard" class="mission-card">
+              <h3>团队冲刺</h3>
+              <p class="mission-line" data-editable="true">
+                每一次可靠演示、每一次安全交付，都是海疆获得行业客户信任的一步。
+              </p>
+              <div class="streak-line">
+                <span>连续冲刺</span><span id="streakCount" class="streak-count">0</span
+                ><span>天</span
+                ><button id="streakButton" class="pulse-button" type="button">完成今日冲刺</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-heading">
+            <h2>核心经营漏斗</h2>
+            <span class="eyeline">项目交付才是结果</span>
+          </div>
+          <div class="metrics">
+            <div class="metric">
+              <strong data-editable="true">有效线索</strong
+              ><span data-editable="true">场景、联系人与预计时间窗口明确</span>
+            </div>
+            <div class="metric">
+              <strong data-editable="true">需求澄清</strong
+              ><span data-editable="true">水域、任务、交付物与决策链确认</span>
+            </div>
+            <div class="metric">
+              <strong data-editable="true">演示与试点</strong
+              ><span data-editable="true">用工况接近的证据验证可行性</span>
+            </div>
+            <div class="metric">
+              <strong data-editable="true">验收交付</strong
+              ><span data-editable="true">培训、验收、售后与回款节点闭环</span>
+            </div>
+            <div class="metric">
+              <strong data-editable="true">数据与 AI 采纳</strong
+              ><span data-editable="true">任务、影像、报告留存并经人工确认进入交付</span>
+            </div>
+          </div>
+        </section>
+
+        <section id="milestones" class="section">
+          <div class="section-heading">
+            <h2>本月目标</h2>
+            <span class="eyeline">按岗位执行，每天完成一轮</span>
+          </div>
+          <p class="edit-hint">任务可勾选、直接改文字或使用“添加任务”。</p>
+          <button id="resetDaily" class="daily-reset" type="button">重置每日勾选</button>
+          <div id="phaseList" class="phase-list"></div>
+        </section>
+
+        <section id="specials" class="section">
+          <div class="section-heading">
+            <h2>本月专项任务分配</h2>
+            <span class="eyeline">把市场、试点和交付做成可验收成果</span>
+          </div>
+          <p class="edit-hint">专项任务支持勾选、文字编辑和新增事项。</p>
+          <div id="projectList" class="project-list"></div>
+        </section>
+
+        <section id="channels" class="section">
+          <div class="section-heading">
+            <h2>获客与项目转化顺序</h2>
+            <span class="eyeline">先跑通试点与交付，再放大渠道</span>
+          </div>
+          <div class="matrix" data-editable="true">
+            <div class="head">阶段</div>
+            <div class="head">主责岗位</div>
+            <div class="head">动作与交付</div>
+            <div class="head">通过指标</div>
+            <div class="emphasis">01 发现</div>
+            <div>市场与渠道</div>
+            <div>围绕养殖、船检、应急、科研内容、行业伙伴、展会与经销商获得线索。</div>
+            <div>有效线索、来源、场景匹配度</div>
+            <div class="emphasis">02 筛选</div>
+            <div>销售 + 技术</div>
+            <div>确认作业水域、任务、作业窗口、交付物、预算和决策角色。</div>
+            <div>需求澄清完成率</div>
+            <div class="emphasis">03 演示</div>
+            <div>技术 + 销售</div>
+            <div>展示装备、数据平台、影像样例与 AI 辅助的人工复核边界。</div>
+            <div>演示预约、平台启用、演示后推进率</div>
+            <div class="emphasis">04 试点</div>
+            <div>交付 + 技术</div>
+            <div>书面明确范围、数据归属、权限、人工复核、安全责任、费用与验收标准。</div>
+            <div>试点启动率、验收通过率、AI 采纳率</div>
+            <div class="emphasis">05 签约</div>
+            <div>销售 + 交付</div>
+            <div>完成配置、报价、合同、交期、培训与回款节点确认。</div>
+            <div>签约率、合同毛利、回款周期</div>
+            <div class="emphasis">06 复购</div>
+            <div>客户成功</div>
+            <div>跟进培训、售后、维保和使用反馈，沉淀授权案例与经销商培训资产。</div>
+            <div>满意度、复购、转介绍、案例授权</div>
+            <div class="emphasis">07 放大</div>
+            <div>市场 + 渠道</div>
+            <div>只放大已经验证场景、演示话术和交付模板的渠道与合作伙伴。</div>
+            <div>获客成本、项目转化、渠道贡献</div>
+          </div>
+          <p class="funnel-note" data-editable="true">
+            <b>停线规则：</b
+            >若线索无法完成需求澄清，不急于报价；若演示无法确认可行性或试点验收标准不清晰，暂停扩大渠道投入，先解决产品、工况或交付边界问题。
+          </p>
+        </section>
+
+        <section id="profit" class="section reveal">
+          <div class="section-heading">
+            <h2>项目规模</h2>
+            <span class="eyeline">先跑通单项目毛利与交付，再放大渠道</span>
+          </div>
+          <div class="mission-grid">
+            <div class="scale-card">
+              <h3>项目收入模拟器</h3>
+              <p>
+                调整四个经营假设，即时查看线索到签约转化、月度项目收入与毛利规模。数值保存在当前浏览器。
+              </p>
+              <div class="revenue-form">
+                <label
+                  >有效线索数<input id="registeredUsers" type="number" min="0" value="20"
+                /></label>
+                <label
+                  >预计签约项目数<input id="paidUsers" type="number" min="0" value="2"
+                /></label>
+                <label
+                  >单项目合同额（元）<input id="arppu" type="number" min="0" value="50000"
+                /></label>
+                <label
+                  >项目毛利率（%）<input id="margin" type="number" min="0" max="100" value="35"
+                /></label>
+              </div>
+              <div class="revenue-output">
+                <strong id="mrrValue">¥100,000</strong
+                ><span id="grossValue"
+                  >线索到签约转化率 10% · 预计月毛利 ¥35,000 · 年化合同额 ¥1,200,000</span
+                >
+              </div>
+              <div id="scaleBands" class="scale-bands"></div>
+            </div>
+            <div class="mission-card">
+              <h3 data-editable="true">建议的规模路径</h3>
+              <p class="mission-line" data-editable="true">
+                先用少量可验收的试点验证场景、交付成本与服务边界，再通过标准化交付和渠道合作提升项目规模。
+              </p>
+              <div class="streak-line">
+                <span data-editable="true"
+                  >阶段门槛：试点验收可复现、项目毛利可解释、回款节点清晰、案例获得授权。</span
+                >
+              </div>
+            </div>
+          </div>
+          <div class="market-wrap">
+            <h3>市场行情与经营应对</h3>
+            <p data-editable="true">
+              每周依据官网、竞品公开资料、渠道反馈和项目复盘更新。以下为当前工作判断，不是未经验证的市场事实。
+            </p>
+            <div class="market-grid">
+              <div class="market-cell">
+                <b data-editable="true">水下 ROV 应用</b
+                ><span class="market-signal" data-editable="true">信号：场景验证优先</span>
+                <p data-editable="true">
+                  养殖、船检、应急和科研需求要用真实工况、影像与交付标准证明价值。
+                </p>
+              </div>
+              <div class="market-cell">
+                <b data-editable="true">水面无人船</b
+                ><span class="market-signal" data-editable="true">信号：相邻赛道</span>
+                <p data-editable="true">
+                  USV 聚焦水面航行、测绘与监测；可跟踪合作机会，但不将其能力默认归入海疆产品。
+                </p>
+              </div>
+              <div class="market-cell">
+                <b data-editable="true">数据与 AI 采购</b
+                ><span class="market-signal" data-editable="true">信号：交付驱动</span>
+                <p data-editable="true">
+                  客户为异常复核、可追溯报告与项目管理买单；大模型应作为数据平台内可验收的功能，而非孤立概念。
+                </p>
+              </div>
+              <div class="market-cell">
+                <b data-editable="true">信任与合规</b
+                ><span class="market-signal" data-editable="true">信号：持续关注</span>
+                <p data-editable="true">
+                  参数、案例、价格和自主能力必须可验证；涉港航与救援任务要提前核实作业要求。
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <footer>
+          连云港海疆科技有限公司 · 海疆运营中控台 · 版本 2.0 · 最后更新：<span id="today"></span>
+        </footer>
+      </main>
+    </div>
+
+    <script>
+      const defaultPhases = [
+        {
+          number: "产品与技术岗 · 每人每日",
+          title: "装备、数据平台与 AI 功能准备",
+          goal: "产品边界清楚，问题当天闭环",
+          tasks: [
+            ["核对产品配置、参数、软件版本、数据平台与当天演示设备状态", "必做", false],
+            ["处理试点、客户或渠道技术问题，数据与安全风险立即升级", "必做", false],
+            ["复核一项装备采集到平台报告的场景流程，记录工况、限制和结果", "演示", false],
+            ["抽检 AI 输出的证据来源、置信度和人工复核状态", "AI 质检", false],
+            ["更新当天产品、平台、模型或交付注意事项", "同步", false],
+          ],
+        },
+        {
+          number: "市场与渠道岗 · 每人每日",
+          title: "场景内容、官网 SEO 与线索触达",
+          goal: "持续获得可追踪的有效项目线索",
+          tasks: [
+            ["发布或优化一条场景内容（养殖、船检、应急、科研或智能报告）", "内容", false],
+            ["检查一个核心页面的 Title、H1、正文、FAQ、内链和咨询入口", "SEO", false],
+            ["维护行业社群、微信生态、媒体、展会或经销商沟通", "渠道", false],
+            ["触达目标客户、集成商或经销商，记录数据平台和 AI 需求反馈", "拓展", false],
+            ["检查各渠道线索、演示预约、平台启用与需求澄清数据", "数据", false],
+          ],
+        },
+        {
+          number: "销售与交付岗 · 每人每日",
+          title: "需求澄清、试点与客户成功",
+          goal: "下一步明确，交付和回款持续推进",
+          tasks: [
+            ["检查新线索，完成水域、任务、数据归属、交付物和采购角色的最小澄清", "筛选", false],
+            ["回复客户、渠道和项目沟通，明确负责人和下一动作", "服务", false],
+            ["回访 3 位意向、试点或已交付客户，记录平台和 AI 功能真实反馈", "访谈", false],
+            ["确认 B 端的效率/报告需求或 G 端的私有化、审计、离线要求", "需求", false],
+            ["推进演示、试点、合同、培训或回款中的一个关键节点", "转化", false],
+          ],
+        },
+      ];
+
+      const defaultProjects = [
+        {
+          role: "产品与技术岗",
+          title: "装备、数据平台与 AI 功能验证",
+          goal: "让产品边界、AI 输出和交付条件可被销售、渠道与客户正确理解",
+          tasks: [
+            [
+              "核对官网、销售资料与产品事实库：HJI 1、配置、参数、限制与服务边界一致",
+              "第 1 周",
+              false,
+            ],
+            ["为养殖、船检、应急、科研建立一页式场景需求与演示清单", "第 1 周", false],
+            [
+              "定义数据平台内首批 AI 功能：异常待复核、作业问答、报告草稿",
+              "第 2 周",
+              false,
+              [["为每项功能明确数据来源、输出格式、证据片段、置信度与人工复核步骤", false]],
+            ],
+            [
+              "制作可复用的装备到数据平台演示包：操作流程、影像样例、报告与注意事项",
+              "第 2 周",
+              false,
+            ],
+            ["建立 AI 输出评测、试点技术评估、风险识别与验收模板", "第 3 周", false],
+            ["建立交付、培训、维保、权限审计和问题闭环记录表", "第 4 周", false],
+          ],
+        },
+        {
+          role: "市场与渠道岗",
+          title: "官网 SEO、场景内容与竞品情报",
+          goal: "建立高意图项目入口，并验证从内容到演示、平台启用与试点的转化",
+          tasks: [
+            [
+              "完成关键词与场景地图：水下 ROV、水产养殖巡检、船体检查、海洋数据平台、海洋多模态大模型",
+              "第 1 周",
+              false,
+              [],
+            ],
+            [
+              "完成官网信息架构和技术 SEO 整改清单：独立 Title、Description、H1、预渲染、Sitemap 与 robots",
+              "第 1 周",
+              false,
+            ],
+            [
+              "发布 4 个场景型官网内容或案例页",
+              "第 2 周",
+              false,
+              [
+                ["标题：水产养殖水下巡检怎么做；核心：工况、观察对象、演示证据与咨询入口", false],
+                ["标题：船体水下检查的 ROV 作业准备；核心：作业窗口、影像记录与风险边界", false],
+                ["标题：应急救援中的水下观察支持；核心：任务范围、协同流程与安全说明", false],
+                ["标题：科研与探索如何使用水下 ROV；核心：采集需求、操作流程与数据留存", false],
+              ],
+            ],
+            [
+              "发布数据平台与海洋 AI 能力页：装备采集、数据工作台、AI 辅助和人工复核的关系",
+              "第 3 周",
+              false,
+              [
+                ["标题：海疆数据平台如何把任务、影像和报告沉淀为可追溯交付物", false],
+                ["标题：海洋多模态大模型如何辅助异常复核与报告生成，不替代人工安全决策", false],
+              ],
+            ],
+            [
+              "制作 8 条短视频/图文：真实操作、影像样例、场景痛点与项目准备",
+              "本月",
+              false,
+              [
+                ["标题：一次水下巡检前需要确认什么；核心：水域、任务、影像和安全边界", false],
+                ["标题：水下 ROV 与水面无人船如何分工；核心：水下观察与水面航行能力区分", false],
+              ],
+            ],
+            ["维护行业伙伴与经销商沟通，发布可验证的产品与场景资料", "持续", false, []],
+            ["建立来源、内容、线索、演示、试点与签约的渠道台账", "持续", false, []],
+            ["完成水下 ROV 与水面无人船竞品情报表，记录来源、日期和待确认项", "第 4 周", false, []],
+          ],
+        },
+        {
+          role: "销售与交付岗",
+          title: "项目澄清、AI 试点与客户成功闭环",
+          goal: "把渠道线索转为可验收试点、签约、交付和回款",
+          tasks: [
+            [
+              "建立线索需求澄清表，按水域、任务、数据归属、交付物、预算、角色和下一步记录",
+              "第 1 周",
+              false,
+            ],
+            ["为意向客户安排产品演示或技术交流，明确可行性和限制", "持续", false],
+            [
+              "完成 6 个 B 端/G 端访谈，验证数据平台与 AI 功能需求、部署和验收条件",
+              "第 2 周",
+              false,
+              [
+                ["B 端：重复巡检、异常检索、报告效率和维保管理需求", false],
+                ["G 端：私有化、数据不出域、权限审计、离线能力与人工复核要求", false],
+              ],
+            ],
+            ["每周复盘 5 个线索、演示或试点，向技术与市场同步高频问题", "每周", false],
+            ["维护 FAQ、报价前提、AI 试点协议与验收模板，沉淀可公开案例", "持续", false],
+            ["完成已交付客户的培训、维保和案例授权回访", "第 3 周", false],
+            ["筛选 2-3 个高匹配项目进入试点或报价阶段", "第 4 周", false],
+          ],
+        },
+      ];
+
+      const storageKey = "haijiang-command-center-v2";
+      let phases =
+        JSON.parse(localStorage.getItem(storageKey) || "null") || structuredClone(defaultPhases);
+      let projects =
+        JSON.parse(localStorage.getItem(storageKey + "-projects") || "null") ||
+        structuredClone(defaultProjects);
+      let isEditing = false;
+      const phaseList = document.getElementById("phaseList");
+      const projectList = document.getElementById("projectList");
+      const saveState = document.getElementById("saveState");
+
+      function save() {
+        localStorage.setItem(storageKey, JSON.stringify(phases));
+        localStorage.setItem(storageKey + "-projects", JSON.stringify(projects));
+        saveState.textContent = "已保存到当前浏览器";
+        setTimeout(() => {
+          saveState.textContent = "本地进度已保存";
+        }, 1500);
+      }
+
+      function updateProgress() {
+        const parentTasks = [
+          ...phases.flatMap((phase) => phase.tasks),
+          ...projects.flatMap((project) => project.tasks),
+        ];
+        const tasks = parentTasks.flatMap((task) => [
+          task,
+          ...(task[3] || []).map((subtask) => [null, null, subtask[1]]),
+        ]);
+        const complete = tasks.filter((task) => task[2]).length;
+        document.getElementById("progressValue").textContent = tasks.length
+          ? Math.round((complete / tasks.length) * 100) + "%"
+          : "0%";
+      }
+
+      function render() {
+        phaseList.innerHTML = phases
+          .map(
+            (phase, phaseIndex) => `
+          <article class="phase">
+            <div class="phase-top">
+              <span class="phase-no" contenteditable="${isEditing}" data-phase="${phaseIndex}" data-field="number">${phase.number}</span>
+              <h3 contenteditable="${isEditing}" data-phase="${phaseIndex}" data-field="title">${phase.title}</h3>
+              <span class="phase-goal" contenteditable="${isEditing}" data-phase="${phaseIndex}" data-field="goal">${phase.goal}</span>
+            </div>
+            <ul class="task-list">
+              ${phase.tasks
+                .map(
+                  (task, taskIndex) => `
+                <li class="task ${task[2] ? "done" : ""}">
+                  <input aria-label="标记任务完成" type="checkbox" ${task[2] ? "checked" : ""} data-phase="${phaseIndex}" data-task="${taskIndex}">
+                  <span class="task-text" contenteditable="${isEditing}" data-phase="${phaseIndex}" data-task="${taskIndex}" data-task-field="text">${task[0]}</span>
+                  <span class="task-tag" contenteditable="${isEditing}" data-phase="${phaseIndex}" data-task="${taskIndex}" data-task-field="tag">${task[1]}</span>
+                  <button class="delete-task" type="button" title="删除任务" data-remove-phase="${phaseIndex}" data-remove-task="${taskIndex}">×</button>
+                </li>
+                <li>
+                  <ul class="subtask-list">
+                    ${(task[3] || [])
+                      .map(
+                        (subtask, subtaskIndex) => `
+                      <li class="subtask ${subtask[1] ? "done" : ""}">
+                        <input aria-label="标记子任务完成" type="checkbox" ${subtask[1] ? "checked" : ""} data-subtask-phase="${phaseIndex}" data-subtask-task="${taskIndex}" data-subtask-index="${subtaskIndex}">
+                        <span class="subtask-text" contenteditable="${isEditing}" data-subtask-phase="${phaseIndex}" data-subtask-task="${taskIndex}" data-subtask-index="${subtaskIndex}">${subtask[0]}</span>
+                      </li>`,
+                      )
+                      .join("")}
+                    <li><button class="add-subtask" type="button" data-add-subtask-phase="${phaseIndex}" data-add-subtask-task="${taskIndex}">+ 添加子任务</button></li>
+                  </ul>
+                </li>`,
+                )
+                .join("")}
+            </ul>
+            <button class="add-task" type="button" data-add="${phaseIndex}">+ 添加待办事项</button>
+          </article>`,
+          )
+          .join("");
+        updateProgress();
+      }
+
+      function renderProjects() {
+        projectList.innerHTML = projects
+          .map(
+            (project, projectIndex) => `
+          <article class="project-card">
+            <span class="project-role" contenteditable="${isEditing}" data-project="${projectIndex}" data-project-field="role">${project.role}</span>
+            <h3 contenteditable="${isEditing}" data-project="${projectIndex}" data-project-field="title">${project.title}</h3>
+            <p class="project-goal" contenteditable="${isEditing}" data-project="${projectIndex}" data-project-field="goal">${project.goal}</p>
+            <ul class="task-list">
+              ${project.tasks
+                .map(
+                  (task, taskIndex) => `
+                <li class="task ${task[2] ? "done" : ""}">
+                  <input aria-label="标记专项任务完成" type="checkbox" ${task[2] ? "checked" : ""} data-project="${projectIndex}" data-project-task="${taskIndex}">
+                  <span class="task-text" contenteditable="${isEditing}" data-project="${projectIndex}" data-project-task="${taskIndex}" data-project-task-field="text">${task[0]}</span>
+                  <span class="task-tag" contenteditable="${isEditing}" data-project="${projectIndex}" data-project-task="${taskIndex}" data-project-task-field="tag">${task[1]}</span>
+                  <button class="delete-task" type="button" title="删除任务" data-remove-project="${projectIndex}" data-remove-project-task="${taskIndex}">×</button>
+                </li>
+                <li>
+                  <ul class="subtask-list">
+                    ${(task[3] || [])
+                      .map(
+                        (subtask, subtaskIndex) => `
+                      <li class="subtask ${subtask[1] ? "done" : ""}">
+                        <input aria-label="标记子任务完成" type="checkbox" ${subtask[1] ? "checked" : ""} data-subtask-project="${projectIndex}" data-subtask-project-task="${taskIndex}" data-subtask-index="${subtaskIndex}">
+                        <span class="subtask-text" contenteditable="${isEditing}" data-subtask-project="${projectIndex}" data-subtask-project-task="${taskIndex}" data-subtask-index="${subtaskIndex}">${subtask[0]}</span>
+                      </li>`,
+                      )
+                      .join("")}
+                    <li><button class="add-subtask" type="button" data-add-subtask-project="${projectIndex}" data-add-subtask-project-task="${taskIndex}">+ 添加子任务</button></li>
+                  </ul>
+                </li>`,
+                )
+                .join("")}
+            </ul>
+            <button class="add-task" type="button" data-add-project="${projectIndex}">+ 添加专项任务</button>
+          </article>`,
+          )
+          .join("");
+      }
+
+      phaseList.addEventListener("change", (event) => {
+        if (event.target.matches('input[type="checkbox"]')) {
+          if (event.target.dataset.subtaskPhase !== undefined) {
+            const task =
+              phases[event.target.dataset.subtaskPhase].tasks[event.target.dataset.subtaskTask];
+            task[3] ||= [];
+            task[3][event.target.dataset.subtaskIndex][1] = event.target.checked;
+            save();
+            render();
+            return;
+          }
+          phases[event.target.dataset.phase].tasks[event.target.dataset.task][2] =
+            event.target.checked;
+          save();
+          render();
+        }
+      });
+
+      phaseList.addEventListener("click", (event) => {
+        const add = event.target.closest("[data-add]");
+        const remove = event.target.closest("[data-remove-phase]");
+        const addSubtask = event.target.closest("[data-add-subtask-phase]");
+        if (add) {
+          phases[add.dataset.add].tasks.push(["新的待办事项", "待分配", false]);
+          save();
+          render();
+        }
+        if (remove) {
+          phases[remove.dataset.removePhase].tasks.splice(remove.dataset.removeTask, 1);
+          save();
+          render();
+        }
+        if (addSubtask) {
+          const task =
+            phases[addSubtask.dataset.addSubtaskPhase].tasks[addSubtask.dataset.addSubtaskTask];
+          task[3] ||= [];
+          task[3].push(["新的子任务：填写标题、内容核心或交付要求", false]);
+          save();
+          render();
+        }
+      });
+
+      phaseList.addEventListener(
+        "blur",
+        (event) => {
+          const target = event.target;
+          const text = target.textContent.trim();
+          if (target.dataset.field) phases[target.dataset.phase][target.dataset.field] = text;
+          if (target.dataset.taskField)
+            phases[target.dataset.phase].tasks[target.dataset.task][
+              target.dataset.taskField === "text" ? 0 : 1
+            ] = text;
+          if (target.dataset.subtaskPhase !== undefined && !target.matches("input")) {
+            phases[target.dataset.subtaskPhase].tasks[target.dataset.subtaskTask][3][
+              target.dataset.subtaskIndex
+            ][0] = text;
+          }
+          save();
+        },
+        true,
+      );
+
+      projectList.addEventListener("change", (event) => {
+        if (event.target.matches('input[type="checkbox"]')) {
+          if (event.target.dataset.subtaskProject !== undefined) {
+            const task =
+              projects[event.target.dataset.subtaskProject].tasks[
+                event.target.dataset.subtaskProjectTask
+              ];
+            task[3] ||= [];
+            task[3][event.target.dataset.subtaskIndex][1] = event.target.checked;
+            save();
+            renderProjects();
+            updateProgress();
+            return;
+          }
+          projects[event.target.dataset.project].tasks[event.target.dataset.projectTask][2] =
+            event.target.checked;
+          save();
+          renderProjects();
+          updateProgress();
+        }
+      });
+
+      projectList.addEventListener("click", (event) => {
+        const add = event.target.closest("[data-add-project]");
+        const remove = event.target.closest("[data-remove-project]");
+        const addSubtask = event.target.closest("[data-add-subtask-project]");
+        if (add) {
+          projects[add.dataset.addProject].tasks.push(["新的专项任务", "待安排", false]);
+          save();
+          renderProjects();
+          updateProgress();
+        }
+        if (remove) {
+          projects[remove.dataset.removeProject].tasks.splice(remove.dataset.removeProjectTask, 1);
+          save();
+          renderProjects();
+          updateProgress();
+        }
+        if (addSubtask) {
+          const task =
+            projects[addSubtask.dataset.addSubtaskProject].tasks[
+              addSubtask.dataset.addSubtaskProjectTask
+            ];
+          task[3] ||= [];
+          task[3].push(["新的子任务：填写标题、内容核心或交付要求", false]);
+          save();
+          renderProjects();
+          updateProgress();
+        }
+      });
+
+      projectList.addEventListener(
+        "blur",
+        (event) => {
+          const target = event.target;
+          const text = target.textContent.trim();
+          if (target.dataset.projectField)
+            projects[target.dataset.project][target.dataset.projectField] = text;
+          if (target.dataset.projectTaskField)
+            projects[target.dataset.project].tasks[target.dataset.projectTask][
+              target.dataset.projectTaskField === "text" ? 0 : 1
+            ] = text;
+          if (target.dataset.subtaskProject !== undefined && !target.matches("input")) {
+            projects[target.dataset.subtaskProject].tasks[target.dataset.subtaskProjectTask][3][
+              target.dataset.subtaskIndex
+            ][0] = text;
+          }
+          save();
+        },
+        true,
+      );
+
+      document.querySelectorAll('[data-editable="true"]').forEach((el) => {
+        el.addEventListener(
+          "blur",
+          () =>
+            localStorage.setItem(
+              storageKey +
+                "-copy-" +
+                [...document.querySelectorAll('[data-editable="true"]')].indexOf(el),
+              el.innerHTML,
+            ),
+          true,
+        );
+        const savedCopy = localStorage.getItem(
+          storageKey +
+            "-copy-" +
+            [...document.querySelectorAll('[data-editable="true"]')].indexOf(el),
+        );
+        if (savedCopy) el.innerHTML = savedCopy;
+      });
+
+      document.getElementById("editButton").addEventListener("click", () => {
+        isEditing = !isEditing;
+        document.body.classList.toggle("edit-mode", isEditing);
+        document.getElementById("editButton").textContent = isEditing ? "完成编辑" : "编辑内容";
+        render();
+        renderProjects();
+      });
+
+      document.getElementById("resetDaily").addEventListener("click", () => {
+        if (!confirm("开始新的一天吗？这会清空三类岗位的每日勾选，专项任务状态不会改变。")) return;
+        phases.forEach((phase) =>
+          phase.tasks.forEach((task) => {
+            task[2] = false;
+          }),
+        );
+        save();
+        render();
+      });
+
+      const moneyInputs = ["registeredUsers", "paidUsers", "arppu", "margin"].map((id) =>
+        document.getElementById(id),
+      );
+      const moneyKey = storageKey + "-scale";
+      const savedMoney = JSON.parse(localStorage.getItem(moneyKey) || "null");
+      if (savedMoney)
+        moneyInputs.forEach((input) => {
+          input.value = savedMoney[input.id] ?? input.value;
+        });
+      function formatMoney(value) {
+        return "¥" + Math.round(value).toLocaleString("zh-CN");
+      }
+      function updateRevenue() {
+        const registered = Number(document.getElementById("registeredUsers").value) || 0;
+        const users = Number(document.getElementById("paidUsers").value) || 0;
+        const arppu = Number(document.getElementById("arppu").value) || 0;
+        const margin = Math.min(
+          100,
+          Math.max(0, Number(document.getElementById("margin").value) || 0),
+        );
+        const monthly = users * arppu;
+        document.getElementById("mrrValue").textContent = formatMoney(monthly);
+        const conversion = registered
+          ? ((users / registered) * 100).toFixed(1).replace(/\.0$/, "")
+          : "0";
+        document.getElementById("grossValue").textContent =
+          "线索到签约转化率 " +
+          conversion +
+          "% · 预计月毛利 " +
+          formatMoney((monthly * margin) / 100) +
+          " · 年化合同额 " +
+          formatMoney(monthly * 12);
+        const scalePoints = [2, 5, 10];
+        document.getElementById("scaleBands").innerHTML = scalePoints
+          .map(
+            (point) =>
+              `<div class="scale-band"><b>${point} 个签约项目</b><span>月合同额 ${formatMoney(point * arppu)} · 月毛利 ${formatMoney((point * arppu * margin) / 100)}</span></div>`,
+          )
+          .join("");
+        localStorage.setItem(
+          moneyKey,
+          JSON.stringify(Object.fromEntries(moneyInputs.map((input) => [input.id, input.value]))),
+        );
+      }
+      moneyInputs.forEach((input) => input.addEventListener("input", updateRevenue));
+      updateRevenue();
+
+      const streakKey = storageKey + "-streak";
+      let streak = Number(localStorage.getItem(streakKey) || 0);
+      const streakCount = document.getElementById("streakCount");
+      streakCount.textContent = streak;
+      document.getElementById("streakButton").addEventListener("click", (event) => {
+        streak += 1;
+        localStorage.setItem(streakKey, String(streak));
+        streakCount.textContent = streak;
+        const card = document.getElementById("missionCard");
+        card.classList.remove("flash");
+        void card.offsetWidth;
+        card.classList.add("flash");
+        const colors = ["#53e7c0", "#d8f263", "#a99cff", "#ff9d60"];
+        for (let i = 0; i < 18; i += 1) {
+          const spark = document.createElement("span");
+          spark.className = "spark";
+          const angle = Math.random() * Math.PI * 2,
+            distance = 60 + Math.random() * 100;
+          spark.style.left = event.clientX + "px";
+          spark.style.top = event.clientY + "px";
+          spark.style.background = colors[i % colors.length];
+          spark.style.setProperty("--x", Math.cos(angle) * distance + "px");
+          spark.style.setProperty("--y", Math.sin(angle) * distance + "px");
+          document.body.appendChild(spark);
+          spark.addEventListener("animationend", () => spark.remove());
+        }
+      });
+
+      const observer = new IntersectionObserver(
+        (entries) =>
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("visible");
+              observer.unobserve(entry.target);
+            }
+          }),
+        { threshold: 0.12 },
+      );
+      document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
+
+      const navLinks = [...document.querySelectorAll('.sidebar nav a[href^="#"]')];
+      const navSections = navLinks
+        .map((link) => document.querySelector(link.getAttribute("href")))
+        .filter(Boolean);
+      function updateActiveNav() {
+        const marker = window.innerHeight * 0.28;
+        let current = navSections[0];
+        navSections.forEach((section) => {
+          if (section.getBoundingClientRect().top <= marker) current = section;
+        });
+        navLinks.forEach((link) => {
+          const active = link.getAttribute("href") === "#" + current.id;
+          link.classList.toggle("active", active);
+          if (active) link.setAttribute("aria-current", "page");
+          else link.removeAttribute("aria-current");
+        });
+      }
+      window.addEventListener("scroll", updateActiveNav, { passive: true });
+      window.addEventListener("resize", updateActiveNav);
+      updateActiveNav();
+
+      document.getElementById("resetButton").addEventListener("click", () => {
+        if (!confirm("确定恢复初始计划吗？当前浏览器中的勾选和编辑内容将被清除。")) return;
+        localStorage.removeItem(storageKey);
+        localStorage.removeItem(storageKey + "-projects");
+        localStorage.removeItem(moneyKey);
+        localStorage.removeItem(streakKey);
+        [...document.querySelectorAll('[data-editable="true"]')].forEach((_, i) =>
+          localStorage.removeItem(storageKey + "-copy-" + i),
+        );
+        phases = structuredClone(defaultPhases);
+        render();
+        location.reload();
+      });
+      document.getElementById("today").textContent = new Intl.DateTimeFormat("zh-CN", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }).format(new Date());
+      render();
+      renderProjects();
+    </script>
+  </body>
+</html>

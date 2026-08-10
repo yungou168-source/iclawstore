@@ -1,19 +1,19 @@
-import { getOAuthClientId, isOAuthToken } from '@codefox-inc/oauth-provider';
-import { v } from 'convex/values';
-import { components, internal } from './_generated/api';
-import { internalQuery } from './_generated/server';
-import { internalMutation, mutation, query } from './functions';
-import { DESKTOP_OAUTH_CLIENT_NAME, DESKTOP_OAUTH_SCOPES } from './desktopOAuthConfig';
-import { assertAdmin, requireUser } from './lib/access';
+import { getOAuthClientId, isOAuthToken } from "@codefox-inc/oauth-provider";
+import { v } from "convex/values";
+import { components, internal } from "./_generated/api";
+import { internalQuery } from "./_generated/server";
+import { DESKTOP_OAUTH_CLIENT_NAME, DESKTOP_OAUTH_SCOPES } from "./desktopOAuthConfig";
+import { internalMutation, mutation, query } from "./functions";
+import { assertAdmin, requireUser } from "./lib/access";
 import {
   createDesktopTokenFamilyPolicy,
   evaluateDesktopTokenFamily,
   touchDesktopTokenFamily,
-} from './lib/desktopOAuthTokenPolicy';
-import { desktopOAuthRedirectUris, requiredEnvironment } from './lib/oauthEnvironment';
+} from "./lib/desktopOAuthTokenPolicy";
+import { desktopOAuthRedirectUris, requiredEnvironment } from "./lib/oauthEnvironment";
 
 function configuredClientId(): string {
-  return requiredEnvironment('AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID', { parseAsUrl: false });
+  return requiredEnvironment("AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID", { parseAsUrl: false });
 }
 
 function sameStrings(left: string[], right: readonly string[]): boolean {
@@ -23,8 +23,8 @@ function sameStrings(left: string[], right: readonly string[]): boolean {
 type RegisteredOAuthClient = {
   clientId: string;
   name: string;
-  type: 'public' | 'confidential';
-  tokenEndpointAuthMethod?: 'client_secret_basic' | 'client_secret_post' | 'none';
+  type: "public" | "confidential";
+  tokenEndpointAuthMethod?: "client_secret_basic" | "client_secret_post" | "none";
   redirectUris: string[];
   allowedScopes: string[];
 };
@@ -43,37 +43,38 @@ export const ensureDesktopClient = mutation({
       {},
     );
     const matches = clients.filter((client) =>
-      expectedClientId ? client.clientId === expectedClientId : client.name === DESKTOP_OAUTH_CLIENT_NAME,
+      expectedClientId
+        ? client.clientId === expectedClientId
+        : client.name === DESKTOP_OAUTH_CLIENT_NAME,
     );
-    if (matches.length > 1) throw new Error('Multiple desktop OAuth clients are registered');
+    if (matches.length > 1) throw new Error("Multiple desktop OAuth clients are registered");
 
     const existing = matches[0];
     if (existing) {
       if (
-        existing.type !== 'public' ||
-        existing.tokenEndpointAuthMethod !== 'none' ||
+        existing.type !== "public" ||
+        existing.tokenEndpointAuthMethod !== "none" ||
         !sameStrings(existing.redirectUris, redirectUris) ||
         !sameStrings(existing.allowedScopes, DESKTOP_OAUTH_SCOPES)
       ) {
-        throw new Error('Desktop OAuth client registration does not match the locked configuration');
+        throw new Error(
+          "Desktop OAuth client registration does not match the locked configuration",
+        );
       }
       return { clientId: existing.clientId, created: false };
     }
     if (expectedClientId) {
-      throw new Error('Configured AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID is not registered');
+      throw new Error("Configured AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID is not registered");
     }
 
-    const result = await ctx.runMutation(
-      components.oauthProvider.clientManagement.registerClient,
-      {
-        name: DESKTOP_OAUTH_CLIENT_NAME,
-        redirectUris,
-        scopes: [...DESKTOP_OAUTH_SCOPES],
-        type: 'public' as const,
-        tokenEndpointAuthMethod: 'none' as const,
-        isInternal: true,
-      },
-    );
+    const result = await ctx.runMutation(components.oauthProvider.clientManagement.registerClient, {
+      name: DESKTOP_OAUTH_CLIENT_NAME,
+      redirectUris,
+      scopes: [...DESKTOP_OAUTH_SCOPES],
+      type: "public" as const,
+      tokenEndpointAuthMethod: "none" as const,
+      isInternal: true,
+    });
     return { clientId: result.clientId, created: true };
   },
 });
@@ -98,20 +99,20 @@ export const getRefreshFamilyAccessInternal = internalQuery({
     clientId: v.string(),
   },
   handler: async (ctx, args) => {
-    const userId = ctx.db.normalizeId('users', args.userId);
+    const userId = ctx.db.normalizeId("users", args.userId);
     if (!userId || args.clientId !== configuredClientId()) {
-      return { active: false as const, reason: 'identity_mismatch' as const };
+      return { active: false as const, reason: "identity_mismatch" as const };
     }
     const user = await ctx.db.get(userId);
     if (!user || user.deletedAt || user.deactivatedAt) {
-      return { active: false as const, reason: 'account_disabled' as const };
+      return { active: false as const, reason: "account_disabled" as const };
     }
     const family = await ctx.db
-      .query('desktopOAuthTokenFamilies')
-      .withIndex('by_family_id', (q) => q.eq('familyId', args.familyId))
+      .query("desktopOAuthTokenFamilies")
+      .withIndex("by_family_id", (q) => q.eq("familyId", args.familyId))
       .unique();
     if (!family || family.userId !== userId || family.clientId !== args.clientId) {
-      return { active: false as const, reason: 'family_missing' as const };
+      return { active: false as const, reason: "family_missing" as const };
     }
     return evaluateDesktopTokenFamily(family, Date.now());
   },
@@ -125,32 +126,32 @@ export const recordRefreshFamilyUseInternal = internalMutation({
     initialIssue: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const userId = ctx.db.normalizeId('users', args.userId);
+    const userId = ctx.db.normalizeId("users", args.userId);
     if (!userId || args.clientId !== configuredClientId()) {
-      throw new Error('Desktop OAuth token family identity mismatch');
+      throw new Error("Desktop OAuth token family identity mismatch");
     }
     const user = await ctx.db.get(userId);
     if (!user || user.deletedAt || user.deactivatedAt) {
-      throw new Error('Desktop OAuth token family user is disabled');
+      throw new Error("Desktop OAuth token family user is disabled");
     }
 
     const now = Date.now();
     const existing = await ctx.db
-      .query('desktopOAuthTokenFamilies')
-      .withIndex('by_family_id', (q) => q.eq('familyId', args.familyId))
+      .query("desktopOAuthTokenFamilies")
+      .withIndex("by_family_id", (q) => q.eq("familyId", args.familyId))
       .unique();
     if (existing) {
       if (existing.userId !== userId || existing.clientId !== args.clientId) {
-        throw new Error('Desktop OAuth token family ownership conflict');
+        throw new Error("Desktop OAuth token family ownership conflict");
       }
       const decision = evaluateDesktopTokenFamily(existing, now);
       if (!decision.active) throw new Error(`Desktop OAuth token family ${decision.reason}`);
       await ctx.db.patch(existing._id, touchDesktopTokenFamily(existing, now));
       return null;
     }
-    if (!args.initialIssue) throw new Error('Desktop OAuth token family is not registered');
+    if (!args.initialIssue) throw new Error("Desktop OAuth token family is not registered");
 
-    await ctx.db.insert('desktopOAuthTokenFamilies', {
+    await ctx.db.insert("desktopOAuthTokenFamilies", {
       familyId: args.familyId,
       userId,
       clientId: args.clientId,
@@ -166,14 +167,14 @@ export const revokeRefreshFamiliesForUserInternal = internalMutation({
     revokedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const userId = ctx.db.normalizeId('users', args.userId);
+    const userId = ctx.db.normalizeId("users", args.userId);
     const clientId = process.env.AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID?.trim();
     if (!userId || !clientId) return { revoked: 0, hasMore: false };
 
     const rows = await ctx.db
-      .query('desktopOAuthTokenFamilies')
-      .withIndex('by_user_and_client_and_revoked_at', (q) =>
-        q.eq('userId', userId).eq('clientId', clientId).eq('revokedAt', undefined),
+      .query("desktopOAuthTokenFamilies")
+      .withIndex("by_user_and_client_and_revoked_at", (q) =>
+        q.eq("userId", userId).eq("clientId", clientId).eq("revokedAt", undefined),
       )
       .take(100);
     const revokedAt = args.revokedAt ?? Date.now();
@@ -191,7 +192,7 @@ export const revokeRefreshFamiliesForUserInternal = internalMutation({
 export const getUserProfileInternal = internalQuery({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
-    const userId = ctx.db.normalizeId('users', args.userId);
+    const userId = ctx.db.normalizeId("users", args.userId);
     if (!userId) return null;
     const user = await ctx.db.get(userId);
     if (!user || user.deletedAt || user.deactivatedAt) return null;
@@ -211,10 +212,10 @@ export const getDesktopAccessIdentity = query({
     if (!identity || !isOAuthToken(identity)) return null;
 
     const clientId = getOAuthClientId({
-      cid: typeof identity.cid === 'string' ? identity.cid : undefined,
+      cid: typeof identity.cid === "string" ? identity.cid : undefined,
     });
     if (!clientId || clientId !== configuredClientId()) return null;
-    const userId = ctx.db.normalizeId('users', identity.subject);
+    const userId = ctx.db.normalizeId("users", identity.subject);
     if (!userId) return null;
 
     const authorization = await ctx.runQuery(components.oauthProvider.queries.getAuthorization, {

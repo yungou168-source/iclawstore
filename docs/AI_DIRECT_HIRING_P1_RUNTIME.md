@@ -44,23 +44,23 @@
 
 ### Job queue routes (`/api/v1/ai-direct-hiring/jobs`)
 
-| Method | Path | Purpose | Auth | RBAC |
-|--------|------|---------|------|------|
-| `GET`  | `/jobs` | List active runs for a company | `requireAuth` | `manager+` on `organizationId` |
-| `GET`  | `/jobs/:id` | Run detail with steps | `requireAuth` | `manager+` on run's org (or none for system runs) |
-| `POST` | `/jobs/:id/cancel` | Cancel a queued/active run | `requireAuth` | `manager+` on run's org |
-| `POST` | `/jobs/:id/retry` | Clone a failed/cancelled run | `requireAuth` | `manager+` on run's org |
+| Method | Path               | Purpose                        | Auth          | RBAC                                              |
+| ------ | ------------------ | ------------------------------ | ------------- | ------------------------------------------------- |
+| `GET`  | `/jobs`            | List active runs for a company | `requireAuth` | `manager+` on `organizationId`                    |
+| `GET`  | `/jobs/:id`        | Run detail with steps          | `requireAuth` | `manager+` on run's org (or none for system runs) |
+| `POST` | `/jobs/:id/cancel` | Cancel a queued/active run     | `requireAuth` | `manager+` on run's org                           |
+| `POST` | `/jobs/:id/retry`  | Clone a failed/cancelled run   | `requireAuth` | `manager+` on run's org                           |
 
 Cancel requires a `reason` string (1–500 chars) in the body.
 Retry rejects with `409 INVALID_TRANSITION` when the source run is still `queued`/`active`.
 
 ### Worker interface routes (`/api/v1/ai-direct-hiring/workers`)
 
-| Method | Path | Purpose | Required header |
-|--------|------|---------|-----------------|
-| `POST` | `/workers/heartbeat` | Extend lease on a leased run | `X-Worker-Id` |
-| `GET`  | `/workers/lease` | Claim next queued run (204 when empty) | `X-Worker-Id` |
-| `POST` | `/workers/complete` | Mark a step succeeded/failed; closes run when last step | `X-Worker-Id` |
+| Method | Path                 | Purpose                                                 | Required header |
+| ------ | -------------------- | ------------------------------------------------------- | --------------- |
+| `POST` | `/workers/heartbeat` | Extend lease on a leased run                            | `X-Worker-Id`   |
+| `GET`  | `/workers/lease`     | Claim next queued run (204 when empty)                  | `X-Worker-Id`   |
+| `POST` | `/workers/complete`  | Mark a step succeeded/failed; closes run when last step | `X-Worker-Id`   |
 
 Worker routes are NOT behind `(fastify as any).authenticate` (they are intended
 for internal worker processes) and should be gated at the reverse-proxy layer
@@ -106,10 +106,10 @@ for internal worker processes) and should be gated at the reverse-proxy layer
 
 ## 3. Tests
 
-| File | Lines | Coverage |
-|------|-------|----------|
-| `server/test/jobQueue.test.ts` | 168 | enqueue validation, insert audit/outbox, heartbeat return values, retry guard + step cloning |
-| `server/test/aiDirectJobsRoutes.test.ts` | 107 | ErrorCodes inventory, errorResponse shape, header/payload validation, retry guard |
+| File                                     | Lines | Coverage                                                                                     |
+| ---------------------------------------- | ----- | -------------------------------------------------------------------------------------------- |
+| `server/test/jobQueue.test.ts`           | 168   | enqueue validation, insert audit/outbox, heartbeat return values, retry guard + step cloning |
+| `server/test/aiDirectJobsRoutes.test.ts` | 107   | ErrorCodes inventory, errorResponse shape, header/payload validation, retry guard            |
 
 **Not run** — server is under memory pressure (no `bun test` allowed).
 Tests follow the existing `bun:test` convention from `aiDirectHiringRoutes.test.ts`.
@@ -118,13 +118,13 @@ Tests follow the existing `bun:test` convention from `aiDirectHiringRoutes.test.
 
 ## 4. Reused Utilities (no duplicates)
 
-| Tool | Source | Used in |
-|------|--------|---------|
-| `requireAuth` | `server/src/middleware/aiDirectAuth.ts` | `aiDirectJobs.ts` |
-| `requireCompanyRole` | `server/src/middleware/aiDirectRbac.ts` | `aiDirectJobs.ts` |
-| `AiDirectHiringError` + `errorResponse` + `ErrorCodes` | `server/src/services/aiDirectErrors.ts` | all routes |
-| `publishOutboxEvent` | `server/src/utils/outbox.ts` | not directly — internal `publishOutboxEvent` helper inside `JobQueueService` mirrors the contract |
-| `extractRequestId` / `idempotencyFingerprint` | `server/src/utils/idempotency.ts` | available, not yet wired into jobs (queue owns requestId internally) |
+| Tool                                                   | Source                                  | Used in                                                                                           |
+| ------------------------------------------------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `requireAuth`                                          | `server/src/middleware/aiDirectAuth.ts` | `aiDirectJobs.ts`                                                                                 |
+| `requireCompanyRole`                                   | `server/src/middleware/aiDirectRbac.ts` | `aiDirectJobs.ts`                                                                                 |
+| `AiDirectHiringError` + `errorResponse` + `ErrorCodes` | `server/src/services/aiDirectErrors.ts` | all routes                                                                                        |
+| `publishOutboxEvent`                                   | `server/src/utils/outbox.ts`            | not directly — internal `publishOutboxEvent` helper inside `JobQueueService` mirrors the contract |
+| `extractRequestId` / `idempotencyFingerprint`          | `server/src/utils/idempotency.ts`       | available, not yet wired into jobs (queue owns requestId internally)                              |
 
 The internal audit/outbox helpers in `jobQueue.ts` are deliberately local to keep
 the service self-contained without re-importing from `routes/`. They share the
@@ -134,14 +134,14 @@ exact SQL shape used by `aiDirectHiring.ts` (line 116–130, 226–242).
 
 ## 5. Not Implemented (Deferred)
 
-| Item | Reason | Target |
-|------|--------|--------|
-| Artifact routes (`/jobs/:id/artifacts`, `/artifacts/:id`) | Out of scope for "精简版"; queue stores `outputIndex` JSON instead of a separate table | Next iteration |
-| Progress estimator (weighted steps) | Used simple `completedSteps/total` ratio | Next iteration |
-| Worker pool monitoring + dead-worker sweeper | Lease reclaim already handles crashes; explicit metrics endpoint deferred | Next iteration |
-| Convex projection consumer | Out of G's scope | Agent D' |
-| `withIdempotency` wiring on `POST /jobs` (manual `enqueue`) | Queue idempotency is enforced via `idempotencyKey` on `ai_direct_workflow_runs.idempotencyKey` (column not yet added) | When schema permits |
-| Live `SELECT ... FOR UPDATE SKIP LOCKED` test against MySQL | Memory-constrained; no test runner allowed | User runs `bun test` later |
+| Item                                                        | Reason                                                                                                                | Target                     |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| Artifact routes (`/jobs/:id/artifacts`, `/artifacts/:id`)   | Out of scope for "精简版"; queue stores `outputIndex` JSON instead of a separate table                                | Next iteration             |
+| Progress estimator (weighted steps)                         | Used simple `completedSteps/total` ratio                                                                              | Next iteration             |
+| Worker pool monitoring + dead-worker sweeper                | Lease reclaim already handles crashes; explicit metrics endpoint deferred                                             | Next iteration             |
+| Convex projection consumer                                  | Out of G's scope                                                                                                      | Agent D'                   |
+| `withIdempotency` wiring on `POST /jobs` (manual `enqueue`) | Queue idempotency is enforced via `idempotencyKey` on `ai_direct_workflow_runs.idempotencyKey` (column not yet added) | When schema permits        |
+| Live `SELECT ... FOR UPDATE SKIP LOCKED` test against MySQL | Memory-constrained; no test runner allowed                                                                            | User runs `bun test` later |
 
 ---
 
@@ -188,7 +188,7 @@ base:   feature/ai-direct-hire-integrated @ daf41f0
    underlying table for `ai_direct_workflow_run_steps` also has the columns
    referenced. No schema change was made.
 2. **`SQL_CALC_FOUND_ROWS` / Skip Locked compatibility** — `FOR UPDATE SKIP
-   LOCKED` requires MySQL 8.0+. Confirm the deployed MySQL version before
+LOCKED` requires MySQL 8.0+. Confirm the deployed MySQL version before
    running this in production (existing `aiDirectHiring.ts` already uses
    `FOR UPDATE` so the requirement is the same).
 3. **Auth bypass for worker routes** — `/workers/*` is intentionally not
@@ -209,12 +209,12 @@ base:   feature/ai-direct-hire-integrated @ daf41f0
 
 ## 8. Commit History (G's branch)
 
-| # | SHA | Message |
-|---|-----|---------|
-| 1 | `f58a3b4` | `chore: integrate F's P2 routes + services into G baseline` |
-| 2 | `45ef645` | `feat(ai-direct-hiring): P1 runtime center - job queue + projection + jobs/workers routes` |
-| 3 | `e79b78f` | `test(ai-direct-hiring): add jobQueue + jobs/workers schema tests` |
-| 4 | `8284931` | `docs(ai-direct-hiring): P1 runtime center delivery report` |
+| #   | SHA       | Message                                                                                    |
+| --- | --------- | ------------------------------------------------------------------------------------------ |
+| 1   | `f58a3b4` | `chore: integrate F's P2 routes + services into G baseline`                                |
+| 2   | `45ef645` | `feat(ai-direct-hiring): P1 runtime center - job queue + projection + jobs/workers routes` |
+| 3   | `e79b78f` | `test(ai-direct-hiring): add jobQueue + jobs/workers schema tests`                         |
+| 4   | `8284931` | `docs(ai-direct-hiring): P1 runtime center delivery report`                                |
 
 ---
 

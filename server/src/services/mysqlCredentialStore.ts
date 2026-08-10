@@ -1,18 +1,18 @@
-import type { Pool, ResultSetHeader } from 'mysql2/promise';
+import type { Pool, ResultSetHeader } from "mysql2/promise";
 import type {
   CredentialMetadata,
   CredentialStore,
   EncryptedCredentialEnvelope,
   SaveEncryptedCredentialInput,
-} from '../contracts/credentialStore.js';
-import type { CredentialLease } from '../contracts/modelProvider.js';
-import type { CredentialKeyring } from './credentialKeyring.js';
-import { decryptCredential } from './credentialVault.js';
+} from "../contracts/credentialStore.js";
+import type { CredentialLease } from "../contracts/modelProvider.js";
+import type { CredentialKeyring } from "./credentialKeyring.js";
+import { decryptCredential } from "./credentialVault.js";
 
 export class CredentialWriteConflictError extends Error {
   constructor() {
-    super('Credential was concurrently modified');
-    this.name = 'CredentialWriteConflictError';
+    super("Credential was concurrently modified");
+    this.name = "CredentialWriteConflictError";
   }
 }
 
@@ -27,7 +27,7 @@ type CredentialRow = {
   authTag: string;
   keyVersion: string;
   credentialVersion: number;
-  validationStatus: 'unvalidated' | 'valid' | 'invalid';
+  validationStatus: "unvalidated" | "valid" | "invalid";
   validatedAt: Date | null;
   lastUsedAt: Date | null;
   createdAt: Date;
@@ -45,10 +45,10 @@ function metadata(row: CredentialRow): CredentialMetadata {
     ownerUserId: row.userId,
     providerKey: row.provider,
     label: row.label,
-    fingerprint: row.fingerprint ?? '',
+    fingerprint: row.fingerprint ?? "",
     version: Number(row.credentialVersion),
     keyVersion: row.keyVersion,
-    status: row.revokedAt ? 'revoked' : 'active',
+    status: row.revokedAt ? "revoked" : "active",
     validationStatus: row.validationStatus,
     validatedAt: row.validatedAt,
     lastUsedAt: row.lastUsedAt,
@@ -59,16 +59,16 @@ function metadata(row: CredentialRow): CredentialMetadata {
 }
 
 function encode(value: Uint8Array): string {
-  return Buffer.from(value).toString('base64');
+  return Buffer.from(value).toString("base64");
 }
 
 function envelope(row: CredentialRow): EncryptedCredentialEnvelope {
   return {
-    algorithm: 'aes-256-gcm',
+    algorithm: "aes-256-gcm",
     keyVersion: row.keyVersion,
-    ciphertext: new Uint8Array(Buffer.from(row.cipherText, 'base64')),
-    nonce: new Uint8Array(Buffer.from(row.iv, 'base64')),
-    authenticationTag: new Uint8Array(Buffer.from(row.authTag, 'base64')),
+    ciphertext: new Uint8Array(Buffer.from(row.cipherText, "base64")),
+    nonce: new Uint8Array(Buffer.from(row.iv, "base64")),
+    authenticationTag: new Uint8Array(Buffer.from(row.authTag, "base64")),
   };
 }
 
@@ -128,18 +128,13 @@ export function createMysqlCredentialStore(
         ],
       );
     } catch (error) {
-      if (
-        error
-        && typeof error === 'object'
-        && 'code' in error
-        && error.code === 'ER_DUP_ENTRY'
-      ) {
+      if (error && typeof error === "object" && "code" in error && error.code === "ER_DUP_ENTRY") {
         throw new CredentialWriteConflictError();
       }
       throw error;
     }
     const result = await readMetadata(input.id, input.ownerUserId);
-    if (!result) throw new Error('Credential was not persisted');
+    if (!result) throw new Error("Credential was not persisted");
     return result;
   };
 
@@ -170,7 +165,7 @@ export function createMysqlCredentialStore(
     );
     if (result.affectedRows !== 1) throw new CredentialWriteConflictError();
     const updated = await readMetadata(credentialId, ownerUserId);
-    if (!updated) throw new Error('Credential was not found after rotation');
+    if (!updated) throw new Error("Credential was not found after rotation");
     return updated;
   };
 
@@ -203,7 +198,7 @@ export function createMysqlCredentialStore(
   const markValidation = async (
     credentialId: string,
     ownerUserId: string,
-    status: 'valid' | 'invalid',
+    status: "valid" | "invalid",
   ): Promise<boolean> => {
     const [result] = await pool.query<ResultSetHeader>(
       `UPDATE ai_direct_user_credentials
@@ -219,14 +214,14 @@ export function createMysqlCredentialStore(
     ownerUserId: string,
   ): Promise<CredentialLease | null> => {
     const row = await read(credentialId, ownerUserId);
-    if (!row || row.revokedAt || row.validationStatus !== 'valid') return null;
+    if (!row || row.revokedAt || row.validationStatus !== "valid") return null;
     let consumed = false;
     return {
       credentialId: row.id,
       providerKey: row.provider,
       version: Number(row.credentialVersion),
       withSecret: async <T>(consumer: (secret: Uint8Array) => Promise<T>): Promise<T> => {
-        if (consumed) throw new Error('Credential lease has already been consumed');
+        if (consumed) throw new Error("Credential lease has already been consumed");
         consumed = true;
         const secret = decryptCredential(
           keyring,
@@ -245,7 +240,7 @@ export function createMysqlCredentialStore(
                AND validationStatus = 'valid' AND revokedAt IS NULL`,
             [row.id, row.userId, row.credentialVersion, row.keyVersion],
           );
-          if (usage.affectedRows !== 1) throw new Error('Credential lease is no longer valid');
+          if (usage.affectedRows !== 1) throw new Error("Credential lease is no longer valid");
           return await consumer(secret);
         } finally {
           secret.fill(0);

@@ -179,7 +179,6 @@ These features degrade gracefully without their keys:
 | ------------------------------------------------------------------------- | --------------------------------------------------------- |
 | `OPENAI_API_KEY`                                                          | Embeddings and vector search (falls back to zero vectors) |
 | `VT_API_KEY`                                                              | VirusTotal malware scanning                               |
-| `DISCORD_WEBHOOK_URL`                                                     | Discord notifications                                     |
 | `GITHUB_APP_ID` / `GITHUB_APP_PRIVATE_KEY` / `GITHUB_APP_INSTALLATION_ID` | GitHub backup sync                                        |
 
 ## CLI Development

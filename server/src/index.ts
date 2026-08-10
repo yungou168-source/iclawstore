@@ -9,8 +9,8 @@ import Fastify, { FastifyReply, FastifyRequest } from "fastify";
 import { MeiliSearch } from "meilisearch";
 import { createPool } from "mysql2/promise";
 import { PrismaClient } from "../../node_modules/.prisma/client/index.js";
+import { assertDesktopContractRoutes } from "./desktopContractManifest.js";
 import { AuthRequiredError, type AuthenticatedUser } from "./middleware/aiDirectAuth.js";
-import { assertDesktopContractRoutes } from './desktopContractManifest.js';
 import { createAiDirectCoreRoutes } from "./routes/aiDirectCore.js";
 import { aiDirectMemoryRoutes } from "./routes/aiDirectMemory.js";
 import { desktopContractRoutes } from "./routes/desktopContract.js";
@@ -21,17 +21,17 @@ import { createDesktopTemplateRoutes } from "./routes/desktopTemplates.js";
 import { skillsRoutes } from "./routes/skills.js";
 import { usersRoutes } from "./routes/users.js";
 import { AiDirectHiringError, errorResponse } from "./services/aiDirectErrors.js";
+import { ArtifactStore } from "./services/artifactStore.js";
 import {
   createConvexIdentityBridge,
   identityBridgeConfigFromEnvironment,
 } from "./services/convexIdentityBridge.js";
-import { ArtifactStore } from './services/artifactStore.js';
 import { ManagedAssetStore } from "./services/managedAssetStore.js";
 import {
   createRuntimeObserver,
   parseBoundedPositiveInteger,
   type RuntimeObserver,
-} from './services/runtimeObservability.js';
+} from "./services/runtimeObservability.js";
 
 export const prisma = new PrismaClient();
 export const meili = new MeiliSearch({
@@ -87,7 +87,7 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith("mysql")) {
     connectionLimit: mysqlConnectionLimit,
     enableKeepAlive: true,
   });
-  runtimeObserver = createRuntimeObserver({ role: 'api', mysqlConnectionLimit });
+  runtimeObserver = createRuntimeObserver({ role: "api", mysqlConnectionLimit });
   fastify.decorate("mysql", pool);
   try {
     const identityBridge = await createConvexIdentityBridge(
@@ -116,13 +116,13 @@ fastify.get("/health", async () => {
   };
 });
 
-fastify.get('/health/runtime', async (request: FastifyRequest, reply: FastifyReply) => {
+fastify.get("/health/runtime", async (request: FastifyRequest, reply: FastifyReply) => {
   const token = process.env.RUNTIME_METRICS_TOKEN;
-  if (!token || request.headers['x-runtime-metrics-token'] !== token) {
+  if (!token || request.headers["x-runtime-metrics-token"] !== token) {
     return reply.status(404).send();
   }
   if (!runtimeObserver) {
-    return reply.status(503).send({ error: 'Runtime metrics are unavailable' });
+    return reply.status(503).send({ error: "Runtime metrics are unavailable" });
   }
   return runtimeObserver.snapshot();
 });
@@ -192,7 +192,7 @@ const shutdown = async (): Promise<void> => {
   await prisma.$disconnect();
 };
 
-for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.once(signal, () => {
     void shutdown().finally(() => process.exit(0));
   });

@@ -1,4 +1,6 @@
 #!/usr/bin/env bun
+import { Database } from "bun:sqlite";
+import { createHash, randomUUID, createHmac } from "node:crypto";
 /**
  * scripts/verify-obsidian-m1.mjs
  *
@@ -18,11 +20,9 @@
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { createHash, randomUUID, createHmac } from "node:crypto";
-import Fastify from "../server/node_modules/fastify/fastify.js";
 import cors from "../server/node_modules/@fastify/cors/index.js";
 import jwt from "../server/node_modules/@fastify/jwt/jwt.js";
-import { Database } from "bun:sqlite";
+import Fastify from "../server/node_modules/fastify/fastify.js";
 import { aiDirectMemoryRoutes } from "../server/src/routes/aiDirectMemory.ts";
 import { scanVault } from "../server/src/services/obsidianScanner.ts";
 
@@ -83,7 +83,8 @@ async function main() {
     {
       path: "notes/retro.md",
       body: [
-        "# Retro", "",
+        "# Retro",
+        "",
         "What went well: pairing on the [[handoff]] flow.",
         "What to improve: more dogfooding on staging before pushing.",
         "Action items: rotate the staging JWT, retire the legacy endpoint.",
@@ -91,7 +92,9 @@ async function main() {
     },
     {
       path: "notes/random.md",
-      body: "Plain body without frontmatter or tags. " + "Some text to give the summary enough bytes. ".repeat(20),
+      body:
+        "Plain body without frontmatter or tags. " +
+        "Some text to give the summary enough bytes. ".repeat(20),
     },
     {
       path: "notes/empty.md",
@@ -222,7 +225,9 @@ async function main() {
       },
     });
     if (bindRes.statusCode !== 201) {
-      recordStep("bind", "FAIL", ms(t1), { note: `expected 201 got ${bindRes.statusCode}: ${bindRes.body}` });
+      recordStep("bind", "FAIL", ms(t1), {
+        note: `expected 201 got ${bindRes.statusCode}: ${bindRes.body}`,
+      });
     } else {
       recordStep("bind", "PASS", ms(t1), { note: `bindingId=${JSON.parse(bindRes.body).id}` });
     }
@@ -259,10 +264,14 @@ async function main() {
       },
     });
     if (syncRes.statusCode !== 200) {
-      recordStep("sync", "FAIL", ms(t2), { note: `expected 200 got ${syncRes.statusCode}: ${syncRes.body}` });
+      recordStep("sync", "FAIL", ms(t2), {
+        note: `expected 200 got ${syncRes.statusCode}: ${syncRes.body}`,
+      });
     } else {
       const parsed = JSON.parse(syncRes.body);
-      recordStep("sync", "PASS", ms(t2), { note: `accepted=${parsed.accepted} totalBytes=${parsed.totalBytes}` });
+      recordStep("sync", "PASS", ms(t2), {
+        note: `accepted=${parsed.accepted} totalBytes=${parsed.totalBytes}`,
+      });
     }
   }
 
@@ -273,7 +282,11 @@ async function main() {
     const a = await fastify.inject({
       method: "POST",
       url: "/api/v1/memory/obsidian/sync",
-      headers: { ...authHeaders, "content-type": "application/json", "idempotency-key": idempotencyKey },
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json",
+        "idempotency-key": idempotencyKey,
+      },
       payload: {
         vaultFingerprint: submission.vaultFingerprint,
         evidenceVersion: "2026-08-01",
@@ -288,7 +301,11 @@ async function main() {
     const b = await fastify.inject({
       method: "POST",
       url: "/api/v1/memory/obsidian/sync",
-      headers: { ...authHeaders, "content-type": "application/json", "idempotency-key": idempotencyKey },
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json",
+        "idempotency-key": idempotencyKey,
+      },
       payload: {
         vaultFingerprint: submission.vaultFingerprint,
         evidenceVersion: "2026-08-01",
@@ -316,30 +333,34 @@ async function main() {
   // ── Step 4: Sensitive content rejected ────────────────────────────────────
   const t4 = performance.now();
   {
-  // Build a 1-note pointer that should be rejected by the server-side sensitive recheck.
-  // We make sourceBytes generous so the ratio check passes; the sensitive pattern
-  // in summary_md is what should trigger the rejection.
-  const sensitiveSummary = {
-    path: "notes/late-phone.md",
-    mtime: "2026-08-01T00:00:00.000Z",
-    size: 500,
-    hash: "a".repeat(64),
-    tags: [],
-    links: [],
-  };
-  const sensitiveSummaryBody = {
-    path: "notes/late-phone.md",
-    title: "Phone",
-    summary_md: "某客户电话 13800002222",
-    top_headings: [],
-    summaryBytes: 30,
-    sourceBytes: 500,
-    frontmatter: {},
-  };
+    // Build a 1-note pointer that should be rejected by the server-side sensitive recheck.
+    // We make sourceBytes generous so the ratio check passes; the sensitive pattern
+    // in summary_md is what should trigger the rejection.
+    const sensitiveSummary = {
+      path: "notes/late-phone.md",
+      mtime: "2026-08-01T00:00:00.000Z",
+      size: 500,
+      hash: "a".repeat(64),
+      tags: [],
+      links: [],
+    };
+    const sensitiveSummaryBody = {
+      path: "notes/late-phone.md",
+      title: "Phone",
+      summary_md: "某客户电话 13800002222",
+      top_headings: [],
+      summaryBytes: 30,
+      sourceBytes: 500,
+      frontmatter: {},
+    };
     const reject = await fastify.inject({
       method: "POST",
       url: "/api/v1/memory/obsidian/sync",
-      headers: { ...authHeaders, "content-type": "application/json", "idempotency-key": randomUUID() },
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json",
+        "idempotency-key": randomUUID(),
+      },
       payload: {
         vaultFingerprint: submission.vaultFingerprint,
         evidenceVersion: "2026-08-01",
@@ -357,7 +378,9 @@ async function main() {
     const rejectBody = JSON.parse(reject.body);
     const reason = rejectBody.details?.reason ?? rejectBody.reason;
     if (reject.statusCode === 422 && !hasPath && reason === "SENSITIVE_CONTENT") {
-      recordStep("sensitive-rejected", "PASS", ms(t4), { note: `code=${rejectBody.code} reason=${reason}` });
+      recordStep("sensitive-rejected", "PASS", ms(t4), {
+        note: `code=${rejectBody.code} reason=${reason}`,
+      });
     } else {
       recordStep("sensitive-rejected", "FAIL", ms(t4), {
         note: `expected 422 SENSITIVE_CONTENT + no leak, got ${reject.statusCode} code=${rejectBody.code} reason=${reason} body=${rejectBody.error} hasPath=${hasPath}`,
@@ -419,7 +442,11 @@ async function main() {
       headers: authHeaders,
     });
     const body = JSON.parse(list.body);
-    if (rebind.statusCode === 201 && body.configured && body.vaultFingerprint === submission2.vaultFingerprint) {
+    if (
+      rebind.statusCode === 201 &&
+      body.configured &&
+      body.vaultFingerprint === submission2.vaultFingerprint
+    ) {
       recordStep("rebind-different-fingerprint", "PASS", ms(t6), { note: `new fp accepted` });
     } else {
       recordStep("rebind-different-fingerprint", "FAIL", ms(t6), {
@@ -440,16 +467,34 @@ async function main() {
   // We restored step 6 by binding a fresh vault; that vault has 0 digests because
   // we never POSTed /sync against it. So we expect 0 digests, ≥ 1 active + 1
   // revoked binding.
-  recordInvariant("1 active + 1 revoked binding at end", activeBindings.length === 1 && revokedBindings.length >= 1, {
-    active: activeBindings.length, revoked: revokedBindings.length,
-  });
-  recordInvariant("digests never carry body or content", digests.every((d) => !("body" in d) && !("content" in d)), {
-    n: digests.length,
-  });
-  recordInvariant("digest paths are relative", digests.length === 0 || digests.every((d) => !d.notePath.startsWith("/") && !/^[a-zA-Z]:\\/.test(d.notePath)), {
-    n: digests.length,
-  });
-  recordInvariant("audit events >= 5", (await prisma.aiDirectAuditEvents.findMany()).length >= 5, {});
+  recordInvariant(
+    "1 active + 1 revoked binding at end",
+    activeBindings.length === 1 && revokedBindings.length >= 1,
+    {
+      active: activeBindings.length,
+      revoked: revokedBindings.length,
+    },
+  );
+  recordInvariant(
+    "digests never carry body or content",
+    digests.every((d) => !("body" in d) && !("content" in d)),
+    {
+      n: digests.length,
+    },
+  );
+  recordInvariant(
+    "digest paths are relative",
+    digests.length === 0 ||
+      digests.every((d) => !d.notePath.startsWith("/") && !/^[a-zA-Z]:\\/.test(d.notePath)),
+    {
+      n: digests.length,
+    },
+  );
+  recordInvariant(
+    "audit events >= 5",
+    (await prisma.aiDirectAuditEvents.findMany()).length >= 5,
+    {},
+  );
 
   // ── Cleanup ──────────────────────────────────────────────────────────────
   await fastify.close();
@@ -463,7 +508,8 @@ async function main() {
   }
 
   const totalMs = ms(t0);
-  const overall = steps.every((s) => s.status === "PASS") && invariants.every((i) => i.ok) ? "PASS" : "FAIL";
+  const overall =
+    steps.every((s) => s.status === "PASS") && invariants.every((i) => i.ok) ? "PASS" : "FAIL";
 
   // ── Reports ─────────────────────────────────────────────────────────────
   const report = {
@@ -550,7 +596,9 @@ function createSqliteShim(db) {
       async findUnique({ where }) {
         // Only one composite-unique case is used: bindingId_notePath on digests.
         const clause = Object.entries(where)
-          .map(([k, v]) => (k === "bindingId_notePath" ? `bindingId = ? AND notePath = ?` : `${k} = ?`))
+          .map(([k, v]) =>
+            k === "bindingId_notePath" ? `bindingId = ? AND notePath = ?` : `${k} = ?`,
+          )
           .join(" AND ");
         const params = Object.values(where).reduce((acc, v) => {
           if (v && typeof v === "object") return [...acc, v.bindingId, v.notePath];
@@ -565,13 +613,18 @@ function createSqliteShim(db) {
         const placeholders = keys.map(() => "?").join(", ");
         const params = keys.map((k) => toSqlite(data[k]));
         const id = data.id ?? randomUUID();
-        db.prepare(`INSERT INTO ${table} (id, ${cols}) VALUES (?, ${placeholders})`).run(id, ...params);
+        db.prepare(`INSERT INTO ${table} (id, ${cols}) VALUES (?, ${placeholders})`).run(
+          id,
+          ...params,
+        );
         const row = queryOne(db, `SELECT * FROM ${table} WHERE id = ?`, [id]);
         return rowToModel(table, row);
       },
       async update({ where, data }) {
         const id = where.id;
-        const sets = Object.keys(data).map((k) => `${k} = ?`).join(", ");
+        const sets = Object.keys(data)
+          .map((k) => `${k} = ?`)
+          .join(", ");
         const params = Object.keys(data).map((k) => toSqlite(data[k]));
         db.prepare(`UPDATE ${table} SET ${sets} WHERE id = ?`).run(...params, id);
         const row = queryOne(db, `SELECT * FROM ${table} WHERE id = ?`, [id]);
@@ -660,7 +713,10 @@ function renderSummary(report) {
     "",
     "## Steps",
     "",
-    ...report.steps.map((s) => `- ${s.status === "PASS" ? "✅" : "❌"} ${s.name} (${s.ms}ms)${s.detail?.note ? ` — ${s.detail.note}` : ""}`),
+    ...report.steps.map(
+      (s) =>
+        `- ${s.status === "PASS" ? "✅" : "❌"} ${s.name} (${s.ms}ms)${s.detail?.note ? ` — ${s.detail.note}` : ""}`,
+    ),
     "",
     "## Invariants",
     "",

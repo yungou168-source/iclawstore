@@ -1,6 +1,6 @@
-import { AiDirectHiringError, ErrorCodes } from './aiDirectErrors.js';
+import { AiDirectHiringError, ErrorCodes } from "./aiDirectErrors.js";
 
-export const OFFER_STATUSES = ['issued'] as const;
+export const OFFER_STATUSES = ["issued"] as const;
 export type OfferStatus = (typeof OFFER_STATUSES)[number];
 
 export interface TransitionResult {
@@ -27,9 +27,9 @@ export function transitionOffer(
 }
 
 export function getOfferTerminalStatuses(): OfferStatus[] {
-  return ['issued'];
+  return ["issued"];
 }
 
 export function isOfferTerminal(status: OfferStatus): boolean {
-  return status === 'issued';
+  return status === "issued";
 }

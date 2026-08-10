@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   aiDirectOrganizationApi,
@@ -14,6 +15,7 @@ import {
   type PaidHiringOrderDto,
 } from "../lib/aiDirectPaidHiringApi";
 import { useLocale } from "../lib/i18n/context";
+import { useAuthStatus } from "../lib/useAuthStatus";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 
@@ -24,6 +26,8 @@ const newIdempotencyKey = () => crypto.randomUUID();
 
 export function RecruitPaidHiringFlow() {
   const { locale, t } = useLocale();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuthStatus();
+  const navigate = useNavigate();
   const [companies, setCompanies] = useState<CompanyDto[]>([]);
   const [companyId, setCompanyId] = useState("");
   const [departments, setDepartments] = useState<DepartmentDto[]>([]);
@@ -42,6 +46,13 @@ export function RecruitPaidHiringFlow() {
   const [error, setError] = useState<string | null>(null);
 
   const loadCompanies = useCallback(async () => {
+    if (isAuthLoading) return;
+    if (!isAuthenticated) {
+      setCompanies([]);
+      setCompanyId("");
+      setLoading(false);
+      return;
+    }
     try {
       const orgs = await aiDirectOrganizationApi.listOrganizations("active");
       const groups = await Promise.all(
@@ -65,7 +76,7 @@ export function RecruitPaidHiringFlow() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAuthenticated, isAuthLoading]);
 
   const loadDepartments = useCallback(async () => {
     if (!companyId) {
@@ -135,16 +146,21 @@ export function RecruitPaidHiringFlow() {
 
   const loadCandidates = useCallback(async () => {
     const company = companies.find((item) => item.id === companyId);
-    if (!company) {
-      setCandidates([]);
-      return;
-    }
     try {
-      const page = await api.listCandidateCatalog(company.organizationId, { category, limit: 50 });
+      const page = company
+        ? await api.listCandidateCatalog(company.organizationId, { category, limit: 50 })
+        : await api.listPublicCatalog(50);
       const next = page.items.filter(
-        (item) => item.availability === "available" && item.priceStatus === "active",
+        (item) =>
+          item.availability === "available" &&
+          item.priceStatus === "active" &&
+          (company || !category || item.category === category),
       );
       setCandidates(next);
+      if (!company && !category) {
+        const categoryKeys = Array.from(new Set(next.map((item) => item.category).filter(Boolean)));
+        setCategories(categoryKeys.map((key) => ({ id: key as string, name: key as string })));
+      }
       setAgentId((current) => (next.some((item) => item.agentId === current) ? current : ""));
     } catch (caught) {
       setError(errorMessage(caught, () => t("ai_direct.common.not_completed")));
@@ -196,11 +212,17 @@ export function RecruitPaidHiringFlow() {
         { companyId, projectId: selectedRole.projectId, roleId, positionId, agentId },
         newIdempotencyKey(),
       );
-      sessionStorage.setItem(orderStorageKey, created.id);
       setOrder(created);
-      if (!created.payUrl) throw new Error(t("ai_direct.recruitment.error_missing_pay_url"));
-      window.location.assign(created.payUrl);
+      if (created.status === "fulfilled") {
+        sessionStorage.removeItem(orderStorageKey);
+      } else {
+        sessionStorage.setItem(orderStorageKey, created.id);
+      }
     } catch (caught) {
+      if (caught instanceof PaidHiringApiError && caught.code === "BUDGET_EXCEEDED") {
+        void navigate({ to: "/wallet", search: { recharge: undefined } });
+        return;
+      }
       setError(errorMessage(caught, () => t("ai_direct.common.not_completed")));
     } finally {
       setWorking(false);
@@ -357,7 +379,7 @@ export function RecruitPaidHiringFlow() {
                 </p>
               ) : null}
               <Button disabled={working || !canCreateOrder} onClick={() => void startPayment()}>
-                创建订单并前往支付宝
+                {t("ai_direct.recruitment.start_payment")}
               </Button>
             </CardContent>
           </Card>

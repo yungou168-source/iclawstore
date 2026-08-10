@@ -1,5 +1,5 @@
-import type { ModelProvider, ModelProviderResolver } from '../contracts/modelProvider.js';
-import { ProviderExecutionError } from './providerErrors.js';
+import type { ModelProvider, ModelProviderResolver } from "../contracts/modelProvider.js";
+import { ProviderExecutionError } from "./providerErrors.js";
 
 export type ProviderRegistry = Readonly<{
   keys: readonly string[];
@@ -11,7 +11,7 @@ export function createProviderRegistry(providers: readonly ModelProvider[]): Pro
   const entries = new Map<string, ModelProvider>();
   for (const provider of providers) {
     if (!provider.key || provider.key.trim() !== provider.key) {
-      throw new Error('Provider key must be a non-empty normalized string');
+      throw new Error("Provider key must be a non-empty normalized string");
     }
     if (entries.has(provider.key)) throw new Error(`Duplicate provider key: ${provider.key}`);
     entries.set(provider.key, provider);
@@ -22,7 +22,7 @@ export function createProviderRegistry(providers: readonly ModelProvider[]): Pro
     const provider = resolve(providerKey);
     if (!provider) {
       throw new ProviderExecutionError(
-        'provider_unavailable',
+        "provider_unavailable",
         `Provider is unavailable: ${providerKey}`,
       );
     }

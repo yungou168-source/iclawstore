@@ -12,9 +12,9 @@ import {
   Wrench,
   Zap,
 } from "lucide-react";
-import { useLocale } from "../lib/i18n/context";
-import { t, type TranslationKey } from "../lib/i18n";
 import type { BrowseCategory } from "../lib/categories";
+import { t, type TranslationKey } from "../lib/i18n";
+import { useLocale } from "../lib/i18n/context";
 
 type FilterItem = {
   key: string;
@@ -88,7 +88,7 @@ export function BrowseSidebar({
   onFilterToggle,
 }: BrowseSidebarProps) {
   const { locale } = useLocale();
-  
+
   const filterSection =
     filters.length && onFilterToggle ? (
       <fieldset className="sidebar-section" aria-label={t("browse.aria.toggle_filters", locale)}>
@@ -109,7 +109,11 @@ export function BrowseSidebar({
 
   return (
     <aside className="browse-sidebar" aria-label={t("browse.aria.filters", locale)}>
-      <fieldset className="sidebar-section" role="radiogroup" aria-label={t("browse.aria.sort_order", locale)}>
+      <fieldset
+        className="sidebar-section"
+        role="radiogroup"
+        aria-label={t("browse.aria.sort_order", locale)}
+      >
         <legend className="sidebar-title">{t("skills.sort_by", locale)}</legend>
         {sortOptions.map((opt) => (
           <button
@@ -126,7 +130,11 @@ export function BrowseSidebar({
       </fieldset>
 
       {categories && onCategoryChange ? (
-        <fieldset className="sidebar-section" role="radiogroup" aria-label={t("browse.aria.category_filter", locale)}>
+        <fieldset
+          className="sidebar-section"
+          role="radiogroup"
+          aria-label={t("browse.aria.category_filter", locale)}
+        >
           <legend className="sidebar-title">{t("skills.category.all", locale)}</legend>
           <button
             className={`sidebar-option${!activeCategory ? " is-active" : ""}`}

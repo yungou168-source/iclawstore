@@ -1,5 +1,5 @@
 export type ProviderPricing = Readonly<{
-  currency: 'USD';
+  currency: "USD";
   inputMicrosPerMillionTokens: bigint;
   outputMicrosPerMillionTokens: bigint;
 }>;
@@ -13,10 +13,7 @@ export type ProviderBudget = Readonly<{
 const ONE_MILLION = 1_000_000n;
 
 function readNonNegativeInteger(value: unknown, field: string): bigint {
-  if (
-    (typeof value !== 'number' && typeof value !== 'string')
-    || !/^\d+$/.test(String(value))
-  ) {
+  if ((typeof value !== "number" && typeof value !== "string") || !/^\d+$/.test(String(value))) {
     throw new Error(`${field} must be a non-negative integer`);
   }
   const parsed = BigInt(value);
@@ -27,40 +24,40 @@ function readNonNegativeInteger(value: unknown, field: string): bigint {
 }
 
 function tokenCount(value: unknown, field: string): number {
-  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
     throw new Error(`${field} must be a non-negative integer`);
   }
   return value;
 }
 
 export function parseProviderPricing(value: unknown): ProviderPricing {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error('Model pricing must be an object');
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Model pricing must be an object");
   }
   const pricing = value as Record<string, unknown>;
-  if (pricing.currency !== 'USD') throw new Error('Model pricing currency must be USD');
+  if (pricing.currency !== "USD") throw new Error("Model pricing currency must be USD");
   return Object.freeze({
-    currency: 'USD',
+    currency: "USD",
     inputMicrosPerMillionTokens: readNonNegativeInteger(
       pricing.inputMicrosPerMillionTokens,
-      'pricing.inputMicrosPerMillionTokens',
+      "pricing.inputMicrosPerMillionTokens",
     ),
     outputMicrosPerMillionTokens: readNonNegativeInteger(
       pricing.outputMicrosPerMillionTokens,
-      'pricing.outputMicrosPerMillionTokens',
+      "pricing.outputMicrosPerMillionTokens",
     ),
   });
 }
 
 export function parseProviderBudget(value: unknown): ProviderBudget {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error('Provider execution budget must be an object');
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Provider execution budget must be an object");
   }
   const budget = value as Record<string, unknown>;
   return Object.freeze({
-    estimatedInputTokens: tokenCount(budget.estimatedInputTokens, 'budget.estimatedInputTokens'),
-    maxOutputTokens: tokenCount(budget.maxOutputTokens, 'budget.maxOutputTokens'),
-    maxCostMicros: readNonNegativeInteger(budget.maxCostMicros, 'budget.maxCostMicros'),
+    estimatedInputTokens: tokenCount(budget.estimatedInputTokens, "budget.estimatedInputTokens"),
+    maxOutputTokens: tokenCount(budget.maxOutputTokens, "budget.maxOutputTokens"),
+    maxCostMicros: readNonNegativeInteger(budget.maxCostMicros, "budget.maxCostMicros"),
   });
 }
 
@@ -73,8 +70,10 @@ export function calculateProviderCostMicros(
   inputTokens: number,
   outputTokens: number,
 ): bigint {
-  return pricedTokens(tokenCount(inputTokens, 'inputTokens'), pricing.inputMicrosPerMillionTokens)
-    + pricedTokens(tokenCount(outputTokens, 'outputTokens'), pricing.outputMicrosPerMillionTokens);
+  return (
+    pricedTokens(tokenCount(inputTokens, "inputTokens"), pricing.inputMicrosPerMillionTokens) +
+    pricedTokens(tokenCount(outputTokens, "outputTokens"), pricing.outputMicrosPerMillionTokens)
+  );
 }
 
 export function assertProviderBudget(pricing: ProviderPricing, budget: ProviderBudget): void {
@@ -84,6 +83,6 @@ export function assertProviderBudget(pricing: ProviderPricing, budget: ProviderB
     budget.maxOutputTokens,
   );
   if (maximum > budget.maxCostMicros) {
-    throw new Error('Provider execution exceeds the approved cost budget');
+    throw new Error("Provider execution exceeds the approved cost budget");
   }
 }

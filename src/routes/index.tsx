@@ -12,145 +12,81 @@ import {
   Users,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SoulCard } from "../components/SoulCard";
 import { HomeWorkspace } from "../components/HomeWorkspace";
+import { SoulCard } from "../components/SoulCard";
 import { SoulStatsTripletLine } from "../components/SoulStats";
+import { fastifyApi } from "../lib/fastifyApi";
 import { fetchFeaturedPlugins } from "../lib/featuredCatalog";
 import { FEATURE_SOULS } from "../lib/features";
+import type { Locale } from "../lib/i18n/config";
+import { useLocale } from "../lib/i18n/context";
+import { t as translate } from "../lib/i18n/translations";
 import type { PackageListItem } from "../lib/packageApi";
 import type { PublicSkill, PublicSoul, PublicUser } from "../lib/publicUser";
 import { getSiteMode } from "../lib/site";
-import { useLocale } from "../lib/i18n/context";
-import { fastifyApi } from "../lib/fastifyApi";
 
 export const Route = createFileRoute("/")({
   component: Home,
 });
 
-// Homepage translations
-const HOME_TRANSLATIONS = {
-  "zh-CN": {
-    builtBy: "由社区构建。",
-    equip: "装备",
-    installLabel: "安装",
-    unleash: "释放",
-    subtitle: "数千款工具，一搜即得。",
-    searchPlaceholder: "你想找什么？",
-    searchButton: "搜索",
-    featuredSkills: "精选技能",
-    trendingNow: "热门趋势",
-    featuredPlugins: "精选插件",
-    viewAll: "查看全部",
-    by: "作者",
-    skill: "技能",
-    official: "官方",
-    unknown: "未知",
-    tools: "工具",
-    users: "用户",
-    downloads: "下载",
-    avgRating: "平均评分",
-    categorySkills: "Agent 技能包",
-    categoryPlugins: "网关插件",
-    categoryPublishers: "建设者和组织",
-    categorySouls: "Agent 身份",
-    suggestion1: "自我改进代理",
-    suggestion2: "GitHub 集成",
-    suggestion3: "安全灵魂",
-    suggestion4: "仪表盘构建器",
-    // Souls mode
-    soulsBadge: "SOUL.md，共享。",
-    soulsTitle: "SoulHub，灵魂栖居之地。",
-    soulsSubtitle: "分享 SOUL.md 包，像文档一样版本化管理，将个人系统 lore 集中保存在一个公共空间。",
-    publishSoul: "发布灵魂",
-    browseSouls: "浏览灵魂",
-    searchPlaceholderSouls: "搜索灵魂、提示词或 lore",
-    soulsSearchStat: "搜索灵魂。版本化管理、可读性强、易于改编。",
-    latestSouls: "最新灵魂",
-    latestSubtitle: "中心最新的 SOUL.md 包。",
-    noSouls: "还没有灵魂。成为第一个吧。",
-    seeAll: "查看所有灵魂",
-    pluginsTitle: "寻找插件？",
-    pluginsDesc: "插件目前位于更广泛的包模型中。使用专用插件页面可以更清晰地查看这项工作。",
-    openPlugins: "打开插件",
-    freshSkill: "新鲜的技能包。",
-    agentReady: "Agent 就绪技能包。",
-    // Slot word keys (used by renderSlotReel)
-    slotEquip: "装备",
-    slotInstall: "安装",
-    slotUnleash: "释放",
-    slotShip: "交付",
-    slotBuild: "构建",
-    slotCreate: "创建",
-    slotDeploy: "部署",
-    slotLaunch: "启动",
-    slotHack: "Hack",
-    slotScale: "扩展",
-    slotForge: "锻造",
-    slotCraft: "打磨",
-    slotWield: "驾驭",
-  },
-  en: {
-    builtBy: "BUILT BY THE COMMUNITY.",
-    equip: "Equip",
-    installLabel: "Install",
-    unleash: "Unleash",
-    subtitle: "Tools built by thousands, ready in one search.",
-    searchPlaceholder: "What are you looking for?",
-    searchButton: "Search",
-    featuredSkills: "Featured skills",
-    trendingNow: "Trending Now",
-    featuredPlugins: "Featured plugins",
-    viewAll: "View all",
-    by: "by",
-    skill: "Skill",
-    official: "Official",
-    unknown: "unknown",
-    tools: "tools",
-    users: "users",
-    downloads: "downloads",
-    avgRating: "avg rating",
-    categorySkills: "Agent skill bundles",
-    categoryPlugins: "Gateway plugins",
-    categoryPublishers: "Builders and orgs",
-    categorySouls: "Agent identities",
-    suggestion1: "self-improving agent",
-    suggestion2: "GitHub integration",
-    suggestion3: "security soul",
-    suggestion4: "dashboard builder",
-    // Slot word keys (used by renderSlotReel)
-    slotEquip: "Equip",
-    slotInstall: "Install",
-    slotUnleash: "Unleash",
-    slotShip: "Ship",
-    slotBuild: "Build",
-    slotCreate: "Create",
-    slotDeploy: "Deploy",
-    slotLaunch: "Launch",
-    slotHack: "Hack",
-    slotScale: "Scale",
-    slotForge: "Forge",
-    slotCraft: "Craft",
-    slotWield: "Wield",
-    // Souls mode
-    soulsBadge: "SOUL.md, shared.",
-    soulsTitle: "SoulHub, where system lore lives.",
-    soulsSubtitle:
-      "Share SOUL.md bundles, version them like docs, and keep personal system lore in one public place.",
-    publishSoul: "Publish a soul",
-    browseSouls: "Browse souls",
-    searchPlaceholderSouls: "Search souls, prompts, or lore",
-    soulsSearchStat: "Search souls. Versioned, readable, easy to remix.",
-    latestSouls: "Latest souls",
-    latestSubtitle: "Newest SOUL.md bundles across the hub.",
-    noSouls: "No souls yet. Be the first.",
-    seeAll: "See all souls",
-    pluginsTitle: "Looking for plugins?",
-    pluginsDesc:
-      "Plugins currently live inside the broader package model. Use the dedicated Plugins surface to review that work more clearly.",
-    openPlugins: "Open Plugins",
-    freshSkill: "A fresh skill bundle.",
-    agentReady: "Agent-ready skill pack.",
-  },
+// Legacy home preserves its compact call sites while resolving all UI copy from the shared dictionary.
+const HOME_TRANSLATION_KEYS = {
+  builtBy: "home.hero.built_by",
+  equip: "home.slot.equip",
+  installLabel: "home.card.install",
+  unleash: "home.slot.unleash",
+  subtitle: "home.hero.subtitle",
+  searchPlaceholder: "home.hero.search_placeholder",
+  searchButton: "home.hero.search_button",
+  featuredSkills: "home.section.featured_skills",
+  trendingNow: "home.section.trending_now",
+  featuredPlugins: "home.section.featured_plugins",
+  viewAll: "home.section.view_all",
+  by: "home.card.by",
+  skill: "home.card.skill",
+  official: "home.card.official",
+  unknown: "home.card.unknown",
+  tools: "home.stats.tools",
+  users: "home.stats.users",
+  downloads: "home.stats.downloads",
+  avgRating: "home.stats.avg_rating",
+  categorySkills: "home.hero.category_skills",
+  categoryPlugins: "home.hero.category_plugins",
+  categoryPublishers: "home.hero.category_publishers",
+  categorySouls: "home.hero.category_souls",
+  suggestion1: "home.suggestion.self_improving",
+  suggestion2: "home.suggestion.github_integration",
+  suggestion3: "home.suggestion.security_soul",
+  suggestion4: "home.suggestion.dashboard_builder",
+  soulsBadge: "home.souls.badge",
+  soulsTitle: "home.souls.title",
+  soulsSubtitle: "home.souls.subtitle",
+  publishSoul: "home.souls.publish",
+  browseSouls: "home.souls.browse",
+  searchPlaceholderSouls: "home.souls.search_placeholder",
+  soulsSearchStat: "home.souls.search_stat",
+  latestSouls: "home.souls.latest",
+  latestSubtitle: "home.souls.latest_subtitle",
+  noSouls: "home.souls.no_souls",
+  seeAll: "home.souls.see_all",
+  pluginsTitle: "home.souls.plugins_title",
+  pluginsDesc: "home.souls.plugins_desc",
+  openPlugins: "home.souls.plugins_button",
+  freshSkill: "home.card.fresh_skill",
+  agentReady: "home.card.agent_ready",
+  slotEquip: "home.slot.equip",
+  slotInstall: "home.slot.install",
+  slotUnleash: "home.slot.unleash",
+  slotShip: "home.slot.ship",
+  slotBuild: "home.slot.build",
+  slotCreate: "home.slot.create",
+  slotDeploy: "home.slot.deploy",
+  slotLaunch: "home.slot.launch",
+  slotHack: "home.slot.hack",
+  slotScale: "home.slot.scale",
+  slotForge: "home.slot.forge",
+  slotCraft: "home.slot.craft",
+  slotWield: "home.slot.wield",
 } as const;
 
 function Home() {
@@ -176,7 +112,7 @@ const SLOT_WORDS = [
 ];
 const HACK_INDEX = SLOT_WORDS.indexOf("Hack");
 
-export function LegacySkillsHome({ locale }: { locale: string }) {
+export function LegacySkillsHome({ locale }: { locale: Locale }) {
   type SkillPageEntry = {
     skill: PublicSkill;
     ownerHandle?: string | null;
@@ -184,11 +120,8 @@ export function LegacySkillsHome({ locale }: { locale: string }) {
     latestVersion?: unknown;
   };
 
-  // Translation helper
-  const t = useMemo(
-    () => (key: keyof (typeof HOME_TRANSLATIONS)["zh-CN"]) =>
-      HOME_TRANSLATIONS[locale as keyof typeof HOME_TRANSLATIONS]?.[key] ??
-      HOME_TRANSLATIONS["zh-CN"][key],
+  const t = useCallback(
+    (key: keyof typeof HOME_TRANSLATION_KEYS) => translate(HOME_TRANSLATION_KEYS[key], locale),
     [locale],
   );
 
@@ -200,9 +133,10 @@ export function LegacySkillsHome({ locale }: { locale: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    
+
     // Fetch featured/highlighted skills
-    fastifyApi.getSkills({ limit: 6, sort: "downloads" })
+    fastifyApi
+      .getSkills({ limit: 6, sort: "downloads" })
       .then((r) => {
         if (!cancelled) {
           const entries = r.skills.map((skill) => ({
@@ -225,9 +159,10 @@ export function LegacySkillsHome({ locale }: { locale: string }) {
         }
       })
       .catch(() => {});
-    
+
     // Fetch popular skills
-    fastifyApi.getSkills({ limit: 6, sort: "downloads" })
+    fastifyApi
+      .getSkills({ limit: 6, sort: "downloads" })
       .then((r) => {
         if (cancelled) return;
         const entries = r.skills.map((skill) => ({
@@ -249,13 +184,13 @@ export function LegacySkillsHome({ locale }: { locale: string }) {
         setPopular(entries as SkillPageEntry[]);
       })
       .catch(() => {});
-      
+
     fetchFeaturedPlugins(6)
       .then((items) => {
         if (!cancelled) setFeaturedPlugins(items);
       })
       .catch(() => {});
-      
+
     return () => {
       cancelled = true;
     };
@@ -680,7 +615,8 @@ export function LegacySkillsHome({ locale }: { locale: string }) {
               onChange={(e) => setQuery(e.target.value)}
             />
             <button type="submit" className="home-v2-search-go" aria-label="Search">
-              <span className="home-v2-search-go-label">{t("searchButton")}</span> <ArrowRight size={16} />
+              <span className="home-v2-search-go-label">{t("searchButton")}</span>{" "}
+              <ArrowRight size={16} />
             </button>
           </form>
         </div>
@@ -791,9 +727,7 @@ export function LegacySkillsHome({ locale }: { locale: string }) {
                     </div>
                   </div>
                   <span className="home-v2-c-tag">{t("skill")}</span>
-                  <div className="home-v2-c-desc">
-                    {entry.skill.summary || t("freshSkill")}
-                  </div>
+                  <div className="home-v2-c-desc">{entry.skill.summary || t("freshSkill")}</div>
                   <div className="home-v2-c-footer">
                     <div className="home-v2-c-stats">
                       <span>
@@ -827,9 +761,7 @@ export function LegacySkillsHome({ locale }: { locale: string }) {
                     </div>
                   </div>
                   <span className="home-v2-c-tag">{t("skill")}</span>
-                  <div className="home-v2-c-desc">
-                    {entry.skill.summary || t("freshSkill")}
-                  </div>
+                  <div className="home-v2-c-desc">{entry.skill.summary || t("freshSkill")}</div>
                   <div className="home-v2-c-footer">
                     <div className="home-v2-c-stats">
                       <span>
@@ -986,9 +918,7 @@ export function LegacySkillsHome({ locale }: { locale: string }) {
                     {t("by")} {entry.ownerHandle || entry.owner?.handle || t("unknown")}
                   </div>
                 </div>
-                <div className="home-v2-trend-desc">
-                  {entry.skill.summary || t("agentReady")}
-                </div>
+                <div className="home-v2-trend-desc">{entry.skill.summary || t("agentReady")}</div>
                 <div className="home-v2-trend-bottom">
                   <div className="home-v2-trend-signals">
                     <span>
@@ -1048,7 +978,9 @@ export function LegacySkillsHome({ locale }: { locale: string }) {
                 </div>
                 <div className="home-v2-trend-desc">
                   {plugin.summary ||
-                    (locale === "zh-CN" ? "OpenClaw 工作流网关插件。" : "Gateway plugin for OpenClaw workflows.")}
+                    (locale === "zh-CN"
+                      ? "OpenClaw 工作流网关插件。"
+                      : "Gateway plugin for OpenClaw workflows.")}
                 </div>
                 <div className="home-v2-trend-bottom">
                   <div className="home-v2-trend-signals">
@@ -1068,11 +1000,9 @@ export function LegacySkillsHome({ locale }: { locale: string }) {
   );
 }
 
-function OnlyCrabsHome({ locale }: { locale: string }) {
-  const t = useMemo(
-    () => (key: keyof (typeof HOME_TRANSLATIONS)["zh-CN"]) =>
-      HOME_TRANSLATIONS[locale as keyof typeof HOME_TRANSLATIONS]?.[key] ??
-      HOME_TRANSLATIONS["zh-CN"][key],
+function OnlyCrabsHome({ locale }: { locale: Locale }) {
+  const t = useCallback(
+    (key: keyof typeof HOME_TRANSLATION_KEYS) => translate(HOME_TRANSLATION_KEYS[key], locale),
     [locale],
   );
   const navigate = Route.useNavigate();

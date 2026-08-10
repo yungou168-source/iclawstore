@@ -8,9 +8,9 @@ export function FastifyAuthTokenBridge() {
   useEffect(() => {
     if (!isAuthenticated) {
       setFastifyAccessTokenProvider(null);
-      return;
+    } else {
+      setFastifyAccessTokenProvider((forceRefreshToken) => fetchAccessToken({ forceRefreshToken }));
     }
-    setFastifyAccessTokenProvider((forceRefreshToken) => fetchAccessToken({ forceRefreshToken }));
     return () => setFastifyAccessTokenProvider(null);
   }, [fetchAccessToken, isAuthenticated]);
 

@@ -1,9 +1,9 @@
-import { randomUUID } from 'node:crypto';
-import type { FastifyInstance } from 'fastify';
-import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
-import { AiDirectHiringError, ErrorCodes } from './aiDirectErrors.js';
+import { randomUUID } from "node:crypto";
+import type { FastifyInstance } from "fastify";
+import type { PoolConnection, RowDataPacket } from "mysql2/promise";
+import { AiDirectHiringError, ErrorCodes } from "./aiDirectErrors.js";
 
-export type ReviewDecision = 'approved' | 'rejected';
+export type ReviewDecision = "approved" | "rejected";
 
 type ReviewCursor = { submittedAt: string; id: string };
 
@@ -29,15 +29,16 @@ export class TemplateReviewService {
       `SELECT id FROM users WHERE id = ? AND role = 'admin' AND deletedAt IS NULL LIMIT 1`,
       [userId],
     );
-    if (!rows[0]) throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '需要平台管理员权限', 403);
+    if (!rows[0])
+      throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, "需要平台管理员权限", 403);
   }
 
   async listPending(input: { cursor?: string; limit: number }) {
     const cursor = input.cursor ? decodeCursor(input.cursor) : null;
     const params: unknown[] = [];
-    let cursorSql = '';
+    let cursorSql = "";
     if (cursor) {
-      cursorSql = 'AND (version.submittedAt < ? OR (version.submittedAt = ? AND version.id < ?))';
+      cursorSql = "AND (version.submittedAt < ? OR (version.submittedAt = ? AND version.id < ?))";
       params.push(cursor.submittedAt, cursor.submittedAt, cursor.id);
     }
     params.push(input.limit + 1);
@@ -58,9 +59,10 @@ export class TemplateReviewService {
     const last = items.at(-1);
     return {
       items,
-      nextCursor: hasMore && last
-        ? encodeCursor({ submittedAt: new Date(last.submittedAt).toISOString(), id: last.id })
-        : null,
+      nextCursor:
+        hasMore && last
+          ? encodeCursor({ submittedAt: new Date(last.submittedAt).toISOString(), id: last.id })
+          : null,
     };
   }
 
@@ -75,7 +77,7 @@ export class TemplateReviewService {
        WHERE version.id = ? LIMIT 1`,
       [versionId],
     );
-    if (!versions[0]) throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, '模板版本不存在', 404);
+    if (!versions[0]) throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, "模板版本不存在", 404);
     const [screenshots] = await this.fastify.mysql.query<RowDataPacket[]>(
       `SELECT id, sortOrder, mimeType, sizeBytes, sha256
        FROM desktop_template_screenshots WHERE templateVersionId = ? ORDER BY sortOrder`,
@@ -91,10 +93,10 @@ export class TemplateReviewService {
 
   async requireVersionTemplate(versionId: string, templateId: string): Promise<void> {
     const [rows] = await this.fastify.mysql.query<RowDataPacket[]>(
-      'SELECT id FROM desktop_template_versions WHERE id = ? AND templateId = ? LIMIT 1',
+      "SELECT id FROM desktop_template_versions WHERE id = ? AND templateId = ? LIMIT 1",
       [versionId, templateId],
     );
-    if (!rows[0]) throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, '模板版本不存在', 404);
+    if (!rows[0]) throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, "模板版本不存在", 404);
   }
 
   async decide(input: {
@@ -104,8 +106,8 @@ export class TemplateReviewService {
     reason: string | null;
     requestId: string;
   }) {
-    if (input.decision === 'rejected' && !input.reason) {
-      throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '拒绝时必须填写原因');
+    if (input.decision === "rejected" && !input.reason) {
+      throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "拒绝时必须填写原因");
     }
     return this.transaction(async (connection) => {
       const [rows] = await connection.query<Array<RowDataPacket & { templateId: string }>>(
@@ -114,13 +116,21 @@ export class TemplateReviewService {
         [input.versionId],
       );
       const version = rows[0];
-      if (!version) throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, '模板版本不在待审核状态', 409);
+      if (!version)
+        throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, "模板版本不在待审核状态", 409);
       const decisionId = randomUUID();
       await connection.query(
         `INSERT INTO desktop_template_review_decisions
            (id, templateVersionId, decision, reason, actorUserId, requestId, createdAt)
          VALUES (?, ?, ?, ?, ?, ?, NOW(3))`,
-        [decisionId, input.versionId, input.decision, input.reason, input.actorUserId, input.requestId],
+        [
+          decisionId,
+          input.versionId,
+          input.decision,
+          input.reason,
+          input.actorUserId,
+          input.requestId,
+        ],
       );
       await connection.query(
         `UPDATE desktop_template_versions
@@ -131,7 +141,7 @@ export class TemplateReviewService {
       await this.writeRiskRecords(connection, {
         actorUserId: input.actorUserId,
         action: `template.version.${input.decision}`,
-        targetType: 'template_version',
+        targetType: "template_version",
         targetId: input.versionId,
         requestId: input.requestId,
         metadata: { reason: input.reason, templateId: version.templateId },
@@ -147,26 +157,31 @@ export class TemplateReviewService {
     requestId: string;
   }) {
     return this.transaction(async (connection) => {
-      const [rows] = await connection.query<Array<RowDataPacket & {
-        templateId: string;
-        reviewStatus: string;
-        publicationStatus: string;
-      }>>(
+      const [rows] = await connection.query<
+        Array<
+          RowDataPacket & {
+            templateId: string;
+            reviewStatus: string;
+            publicationStatus: string;
+          }
+        >
+      >(
         `SELECT templateId, reviewStatus, publicationStatus FROM desktop_template_versions
          WHERE id = ? LIMIT 1 FOR UPDATE`,
         [input.versionId],
       );
       const version = rows[0];
-      if (!version) throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, '模板版本不存在', 404);
-      if (input.publish && version.reviewStatus !== 'approved') {
-        throw new AiDirectHiringError(ErrorCodes.APPROVAL_REQUIRED, '模板版本尚未审核通过', 409);
+      if (!version) throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, "模板版本不存在", 404);
+      if (input.publish && version.reviewStatus !== "approved") {
+        throw new AiDirectHiringError(ErrorCodes.APPROVAL_REQUIRED, "模板版本尚未审核通过", 409);
       }
-      const [templateRows] = await connection.query<Array<RowDataPacket & { activeVersionId: string | null }>>(
-        'SELECT activeVersionId FROM desktop_templates WHERE id = ? LIMIT 1 FOR UPDATE',
-        [version.templateId],
-      );
-      if (!templateRows[0]) throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, '模板不存在', 404);
-      const publicationStatus = input.publish ? 'published' : 'unpublished';
+      const [templateRows] = await connection.query<
+        Array<RowDataPacket & { activeVersionId: string | null }>
+      >("SELECT activeVersionId FROM desktop_templates WHERE id = ? LIMIT 1 FOR UPDATE", [
+        version.templateId,
+      ]);
+      if (!templateRows[0]) throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, "模板不存在", 404);
+      const publicationStatus = input.publish ? "published" : "unpublished";
       if (input.publish) {
         await connection.query(
           `UPDATE desktop_template_versions SET publicationStatus = 'unpublished'
@@ -197,8 +212,8 @@ export class TemplateReviewService {
       }
       await this.writeRiskRecords(connection, {
         actorUserId: input.actorUserId,
-        action: input.publish ? 'template.version.published' : 'template.version.unpublished',
-        targetType: 'template_version',
+        action: input.publish ? "template.version.published" : "template.version.unpublished",
+        targetType: "template_version",
         targetId: input.versionId,
         requestId: input.requestId,
         metadata: { templateId: version.templateId },
@@ -217,10 +232,10 @@ export class TemplateReviewService {
   }) {
     return this.transaction(async (connection) => {
       const [templates] = await connection.query<RowDataPacket[]>(
-        'SELECT id FROM desktop_templates WHERE id = ? LIMIT 1 FOR UPDATE',
+        "SELECT id FROM desktop_templates WHERE id = ? LIMIT 1 FOR UPDATE",
         [input.templateId],
       );
-      if (!templates[0]) throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, '模板不存在', 404);
+      if (!templates[0]) throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, "模板不存在", 404);
       if (input.active) {
         await connection.query(
           `INSERT INTO desktop_template_entitlements
@@ -239,13 +254,17 @@ export class TemplateReviewService {
       }
       await this.writeRiskRecords(connection, {
         actorUserId: input.actorUserId,
-        action: input.active ? 'template.entitlement.granted' : 'template.entitlement.revoked',
-        targetType: 'template_entitlement',
+        action: input.active ? "template.entitlement.granted" : "template.entitlement.revoked",
+        targetType: "template_entitlement",
         targetId: `${input.templateId}:${input.userId}`,
         requestId: input.requestId,
         metadata: { reference: input.reference },
       });
-      return { templateId: input.templateId, userId: input.userId, status: input.active ? 'active' : 'revoked' };
+      return {
+        templateId: input.templateId,
+        userId: input.userId,
+        status: input.active ? "active" : "revoked",
+      };
     });
   }
 
@@ -264,20 +283,31 @@ export class TemplateReviewService {
     }
   }
 
-  private async writeRiskRecords(connection: PoolConnection, input: {
-    actorUserId: string;
-    action: string;
-    targetType: string;
-    targetId: string;
-    requestId: string;
-    metadata: Record<string, unknown>;
-  }): Promise<void> {
+  private async writeRiskRecords(
+    connection: PoolConnection,
+    input: {
+      actorUserId: string;
+      action: string;
+      targetType: string;
+      targetId: string;
+      requestId: string;
+      metadata: Record<string, unknown>;
+    },
+  ): Promise<void> {
     const metadata = JSON.stringify(input.metadata);
     await connection.query(
       `INSERT INTO desktop_template_audit_events
          (id, actorUserId, action, targetType, targetId, requestId, outcome, metadata, createdAt)
        VALUES (?, ?, ?, ?, ?, ?, 'success', CAST(? AS JSON), NOW(3))`,
-      [randomUUID(), input.actorUserId, input.action, input.targetType, input.targetId, input.requestId, metadata],
+      [
+        randomUUID(),
+        input.actorUserId,
+        input.action,
+        input.targetType,
+        input.targetId,
+        input.requestId,
+        metadata,
+      ],
     );
     await connection.query(
       `INSERT INTO desktop_template_outbox
@@ -289,17 +319,23 @@ export class TemplateReviewService {
 }
 
 function encodeCursor(value: ReviewCursor): string {
-  return Buffer.from(JSON.stringify(value)).toString('base64url');
+  return Buffer.from(JSON.stringify(value)).toString("base64url");
 }
 
 function decodeCursor(value: string): ReviewCursor {
   try {
-    const parsed = JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as Partial<ReviewCursor>;
-    if (typeof parsed.submittedAt !== 'string' || Number.isNaN(Date.parse(parsed.submittedAt)) || typeof parsed.id !== 'string') {
-      throw new Error('invalid');
+    const parsed = JSON.parse(
+      Buffer.from(value, "base64url").toString("utf8"),
+    ) as Partial<ReviewCursor>;
+    if (
+      typeof parsed.submittedAt !== "string" ||
+      Number.isNaN(Date.parse(parsed.submittedAt)) ||
+      typeof parsed.id !== "string"
+    ) {
+      throw new Error("invalid");
     }
     return { submittedAt: parsed.submittedAt, id: parsed.id };
   } catch {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'cursor 不合法');
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "cursor 不合法");
   }
 }

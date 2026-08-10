@@ -1,20 +1,20 @@
-import type { FastifyInstance } from 'fastify';
-import { requireAuth } from '../middleware/aiDirectAuth.js';
-import { requireOrganizationRole } from '../middleware/aiDirectRbac.js';
-import { AiDirectHiringError, ErrorCodes } from '../services/aiDirectErrors.js';
+import type { FastifyInstance } from "fastify";
+import { requireAuth } from "../middleware/aiDirectAuth.js";
+import { requireOrganizationRole } from "../middleware/aiDirectRbac.js";
+import { AiDirectHiringError, ErrorCodes } from "../services/aiDirectErrors.js";
 
 const PAGE_SIZE = 50;
 
 const readOrganizationId = (value: unknown): string => {
-  if (typeof value !== 'string' || !value.trim() || value.trim().length > 36) {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'organizationId 必须是有效字符串');
+  if (typeof value !== "string" || !value.trim() || value.trim().length > 36) {
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "organizationId 必须是有效字符串");
   }
   return value.trim();
 };
 
 const readOptionalDate = (value: unknown, field: string, fallback: Date): Date => {
   if (value === undefined) return fallback;
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, `${field} 必须是 ISO 时间字符串`);
   }
   const result = new Date(value);
@@ -25,24 +25,28 @@ const readOptionalDate = (value: unknown, field: string, fallback: Date): Date =
 };
 
 const encodeCursor = (row: { createdAt: Date; id: string }) =>
-  Buffer.from(JSON.stringify({ createdAt: new Date(row.createdAt).toISOString(), id: row.id })).toString('base64url');
+  Buffer.from(
+    JSON.stringify({ createdAt: new Date(row.createdAt).toISOString(), id: row.id }),
+  ).toString("base64url");
 
 const decodeCursor = (value: unknown): { createdAt: Date; id: string } | null => {
   if (value === undefined) return null;
-  if (typeof value !== 'string' || value.length > 512) {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'cursor 无效');
+  if (typeof value !== "string" || value.length > 512) {
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "cursor 无效");
   }
   try {
-    const decoded = JSON.parse(Buffer.from(value, 'base64url').toString('utf8'));
+    const decoded = JSON.parse(Buffer.from(value, "base64url").toString("utf8"));
     const createdAt = new Date(decoded.createdAt);
-    if (typeof decoded.id !== 'string' || !Number.isFinite(createdAt.valueOf())) throw new Error('invalid');
+    if (typeof decoded.id !== "string" || !Number.isFinite(createdAt.valueOf()))
+      throw new Error("invalid");
     return { createdAt, id: decoded.id };
   } catch {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'cursor 无效');
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "cursor 无效");
   }
 };
 
-const count = (row: unknown, key: string) => Number((row as Record<string, unknown> | undefined)?.[key] ?? 0);
+const count = (row: unknown, key: string) =>
+  Number((row as Record<string, unknown> | undefined)?.[key] ?? 0);
 const micros = (value: unknown) => String(value ?? 0);
 
 export async function aiDirectManagementInsightsRoutes(fastify: FastifyInstance): Promise<void> {
@@ -52,11 +56,11 @@ export async function aiDirectManagementInsightsRoutes(fastify: FastifyInstance)
   const authorize = async (request: any) => {
     const user = await requireAuth(fastify, request);
     const organizationId = readOrganizationId(request.query?.organizationId);
-    await requireOrganizationRole(pool, organizationId, user.id, 'manager');
+    await requireOrganizationRole(pool, organizationId, user.id, "manager");
     return organizationId;
   };
 
-  fastify.get('/management/overview', { onRequest: auth }, async (request: any) => {
+  fastify.get("/management/overview", { onRequest: auth }, async (request: any) => {
     const organizationId = await authorize(request);
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1_000);
     const [employmentRows, runRows, costRows, approvalRows] = await Promise.all([
@@ -94,14 +98,23 @@ export async function aiDirectManagementInsightsRoutes(fastify: FastifyInstance)
     const approvals = approvalRows[0][0];
     return {
       window: { from: since.toISOString(), to: new Date().toISOString() },
-      employees: { active: count(employees, 'activeEmployees') },
-      runs: { queued: count(runs, 'queuedRuns'), active: count(runs, 'activeRuns'), failed: count(runs, 'failedRuns') },
-      costs: { currency: 'USD', micros: micros(costs?.costMicros), inputTokens: count(costs, 'inputTokens'), outputTokens: count(costs, 'outputTokens') },
-      approvals: { pending: count(approvals, 'pendingApprovals') },
+      employees: { active: count(employees, "activeEmployees") },
+      runs: {
+        queued: count(runs, "queuedRuns"),
+        active: count(runs, "activeRuns"),
+        failed: count(runs, "failedRuns"),
+      },
+      costs: {
+        currency: "USD",
+        micros: micros(costs?.costMicros),
+        inputTokens: count(costs, "inputTokens"),
+        outputTokens: count(costs, "outputTokens"),
+      },
+      approvals: { pending: count(approvals, "pendingApprovals") },
     };
   });
 
-  fastify.get('/management/system-status', { onRequest: auth }, async (request: any) => {
+  fastify.get("/management/system-status", { onRequest: auth }, async (request: any) => {
     const organizationId = await authorize(request);
     const [runRows, workerRows, outboxRows] = await Promise.all([
       pool.query(
@@ -127,21 +140,29 @@ export async function aiDirectManagementInsightsRoutes(fastify: FastifyInstance)
     const outbox = outboxRows[0][0];
     return {
       generatedAt: new Date().toISOString(),
-      runs: { queued: count(runs, 'queued'), active: count(runs, 'active'), failed: count(runs, 'failed'), expired: count(runs, 'expired') },
+      runs: {
+        queued: count(runs, "queued"),
+        active: count(runs, "active"),
+        failed: count(runs, "failed"),
+        expired: count(runs, "expired"),
+      },
       workers: workerRows[0],
-      outbox: { pending: count(outbox, 'pending'), oldestPendingAt: outbox?.oldestPendingAt ?? null },
+      outbox: {
+        pending: count(outbox, "pending"),
+        oldestPendingAt: outbox?.oldestPendingAt ?? null,
+      },
     };
   });
 
-  fastify.get('/management/employees', { onRequest: auth }, async (request: any) => {
+  fastify.get("/management/employees", { onRequest: auth }, async (request: any) => {
     const organizationId = await authorize(request);
-    const status = typeof request.query?.status === 'string' ? request.query.status : 'active';
-    if (!['active', 'candidate', 'suspended', 'terminated', 'transferring'].includes(status)) {
-      throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'status 无效');
+    const status = typeof request.query?.status === "string" ? request.query.status : "active";
+    if (!["active", "candidate", "suspended", "terminated", "transferring"].includes(status)) {
+      throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "status 无效");
     }
     const cursor = decodeCursor(request.query?.cursor);
     const params: unknown[] = [organizationId, status];
-    const after = cursor ? ' AND (e.createdAt < ? OR (e.createdAt = ? AND e.id < ?))' : '';
+    const after = cursor ? " AND (e.createdAt < ? OR (e.createdAt = ? AND e.id < ?))" : "";
     if (cursor) params.push(cursor.createdAt, cursor.createdAt, cursor.id);
     params.push(PAGE_SIZE + 1);
     const [rows] = await pool.query(
@@ -161,17 +182,21 @@ export async function aiDirectManagementInsightsRoutes(fastify: FastifyInstance)
     return { items, nextCursor: rows.length > PAGE_SIZE && last ? encodeCursor(last) : null };
   });
 
-  fastify.get('/management/cost-ledger', { onRequest: auth }, async (request: any) => {
+  fastify.get("/management/cost-ledger", { onRequest: auth }, async (request: any) => {
     const organizationId = await authorize(request);
     const now = new Date();
-    const from = readOptionalDate(request.query?.from, 'from', new Date(now.valueOf() - 30 * 24 * 60 * 60 * 1_000));
-    const to = readOptionalDate(request.query?.to, 'to', now);
+    const from = readOptionalDate(
+      request.query?.from,
+      "from",
+      new Date(now.valueOf() - 30 * 24 * 60 * 60 * 1_000),
+    );
+    const to = readOptionalDate(request.query?.to, "to", now);
     if (to <= from || to.valueOf() - from.valueOf() > 31 * 24 * 60 * 60 * 1_000) {
-      throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '时间范围必须在 31 天内');
+      throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "时间范围必须在 31 天内");
     }
     const cursor = decodeCursor(request.query?.cursor);
     const params: unknown[] = [organizationId, from, to];
-    const after = cursor ? ' AND (a.createdAt < ? OR (a.createdAt = ? AND a.id < ?))' : '';
+    const after = cursor ? " AND (a.createdAt < ? OR (a.createdAt = ? AND a.id < ?))" : "";
     if (cursor) params.push(cursor.createdAt, cursor.createdAt, cursor.id);
     params.push(PAGE_SIZE + 1);
     const [rows] = await pool.query(
@@ -188,6 +213,10 @@ export async function aiDirectManagementInsightsRoutes(fastify: FastifyInstance)
       costMicros: micros(row.costMicros),
     }));
     const last = items.at(-1) as { createdAt: Date; id: string } | undefined;
-    return { window: { from: from.toISOString(), to: to.toISOString() }, items, nextCursor: rows.length > PAGE_SIZE && last ? encodeCursor(last) : null };
+    return {
+      window: { from: from.toISOString(), to: to.toISOString() },
+      items,
+      nextCursor: rows.length > PAGE_SIZE && last ? encodeCursor(last) : null,
+    };
   });
 }

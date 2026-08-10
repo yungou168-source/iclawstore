@@ -7,8 +7,14 @@ import type { PackageListItem } from "../lib/packageApi";
 import { PluginListItem } from "./PluginListItem";
 
 vi.mock("@tanstack/react-router", () => ({
-  Link: ({ children, to, ...props }: { children?: ReactNode; to?: string } & ComponentPropsWithoutRef<"a">) => (
-    <a href={to} {...props}>{children}</a>
+  Link: ({
+    children,
+    to,
+    ...props
+  }: { children?: ReactNode; to?: string } & ComponentPropsWithoutRef<"a">) => (
+    <a href={to} {...props}>
+      {children}
+    </a>
   ),
 }));
 

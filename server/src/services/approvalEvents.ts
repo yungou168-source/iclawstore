@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID } from "node:crypto";
 
 export type ApprovalEventInput = {
   approvalId: string;
@@ -21,10 +21,10 @@ export async function appendApprovalEvent(
   conn: SqlConnection,
   input: ApprovalEventInput,
 ): Promise<string> {
-  const [rows] = await conn.query(
-    'SELECT COALESCE(MAX(sequence), 0) + 1 AS nextSequence FROM ai_direct_approval_events WHERE approvalId = ?',
+  const [rows] = (await conn.query(
+    "SELECT COALESCE(MAX(sequence), 0) + 1 AS nextSequence FROM ai_direct_approval_events WHERE approvalId = ?",
     [input.approvalId],
-  ) as [Array<{ nextSequence: number }>];
+  )) as [Array<{ nextSequence: number }>];
   const id = randomUUID();
   await conn.query(
     `INSERT INTO ai_direct_approval_events

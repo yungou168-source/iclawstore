@@ -129,7 +129,6 @@ import type * as lib_staticPublishScan from "../lib/staticPublishScan.js";
 import type * as lib_tokens from "../lib/tokens.js";
 import type * as lib_userSearch from "../lib/userSearch.js";
 import type * as lib_userSkillStats from "../lib/userSkillStats.js";
-import type * as lib_webhooks from "../lib/webhooks.js";
 import type * as lib_wechatAuthProvider from "../lib/wechatAuthProvider.js";
 import type * as llmEval from "../llmEval.js";
 import type * as maintenance from "../maintenance.js";
@@ -163,7 +162,6 @@ import type * as tokens from "../tokens.js";
 import type * as uploads from "../uploads.js";
 import type * as users from "../users.js";
 import type * as vt from "../vt.js";
-import type * as webhooks from "../webhooks.js";
 
 import type {
   ApiFromModules,
@@ -293,7 +291,6 @@ declare const fullApi: ApiFromModules<{
   "lib/tokens": typeof lib_tokens;
   "lib/userSearch": typeof lib_userSearch;
   "lib/userSkillStats": typeof lib_userSkillStats;
-  "lib/webhooks": typeof lib_webhooks;
   "lib/wechatAuthProvider": typeof lib_wechatAuthProvider;
   llmEval: typeof llmEval;
   maintenance: typeof maintenance;
@@ -327,7 +324,6 @@ declare const fullApi: ApiFromModules<{
   uploads: typeof uploads;
   users: typeof users;
   vt: typeof vt;
-  webhooks: typeof webhooks;
 }>;
 
 /**

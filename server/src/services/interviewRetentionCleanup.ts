@@ -1,4 +1,4 @@
-import type { Pool } from 'mysql2/promise';
+import type { Pool } from "mysql2/promise";
 
 export type InterviewRetentionCleanupResult = {
   deletedMessages: number;
@@ -28,7 +28,10 @@ export async function cleanExpiredInterviewData(
     );
     const attachmentIds = (attachmentRows as Array<{ id: string }>).map((row) => row.id);
     const attachmentDelete = attachmentIds.length
-      ? await conn.query(`DELETE FROM ai_direct_interview_attachments WHERE id IN (${attachmentIds.map(() => '?').join(', ')})`, attachmentIds)
+      ? await conn.query(
+          `DELETE FROM ai_direct_interview_attachments WHERE id IN (${attachmentIds.map(() => "?").join(", ")})`,
+          attachmentIds,
+        )
       : [{ affectedRows: 0 }];
     const [messageRows] = await conn.query(
       `SELECT m.id FROM ai_direct_interview_messages m
@@ -43,7 +46,10 @@ export async function cleanExpiredInterviewData(
     );
     const messageIds = (messageRows as Array<{ id: string }>).map((row) => row.id);
     const messageDelete = messageIds.length
-      ? await conn.query(`DELETE FROM ai_direct_interview_messages WHERE id IN (${messageIds.map(() => '?').join(', ')})`, messageIds)
+      ? await conn.query(
+          `DELETE FROM ai_direct_interview_messages WHERE id IN (${messageIds.map(() => "?").join(", ")})`,
+          messageIds,
+        )
       : [{ affectedRows: 0 }];
     const [attachmentResult] = attachmentDelete;
     const [messageResult] = messageDelete;

@@ -1,6 +1,6 @@
-import { createConnection, type RowDataPacket } from 'mysql2/promise';
+import { createConnection, type RowDataPacket } from "mysql2/promise";
 
-const CONTROLLING_STATUSES = ['accepted', 'onboarding', 'active', 'paused', 'offboarding'] as const;
+const CONTROLLING_STATUSES = ["accepted", "onboarding", "active", "paused", "offboarding"] as const;
 
 type ConflictRow = RowDataPacket & {
   agentId: string;
@@ -18,19 +18,19 @@ type OrphanRow = RowDataPacket & {
 
 function describeDatabase(databaseUrl: string): string {
   const parsed = new URL(databaseUrl);
-  const database = parsed.pathname.replace(/^\//, '') || '(default)';
-  return `${parsed.hostname}:${parsed.port || '3306'}/${database}`;
+  const database = parsed.pathname.replace(/^\//, "") || "(default)";
+  return `${parsed.hostname}:${parsed.port || "3306"}/${database}`;
 }
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
-    throw new Error('DATABASE_URL is required');
+    throw new Error("DATABASE_URL is required");
   }
 
   const connection = await createConnection(databaseUrl);
   try {
-    const placeholders = CONTROLLING_STATUSES.map(() => '?').join(', ');
+    const placeholders = CONTROLLING_STATUSES.map(() => "?").join(", ");
     const [conflicts] = await connection.query<ConflictRow[]>(
       `SELECT
          employment.agentId,

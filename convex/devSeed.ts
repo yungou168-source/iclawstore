@@ -1,14 +1,14 @@
 import { v } from "convex/values";
-import { upsertSkillSearchDigest } from "./lib/skillSearchDigest";
-import { internal, api } from "./_generated/api";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import type { ActionCtx, MutationCtx, QueryCtx } from "./_generated/server";
+import type { ActionCtx, MutationCtx } from "./_generated/server";
 import { internalMutation as rawInternalMutation, query } from "./_generated/server";
 import { internalAction, internalMutation } from "./functions";
-import { EMBEDDING_DIMENSIONS, generateEmbedding } from "./lib/embeddings";
+import { EMBEDDING_DIMENSIONS } from "./lib/embeddings";
 import { normalizePackageName } from "./lib/packageRegistry";
 import { ensurePersonalPublisherForUser } from "./lib/publishers";
-import { buildEmbeddingText, parseClawdisMetadata, parseFrontmatter } from "./lib/skills";
+import { parseClawdisMetadata, parseFrontmatter } from "./lib/skills";
+import { upsertSkillSearchDigest } from "./lib/skillSearchDigest";
 import { generateToken, hashToken } from "./lib/tokens";
 
 type SeedSkillSpec = {
@@ -104,41 +104,6 @@ const publicCorpusDummyOwnerValidator = v.object({
   displayName: v.string(),
   image: v.string(),
 });
-
-const publicCorpusSkillRowValidator = v.object({
-  kind: v.literal("skill"),
-  slug: v.string(),
-  displayName: v.string(),
-  version: v.string(),
-  skillMd: v.string(),
-  summary: v.optional(v.string()),
-  capabilityTags: v.optional(v.array(v.string())),
-  createdAt: v.optional(v.number()),
-  dummyOwner: publicCorpusDummyOwnerValidator,
-});
-
-const publicCorpusPluginRowValidator = v.object({
-  kind: v.literal("plugin"),
-  name: v.string(),
-  displayName: v.string(),
-  version: v.string(),
-  readme: v.string(),
-  summary: v.optional(v.string()),
-  capabilityTags: v.optional(v.array(v.string())),
-  family: v.optional(
-    v.union(v.literal("skill"), v.literal("code-plugin"), v.literal("bundle-plugin")),
-  ),
-  channel: v.optional(v.union(v.literal("official"), v.literal("community"), v.literal("private"))),
-  executesCode: v.optional(v.boolean()),
-  sourceRepoHost: v.optional(v.union(v.string(), v.null())),
-  createdAt: v.optional(v.number()),
-  dummyOwner: publicCorpusDummyOwnerValidator,
-});
-
-const publicCorpusSeedRowValidator = v.union(
-  publicCorpusSkillRowValidator,
-  publicCorpusPluginRowValidator,
-);
 
 const publicCorpusPreparedSkillRowValidator = v.object({
   kind: v.literal("skill"),
@@ -938,7 +903,12 @@ export const seedPublicCorpusMutation = internalMutation({
         const skill = await ctx.db.get(skillId);
         if (skill) {
           const digestStats = skill.stats ?? {
-            downloads: 0, installsCurrent: 0, installsAllTime: 0, stars: 0, versions: 0, comments: 0,
+            downloads: 0,
+            installsCurrent: 0,
+            installsAllTime: 0,
+            stars: 0,
+            versions: 0,
+            comments: 0,
           };
           const digestBadges = skill.badges ?? {
             highlighted: undefined,
@@ -1036,7 +1006,12 @@ export const seedPublicCorpusMutation = internalMutation({
           channel,
           isOfficial: row.sourceRepoHost === "github.com",
           executesCode: row.executesCode ?? true,
-          stats: { downloads: stats.downloads, installs: stats.installs, stars: stats.stars, versions: 0 },
+          stats: {
+            downloads: stats.downloads,
+            installs: stats.installs,
+            stars: stats.stars,
+            versions: 0,
+          },
           tags: {},
           capabilityTags,
           compatibility,
@@ -1386,10 +1361,7 @@ async function deletePackageAndReleases(ctx: MutationCtx, packageId: Id<"package
   for (const release of releases) await ctx.db.delete(release._id);
 }
 
-async function resetPublicCorpusRowsWithProgress(
-  ctx: MutationCtx,
-  ownerHandles: string[],
-) {
+async function resetPublicCorpusRowsWithProgress(ctx: MutationCtx, ownerHandles: string[]) {
   const DELETION_BATCH = 5; // keep very small to avoid timeouts
   let deletedSkills = 0;
   let deletedPackages = 0;
@@ -1444,37 +1416,6 @@ async function resetPublicCorpusRowsWithProgress(
   }
 
   return { hasMore, deletedSkills, deletedPackages };
-}
-
-async function resetPublicCorpusRows(ctx: MutationCtx, ownerHandles: string[]) {
-  for (const handle of ownerHandles) {
-    const owners = await ctx.db
-      .query("users")
-      .withIndex("handle", (q) => q.eq("handle", handle))
-      .collect();
-    for (const owner of owners) {
-      // Delete skills in batches to avoid exceeding the per-execution read limit.
-      for (;;) {
-        const batch = await ctx.db
-          .query("skills")
-          .withIndex("by_owner", (q) => q.eq("ownerUserId", owner._id))
-          .filter((q) => q.eq(q.field("batch"), PUBLIC_CORPUS_BATCH))
-          .take(20);
-        if (batch.length === 0) break;
-        for (const skill of batch) await deleteSkillAndVersions(ctx, skill._id);
-      }
-
-      // Delete packages in batches for the same reason.
-      for (;;) {
-        const batch = await ctx.db
-          .query("packages")
-          .withIndex("by_owner", (q) => q.eq("ownerUserId", owner._id))
-          .take(20);
-        if (batch.length === 0) break;
-        for (const pkg of batch) await deletePackageAndReleases(ctx, pkg._id);
-      }
-    }
-  }
 }
 
 async function deleteSkillBadgesForSkill(ctx: MutationCtx, skillId: Id<"skills">) {
@@ -4094,12 +4035,15 @@ export const seedSkillMutation = internalMutation({
 
 export const debugDigestCountV2 = query({
   handler: async (ctx) => {
-    const digests = await ctx.db.query("skillSearchDigest").withIndex("by_active_name", (q) => q.eq("softDeletedAt", undefined)).collect();
+    const digests = await ctx.db
+      .query("skillSearchDigest")
+      .withIndex("by_active_name", (q) => q.eq("softDeletedAt", undefined))
+      .collect();
     const digests2 = await ctx.db.query("skillSearchDigest").collect();
     return {
       byIndex: digests.length,
       total: digests2.length,
-      slugs: digests2.map(d => d.slug).sort(),
+      slugs: digests2.map((d) => d.slug).sort(),
     };
   },
 });

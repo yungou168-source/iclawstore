@@ -14,12 +14,27 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("convex/react", () => ({
+  useMutation: () => vi.fn(),
   useQuery: (...args: unknown[]) => mocks.useQuery(...args),
   usePaginatedQuery: (...args: unknown[]) => mocks.usePaginatedQuery(...args),
 }));
 
 vi.mock("../lib/useAuthStatus", () => ({
   useAuthStatus: () => mocks.useAuthStatus(),
+}));
+
+vi.mock("../lib/i18n/context", () => ({
+  useLocale: () => ({
+    locale: "en",
+    t: (key: string) => key,
+  }),
+}));
+
+vi.mock("../lib/aiDirectPaidHiringApi", () => ({
+  aiDirectPaidHiringApi: {
+    createAgent: vi.fn(),
+    listOwnedAgents: vi.fn().mockResolvedValue({ items: [] }),
+  },
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -273,6 +288,14 @@ describe("Dashboard rows", () => {
       isLoading: false,
       me,
     });
+  });
+
+  it("shows the favorites entry in the user center", () => {
+    arrangeDashboard({});
+
+    renderDashboard();
+
+    expect(screen.getByRole("link", { name: "查看收藏" }).getAttribute("href")).toBe("/stars");
   });
 
   it("renders compact clickable artifact cards with status and inventory context", () => {

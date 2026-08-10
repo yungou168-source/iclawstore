@@ -8,9 +8,15 @@
  * throws INVALID_STATE_TRANSITION.
  */
 
-import { AiDirectHiringError, ErrorCodes } from './aiDirectErrors.js';
+import { AiDirectHiringError, ErrorCodes } from "./aiDirectErrors.js";
 
-export const APPROVAL_STATUSES = ['pending', 'approved', 'rejected', 'expired', 'cancelled'] as const;
+export const APPROVAL_STATUSES = [
+  "pending",
+  "approved",
+  "rejected",
+  "expired",
+  "cancelled",
+] as const;
 export type ApprovalStatus = (typeof APPROVAL_STATUSES)[number];
 
 export interface TransitionResult {
@@ -20,7 +26,7 @@ export interface TransitionResult {
 }
 
 const allowedFrom: Record<ApprovalStatus, Set<ApprovalStatus>> = {
-  pending: new Set(['approved', 'rejected', 'expired', 'cancelled']),
+  pending: new Set(["approved", "rejected", "expired", "cancelled"]),
   approved: new Set([]),
   rejected: new Set([]),
   expired: new Set([]),
@@ -48,5 +54,5 @@ export function transitionApproval(
 }
 
 export function isApprovalTerminal(status: ApprovalStatus): boolean {
-  return ['approved', 'rejected', 'expired', 'cancelled'].includes(status);
+  return ["approved", "rejected", "expired", "cancelled"].includes(status);
 }

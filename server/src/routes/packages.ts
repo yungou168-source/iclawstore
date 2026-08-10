@@ -16,21 +16,28 @@ export async function packagesRoutes(fastify: FastifyInstance) {
       official,
       sort = "stats_downloads",
     } = request.query as any;
-    
+
     const where: any = { softDeletedAt: null };
-    
+
     if (family) where.family = family;
     if (channel) where.channel = channel;
     if (official !== undefined) where.isOfficial = official === "true";
-    
+
     const orderBy: any = {};
     switch (sort) {
-      case "downloads": orderBy.stats = { path: ["downloads"], order: "desc" }; break;
-      case "installs": orderBy.stats = { path: ["installs"], order: "desc" }; break;
-      case "created": orderBy.createdAt = "desc"; break;
-      default: orderBy.stats = { path: ["downloads"], order: "desc" };
+      case "downloads":
+        orderBy.stats = { path: ["downloads"], order: "desc" };
+        break;
+      case "installs":
+        orderBy.stats = { path: ["installs"], order: "desc" };
+        break;
+      case "created":
+        orderBy.createdAt = "desc";
+        break;
+      default:
+        orderBy.stats = { path: ["downloads"], order: "desc" };
     }
-    
+
     const [packages, total] = await Promise.all([
       prisma.packages.findMany({
         where,
@@ -40,7 +47,7 @@ export async function packagesRoutes(fastify: FastifyInstance) {
       }),
       prisma.packages.count({ where }),
     ]);
-    
+
     return {
       packages,
       pagination: {
@@ -51,11 +58,11 @@ export async function packagesRoutes(fastify: FastifyInstance) {
       },
     };
   });
-  
+
   // 获取单个包
   fastify.get<{ Params: { id: string } }>("/:id", async (request, reply) => {
     const { id } = request.params;
-    
+
     const pkg = await prisma.packages.findUnique({
       where: { id },
       include: {
@@ -65,11 +72,11 @@ export async function packagesRoutes(fastify: FastifyInstance) {
         },
       },
     });
-    
+
     if (!pkg) {
       return reply.status(404).send({ error: "Package not found" });
     }
-    
+
     return pkg;
   });
 }

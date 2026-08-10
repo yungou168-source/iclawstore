@@ -1,7 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { usePaginatedQuery, useQuery } from "convex/react";
-import { AlertTriangle, Box, Loader2, Package, Plus, Settings } from "lucide-react";
-import { useState } from "react";
+import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import {
+  AlertTriangle,
+  Bot,
+  Box,
+  Building2,
+  Globe2,
+  Loader2,
+  Package,
+  Plus,
+  Settings,
+  Star,
+  UserCheck,
+  WalletCards,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Doc } from "../../convex/_generated/dataModel";
 import { ArtifactCard } from "../components/artifacts/ArtifactCard";
@@ -10,6 +23,8 @@ import { SignInPrompt } from "../components/SignInPrompt";
 import { DashboardSkeleton } from "../components/skeletons/DashboardSkeleton";
 import { buildSkillHref } from "../components/skillDetailUtils";
 import { Button } from "../components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Input } from "../components/ui/input";
 import {
   Select,
   SelectContent,
@@ -17,9 +32,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { buildPluginDetailHref, buildPluginValidationHref } from "../lib/pluginRoutes";
-import { useLocale } from "../lib/i18n/context";
+import { aiDirectPaidHiringApi, type OwnedAgentDto } from "../lib/aiDirectPaidHiringApi";
 import { t } from "../lib/i18n";
+import { useLocale } from "../lib/i18n/context";
+import { buildPluginDetailHref, buildPluginValidationHref } from "../lib/pluginRoutes";
 import { useAuthStatus } from "../lib/useAuthStatus";
 
 const emptyPluginPublishSearch = {
@@ -177,7 +193,9 @@ export function Dashboard() {
   const publisherSelector =
     publishers && publishers.length > 1 ? (
       <div className="dashboard-publisher-select">
-        <span className="text-sm font-medium text-muted-foreground">{t("dashboard.viewing_as", locale)}</span>
+        <span className="text-sm font-medium text-muted-foreground">
+          {t("dashboard.viewing_as", locale)}
+        </span>
         <Select value={activePublisherId} onValueChange={setSelectedPublisherId}>
           <SelectTrigger
             aria-label="Dashboard publisher"
@@ -188,7 +206,10 @@ export function Dashboard() {
           <SelectContent>
             {publishers.map((entry) => (
               <SelectItem key={entry.publisher._id} value={entry.publisher._id}>
-                @{entry.publisher.handle} · {entry.publisher.kind === "org" ? t("dashboard.org", locale) : t("dashboard.personal", locale)}
+                @{entry.publisher.handle} ·{" "}
+                {entry.publisher.kind === "org"
+                  ? t("dashboard.org", locale)
+                  : t("dashboard.personal", locale)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -200,6 +221,8 @@ export function Dashboard() {
   if (isDashboardEmpty) {
     return (
       <main className="section">
+        <DeveloperCenter approvedByProfile={me.developerStatus === "approved"} />
+        <UserCenterEntries profileSlug={me.profileSlug ?? me.handle ?? undefined} />
         <div className="empty-state">
           <h1 className="empty-state-title text-[1.4rem] font-[family-name:var(--font-display)]">
             {t("dashboard.welcome", locale)}
@@ -244,6 +267,20 @@ export function Dashboard() {
         </div>
         {publisherSelector}
       </div>
+
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <SummaryCard label="已发布技能" value={skills.length} />
+        <SummaryCard label="插件" value={packages.length} />
+        <SummaryCard
+          label="总下载量"
+          value={
+            skills.reduce((sum, skill) => sum + (skill.stats?.downloads ?? 0), 0) +
+            packages.reduce((sum, pkg) => sum + (pkg.stats.downloads ?? 0), 0)
+          }
+        />
+      </div>
+      <DeveloperCenter approvedByProfile={me.developerStatus === "approved"} />
+      <UserCenterEntries profileSlug={me.profileSlug ?? me.handle ?? undefined} />
 
       <div className="dashboard-owner-grid">
         <section className="dashboard-collection-block">
@@ -310,6 +347,230 @@ export function Dashboard() {
         </section>
       </div>
     </main>
+  );
+}
+
+function SummaryCard({ label, value }: { label: string; value: number }) {
+  return (
+    <Card>
+      <CardContent className="p-5">
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="mt-1 text-3xl font-bold">{formatCompactNumber(value)}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function UserCenterEntries({ profileSlug }: { profileSlug?: string }) {
+  const entries = [
+    {
+      title: "个人资料设置",
+      description: "修改头像、公开介绍和资料页地址",
+      icon: Settings,
+      content: (
+        <Link to="/settings" search={{ view: undefined }}>
+          进入设置
+        </Link>
+      ),
+    },
+    {
+      title: "组织资料设置",
+      description: "管理公司中英文名称和组织头像",
+      icon: Building2,
+      content: (
+        <Link to="/settings" search={{ view: "organizations" }}>
+          管理组织
+        </Link>
+      ),
+    },
+    {
+      title: "公开介绍页",
+      description: "查看访客无需登录即可访问的个人主页",
+      icon: Globe2,
+      content: profileSlug ? (
+        <Link to="/profile/$slug" params={{ slug: profileSlug }}>
+          查看主页
+        </Link>
+      ) : (
+        <Link to="/settings" search={{ view: undefined }}>
+          先设置地址
+        </Link>
+      ),
+    },
+    {
+      title: "我的收藏",
+      description: "查看和管理已收藏的技能",
+      icon: Star,
+      content: (
+        <Link to="/stars" search={{ view: undefined, sort: undefined }}>
+          查看收藏
+        </Link>
+      ),
+    },
+    {
+      title: "AI 员工市场",
+      description: "浏览公开 AI 员工并进入招聘流程",
+      icon: Bot,
+      content: <Link to="/recruit-ai">浏览 AI 员工</Link>,
+    },
+    {
+      title: "钱包与账单",
+      description: "查看余额、消费记录和开发者收益",
+      icon: WalletCards,
+      content: (
+        <Link to="/wallet" search={{ recharge: undefined }}>
+          查看钱包
+        </Link>
+      ),
+    },
+  ] as const;
+
+  return (
+    <section className="mb-6" aria-labelledby="user-center-entries-title">
+      <div className="mb-3 flex items-end justify-between gap-4">
+        <div>
+          <h2 id="user-center-entries-title" className="text-xl font-semibold">
+            用户中心入口
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            集中管理个人资料、组织、AI 员工和账户资产。
+          </p>
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {entries.map((entry) => {
+          const Icon = entry.icon;
+          return (
+            <Card key={entry.title} className="h-full">
+              <CardContent className="flex h-full flex-col p-4">
+                <Icon className="h-5 w-5 text-primary" aria-hidden="true" />
+                <h3 className="mt-3 font-semibold">{entry.title}</h3>
+                <p className="mt-1 flex-1 text-sm text-muted-foreground">{entry.description}</p>
+                <Button asChild variant="ghost" size="sm" className="mt-3 justify-start px-0">
+                  {entry.content}
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function DeveloperCenter({ approvedByProfile }: { approvedByProfile: boolean }) {
+  const applyForDeveloper = useMutation(api.users.applyForDeveloper);
+  const [agents, setAgents] = useState<OwnedAgentDto[]>([]);
+  const [isApproved, setIsApproved] = useState(approvedByProfile);
+  const [loading, setLoading] = useState(true);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [working, setWorking] = useState(false);
+
+  async function reloadAgents() {
+    try {
+      const result = await aiDirectPaidHiringApi.listOwnedAgents();
+      setAgents(result.items);
+      if (result.items.length > 0) setIsApproved(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void reloadAgents();
+  }, []);
+
+  async function apply() {
+    setWorking(true);
+    try {
+      await applyForDeveloper({});
+      setIsApproved(true);
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function createAgent() {
+    if (!name.trim()) return;
+    setWorking(true);
+    try {
+      await aiDirectPaidHiringApi.createAgent({
+        name: name.trim(),
+        description: description.trim() || undefined,
+      });
+      setName("");
+      setDescription("");
+      await reloadAgents();
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  return (
+    <section className="mb-6" aria-labelledby="developer-center-title">
+      <Card>
+        <CardHeader className="flex-row items-start justify-between gap-4">
+          <div>
+            <CardTitle id="developer-center-title" className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5" aria-hidden="true" /> 开发者中心
+            </CardTitle>
+            <CardDescription>
+              {isApproved ? "管理、创建并发布你的 AI 员工。" : "申请成为开发者后即可创建 AI 员工。"}
+            </CardDescription>
+          </div>
+          {!isApproved ? (
+            <Button variant="primary" disabled={working} onClick={() => void apply()}>
+              申请成为开发者
+            </Button>
+          ) : null}
+        </CardHeader>
+        {isApproved ? (
+          <CardContent className="space-y-5">
+            <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+              <Input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="AI 员工名称"
+              />
+              <Input
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="一句话介绍（可选）"
+              />
+              <Button disabled={working || !name.trim()} onClick={() => void createAgent()}>
+                <Plus className="h-4 w-4" aria-hidden="true" /> 创建 AI 员工
+              </Button>
+            </div>
+            <div>
+              <h3 className="mb-3 font-semibold">AI 员工列表</h3>
+              {loading ? (
+                <p className="text-sm text-muted-foreground">正在加载…</p>
+              ) : agents.length ? (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {agents.map((agent) => (
+                    <div key={agent.id} className="rounded-lg border p-4">
+                      <div className="flex items-center gap-2 font-semibold">
+                        <Bot className="h-4 w-4" />
+                        {agent.name}
+                      </div>
+                      <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                        {agent.description ?? "暂无介绍"}
+                      </p>
+                      <p className="mt-3 text-xs text-muted-foreground">状态：{agent.status}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  还没有 AI 员工，请从上方创建第一个。
+                </p>
+              )}
+            </div>
+          </CardContent>
+        ) : null}
+      </Card>
+    </section>
   );
 }
 

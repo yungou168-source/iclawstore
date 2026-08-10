@@ -26,6 +26,7 @@ import { Route as SearchRouteImport } from './routes/search'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StarsRouteImport } from './routes/stars'
 import { Route as UploadRouteImport } from './routes/upload'
+import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as OwnerSlugRouteImport } from './routes/$owner/$slug'
 import { Route as AiWorkAdminAuditRouteImport } from './routes/ai-work-admin.audit'
 import { Route as AiWorkAdminOrganizationsRouteImport } from './routes/ai-work-admin.organizations'
@@ -42,6 +43,7 @@ import { Route as PluginsIndexRouteImport } from './routes/plugins/index'
 import { Route as PluginsNameRouteImport } from './routes/plugins/$name'
 import { Route as PluginsNewRouteImport } from './routes/plugins/new'
 import { Route as PluginsPublishRouteImport } from './routes/plugins/publish'
+import { Route as ProfileSlugRouteImport } from './routes/profile/$slug'
 import { Route as PublishersIndexRouteImport } from './routes/publishers/index'
 import { Route as SettingsMemoryRouteImport } from './routes/settings/memory'
 import { Route as SkillsIndexRouteImport } from './routes/skills/index'
@@ -146,6 +148,11 @@ const UploadRoute = UploadRouteImport.update({
   path: '/upload',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WalletRoute = WalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OwnerSlugRoute = OwnerSlugRouteImport.update({
   id: '/$owner/$slug',
   path: '/$owner/$slug',
@@ -225,6 +232,11 @@ const PluginsNewRoute = PluginsNewRouteImport.update({
 const PluginsPublishRoute = PluginsPublishRouteImport.update({
   id: '/plugins/publish',
   path: '/plugins/publish',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileSlugRoute = ProfileSlugRouteImport.update({
+  id: '/profile/$slug',
+  path: '/profile/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PublishersIndexRoute = PublishersIndexRouteImport.update({
@@ -341,6 +353,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRouteWithChildren
   '/stars': typeof StarsRoute
   '/upload': typeof UploadRoute
+  '/wallet': typeof WalletRoute
   '/$owner/$slug': typeof OwnerSlugRouteWithChildren
   '/ai-work-admin/audit': typeof AiWorkAdminAuditRoute
   '/ai-work-admin/organizations': typeof AiWorkAdminOrganizationsRoute
@@ -355,6 +368,7 @@ export interface FileRoutesByFullPath {
   '/plugins/$name': typeof PluginsNameRouteWithChildren
   '/plugins/new': typeof PluginsNewRoute
   '/plugins/publish': typeof PluginsPublishRoute
+  '/profile/$slug': typeof ProfileSlugRoute
   '/settings/memory': typeof SettingsMemoryRoute
   '/skills/publish': typeof SkillsPublishRoute
   '/souls/$slug': typeof SoulsSlugRoute
@@ -394,6 +408,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRouteWithChildren
   '/stars': typeof StarsRoute
   '/upload': typeof UploadRoute
+  '/wallet': typeof WalletRoute
   '/$owner/$slug': typeof OwnerSlugRouteWithChildren
   '/ai-work-admin/audit': typeof AiWorkAdminAuditRoute
   '/ai-work-admin/organizations': typeof AiWorkAdminOrganizationsRoute
@@ -408,6 +423,7 @@ export interface FileRoutesByTo {
   '/plugins/$name': typeof PluginsNameRouteWithChildren
   '/plugins/new': typeof PluginsNewRoute
   '/plugins/publish': typeof PluginsPublishRoute
+  '/profile/$slug': typeof ProfileSlugRoute
   '/settings/memory': typeof SettingsMemoryRoute
   '/skills/publish': typeof SkillsPublishRoute
   '/souls/$slug': typeof SoulsSlugRoute
@@ -448,6 +464,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRouteWithChildren
   '/stars': typeof StarsRoute
   '/upload': typeof UploadRoute
+  '/wallet': typeof WalletRoute
   '/$owner/$slug': typeof OwnerSlugRouteWithChildren
   '/ai-work-admin/audit': typeof AiWorkAdminAuditRoute
   '/ai-work-admin/organizations': typeof AiWorkAdminOrganizationsRoute
@@ -462,6 +479,7 @@ export interface FileRoutesById {
   '/plugins/$name': typeof PluginsNameRouteWithChildren
   '/plugins/new': typeof PluginsNewRoute
   '/plugins/publish': typeof PluginsPublishRoute
+  '/profile/$slug': typeof ProfileSlugRoute
   '/settings/memory': typeof SettingsMemoryRoute
   '/skills/publish': typeof SkillsPublishRoute
   '/souls/$slug': typeof SoulsSlugRoute
@@ -503,6 +521,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/stars'
     | '/upload'
+    | '/wallet'
     | '/$owner/$slug'
     | '/ai-work-admin/audit'
     | '/ai-work-admin/organizations'
@@ -517,6 +536,7 @@ export interface FileRouteTypes {
     | '/plugins/$name'
     | '/plugins/new'
     | '/plugins/publish'
+    | '/profile/$slug'
     | '/settings/memory'
     | '/skills/publish'
     | '/souls/$slug'
@@ -556,6 +576,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/stars'
     | '/upload'
+    | '/wallet'
     | '/$owner/$slug'
     | '/ai-work-admin/audit'
     | '/ai-work-admin/organizations'
@@ -570,6 +591,7 @@ export interface FileRouteTypes {
     | '/plugins/$name'
     | '/plugins/new'
     | '/plugins/publish'
+    | '/profile/$slug'
     | '/settings/memory'
     | '/skills/publish'
     | '/souls/$slug'
@@ -609,6 +631,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/stars'
     | '/upload'
+    | '/wallet'
     | '/$owner/$slug'
     | '/ai-work-admin/audit'
     | '/ai-work-admin/organizations'
@@ -623,6 +646,7 @@ export interface FileRouteTypes {
     | '/plugins/$name'
     | '/plugins/new'
     | '/plugins/publish'
+    | '/profile/$slug'
     | '/settings/memory'
     | '/skills/publish'
     | '/souls/$slug'
@@ -663,6 +687,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRouteWithChildren
   StarsRoute: typeof StarsRoute
   UploadRoute: typeof UploadRoute
+  WalletRoute: typeof WalletRoute
   OwnerSlugRoute: typeof OwnerSlugRouteWithChildren
   AiWorkAdminAuditRoute: typeof AiWorkAdminAuditRoute
   AiWorkAdminOrganizationsRoute: typeof AiWorkAdminOrganizationsRoute
@@ -677,6 +702,7 @@ export interface RootRouteChildren {
   PluginsNameRoute: typeof PluginsNameRouteWithChildren
   PluginsNewRoute: typeof PluginsNewRoute
   PluginsPublishRoute: typeof PluginsPublishRoute
+  ProfileSlugRoute: typeof ProfileSlugRoute
   SkillsPublishRoute: typeof SkillsPublishRoute
   SoulsSlugRoute: typeof SoulsSlugRoute
   UHandleRoute: typeof UHandleRoute
@@ -812,6 +838,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UploadRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/wallet': {
+      id: '/wallet'
+      path: '/wallet'
+      fullPath: '/wallet'
+      preLoaderRoute: typeof WalletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/$owner/$slug': {
       id: '/$owner/$slug'
       path: '/$owner/$slug'
@@ -922,6 +955,13 @@ declare module '@tanstack/react-router' {
       path: '/plugins/publish'
       fullPath: '/plugins/publish'
       preLoaderRoute: typeof PluginsPublishRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/$slug': {
+      id: '/profile/$slug'
+      path: '/profile/$slug'
+      fullPath: '/profile/$slug'
+      preLoaderRoute: typeof ProfileSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/publishers/': {
@@ -1126,6 +1166,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRouteWithChildren,
   StarsRoute: StarsRoute,
   UploadRoute: UploadRoute,
+  WalletRoute: WalletRoute,
   OwnerSlugRoute: OwnerSlugRouteWithChildren,
   AiWorkAdminAuditRoute: AiWorkAdminAuditRoute,
   AiWorkAdminOrganizationsRoute: AiWorkAdminOrganizationsRoute,
@@ -1140,6 +1181,7 @@ const rootRouteChildren: RootRouteChildren = {
   PluginsNameRoute: PluginsNameRouteWithChildren,
   PluginsNewRoute: PluginsNewRoute,
   PluginsPublishRoute: PluginsPublishRoute,
+  ProfileSlugRoute: ProfileSlugRoute,
   SkillsPublishRoute: SkillsPublishRoute,
   SoulsSlugRoute: SoulsSlugRoute,
   UHandleRoute: UHandleRoute,

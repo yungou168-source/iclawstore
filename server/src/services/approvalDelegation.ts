@@ -1,13 +1,10 @@
-import { randomUUID } from 'node:crypto';
-import type { Pool, PoolConnection, ResultSetHeader } from 'mysql2/promise';
-import { publishOutboxEvent } from '../utils/outbox.js';
-import { AiDirectHiringError, ErrorCodes } from './aiDirectErrors.js';
-import {
-  authorizeApprovalAction,
-  requireActiveDelegationTarget,
-} from './approvalAuthorization.js';
-import { appendApprovalEvent } from './approvalEvents.js';
-import { lockApproval } from './approvalRecord.js';
+import { randomUUID } from "node:crypto";
+import type { Pool, PoolConnection, ResultSetHeader } from "mysql2/promise";
+import { publishOutboxEvent } from "../utils/outbox.js";
+import { AiDirectHiringError, ErrorCodes } from "./aiDirectErrors.js";
+import { authorizeApprovalAction, requireActiveDelegationTarget } from "./approvalAuthorization.js";
+import { appendApprovalEvent } from "./approvalEvents.js";
+import { lockApproval } from "./approvalRecord.js";
 
 export type DelegateApprovalInput = {
   approvalId: string;
@@ -29,15 +26,15 @@ async function delegateApprovalInTransaction(
   input: DelegateApprovalInput,
 ): Promise<ApprovalDelegationResult> {
   const approval = await lockApproval(connection, input.approvalId);
-  if (approval.status !== 'pending' || !approval.organizationId) {
+  if (approval.status !== "pending" || !approval.organizationId) {
     throw new AiDirectHiringError(
       ErrorCodes.INVALID_TRANSITION,
-      '只有组织范围内的 pending Approval 可以委派',
+      "只有组织范围内的 pending Approval 可以委派",
       409,
     );
   }
 
-  await authorizeApprovalAction(connection, approval, 'delegate', input.actorUserId);
+  await authorizeApprovalAction(connection, approval, "delegate", input.actorUserId);
   await requireActiveDelegationTarget(connection, approval.organizationId, input.toUserId);
 
   const delegationId = randomUUID();
@@ -63,11 +60,7 @@ async function delegateApprovalInTransaction(
     [input.toUserId, approval.id, approval.approverUserId],
   );
   if (update.affectedRows !== 1) {
-    throw new AiDirectHiringError(
-      ErrorCodes.INVALID_TRANSITION,
-      'Approval 已被其他操作更新',
-      409,
-    );
+    throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, "Approval 已被其他操作更新", 409);
   }
 
   const metadata = {
@@ -79,7 +72,7 @@ async function delegateApprovalInTransaction(
   await appendApprovalEvent(connection, {
     approvalId: approval.id,
     organizationId: approval.organizationId,
-    eventType: 'approval.delegated',
+    eventType: "approval.delegated",
     actorUserId: input.actorUserId,
     requestId: input.requestId,
     metadata,
@@ -99,9 +92,9 @@ async function delegateApprovalInTransaction(
   );
   await publishOutboxEvent(connection, {
     organizationId: approval.organizationId,
-    aggregateType: 'approval',
+    aggregateType: "approval",
     aggregateId: approval.id,
-    eventType: 'approval.delegated.v1',
+    eventType: "approval.delegated.v1",
     payload: {
       approvalId: approval.id,
       ...metadata,
@@ -118,7 +111,7 @@ async function delegateApprovalInTransaction(
 }
 
 export async function delegateApproval(
-  pool: Pick<Pool, 'getConnection'>,
+  pool: Pick<Pool, "getConnection">,
   input: DelegateApprovalInput,
 ): Promise<ApprovalDelegationResult> {
   const connection = await pool.getConnection();

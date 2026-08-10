@@ -1,6 +1,5 @@
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "../../components/ui/button";
-import { useLocale } from "../../lib/i18n/context";
 import {
   Select,
   SelectContent,
@@ -8,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
+import { useLocale } from "../../lib/i18n/context";
 import { formatTimestamp, type ManagementUserListResult } from "./managementShared";
 
 type ManagementRole = "admin" | "moderator" | "user";
@@ -38,9 +38,7 @@ export function UsersPage({
   return (
     <div className="management-view">
       <h2 className="section-title text-[1.2rem] m-0">{t("management.users")}</h2>
-      <p className="section-subtitle m-0 mt-1">
-        {t("management.users.subtitle")}
-      </p>
+      <p className="section-subtitle m-0 mt-1">{t("management.users.subtitle")}</p>
       <div className="management-controls">
         <div className="management-control management-search">
           <span className="mono">{t("management.filter")}</span>
@@ -75,7 +73,9 @@ export function UsersPage({
                             time: formatTimestamp(user.deletedAt, locale),
                             reason: user.banReason,
                           })
-                        : t("management.users.deleted", { time: formatTimestamp(removedAt, locale) })
+                        : t("management.users.deleted", {
+                            time: formatTimestamp(removedAt, locale),
+                          })
                       : t("management.users.joined", {
                           role: roleLabel(user.role ?? "user"),
                           time: formatTimestamp(user._creationTime, locale),
@@ -96,9 +96,7 @@ export function UsersPage({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="user">{t("management.users.user")}</SelectItem>
-                      <SelectItem value="moderator">
-                        {t("management.users.moderator")}
-                      </SelectItem>
+                      <SelectItem value="moderator">{t("management.users.moderator")}</SelectItem>
                       <SelectItem value="admin">{t("management.users.admin")}</SelectItem>
                     </SelectContent>
                   </Select>

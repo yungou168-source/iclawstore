@@ -30,7 +30,10 @@ const SENSITIVE_PATTERNS: Array<{ name: string; regex: RegExp }> = [
   { name: "mobile_cn", regex: /\b1[3-9]\d{9}\b/g },
   { name: "id_card_cn", regex: /\b\d{17}[\dXx]\b/g },
   { name: "bank_card", regex: /\b\d{16,19}\b/g },
-  { name: "secret_prefix", regex: /\b(?:sk-[A-Za-z0-9_-]{12,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,})\b/g },
+  {
+    name: "secret_prefix",
+    regex: /\b(?:sk-[A-Za-z0-9_-]{12,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,})\b/g,
+  },
   { name: "email", regex: /\b[\w.+-]+@[\w-]+\.[\w.-]+\b/g },
 ];
 
@@ -161,7 +164,10 @@ function trimToByteLimit(text: string, limit: number): string {
 
 const EMPTY_SUMMARY_PLACEHOLDER = "(empty)";
 
-function stripFrontmatterAndHeadings(body: string): { bodyWithoutFrontmatter: string; headings: string[] } {
+function stripFrontmatterAndHeadings(body: string): {
+  bodyWithoutFrontmatter: string;
+  headings: string[];
+} {
   const lines = body.split(/\r?\n/);
   let i = 0;
   if (lines[0]?.trim() === "---") {

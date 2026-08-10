@@ -48,7 +48,7 @@ AUTH_WECHAT_APP_ID
 AUTH_WECHAT_APP_SECRET
 ```
 
-邮箱登录必须发送 8 位一次性验证码，并在站内完成校验；不得回退为仅发送魔法链接。登录表单必须始终展示验证码输入框，邮箱输入使用标准邮箱校验且最多 38 个字符。发送前将邮箱去除首尾空白并转为小写；待验证状态必须绑定到发起请求时的归一化邮箱。用户修改邮箱时必须清空已输入验证码并作废当前对话框中的待验证状态，只有新邮箱重新请求验证码后才能提交。验证码输入仅接受 8 位数字，发送请求进行中必须拒绝同一表单的并发请求，避免后完成的请求替换用户正在输入的有效验证码。
+邮箱登录必须发送 4 位一次性验证码，并在站内完成校验；验证码有效期为 2 分钟，不得回退为仅发送魔法链接。登录表单必须始终展示验证码输入框，邮箱输入使用标准邮箱校验且最多 38 个字符。发送前将邮箱去除首尾空白并转为小写；待验证状态必须绑定到发起请求时的归一化邮箱。用户修改邮箱时必须清空已输入验证码并作废当前对话框中的待验证状态，只有新邮箱重新请求验证码后才能提交。验证码输入仅接受 4 位数字，发送请求进行中必须拒绝同一表单的并发请求，避免后完成的请求替换用户正在输入的有效验证码。
 
 OAuth provider 只有在对应 ID 与 Secret 都配置后才会在 Convex Auth 中启用。任一变量值、Bearer token、私钥、JWKS 私钥或 Convex admin key 都不得写入仓库、文档、日志、测试输出或聊天记录。
 
@@ -83,6 +83,23 @@ JWKS=<上述私钥对应的公钥 JWKS JSON>
 OAuth 组件已提供哈希 refresh token、rotation、reuse detection、30 天绝对期限、7 天空闲期限和 authorization revocation。`users` trigger 会在账号首次停用、软删除或物理删除时撤销 authorization，并以每批 100 条的有界任务撤销该用户的 refresh token families；refresh 时会在签发前检查 family 状态，轮换后只推进 idle deadline，不延长 absolute deadline。该能力仍处于实现待发布状态：目标环境静态 client 注册锁定、真实浏览器 custom URI 与 IP loopback 两条授权闭环、生产配置烟测和统一发布门禁尚未完成。因此生产客户端仍不得复制浏览器 Cookie、自行持久化未发布的 refresh token，或在 contract 未返回 `auth` 时启动原生 OAuth。
 
 详细接入边界见 `docs/AI_DIRECT_DESKTOP_CLIENT_API_V1.md`。
+
+## Web 退出、切换账号与 RBAC 验收
+
+所有 Web 导航形态都必须为已登录用户提供可发现的账户菜单和“退出登录”操作。workspace 导航不能只显示“工作台”链接而隐藏退出入口；账户菜单还必须提供 `/ai-work-admin/organizations` 的“组织与公司管理”入口，使普通已登录用户能够发现自己的 AI Direct 业务组织，但入口可见不代表拥有任何组织或公司权限。退出必须调用 Convex Auth 的 `signOut()`，待认证状态变为未登录后再展示统一登录框。不得通过手工删除单个 Local Storage 项、覆盖 Cookie 或复用旧 Bearer token 来模拟账号切换，因为这会绕过正常的会话撤销和前端状态清理。
+
+`/settings?view=organizations` 管理 Convex 中的 ClawHub 发布组织；`/ai-work-admin/organizations` 管理 Fastify/MySQL 中的 AI Direct 业务组织。两者不自动同步，也不能仅凭名称相同推断为同一授权域。生产验收必须分别检查两个列表：发布组织 owner 在 AI Direct 中仍可能是 outsider，此时 AI Direct 页面正常返回空列表是正确结果，不得自动创建、映射或继承业务组织权限。
+
+生产 RBAC 验收使用两个团队控制、可回收的身份，分别记为 owner 与 outsider，不在文档中记录邮箱、内部用户 ID、组织 ID、公司 ID 或 token。切换及验收顺序如下：
+
+1. owner 完成只读基线：`/session` 返回 `200`，从公司列表取得真实公司后详情返回 `200`；不存在的公司 ID 因防枚举授权顺序可能返回 `403`，不能据此判断 owner 权限失效。
+2. 在页面账户菜单退出 owner，确认登录入口重新出现，再登录 outsider。
+3. outsider 调用 `/session` 验证身份已切换；访问 owner 的真实公司必须返回 `403`，且不能出现在 outsider 的公司列表中。
+4. 由受控管理员授予 outsider 最小公司角色；使用 outsider 同一登录会话重试，预期按新角色允许对应操作，证明每请求重查成员关系。
+5. 撤销该角色；仍使用同一 outsider 会话重试，预期立即返回 `403`，不得要求重新登录才生效。
+6. 退出 outsider，删除临时成员关系、QA 组织/公司数据、Bearer 文件和脱敏临时响应。
+
+Bearer 只允许以权限 `600` 的短期临时文件保存并直接供验收命令读取。可以记录 token 的三段格式、过期时间和测试结论，但不得把 token 明文输出到终端回放、聊天、文档、截图或 Git。当前 owner 的真实公司列表→详情链路已经通过；此前使用已不存在的旧公司标识得到的 `403` 已确认是误报。跨组织隔离和撤权即时失效仍需 outsider 身份完成，完成前不能写成生产 RBAC 已全面验收。
 
 ## 桌面 OAuth 静态客户端与 QA 验收
 
@@ -142,7 +159,7 @@ AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID=<locked-public-client-id>
 
 ```bash
 curl -sS -H "Authorization: Bearer <短期访问令牌>" \
-  https://iclawstore.com/api/v1/ai-direct-hiring/session
+  https://www.iclawstore.com/api/v1/ai-direct-hiring/session
 ```
 
 预期：有效登录会话返回 `200`，且响应包含当前用户与组织信息。无 token 返回正常 Bearer-required `401`；不能出现 identity bridge 未初始化或 provider 未配置错误。

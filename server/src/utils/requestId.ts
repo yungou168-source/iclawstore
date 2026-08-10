@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID } from "node:crypto";
 
 /**
  * AI Direct Hiring — Request ID extraction utility.
@@ -21,8 +21,8 @@ import { randomUUID } from 'node:crypto';
  * Caps at 128 characters per the API contract.
  */
 export function extractRequestId(request: { headers: Record<string, unknown> }): string {
-  const value = request.headers['x-request-id'];
-  if (typeof value === 'string' && value.length > 0 && value.length <= 128) {
+  const value = request.headers["x-request-id"];
+  if (typeof value === "string" && value.length > 0 && value.length <= 128) {
     return value;
   }
   return randomUUID();

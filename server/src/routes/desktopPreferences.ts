@@ -1,20 +1,20 @@
-import { randomUUID } from 'node:crypto';
-import type { FastifyInstance } from 'fastify';
-import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
-import { requireAuth } from '../middleware/aiDirectAuth.js';
-import { AiDirectHiringError, ErrorCodes } from '../services/aiDirectErrors.js';
+import { randomUUID } from "node:crypto";
+import type { FastifyInstance } from "fastify";
+import type { PoolConnection, RowDataPacket } from "mysql2/promise";
+import { requireAuth } from "../middleware/aiDirectAuth.js";
+import { AiDirectHiringError, ErrorCodes } from "../services/aiDirectErrors.js";
 import {
   parseDesktopSidebarConfig,
   parseSidebarIfMatch,
   sidebarEtag,
   sidebarIconAssetIds,
   type DesktopSidebarConfig,
-} from '../services/desktopSidebarConfig.js';
+} from "../services/desktopSidebarConfig.js";
 import {
   managedAssetDownloadHeaders,
   type ManagedAssetStore,
   type StoredManagedAsset,
-} from '../services/managedAssetStore.js';
+} from "../services/managedAssetStore.js";
 
 interface SidebarPreferenceRow extends RowDataPacket {
   config: string | DesktopSidebarConfig;
@@ -36,7 +36,7 @@ interface SidebarAssetRow extends RowDataPacket {
 
 export function createDesktopPreferencesRoutes(assetStore: ManagedAssetStore) {
   return async function desktopPreferencesRoutes(fastify: FastifyInstance): Promise<void> {
-    fastify.get('/sidebar', async (request, reply) => {
+    fastify.get("/sidebar", async (request, reply) => {
       const user = await requireAuth(fastify, request);
       const [rows] = await fastify.mysql.query<SidebarPreferenceRow[]>(
         `SELECT config, revision, updatedAt
@@ -46,12 +46,14 @@ export function createDesktopPreferencesRoutes(assetStore: ManagedAssetStore) {
         [user.id],
       );
       if (!rows[0]) {
-        reply.header('ETag', sidebarEtag(0));
-        return reply.status(200).send({ overridden: false, config: null, revision: '0', updatedAt: null });
+        reply.header("ETag", sidebarEtag(0));
+        return reply
+          .status(200)
+          .send({ overridden: false, config: null, revision: "0", updatedAt: null });
       }
       const config = parseStoredConfig(rows[0].config);
       const revision = String(rows[0].revision);
-      reply.header('ETag', sidebarEtag(revision));
+      reply.header("ETag", sidebarEtag(revision));
       return reply.status(200).send({
         overridden: true,
         config,
@@ -60,9 +62,9 @@ export function createDesktopPreferencesRoutes(assetStore: ManagedAssetStore) {
       });
     });
 
-    fastify.put('/sidebar', async (request, reply) => {
+    fastify.put("/sidebar", async (request, reply) => {
       const user = await requireAuth(fastify, request);
-      const expectedRevision = parseSidebarIfMatch(request.headers['if-match']);
+      const expectedRevision = parseSidebarIfMatch(request.headers["if-match"]);
       const config = parseDesktopSidebarConfig(request.body);
       const connection = await fastify.mysql.getConnection();
       try {
@@ -81,7 +83,7 @@ export function createDesktopPreferencesRoutes(assetStore: ManagedAssetStore) {
           [user.id, JSON.stringify(config), nextRevision.toString()],
         );
         await connection.commit();
-        reply.header('ETag', sidebarEtag(nextRevision));
+        reply.header("ETag", sidebarEtag(nextRevision));
         return reply.status(200).send({
           overridden: true,
           config,
@@ -95,19 +97,21 @@ export function createDesktopPreferencesRoutes(assetStore: ManagedAssetStore) {
       }
     });
 
-    fastify.delete('/sidebar', async (request, reply) => {
+    fastify.delete("/sidebar", async (request, reply) => {
       const user = await requireAuth(fastify, request);
-      const expectedRevision = parseSidebarIfMatch(request.headers['if-match']);
+      const expectedRevision = parseSidebarIfMatch(request.headers["if-match"]);
       const connection = await fastify.mysql.getConnection();
       try {
         await connection.beginTransaction();
         const current = await lockSidebarPreference(connection, user.id);
         assertExpectedRevision(expectedRevision, current?.revision ?? 0);
         if (current) {
-          await connection.query('DELETE FROM desktop_sidebar_preferences WHERE userId = ?', [user.id]);
+          await connection.query("DELETE FROM desktop_sidebar_preferences WHERE userId = ?", [
+            user.id,
+          ]);
         }
         await connection.commit();
-        reply.header('ETag', sidebarEtag(0));
+        reply.header("ETag", sidebarEtag(0));
         return reply.status(204).send();
       } catch (error) {
         await connection.rollback().catch(() => undefined);
@@ -117,14 +121,14 @@ export function createDesktopPreferencesRoutes(assetStore: ManagedAssetStore) {
       }
     });
 
-    fastify.post('/sidebar/icons', async (request, reply) => {
+    fastify.post("/sidebar/icons", async (request, reply) => {
       const user = await requireAuth(fastify, request);
       const part = await request.file();
       if (!part) {
-        throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '必须上传一个 Logo 文件');
+        throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "必须上传一个 Logo 文件");
       }
       const stored = await assetStore.store({
-        kind: 'sidebar_icon',
+        kind: "sidebar_icon",
         originalFileName: part.filename,
         declaredMimeType: part.mimetype,
         stream: part.file,
@@ -158,17 +162,19 @@ export function createDesktopPreferencesRoutes(assetStore: ManagedAssetStore) {
       });
     });
 
-    fastify.get('/sidebar/icons/:id/content', async (request, reply) => {
+    fastify.get("/sidebar/icons/:id/content", async (request, reply) => {
       const user = await requireAuth(fastify, request);
       const { id } = request.params as { id: string };
       const asset = await findOwnedAsset(fastify, user.id, id);
       const opened = await assetStore.open(asset.storageKey);
-      reply.headers(managedAssetDownloadHeaders({ mimeType: asset.mimeType, sha256: asset.sha256 }));
-      reply.header('Content-Length', String(opened.sizeBytes));
+      reply.headers(
+        managedAssetDownloadHeaders({ mimeType: asset.mimeType, sha256: asset.sha256 }),
+      );
+      reply.header("Content-Length", String(opened.sizeBytes));
       return reply.send(opened.stream);
     });
 
-    fastify.delete('/sidebar/icons/:id', async (request, reply) => {
+    fastify.delete("/sidebar/icons/:id", async (request, reply) => {
       const user = await requireAuth(fastify, request);
       const { id } = request.params as { id: string };
       const connection = await fastify.mysql.getConnection();
@@ -183,14 +189,14 @@ export function createDesktopPreferencesRoutes(assetStore: ManagedAssetStore) {
         );
         const asset = assetRows[0];
         if (!asset) {
-          throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Logo 资源不存在', 404);
+          throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, "Logo 资源不存在", 404);
         }
         const current = await lockSidebarPreference(connection, user.id);
         if (current && sidebarIconAssetIds(parseStoredConfig(current.config)).includes(id)) {
-          throw new AiDirectHiringError(ErrorCodes.ASSET_IN_USE, 'Logo 仍被侧栏配置引用', 409);
+          throw new AiDirectHiringError(ErrorCodes.ASSET_IN_USE, "Logo 仍被侧栏配置引用", 409);
         }
         await connection.query(
-          'UPDATE desktop_sidebar_assets SET deletedAt = NOW(3) WHERE id = ? AND userId = ?',
+          "UPDATE desktop_sidebar_assets SET deletedAt = NOW(3) WHERE id = ? AND userId = ?",
           [id, user.id],
         );
         await connection.commit();
@@ -207,7 +213,7 @@ export function createDesktopPreferencesRoutes(assetStore: ManagedAssetStore) {
           const trashName = await assetStore.moveToTrash(storageKey);
           assetStore.scheduleTrashCleanup(trashName);
         } catch (error) {
-          request.log.error({ error, id }, 'Failed to move deleted sidebar asset to trash');
+          request.log.error({ error, id }, "Failed to move deleted sidebar asset to trash");
         }
       }
       return reply.status(204).send();
@@ -235,12 +241,10 @@ function assertExpectedRevision(
 ): void {
   const current = BigInt(currentRevision);
   if (expectedRevision !== current) {
-    throw new AiDirectHiringError(
-      ErrorCodes.REVISION_CONFLICT,
-      '侧栏配置已被其他设备更新',
-      409,
-      { currentRevision: current.toString(), etag: sidebarEtag(current) },
-    );
+    throw new AiDirectHiringError(ErrorCodes.REVISION_CONFLICT, "侧栏配置已被其他设备更新", 409, {
+      currentRevision: current.toString(),
+      etag: sidebarEtag(current),
+    });
   }
 }
 
@@ -250,7 +254,7 @@ async function assertOwnedIcons(
   assetIds: string[],
 ): Promise<void> {
   if (assetIds.length === 0) return;
-  const placeholders = assetIds.map(() => '?').join(', ');
+  const placeholders = assetIds.map(() => "?").join(", ");
   const [rows] = await connection.query<RowDataPacket[]>(
     `SELECT id FROM desktop_sidebar_assets
      WHERE userId = ? AND deletedAt IS NULL AND id IN (${placeholders})`,
@@ -261,7 +265,7 @@ async function assertOwnedIcons(
   if (missing.length > 0) {
     throw new AiDirectHiringError(
       ErrorCodes.FORBIDDEN_SCOPE,
-      '侧栏配置引用了不属于当前账号的 Logo',
+      "侧栏配置引用了不属于当前账号的 Logo",
       403,
       { assetIds: missing },
     );
@@ -272,9 +276,11 @@ async function assertKnownTemplates(
   connection: PoolConnection,
   config: DesktopSidebarConfig,
 ): Promise<void> {
-  const templateIds = [...new Set(config.items.flatMap((item) => item.templateId ? [item.templateId] : []))];
+  const templateIds = [
+    ...new Set(config.items.flatMap((item) => (item.templateId ? [item.templateId] : []))),
+  ];
   if (templateIds.length === 0) return;
-  const placeholders = templateIds.map(() => '?').join(', ');
+  const placeholders = templateIds.map(() => "?").join(", ");
   const [rows] = await connection.query<RowDataPacket[]>(
     `SELECT id FROM desktop_templates WHERE id IN (${placeholders}) AND status <> 'deleted'`,
     templateIds,
@@ -282,12 +288,9 @@ async function assertKnownTemplates(
   const known = new Set(rows.map((row) => String(row.id)));
   const missing = templateIds.filter((id) => !known.has(id));
   if (missing.length > 0) {
-    throw new AiDirectHiringError(
-      ErrorCodes.VALIDATION_ERROR,
-      '侧栏配置引用了未知模板',
-      400,
-      { templateIds: missing },
-    );
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "侧栏配置引用了未知模板", 400, {
+      templateIds: missing,
+    });
   }
 }
 
@@ -303,13 +306,13 @@ async function findOwnedAsset(
     [id, userId],
   );
   if (!rows[0]) {
-    throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Logo 资源不存在', 404);
+    throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, "Logo 资源不存在", 404);
   }
   return rows[0];
 }
 
 function parseStoredConfig(value: string | DesktopSidebarConfig): DesktopSidebarConfig {
-  const parsed = typeof value === 'string' ? JSON.parse(value) as unknown : value;
+  const parsed = typeof value === "string" ? (JSON.parse(value) as unknown) : value;
   return parseDesktopSidebarConfig(parsed);
 }
 

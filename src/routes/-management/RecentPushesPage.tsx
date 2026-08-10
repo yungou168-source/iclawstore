@@ -16,9 +16,7 @@ export function RecentPushesPage({
   return (
     <div className="management-view">
       <h2 className="section-title text-[1.2rem] m-0">{t("management.recent.title")}</h2>
-      <p className="section-subtitle m-0 mt-1">
-        {t("management.recent.subtitle")}
-      </p>
+      <p className="section-subtitle m-0 mt-1">{t("management.recent.subtitle")}</p>
       <div className="management-list">
         {!recentVersions ? (
           <div className="management-empty">{t("management.recent.loading")}</div>

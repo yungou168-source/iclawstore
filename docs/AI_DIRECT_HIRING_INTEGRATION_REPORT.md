@@ -2,19 +2,21 @@
 
 > **历史实现说明（2026-08-14）**：本文记录 2026-08-01 的分支整合事实，不再代表当前产品契约。当前规则为：用户通过支付宝以人民币支付 Agent 雇佣费用并发放 Offer 即雇佣成功；Offer 不接受、不拒绝、不过期、不可撤回；价格由 Agent 开发者设置，平台收入 20%，开发者 80%先记应付余额并由后台人工结算。目标架构与迁移边界以 `specs/ai-direct-web-server-roadmap.md` 为准。
 >
-> **当前实现更新（2026-08-15）**：付费雇佣代码已在 `96e71be` 落地，包括版本化价格、固化 `positionId` 的 PaymentOrder、支付宝 RSA2 验签、支付成功原子履约、20%/80% 账本以及旧 Offer 写入口收敛。Prisma 校验、服务端 TypeScript、定向测试和全新隔离 MySQL 迁移/事务门禁均通过；生产迁移、真实 Bearer 授权烟测和支付宝商户联调仍未完成。
+> **当前生产更新**：`20260815_ai_direct_paid_hiring` 与 `20260816_ai_direct_paid_hiring_operations` 已应用，Prisma 19 个迁移均为 up to date；迁移前备份已通过随机隔离库恢复验证。API、dispatcher 与 audit-export 当前运行固定 release `abd4e5ed79c4ec4ef0d44e9c3032583e15979f6b` 的 Node 编译产物，PM2 清单已保存。生产 discovery 为 `1.2.0`，但 `paidHiringSupported:false`；完整支付宝生产参数、真实 Bearer 权限矩阵和真实支付链路完成前不得开放。
+>
+> **当前实现更新（2026-08-15）**：付费雇佣代码已在 `96e71be` 落地，包括版本化价格、固化 `positionId` 的 PaymentOrder、支付宝 RSA2 验签、支付成功原子履约、20%/80% 账本以及旧 Offer 写入口收敛。Prisma 校验、服务端 TypeScript、定向测试和全新隔离 MySQL 迁移/事务门禁均通过；剩余阻塞已从“生产迁移”收敛为真实 Bearer 授权烟测和支付宝商户联调。
 
 ## 1. 整合概览
 
-| 项 | 值 |
-|---|---|
-| 整合分支 | `feature/ai-direct-hire-integrated` |
-| 基线分支 | `feature/ai-direct-hire-foundation` (commit `916ce2b`) |
-| 整合 commit 数 | 2(B 合并 + C 合并) |
-| 最新 commit | `222991b` |
-| 合并策略 | `--no-ff`(保留完整分支历史) |
-| 自动解决冲突 | 0(B 和 C 改动文件无重叠) |
-| 主仓当前分支 | `feature/ai-direct-hire-foundation`(未切换,保留用户决策) |
+| 项             | 值                                                       |
+| -------------- | -------------------------------------------------------- |
+| 整合分支       | `feature/ai-direct-hire-integrated`                      |
+| 基线分支       | `feature/ai-direct-hire-foundation` (commit `916ce2b`)   |
+| 整合 commit 数 | 2(B 合并 + C 合并)                                       |
+| 最新 commit    | `222991b`                                                |
+| 合并策略       | `--no-ff`(保留完整分支历史)                              |
+| 自动解决冲突   | 0(B 和 C 改动文件无重叠)                                 |
+| 主仓当前分支   | `feature/ai-direct-hire-foundation`(未切换,保留用户决策) |
 
 ## 2. 合并 commits
 
@@ -31,45 +33,45 @@ d39eaf9 docs(ai-direct-hiring): document P0 mount delivery
 
 ## 3. B 与 C 改动无冲突分析
 
-| 改动维度 | B(P1 后端) | C(P0 挂载) | 冲突 |
-|---|---|---|---|
-| `prisma/schema.prisma` | +18 模型(P1) | 未改 | ❌ 无 |
-| `prisma/migrations/20260801_ai_direct_hiring_p1/` | 新增 | 未建 | ❌ 无 |
-| `server/src/routes/aiDirectHiring.ts` | 未改 | 重写(320→1114) | ❌ 无 |
-| `server/src/services/aiDirectErrors.ts` | 未建 | 新增(66 行) | ❌ 无 |
-| `server/src/middleware/aiDirectAuth.ts` | 新增(43 行) | 未建 | ❌ 无 |
-| `server/src/middleware/aiDirectRbac.ts` | 新增(201 行) | 未建 | ❌ 无 |
-| `server/src/utils/idempotency.ts` | 新增(205 行) | 未建 | ❌ 无 |
-| `server/src/utils/requestId.ts` | 新增(29 行) | 未建 | ❌ 无 |
-| `server/src/utils/outbox.ts` | 未建 | 新增(40 行) | ❌ 无 |
-| `server/test/aiDirectRbac.test.ts` | 新增(226 行) | 未建 | ❌ 无 |
-| `server/test/idempotency.test.ts` | 新增(84 行) | 未建 | ❌ 无 |
-| `server/test/aiDirectHiringRoutes.test.ts` | 未建 | 新增(466 行) | ❌ 无 |
-| `docs/AI_DIRECT_HIRING_P1_BACKEND.md` | 新增 | 未建 | ❌ 无 |
-| `docs/AI_DIRECT_HIRING_P0_MOUNT.md` | 未建 | 新增 | ❌ 无 |
+| 改动维度                                          | B(P1 后端)   | C(P0 挂载)     | 冲突  |
+| ------------------------------------------------- | ------------ | -------------- | ----- |
+| `prisma/schema.prisma`                            | +18 模型(P1) | 未改           | ❌ 无 |
+| `prisma/migrations/20260801_ai_direct_hiring_p1/` | 新增         | 未建           | ❌ 无 |
+| `server/src/routes/aiDirectHiring.ts`             | 未改         | 重写(320→1114) | ❌ 无 |
+| `server/src/services/aiDirectErrors.ts`           | 未建         | 新增(66 行)    | ❌ 无 |
+| `server/src/middleware/aiDirectAuth.ts`           | 新增(43 行)  | 未建           | ❌ 无 |
+| `server/src/middleware/aiDirectRbac.ts`           | 新增(201 行) | 未建           | ❌ 无 |
+| `server/src/utils/idempotency.ts`                 | 新增(205 行) | 未建           | ❌ 无 |
+| `server/src/utils/requestId.ts`                   | 新增(29 行)  | 未建           | ❌ 无 |
+| `server/src/utils/outbox.ts`                      | 未建         | 新增(40 行)    | ❌ 无 |
+| `server/test/aiDirectRbac.test.ts`                | 新增(226 行) | 未建           | ❌ 无 |
+| `server/test/idempotency.test.ts`                 | 新增(84 行)  | 未建           | ❌ 无 |
+| `server/test/aiDirectHiringRoutes.test.ts`        | 未建         | 新增(466 行)   | ❌ 无 |
+| `docs/AI_DIRECT_HIRING_P1_BACKEND.md`             | 新增         | 未建           | ❌ 无 |
+| `docs/AI_DIRECT_HIRING_P0_MOUNT.md`               | 未建         | 新增           | ❌ 无 |
 
 **结论**:B 和 C 的改动完全不重叠,合并无冲突。
 
 ## 4. 整合后关键文件清单
 
-| 文件 | 行数 | 来源 |
-|---|---|---|
-| `server/src/routes/aiDirectHiring.ts` | 1114 | C 重写 |
-| `server/src/services/aiDirectErrors.ts` | 66 | C 新增 |
-| `server/src/middleware/aiDirectAuth.ts` | 43 | B 新增 |
-| `server/src/middleware/aiDirectRbac.ts` | 201 | B 新增 |
-| `server/src/utils/idempotency.ts` | 205 | B 新增 |
-| `server/src/utils/requestId.ts` | 29 | B 新增 |
-| `server/src/utils/outbox.ts` | 40 | C 新增 |
-| `prisma/schema.prisma` | 993 | 基线 615 + B 新增 378 |
-| `prisma/migrations/20260801_ai_direct_hiring_p1/migration.sql` | 207 | B 新增 |
-| `server/test/aiDirectRbac.test.ts` | 226 | B 新增 |
-| `server/test/idempotency.test.ts` | 84 | B 新增 |
-| `server/test/aiDirectHiringRoutes.test.ts` | 466 | C 新增 |
-| `docs/AI_DIRECT_HIRING_BASELINE.md` | 275 | A 写 |
-| `docs/AI_DIRECT_HIRING_P1_BACKEND.md` | ~170 | B 写 |
-| `docs/AI_DIRECT_HIRING_P0_MOUNT.md` | ~280 | C 写 |
-| **总新增/修改代码** | **~3000 行** | |
+| 文件                                                           | 行数         | 来源                  |
+| -------------------------------------------------------------- | ------------ | --------------------- |
+| `server/src/routes/aiDirectHiring.ts`                          | 1114         | C 重写                |
+| `server/src/services/aiDirectErrors.ts`                        | 66           | C 新增                |
+| `server/src/middleware/aiDirectAuth.ts`                        | 43           | B 新增                |
+| `server/src/middleware/aiDirectRbac.ts`                        | 201          | B 新增                |
+| `server/src/utils/idempotency.ts`                              | 205          | B 新增                |
+| `server/src/utils/requestId.ts`                                | 29           | B 新增                |
+| `server/src/utils/outbox.ts`                                   | 40           | C 新增                |
+| `prisma/schema.prisma`                                         | 993          | 基线 615 + B 新增 378 |
+| `prisma/migrations/20260801_ai_direct_hiring_p1/migration.sql` | 207          | B 新增                |
+| `server/test/aiDirectRbac.test.ts`                             | 226          | B 新增                |
+| `server/test/idempotency.test.ts`                              | 84           | B 新增                |
+| `server/test/aiDirectHiringRoutes.test.ts`                     | 466          | C 新增                |
+| `docs/AI_DIRECT_HIRING_BASELINE.md`                            | 275          | A 写                  |
+| `docs/AI_DIRECT_HIRING_P1_BACKEND.md`                          | ~170         | B 写                  |
+| `docs/AI_DIRECT_HIRING_P0_MOUNT.md`                            | ~280         | C 写                  |
+| **总新增/修改代码**                                            | **~3000 行** |                       |
 
 ## 5. Prisma Schema 统计
 
@@ -83,15 +85,19 @@ d39eaf9 docs(ai-direct-hiring): document P0 mount delivery
 **未运行 `bun run ci:static`**。
 
 ### 原因
+
 原 Agent D 启动后立即在 transcript 显示"Starting branch merge"后无任何后续活动,实际合并由其他进程完成。后续计划中的 `bun install` + `bun run ci:static` 未执行。B 和 C 自身完成时也未运行 `ci:static`(它们在 prompt 中被禁止运行 `bun install` 和 `ci:static` 等高 IO 任务)。
 
 ### 风险
+
 - schema.prisma 可能有 Biome / oxlint 格式问题
 - agent 子路由可能存在 TypeScript 类型问题
 - 三个新测试文件没有运行过
 
 ### 建议
+
 在生产部署前**必须由用户**手动执行:
+
 ```bash
 cd /www/wwwroot/iclawstore.com/.claude/worktrees/ai-direct-hire-integrated
 # 或
@@ -102,17 +108,18 @@ bun run ci:static
 
 ## 7. 整合分支中的 worktree
 
-| 路径 | 分支 | 状态 |
-|---|---|---|
-| `/tmp/wt-d-merge` | `feature/ai-direct-hire-integrated` | 干净 |
-| `/tmp/wt-b-p1backend` | `feature/ai-direct-hire-p1-backend` | 保留(可供回滚) |
-| `/tmp/wt-c-mount` | `feature/ai-direct-hire-p0-mount` | 保留(可供回滚) |
-| `/tmp/wt-baseline` | `feature/baseline-mysql-migration-fix` | 保留(基线) |
-| `/www/wwwroot/iclawstore.com` | `feature/ai-direct-hire-foundation` | 未切换(用户决策) |
+| 路径                          | 分支                                   | 状态             |
+| ----------------------------- | -------------------------------------- | ---------------- |
+| `/tmp/wt-d-merge`             | `feature/ai-direct-hire-integrated`    | 干净             |
+| `/tmp/wt-b-p1backend`         | `feature/ai-direct-hire-p1-backend`    | 保留(可供回滚)   |
+| `/tmp/wt-c-mount`             | `feature/ai-direct-hire-p0-mount`      | 保留(可供回滚)   |
+| `/tmp/wt-baseline`            | `feature/baseline-mysql-migration-fix` | 保留(基线)       |
+| `/www/wwwroot/iclawstore.com` | `feature/ai-direct-hire-foundation`    | 未切换(用户决策) |
 
 ## 8. 集成时的历史状态机
 
 以下仅表示 2026-08-01 被整合的旧模型，不是当前目标产品流程：
+
 - **公司/项目/岗位**:aiDirectCompanies → aiDirectProjects → aiDirectAgentRoles
 - **能力与凭据**:aiDirectCapabilityGrants(主体=employment/user/agent_version)、aiDirectUserCredentials(已在 P0)
 - **Offer 生命周期**:aiDirectOffers(draft → pending_approval → sent → accepted/rejected/expired/revoked)
@@ -123,33 +130,38 @@ bun run ci:static
 
 ## 9. 安全检查点(已实施)
 
-| 检查点 | 实施位置 | 状态 |
-|---|---|---|
-| 凭据永不返回密文/IV/authTag | `aiDirectHiring.ts` 凭据路由 | ✅ C 实现 |
-| Idempotency-Key + fingerprint 校验 | `idempotency.ts` + 路由层 | ✅ B + C |
-| 管理员才能写模型目录 | `aiDirectHiring.ts` `POST /model-catalog` | ✅ C |
-| Publisher 成员校验 | `aiDirectHiring.ts` `POST /agents` | ✅ C |
-| 模型策略失败关闭 | `aiDirectHiring.ts` 路由层 | ✅ C |
-| 统一错误码 | `aiDirectErrors.ts` | ✅ C |
-| 审计 + outbox 事务化 | `outbox.ts` + 路由层 | ✅ C |
-| RBAC 中间件 | `aiDirectRbac.ts` | ✅ B(待 P1 路由挂载) |
-| 认证中间件 | `aiDirectAuth.ts` | ✅ B(待 P1 路由挂载) |
+| 检查点                             | 实施位置                                  | 状态                 |
+| ---------------------------------- | ----------------------------------------- | -------------------- |
+| 凭据永不返回密文/IV/authTag        | `aiDirectHiring.ts` 凭据路由              | ✅ C 实现            |
+| Idempotency-Key + fingerprint 校验 | `idempotency.ts` + 路由层                 | ✅ B + C             |
+| 管理员才能写模型目录               | `aiDirectHiring.ts` `POST /model-catalog` | ✅ C                 |
+| Publisher 成员校验                 | `aiDirectHiring.ts` `POST /agents`        | ✅ C                 |
+| 模型策略失败关闭                   | `aiDirectHiring.ts` 路由层                | ✅ C                 |
+| 统一错误码                         | `aiDirectErrors.ts`                       | ✅ C                 |
+| 审计 + outbox 事务化               | `outbox.ts` + 路由层                      | ✅ C                 |
+| RBAC 中间件                        | `aiDirectRbac.ts`                         | ✅ B(待 P1 路由挂载) |
+| 认证中间件                         | `aiDirectAuth.ts`                         | ✅ B(待 P1 路由挂载) |
 
 ## 10. 给用户的下一步操作清单
 
 ### 🔴 必须由用户判断(高风险)
+
 1. **密钥轮换**:基线报告 `AI_DIRECT_HIRING_BASELINE.md` 第 7 节列出了 8 个密钥的风险等级。
- - 高风险:`DATABASE_URL` 密码、`JWT_SECRET`、`NEXTAUTH_SECRET`、金沙 Token、模型 API Key、Convex deployment key
- - 中风险:`GITHUB_TOKEN`(在 git remote URL)、OAuth 密钥
+
+- 高风险:`DATABASE_URL` 密码、`JWT_SECRET`、`NEXTAUTH_SECRET`、金沙 Token、模型 API Key、Convex deployment key
+- 中风险:`GITHUB_TOKEN`(在 git remote URL)、OAuth 密钥
+
 2. **生产数据库迁移**:在运行 `prisma migrate deploy` 之前,必须在测试环境验证所有 19 个 AI 直聘表的 DDL。
 3. **回滚点**:基线标签 `baseline-mysql-migration-2026-08-01` 可用于回滚到本次操作前。
 
 ### 🟡 建议(中风险)
+
 4. **手动运行 `ci:static`**:在干净的 worktree 中运行,确保格式/lint 通过。
 5. **手动跑测试**:至少运行 B/C 新增的 3 个测试文件。
 6. **代码审查**:审查 `aiDirectHiring.ts` 1114 行重写 + `aiDirectRbac.ts` 201 行 + `idempotency.ts` 205 行。
 
 ### 🟢 下一步 agent 任务(低风险)
+
 - **Agent D': P1 前端实现**:老板工作台 + Agent 管理页面(基于 `aiDirectAgentRoles` / `aiDirectEmployments` 状态机)
 - **Agent E: P2 招聘流程**:Offer/Employment 状态机 API(基于已有模型 + 状态机事件)
 - **Agent F: P1 运行中心**:服务端队列 + 产物索引 + 实时步骤投影(基于 `aiDirectWorkflowRuns` + `aiDirectWorkflowRunSteps`)
@@ -198,5 +210,5 @@ bun run ci:static
 
 ---
 
-*报告追加时间: 2026-08-01 03:14 UTC+8*
-*G2 commit: `8284931`*
+_报告追加时间: 2026-08-01 03:14 UTC+8_
+_G2 commit: `8284931`_

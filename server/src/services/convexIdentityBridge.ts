@@ -1,11 +1,6 @@
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
-import {
-  createRemoteJWKSet,
-  jwtVerify,
-  type JWTHeaderParameters,
-  type JWTPayload,
-} from "jose";
+import { createRemoteJWKSet, jwtVerify, type JWTHeaderParameters, type JWTPayload } from "jose";
 import type { Pool, PoolConnection, RowDataPacket } from "mysql2/promise";
 import { AuthRequiredError, type AuthenticatedUser } from "../middleware/aiDirectAuth.js";
 
@@ -45,11 +40,9 @@ export type ConvexIdentityBridgeConfig = {
 const meReference = makeFunctionReference<"query", Record<string, never>, ConvexUser | null>(
   "users:me",
 );
-const desktopMeReference = makeFunctionReference<
-  "query",
-  Record<string, never>,
-  ConvexUser | null
->("desktopOAuth:getDesktopAccessIdentity");
+const desktopMeReference = makeFunctionReference<"query", Record<string, never>, ConvexUser | null>(
+  "desktopOAuth:getDesktopAccessIdentity",
+);
 
 type TrustedTokenIdentity = {
   issuer: string;
@@ -75,10 +68,7 @@ const requiredUrl = (value: string | undefined, name: string): string => {
 export const identityBridgeConfigFromEnvironment = (
   env: NodeJS.ProcessEnv = process.env,
 ): ConvexIdentityBridgeConfig => {
-  const issuer = requiredUrl(
-    env.CONVEX_AUTH_ISSUER ?? env.CONVEX_SITE_URL,
-    "CONVEX_AUTH_ISSUER",
-  );
+  const issuer = requiredUrl(env.CONVEX_AUTH_ISSUER ?? env.CONVEX_SITE_URL, "CONVEX_AUTH_ISSUER");
   const desktopIssuer = env.CONVEX_DESKTOP_AUTH_ISSUER?.trim();
   const desktopClientId = env.AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID?.trim();
   if ((desktopIssuer && !desktopClientId) || (!desktopIssuer && desktopClientId)) {
@@ -138,10 +128,7 @@ export const assertConvexAuthUserIdMatches = (
   }
 };
 
-const loadJwksUri = async (config: {
-  issuer: string;
-  jwksUri?: string;
-}): Promise<string> => {
+const loadJwksUri = async (config: { issuer: string; jwksUri?: string }): Promise<string> => {
   if (config.jwksUri) return requiredUrl(config.jwksUri, "OIDC_JWKS_URI");
   const response = await fetch(`${config.issuer}/.well-known/openid-configuration`, {
     headers: { accept: "application/json" },
@@ -153,9 +140,7 @@ const loadJwksUri = async (config: {
   return requiredUrl(discovery.jwks_uri, "OIDC jwks_uri");
 };
 
-const createTokenVerifier = async (
-  config: TokenVerifier["config"],
-): Promise<TokenVerifier> => {
+const createTokenVerifier = async (config: TokenVerifier["config"]): Promise<TokenVerifier> => {
   const jwksUri = await loadJwksUri(config);
   return {
     config,

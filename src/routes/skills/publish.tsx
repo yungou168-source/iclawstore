@@ -38,8 +38,8 @@ import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
 import { UploadDropzoneDecor } from "../../components/UploadDropzoneDecor";
 import { VersionInput } from "../../components/VersionInput";
-import { useLocale } from "../../lib/i18n/context";
 import { t } from "../../lib/i18n";
+import { useLocale } from "../../lib/i18n/context";
 import { getSiteMode } from "../../lib/site";
 import { ALLOWED_LUCIDE_ICONS, makeLucideIconValue, parseSkillIcon } from "../../lib/skillIcon";
 import { getPublicSlugCollision } from "../../lib/slugCollision";
@@ -821,7 +821,9 @@ export function Upload() {
                     {unsupportedFileEntries.length > 0 ? (
                       <div className="mt-3 flex flex-wrap gap-1.5">
                         <Badge variant="warning" size="sm">
-                          {t("publish.unsupported_count", locale, { count: unsupportedFileEntries.length })}
+                          {t("publish.unsupported_count", locale, {
+                            count: unsupportedFileEntries.length,
+                          })}
                         </Badge>
                       </div>
                     ) : null}
@@ -1180,9 +1182,7 @@ export function Upload() {
                       summary: PLATFORM_SKILL_LICENSE_SUMMARY,
                     })}
                   </p>
-                  <p>
-                    {t("publish.no_paid_skills", locale)}
-                  </p>
+                  <p>{t("publish.no_paid_skills", locale)}</p>
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="flex cursor-pointer items-start gap-3 rounded-[var(--radius-sm)] border border-[color:var(--line)] bg-[color:var(--surface-muted)] p-3 text-sm">

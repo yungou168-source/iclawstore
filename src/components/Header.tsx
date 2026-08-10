@@ -2,6 +2,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   ArrowRight,
+  Building2,
   ChevronDown,
   LayoutDashboard,
   Menu,
@@ -11,8 +12,9 @@ import {
   Settings,
   Star,
   Sun,
+  WalletCards,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gravatarUrl } from "../lib/gravatar";
 import { useLocale } from "../lib/i18n/context";
 import { NAV_ICONS } from "../lib/marketplaceIcons";
@@ -62,6 +64,8 @@ const WORKSPACE_NAV_PATHS = new Set([
   "/settings",
   "/stars",
   "/dashboard",
+  "/wallet",
+  "/ai-work-admin/organizations",
 ]);
 
 type TypeaheadItem =
@@ -82,8 +86,16 @@ type TypeaheadItem =
       label: string;
     };
 
+const NAV_LABEL_KEYS = {
+  Skills: "nav.skills",
+  Plugins: "nav.plugins",
+  Souls: "nav.souls",
+  Publishers: "nav.publishers",
+  Home: "nav.home",
+} as const;
+
 export default function Header() {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const { isAuthenticated, isLoading, me } = useAuthStatus();
   const { signOut } = useAuthActions();
   const { theme, mode, setMode } = useThemeMode();
@@ -107,28 +119,11 @@ export default function Header() {
   );
   const signInRedirectTo = getCurrentRelativeUrl();
 
-  // Translation helper for nav items
-  const getNavLabel = useMemo(() => {
-    return (key: string): string => {
-      const labelMap: Record<string, Record<string, string>> = {
-        "zh-CN": {
-          Skills: "技能",
-          Plugins: "插件",
-          Souls: "灵魂",
-          Publishers: "发布者",
-          Home: "首页",
-        },
-        en: {
-          Skills: "Skills",
-          Plugins: "Plugins",
-          Souls: "Souls",
-          Publishers: "Publishers",
-          Home: "Home",
-        },
-      };
-      return labelMap[locale]?.[key] ?? key;
-    };
-  }, [locale]);
+  const getNavLabel = useCallback(
+    (key: string): string =>
+      key in NAV_LABEL_KEYS ? t(NAV_LABEL_KEYS[key as keyof typeof NAV_LABEL_KEYS]) : key,
+    [t],
+  );
 
   const translatedPrimaryItems = useMemo(
     () =>
@@ -180,7 +175,7 @@ export default function Header() {
         kind: "footer",
         key: "footer-skills",
         section: "skills",
-        label: `See skill results for "${trimmedNavSearchQuery}"`,
+        label: t("header.typeahead_skills", { query: trimmedNavSearchQuery }),
       });
     }
     for (const result of pluginResults) {
@@ -191,11 +186,11 @@ export default function Header() {
         kind: "footer",
         key: "footer-plugins",
         section: "plugins",
-        label: `See plugin results for "${trimmedNavSearchQuery}"`,
+        label: t("header.typeahead_plugins", { query: trimmedNavSearchQuery }),
       });
     }
     return items;
-  }, [pluginResults, showTypeahead, skillResults, trimmedNavSearchQuery]);
+  }, [pluginResults, showTypeahead, skillResults, t, trimmedNavSearchQuery]);
   const activeTypeaheadItem = showTypeahead ? typeaheadItems[typeaheadActiveIndex] : undefined;
   const activeTypeaheadId = activeTypeaheadItem
     ? getTypeaheadOptionId(activeTypeaheadItem)
@@ -321,21 +316,17 @@ export default function Header() {
           <img src="/ai-work-icon.svg?v=20260804-logo-fix" alt="" aria-hidden="true" />
           <span>{siteName}</span>
         </Link>
-        <nav className="workspace-navbar-tabs" aria-label={locale === "zh-CN" ? "主导航" : "Primary navigation"}>
+        <nav className="workspace-navbar-tabs" aria-label={t("header.primary_navigation")}>
           <Link to="/" activeOptions={{ exact: true }}>
-            {locale === "zh-CN" ? "首页" : "Home"}
+            {t("nav.home")}
           </Link>
-          <Link to="/recruit-ai">
-            {locale === "zh-CN" ? "招聘 AI 员工" : "Hire AI employees"}
-          </Link>
-          <Link to="/desktop-client">
-            {locale === "zh-CN" ? "客户端下载" : "Desktop client"}
-          </Link>
+          <Link to="/recruit-ai">{t("header.hire_ai_employees")}</Link>
+          <Link to="/desktop-client">{t("header.desktop_client")}</Link>
           {isAuthenticated && me ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button type="button" className="workspace-developer-trigger">
-                  {locale === "zh-CN" ? "开发者" : "Developers"}
+                  {t("header.developers")}
                   <ChevronDown size={14} aria-hidden="true" />
                 </button>
               </DropdownMenuTrigger>
@@ -343,13 +334,20 @@ export default function Header() {
                 <DropdownMenuItem asChild>
                   <Link
                     to="/skills"
-                    search={{ q: undefined, sort: undefined, dir: undefined, highlighted: undefined, view: undefined, focus: undefined }}
+                    search={{
+                      q: undefined,
+                      sort: undefined,
+                      dir: undefined,
+                      highlighted: undefined,
+                      view: undefined,
+                      focus: undefined,
+                    }}
                   >
-                    {locale === "zh-CN" ? "技能" : "Skills"}
+                    {t("nav.skills")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/plugins">{locale === "zh-CN" ? "插件" : "Plugins"}</Link>
+                  <Link to="/plugins">{t("nav.plugins")}</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -361,20 +359,30 @@ export default function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button type="button" className="workspace-account-link">
-                  {locale === "zh-CN" ? "工作台" : "Workspace"}
+                  {t("header.workspace")}
                   <ChevronDown size={14} aria-hidden="true" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link to="/dashboard">{locale === "zh-CN" ? "仪表盘" : "Dashboard"}</Link>
+                  <Link to="/dashboard">{t("header.dashboard")}</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/settings">{locale === "zh-CN" ? "设置" : "Settings"}</Link>
+                  <Link to="/wallet" search={{ recharge: undefined }}>
+                    {t("header.wallet")}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings">{t("header.settings")}</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/ai-work-admin/organizations">
+                    {t("header.ai_direct_organizations")}
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => void signOut()}>
-                  {locale === "zh-CN" ? "退出登录" : "Sign out"}
+                  {t("header.sign_out")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -385,7 +393,12 @@ export default function Header() {
               redirectTo={signInRedirectTo}
             />
           )}
-          <a className="workspace-github-link" href={AI_WORK_REPOSITORY_URL} target="_blank" rel="noreferrer">
+          <a
+            className="workspace-github-link"
+            href={AI_WORK_REPOSITORY_URL}
+            target="_blank"
+            rel="noreferrer"
+          >
             Github
           </a>
         </div>
@@ -403,7 +416,7 @@ export default function Header() {
               <button
                 className="nav-mobile-trigger"
                 type="button"
-                aria-label="Open menu"
+                aria-label={t("header.open_menu")}
                 onClick={() => setMobileMenuOpen(true)}
               >
                 <Menu className="h-4 w-4" aria-hidden="true" />
@@ -423,38 +436,34 @@ export default function Header() {
                       <span className="mobile-nav-brand-name">{siteName}</span>
                     </span>
                   </SheetTitle>
-                  <SheetDescription>
-                    {locale === "zh-CN"
-                      ? "浏览分区、切换主题、访问账户操作。"
-                      : "Browse sections, switch theme, and access account actions."}
-                  </SheetDescription>
+                  <SheetDescription>{t("header.browse_sections")}</SheetDescription>
                 </SheetHeader>
                 <div className="mobile-nav-section">
                   <SheetClose asChild>
                     <Link to="/" className="mobile-nav-link">
-                      {locale === "zh-CN" ? "首页" : "Home"}
+                      {t("nav.home")}
                     </Link>
                   </SheetClose>
                   {isSoulMode ? (
                     <SheetClose asChild>
                       <a href={clawHubUrl} className="mobile-nav-link">
-                        {locale === "zh-CN" ? "龙虾市场" : "ClawHub"}
+                        {t("header.clawhub")}
                       </a>
                     </SheetClose>
                   ) : null}
                   {primaryItems
                     .filter((item) => item.to !== "/")
                     .map((item) => (
-                    <SheetClose key={item.to + item.label} asChild>
-                      <Link
-                        to={item.to}
-                        search={(item.search ?? {}) as never}
-                        className="mobile-nav-link"
-                      >
-                        {item.label}
-                      </Link>
-                    </SheetClose>
-                  ))}
+                      <SheetClose key={item.to + item.label} asChild>
+                        <Link
+                          to={item.to}
+                          search={(item.search ?? {}) as never}
+                          className="mobile-nav-link"
+                        >
+                          {item.label}
+                        </Link>
+                      </SheetClose>
+                    ))}
                   {secondaryItems.map((item) => (
                     <SheetClose key={(item.href ?? item.to ?? "") + item.label} asChild>
                       {item.href ? (
@@ -474,7 +483,7 @@ export default function Header() {
                   ))}
                 </div>
                 <div className="mobile-nav-section">
-                  <div className="mobile-nav-section-title">Theme</div>
+                  <div className="mobile-nav-section-title">{t("header.theme_controls")}</div>
                   <button
                     className="mobile-nav-link"
                     type="button"
@@ -485,12 +494,10 @@ export default function Header() {
                   >
                     <ThemeModeIcon className="h-4 w-4" aria-hidden="true" />
                     {mode === "system"
-                      ? locale === "zh-CN"
-                        ? "跟随系统"
-                        : "System theme"
-                      : locale === "zh-CN"
-                        ? `${mode === "light" ? "浅色" : "深色"}模式`
-                        : `${mode} theme`}
+                      ? t("header.theme_system")
+                      : mode === "light"
+                        ? t("header.theme_light")
+                        : t("header.theme_dark")}
                   </button>
                 </div>
               </SheetContent>
@@ -503,7 +510,12 @@ export default function Header() {
             className="brand"
           >
             <span className="brand-mark">
-              <img src="/ai-work-icon.svg?v=20260804-logo-fix" alt="" aria-hidden="true" className="brand-mark-image" />
+              <img
+                src="/ai-work-icon.svg?v=20260804-logo-fix"
+                alt=""
+                aria-hidden="true"
+                className="brand-mark-image"
+              />
             </span>
             <span className="brand-name brand-name-responsive">{siteName}</span>
           </Link>
@@ -513,7 +525,7 @@ export default function Header() {
               className="navbar-search"
               onSubmit={handleNavSearch}
               role="search"
-              aria-label="Site search"
+              aria-label={t("header.site_search")}
             >
               <Search size={16} className="navbar-search-icon" aria-hidden="true" />
               <input
@@ -521,13 +533,7 @@ export default function Header() {
                 type="search"
                 role="combobox"
                 placeholder={
-                  isSoulMode
-                    ? locale === "zh-CN"
-                      ? "搜索灵魂..."
-                      : "Search souls..."
-                    : locale === "zh-CN"
-                      ? "搜索技能和插件"
-                      : "Search skills and plugins"
+                  isSoulMode ? t("header.search_souls_placeholder") : t("header.search_placeholder")
                 }
                 value={navSearchQuery}
                 onChange={(e) => {
@@ -536,7 +542,7 @@ export default function Header() {
                 }}
                 onFocus={() => setTypeaheadOpen(true)}
                 onKeyDown={handleSearchKeyDown}
-                aria-label="Search"
+                aria-label={t("header.search")}
                 aria-autocomplete="list"
                 aria-expanded={showTypeahead}
                 aria-controls="navbar-search-typeahead"
@@ -560,19 +566,19 @@ export default function Header() {
             <button
               className="navbar-search-mobile-trigger"
               type="button"
-              aria-label="Search"
+              aria-label={t("header.search")}
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
             >
               <Search size={18} aria-hidden="true" />
             </button>
             <div className="theme-toggle">
-              <div className="theme-cycle-group" aria-label="Theme controls">
+              <div className="theme-cycle-group" aria-label={t("header.theme_controls")}>
                 <button
                   type="button"
                   className="theme-cycle-button theme-cycle-button-mode"
                   onClick={cycleThemeMode}
-                  aria-label={`Cycle theme mode. Current: ${mode}`}
-                  title={`Theme mode: ${mode}`}
+                  aria-label={t("header.theme_mode_current", { mode })}
+                  title={t("header.theme_mode_current", { mode })}
                 >
                   <ThemeModeIcon className="h-4 w-4" aria-hidden="true" />
                 </button>
@@ -585,19 +591,19 @@ export default function Header() {
                   if (!value) return;
                   setThemeMode(value as "system" | "light" | "dark");
                 }}
-                aria-label="Theme mode"
+                aria-label={t("header.theme_mode")}
               >
-                <ToggleGroupItem value="system" aria-label="System theme">
+                <ToggleGroupItem value="system" aria-label={t("header.theme_system")}>
                   <Monitor className="h-4 w-4" aria-hidden="true" />
-                  <span className="sr-only">System</span>
+                  <span className="sr-only">{t("header.theme_system")}</span>
                 </ToggleGroupItem>
-                <ToggleGroupItem value="light" aria-label="Light theme">
+                <ToggleGroupItem value="light" aria-label={t("header.theme_light")}>
                   <Sun className="h-4 w-4" aria-hidden="true" />
-                  <span className="sr-only">Light</span>
+                  <span className="sr-only">{t("header.theme_light")}</span>
                 </ToggleGroupItem>
-                <ToggleGroupItem value="dark" aria-label="Dark theme">
+                <ToggleGroupItem value="dark" aria-label={t("header.theme_dark")}>
                   <Moon className="h-4 w-4" aria-hidden="true" />
-                  <span className="sr-only">Dark</span>
+                  <span className="sr-only">{t("header.theme_dark")}</span>
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
@@ -607,7 +613,10 @@ export default function Header() {
                 <DropdownMenuTrigger asChild>
                   <button className="user-trigger" type="button">
                     {avatar ? (
-                      <img src={avatar} alt={me.displayName ?? me.name ?? "User avatar"} />
+                      <img
+                        src={avatar}
+                        alt={me.displayName ?? me.name ?? t("header.user_avatar")}
+                      />
                     ) : (
                       <span className="user-menu-fallback">{initial}</span>
                     )}
@@ -619,24 +628,40 @@ export default function Header() {
                   <DropdownMenuItem asChild>
                     <Link to="/dashboard" className="flex items-center gap-2">
                       <LayoutDashboard size={14} aria-hidden="true" />
-                      {locale === "zh-CN" ? "仪表盘" : "Dashboard"}
+                      {t("header.dashboard")}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/stars" className="flex items-center gap-2">
                       <Star size={14} aria-hidden="true" />
-                      {locale === "zh-CN" ? "收藏" : "Stars"}
+                      {t("header.stars")}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      to="/wallet"
+                      search={{ recharge: undefined }}
+                      className="flex items-center gap-2"
+                    >
+                      <WalletCards size={14} aria-hidden="true" />
+                      {t("header.wallet")}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/settings" className="flex items-center gap-2">
                       <Settings size={14} aria-hidden="true" />
-                      {locale === "zh-CN" ? "设置" : "Settings"}
+                      {t("header.settings")}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/ai-work-admin/organizations" className="flex items-center gap-2">
+                      <Building2 size={14} aria-hidden="true" />
+                      {t("header.ai_direct_organizations")}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => void signOut()}>
-                    {locale === "zh-CN" ? "退出登录" : "Sign out"}
+                    {t("header.sign_out")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -660,13 +685,7 @@ export default function Header() {
               className="navbar-search-input"
               type="text"
               placeholder={
-                isSoulMode
-                  ? locale === "zh-CN"
-                    ? "搜索灵魂..."
-                    : "Search souls..."
-                  : locale === "zh-CN"
-                    ? "搜索技能和插件"
-                    : "Search skills and plugins"
+                isSoulMode ? t("header.search_souls_placeholder") : t("header.search_placeholder")
               }
               value={navSearchQuery}
               onChange={(e) => setNavSearchQuery(e.target.value)}
@@ -675,11 +694,11 @@ export default function Header() {
           </form>
         ) : null}
 
-        <nav className="navbar-tabs" aria-label="Content types">
+        <nav className="navbar-tabs" aria-label={t("header.content_types")}>
           <div className="navbar-tabs-primary">
             {isSoulMode ? (
               <a href={clawHubUrl} className="navbar-tab">
-                {locale === "zh-CN" ? "龙虾市场" : "ClawHub"}
+                {t("header.clawhub")}
               </a>
             ) : null}
             {primaryItems.map((item) => {
@@ -748,6 +767,7 @@ function SearchTypeahead({
   onSelectItem: (item: TypeaheadItem) => void;
   query: string;
 }) {
+  const { t } = useLocale();
   const skillItems = items.filter((item) => item.kind === "skill");
   const pluginItems = items.filter((item) => item.kind === "plugin");
   const footerItems = items.filter((item) => item.kind === "footer");
@@ -764,12 +784,12 @@ function SearchTypeahead({
       className="navbar-search-typeahead"
       id="navbar-search-typeahead"
       role="listbox"
-      aria-label="Search suggestions"
+      aria-label={t("header.search_suggestions")}
     >
       <TypeaheadSection
         activeIndex={activeIndex}
         items={items}
-        label="Skills"
+        label={t("nav.skills")}
         sectionItems={skillItems}
         footer={skillsFooter}
         onHoverItem={onHoverItem}
@@ -778,18 +798,18 @@ function SearchTypeahead({
       <TypeaheadSection
         activeIndex={activeIndex}
         items={items}
-        label="Plugins"
+        label={t("nav.plugins")}
         sectionItems={pluginItems}
         footer={pluginsFooter}
         onHoverItem={onHoverItem}
         onSelectItem={onSelectItem}
       />
       {loading && !hasMatches ? (
-        <div className="navbar-search-typeahead-status">Searching...</div>
+        <div className="navbar-search-typeahead-status">{t("header.searching")}</div>
       ) : null}
       {!loading && !hasMatches ? (
         <div className="navbar-search-typeahead-status">
-          No skills or plugins found for "{query}"
+          {t("header.search_no_results", { query })}
         </div>
       ) : null}
     </div>
@@ -853,7 +873,8 @@ function TypeaheadRow({
   onHoverItem: (index: number) => void;
   onSelectItem: (item: TypeaheadItem) => void;
 }) {
-  const body = getTypeaheadRowBody(item);
+  const { t } = useLocale();
+  const body = getTypeaheadRowBody(item, t);
   return (
     <button
       id={getTypeaheadOptionId(item)}
@@ -879,9 +900,9 @@ function getTypeaheadOptionId(item: TypeaheadItem) {
   return `navbar-search-typeahead-${item.key.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 }
 
-function getTypeaheadRowBody(item: TypeaheadItem) {
+function getTypeaheadRowBody(item: TypeaheadItem, t: ReturnType<typeof useLocale>["t"]) {
   if (item.kind === "skill") {
-    const owner = item.result.ownerHandle ? `@${item.result.ownerHandle}` : "Skill";
+    const owner = item.result.ownerHandle ? `@${item.result.ownerHandle}` : t("nav.skills");
     return {
       icon: "S",
       title: item.result.skill.displayName,

@@ -1,6 +1,9 @@
-import { AiDirectHiringError, ErrorCodes } from './aiDirectErrors.js';
-import { countsTowardHeadcount } from './workforceStateMachine.js';
-import { buildWorkforceEmployeeDigest, type WorkforceEmployeeDigestInput } from './workforceEmployeeDigest.js';
+import { AiDirectHiringError, ErrorCodes } from "./aiDirectErrors.js";
+import {
+  buildWorkforceEmployeeDigest,
+  type WorkforceEmployeeDigestInput,
+} from "./workforceEmployeeDigest.js";
+import { countsTowardHeadcount } from "./workforceStateMachine.js";
 
 type QueryConnection = { query(sql: string, values?: unknown[]): Promise<any> };
 
@@ -35,14 +38,13 @@ export async function synchronizeWorkforceEmployeeDigest(
   );
   const row = (rows as DigestSourceRow[])[0];
   if (!row) {
-    throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Employment 员工目录投影缺少必要关联', 409);
+    throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, "Employment 员工目录投影缺少必要关联", 409);
   }
 
   if (!countsTowardHeadcount(row.employmentStatus)) {
-    await conn.query(
-      'DELETE FROM ai_direct_workforce_employee_digests WHERE employmentId = ?',
-      [employmentId],
-    );
+    await conn.query("DELETE FROM ai_direct_workforce_employee_digests WHERE employmentId = ?", [
+      employmentId,
+    ]);
     return;
   }
 
@@ -71,10 +73,22 @@ export async function synchronizeWorkforceEmployeeDigest(
        revision = IF(revision <> VALUES(revision), VALUES(revision), revision),
        updatedAt = IF(revision <> VALUES(revision), NOW(3), updatedAt)`,
     [
-      digest.employmentId, digest.organizationId, digest.companyId, digest.departmentId,
-      digest.positionId, digest.roleId, digest.agentId, digest.agentVersionId,
-      digest.agentDisplayName, digest.avatarAssetId, digest.departmentName, digest.positionName,
-      digest.roleName, digest.employmentStatus, digest.startedAt, digest.revision,
+      digest.employmentId,
+      digest.organizationId,
+      digest.companyId,
+      digest.departmentId,
+      digest.positionId,
+      digest.roleId,
+      digest.agentId,
+      digest.agentVersionId,
+      digest.agentDisplayName,
+      digest.avatarAssetId,
+      digest.departmentName,
+      digest.positionName,
+      digest.roleName,
+      digest.employmentStatus,
+      digest.startedAt,
+      digest.revision,
     ],
   );
 }

@@ -1,20 +1,20 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from "bun:test";
 import {
   createRuntimeObserver,
   parseBoundedPositiveInteger,
-} from '../src/services/runtimeObservability.js';
+} from "../src/services/runtimeObservability.js";
 
-describe('runtime observability', () => {
-  it('bounds positive integer configuration without accepting zero or invalid values', () => {
-    expect(parseBoundedPositiveInteger('7', 3, 10)).toBe(7);
-    expect(parseBoundedPositiveInteger('99', 3, 10)).toBe(10);
-    expect(parseBoundedPositiveInteger('0', 3, 10)).toBe(3);
-    expect(parseBoundedPositiveInteger('nope', 3, 10)).toBe(3);
+describe("runtime observability", () => {
+  it("bounds positive integer configuration without accepting zero or invalid values", () => {
+    expect(parseBoundedPositiveInteger("7", 3, 10)).toBe(7);
+    expect(parseBoundedPositiveInteger("99", 3, 10)).toBe(10);
+    expect(parseBoundedPositiveInteger("0", 3, 10)).toBe(3);
+    expect(parseBoundedPositiveInteger("nope", 3, 10)).toBe(3);
   });
 
-  it('reports only process resource metrics and configured pool capacity', () => {
+  it("reports only process resource metrics and configured pool capacity", () => {
     const observer = createRuntimeObserver({
-      role: 'dispatcher',
+      role: "dispatcher",
       mysqlConnectionLimit: 2,
       memoryUsage: () => ({
         rss: 100,
@@ -30,7 +30,7 @@ describe('runtime observability', () => {
     observer.close();
 
     expect(metrics).toMatchObject({
-      role: 'dispatcher',
+      role: "dispatcher",
       uptimeSeconds: 12,
       rssBytes: 100,
       heapTotalBytes: 80,
@@ -39,14 +39,14 @@ describe('runtime observability', () => {
       mysqlConnectionLimit: 2,
     });
     expect(Object.keys(metrics).sort()).toEqual([
-      'eventLoopDelayP99Ms',
-      'externalBytes',
-      'heapTotalBytes',
-      'heapUsedBytes',
-      'mysqlConnectionLimit',
-      'role',
-      'rssBytes',
-      'uptimeSeconds',
+      "eventLoopDelayP99Ms",
+      "externalBytes",
+      "heapTotalBytes",
+      "heapUsedBytes",
+      "mysqlConnectionLimit",
+      "role",
+      "rssBytes",
+      "uptimeSeconds",
     ]);
   });
 });

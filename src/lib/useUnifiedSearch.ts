@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { fastifyApi, type SearchResponse } from "./fastifyApi";
 import { fetchPluginCatalog, type PackageListItem } from "./packageApi";
-import { fastifyApi } from "./fastifyApi";
 
 export type UnifiedSearchType = "all" | "skills" | "plugins";
 const MAX_UNIFIED_SEARCH_LIMIT = 100;
@@ -83,11 +83,13 @@ export function useUnifiedSearch(
     const handle = window.setTimeout(() => {
       void (async () => {
         try {
-          const promises: [Promise<unknown> | null, Promise<{ items: PackageListItem[] }> | null] =
-            [null, null];
+          const promises: [
+            Promise<SearchResponse> | null,
+            Promise<{ items: PackageListItem[] }> | null,
+          ] = [null, null];
 
           if (activeType === "all" || activeType === "skills") {
-            promises[0] = fastifyApi.searchSkills(trimmed, skillLimit + 1);
+            promises[0] = fastifyApi.search(trimmed, { limit: skillLimit + 1 });
           }
 
           if (activeType === "all" || activeType === "plugins") {
@@ -98,24 +100,30 @@ export function useUnifiedSearch(
             });
           }
 
-          const settled = await Promise.allSettled(promises.map((p) => p ?? Promise.resolve(null)));
+          const [skillsRaw, pluginsRaw] = await Promise.all([
+            promises[0]?.catch(() => null) ?? Promise.resolve(null),
+            promises[1]?.catch(() => null) ?? Promise.resolve(null),
+          ] as const);
 
-          if (requestId !== requestRef.current) return;
-
-          const skillsRaw = settled[0].status === "fulfilled" ? settled[0].value : null;
-          const pluginsRaw = settled[1].status === "fulfilled" ? settled[1].value : null;
-
-          const skillMatches: UnifiedSkillResult[] = (
-            (skillsRaw as Array<{
-              skill: UnifiedSkillResult["skill"];
-              ownerHandle: string | null;
-              score: number;
-            }>) ?? []
-          ).map((entry) => ({
+          const skillMatches: UnifiedSkillResult[] = (skillsRaw?.hits ?? []).map((hit) => ({
             type: "skill" as const,
-            skill: entry.skill,
-            ownerHandle: entry.ownerHandle,
-            score: entry.score,
+            skill: {
+              _id: hit.id,
+              slug: hit.slug,
+              displayName: hit.displayName,
+              summary: hit.summary,
+              ownerUserId: hit.ownerUserId,
+              ownerPublisherId: hit.ownerPublisherId,
+              stats: {
+                downloads: hit.statsDownloads,
+                stars: hit.statsStars,
+                versions: hit.statsVersions,
+              },
+              updatedAt: Date.parse(hit.updatedAt),
+              createdAt: Date.parse(hit.createdAt),
+            },
+            ownerHandle: hit.ownerHandle ?? hit.owner?.handle ?? null,
+            score: hit._rankingScore ?? 0,
           }));
           const nextSkillResults = skillMatches.slice(0, skillLimit);
 

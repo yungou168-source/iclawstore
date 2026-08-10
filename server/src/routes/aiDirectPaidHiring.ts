@@ -2,14 +2,12 @@ import type { FastifyInstance } from "fastify";
 import { requireAuth } from "../middleware/aiDirectAuth.js";
 import { requireCompanyRole } from "../middleware/aiDirectRbac.js";
 import { listAgentPrices, setAgentPrice } from "../services/agentPricing.js";
+import { listDeveloperAgentSales } from "../services/agentSales.js";
 import { AiDirectHiringError, ErrorCodes } from "../services/aiDirectErrors.js";
-import {
-  createAlipayPagePayUrl,
-  loadAlipayConfig,
-  verifyAlipayNotification,
-} from "../services/alipayProvider.js";
+import { loadAlipayConfig, verifyAlipayNotification } from "../services/alipayProvider.js";
+import { createFreeHiringSale, isFreeHiringRequest } from "../services/freeHiring.js";
 import { fulfillPaidHiring } from "../services/paidHiring.js";
-import { parseCnyFen } from "../services/paidHiringMoney.js";
+import { parseNonNegativeCnyFen } from "../services/paidHiringMoney.js";
 import {
   createDeveloperSettlement,
   getDeveloperSettlement,
@@ -76,7 +74,7 @@ const isParsedAlipayBody = (value: unknown): value is ParsedAlipayBody =>
   );
 
 export async function aiDirectPaidHiringRoutes(fastify: FastifyInstance): Promise<void> {
-  const pool = (fastify as any).mysql;
+  const pool = fastify.mysql;
   const auth = [fastify.authenticate];
 
   if (!fastify.hasContentTypeParser("application/x-www-form-urlencoded")) {
@@ -107,7 +105,7 @@ export async function aiDirectPaidHiringRoutes(fastify: FastifyInstance): Promis
       agentId: readString(agentId, "agentId"),
       agentVersionId: readString(body.agentVersionId, "agentVersionId"),
       developerUserId: user.id,
-      amountFen: parseCnyFen(body.amountFen),
+      amountFen: parseNonNegativeCnyFen(body.amountFen),
       requestId: extractRequestId(request),
     });
     return reply.status(201).send({ ...result, amountFen: String(result.amountFen) });
@@ -122,15 +120,25 @@ export async function aiDirectPaidHiringRoutes(fastify: FastifyInstance): Promis
     });
   });
 
+  fastify.get("/agent-sales", { onRequest: auth }, async (request, reply) => {
+    const user = await requireAuth(fastify, request);
+    const query = request.query as { limit?: string };
+    const sales = await listDeveloperAgentSales(pool, {
+      developerUserId: user.id,
+      limit: Number(query.limit) || undefined,
+    });
+    return reply.send({
+      items: sales.map((sale) => ({
+        ...sale,
+        grossAmountFen: String(sale.grossAmountFen),
+        platformRevenueFen: String(sale.platformRevenueFen),
+        developerRevenueFen: String(sale.developerRevenueFen),
+        refundedFen: String(sale.refundedFen),
+      })),
+    });
+  });
+
   fastify.post("/paid-hiring/orders", { onRequest: auth }, async (request, reply) => {
-    const config = loadAlipayConfig();
-    if (!config) {
-      throw new AiDirectHiringError(
-        ErrorCodes.RUNTIME_CAPABILITY_DISABLED,
-        "支付宝雇佣支付未启用或商户配置不可用",
-        503,
-      );
-    }
     const user = await requireAuth(fastify, request);
     const body = readBody(request.body);
     rejectExtra(
@@ -159,7 +167,7 @@ export async function aiDirectPaidHiringRoutes(fastify: FastifyInstance): Promis
       positionId,
       agentId,
     });
-    const order = await createPaidHiringOrder(pool, {
+    const hiringInput = {
       companyId,
       projectId,
       roleId,
@@ -169,23 +177,40 @@ export async function aiDirectPaidHiringRoutes(fastify: FastifyInstance): Promis
       idempotencyKey,
       idempotencyFingerprint: fingerprint,
       requestId: extractRequestId(request),
-    });
-    const payUrl = createAlipayPagePayUrl(config, {
-      outTradeNo: order.outTradeNo,
-      amountFen: order.grossAmountFen,
-      subject: `雇佣 Agent：${order.agentName}`,
-    });
+    };
+    if (await isFreeHiringRequest(pool, hiringInput)) {
+      const sale = await createFreeHiringSale(pool, hiringInput);
+      return reply.status(sale.replayed ? 200 : 201).send({
+        ...sale,
+        outTradeNo: sale.saleNo,
+        grossAmountFen: "0",
+        platformFeeFen: "0",
+        developerPayableFen: "0",
+        nextReconcileAt: null,
+        lastProviderStatus: null,
+      });
+    }
+
+    const order = await createPaidHiringOrder(pool, hiringInput);
+    if (order.status === "pending") {
+      await fulfillPaidHiring(
+        pool,
+        {
+          outTradeNo: order.outTradeNo,
+          tradeNo: `wallet:${order.outTradeNo}`,
+          totalAmountFen: order.grossAmountFen,
+          rawNotifySha256: `wallet:${order.id}`,
+        },
+        user.id,
+      );
+    }
+    const fulfilled = await getPaymentOrder(pool, order.id, user.id);
     return reply.status(order.replayed ? 200 : 201).send({
-      id: order.id,
-      hiringIntentId: order.hiringIntentId,
-      outTradeNo: order.outTradeNo,
-      provider: "alipay",
-      status: order.status,
-      currency: order.currency,
-      grossAmountFen: String(order.grossAmountFen),
+      ...fulfilled,
+      provider: "wallet",
+      grossAmountFen: String(fulfilled.grossAmountFen),
       platformFeeFen: String(order.platformFeeFen),
       developerPayableFen: String(order.developerPayableFen),
-      payUrl,
       replayed: order.replayed,
     });
   });

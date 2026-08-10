@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import type { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { publishOutboxEvent } from "../utils/outbox.js";
+import { completeAgentSale } from "./agentSales.js";
 import { AiDirectHiringError, ErrorCodes } from "./aiDirectErrors.js";
-import { synchronizeWorkforceEmployeeDigest } from "./workforceEmployeeDigestSync.js";
+import { applyWalletLedgerChange } from "./walletLedger.js";
 
 export type PaidHiringNotification = {
   outTradeNo: string;
@@ -87,6 +88,7 @@ async function lockFulfillmentRow(
 export async function fulfillPaidHiring(
   pool: Pick<Pool, "getConnection">,
   notification: PaidHiringNotification,
+  walletPayerUserId?: string,
 ): Promise<PaidHiringResult> {
   const connection = await pool.getConnection();
   try {
@@ -120,143 +122,41 @@ export async function fulfillPaidHiring(
       );
     }
 
-    const [positionRows] = await connection.query<RowDataPacket[]>(
-      `SELECT p.id, p.status
-       FROM ai_direct_positions p
-       JOIN ai_direct_departments d ON d.id = p.departmentId
-       JOIN ai_direct_position_agent_roles pr ON pr.positionId = p.id AND pr.roleId = ?
-       WHERE p.id = ? AND d.companyId = ? AND d.status = 'active'
-       LIMIT 1 FOR UPDATE`,
-      [row.roleId, row.positionId, row.companyId],
-    );
-    const position = positionRows[0];
-    if (!position || position.status !== "open") {
-      throw new AiDirectHiringError(
-        ErrorCodes.INVALID_TRANSITION,
-        "付款成功时对应 Position 已不可雇佣",
-        409,
-      );
-    }
-    const [headcount] = await connection.query<ResultSetHeader>(
-      `UPDATE ai_direct_positions
-       SET headcountFilled = headcountFilled + 1, updatedAt = NOW(3)
-       WHERE id = ? AND headcountFilled < headcountTarget`,
-      [position.id],
-    );
-    if (headcount.affectedRows !== 1) {
-      throw new AiDirectHiringError(
-        ErrorCodes.INVALID_TRANSITION,
-        "付款成功时 Position 编制已满",
-        409,
-      );
+    let walletLedgerEntryId: string | null = null;
+    if (walletPayerUserId) {
+      const wallet = await applyWalletLedgerChange(connection, {
+        entryKey: `paid-hiring:${row.id}`,
+        userId: walletPayerUserId,
+        entryType: "consume",
+        businessType: "paid_hiring_order",
+        businessId: row.id,
+        availableDeltaFen: -BigInt(row.grossAmountFen),
+        actorUserId: walletPayerUserId,
+        metadata: { hiringIntentId: row.hiringIntentId, agentId: row.agentId },
+      });
+      walletLedgerEntryId = wallet.ledgerEntryId;
     }
 
-    await connection.query("SELECT id FROM ai_direct_agents WHERE id = ? LIMIT 1 FOR UPDATE", [
-      row.agentId,
-    ]);
-    const [profileRows] = await connection.query<RowDataPacket[]>(
-      `SELECT controllerEmploymentId FROM ai_direct_agent_appearance_profiles
-       WHERE agentId = ? LIMIT 1 FOR UPDATE`,
-      [row.agentId],
-    );
-    if (profileRows[0]?.controllerEmploymentId) {
-      throw new AiDirectHiringError(
-        ErrorCodes.APPEARANCE_CONTROL_CONFLICT,
-        "该 Agent 已被另一家公司雇佣",
-        409,
-      );
-    }
-
-    const offerId = randomUUID();
-    const employmentId = randomUUID();
-    await connection.query(
-      `INSERT INTO ai_direct_offers
-       (id, roleId, agentVersionId, companyId, projectId, status, terms, proposedByUserId,
-        proposedAt, paymentOrderId, issuedAt)
-       VALUES (?, ?, ?, ?, ?, 'issued', ?, ?, NOW(3), ?, NOW(3))`,
-      [
-        offerId,
-        row.roleId,
-        row.agentVersionId,
-        row.companyId,
-        row.projectId,
-        JSON.stringify({
-          currency: "CNY",
-          grossAmountFen: String(row.grossAmountFen),
-          platformFeeFen: String(row.platformFeeFen),
-          developerPayableFen: String(row.developerPayableFen),
-          priceId: row.priceId,
-          priceVersion: row.priceVersion,
-        }),
-        row.requestedByUserId,
-        row.id,
-      ],
-    );
-    await connection.query(
-      `INSERT INTO ai_direct_employments
-       (id, companyId, agentId, agentVersionId, roleId, projectId, offerId, paymentOrderId,
-        requestedByUserId, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'onboarding')`,
-      [
-        employmentId,
-        row.companyId,
-        row.agentId,
-        row.agentVersionId,
-        row.roleId,
-        row.projectId,
-        offerId,
-        row.id,
-        row.requestedByUserId,
-      ],
-    );
-    await connection.query(
-      `INSERT INTO ai_direct_agent_appearance_profiles
-       (agentId, avatarAssetId, defaultMode, controllerEmploymentId, controllerCompanyId,
-        revision, updatedByUserId, createdAt, updatedAt)
-       VALUES (?, NULL, 'image_2d', ?, ?, 1, ?, NOW(3), NOW(3))
-       ON DUPLICATE KEY UPDATE controllerEmploymentId = VALUES(controllerEmploymentId),
-         controllerCompanyId = VALUES(controllerCompanyId), revision = revision + 1,
-         updatedByUserId = VALUES(updatedByUserId), updatedAt = NOW(3)`,
-      [row.agentId, employmentId, row.companyId, row.requestedByUserId],
-    );
-    await connection.query(
-      `INSERT INTO ai_direct_employment_events
-       (id, employmentId, sequence, fromStatus, toStatus, actorUserId, reason, metadata)
-       VALUES (?, ?, 1, NULL, 'onboarding', ?, 'Employment created from paid Offer', ?)`,
-      [
-        randomUUID(),
-        employmentId,
-        row.requestedByUserId,
-        JSON.stringify({ paymentOrderId: row.id, offerId }),
-      ],
-    );
-    await synchronizeWorkforceEmployeeDigest(connection, employmentId);
-    await connection.query(
-      `INSERT INTO ai_direct_organization_candidate_catalog_counts (organizationId, agentId, isEmployed)
-       VALUES (?, ?, TRUE)
-       ON DUPLICATE KEY UPDATE isEmployed = TRUE`,
-      [row.organizationId, row.agentId],
-    );
-
-    await connection.query(
-      `INSERT INTO ai_direct_revenue_ledger_entries
-       (id, entryKey, paymentOrderId, accountType, accountOwnerUserId, direction, currency, amountFen, metadata)
-       VALUES (?, ?, ?, 'platform_revenue', NULL, 'credit', 'CNY', ?, ?),
-              (?, ?, ?, 'developer_payable', ?, 'credit', 'CNY', ?, ?)`,
-      [
-        randomUUID(),
-        `${row.id}:platform_revenue`,
-        row.id,
-        row.platformFeeFen,
-        JSON.stringify({ percentage: 20 }),
-        randomUUID(),
-        `${row.id}:developer_payable:${row.developerUserId}`,
-        row.id,
-        row.developerUserId,
-        row.developerPayableFen,
-        JSON.stringify({ percentage: 80 }),
-      ],
-    );
+    const sale = await completeAgentSale(connection, {
+      hiringIntentId: row.hiringIntentId,
+      paymentOrderId: row.id,
+      organizationId: row.organizationId,
+      companyId: row.companyId,
+      projectId: row.projectId,
+      roleId: row.roleId,
+      positionId: row.positionId,
+      agentId: row.agentId,
+      agentVersionId: row.agentVersionId,
+      requestedByUserId: row.requestedByUserId,
+      developerUserId: row.developerUserId,
+      priceId: row.priceId,
+      priceVersion: row.priceVersion,
+      pricingMode: "paid",
+      grossAmountFen: BigInt(row.grossAmountFen),
+      platformRevenueFen: BigInt(row.platformFeeFen),
+      developerRevenueFen: BigInt(row.developerPayableFen),
+    });
+    const { offerId, employmentId } = sale;
     const [intentUpdate] = await connection.query<ResultSetHeader>(
       `UPDATE ai_direct_hiring_intents SET status = 'hired', updatedAt = NOW(3)
        WHERE id = ? AND status = 'awaiting_payment'`,
@@ -267,10 +167,20 @@ export async function fulfillPaidHiring(
     }
     const [orderUpdate] = await connection.query<ResultSetHeader>(
       `UPDATE ai_direct_payment_orders
-       SET status = 'fulfilled', providerTradeNo = ?, rawNotifySha256 = ?, paidAt = NOW(3),
-           fulfilledAt = NOW(3), offerId = ?, employmentId = ?, updatedAt = NOW(3)
+       SET status = 'fulfilled', provider = ?, providerTradeNo = ?, rawNotifySha256 = ?, paidAt = NOW(3),
+           fulfilledAt = NOW(3), offerId = ?, employmentId = ?, payerUserId = ?,
+           walletLedgerEntryId = ?, updatedAt = NOW(3)
        WHERE id = ? AND status = 'pending'`,
-      [notification.tradeNo, notification.rawNotifySha256, offerId, employmentId, row.id],
+      [
+        walletPayerUserId ? "wallet" : "alipay",
+        notification.tradeNo,
+        notification.rawNotifySha256,
+        offerId,
+        employmentId,
+        walletPayerUserId ?? null,
+        walletLedgerEntryId,
+        row.id,
+      ],
     );
     if (orderUpdate.affectedRows !== 1) {
       throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, "支付订单已被并发处理", 409);
@@ -284,6 +194,7 @@ export async function fulfillPaidHiring(
       eventType: "paid_hiring.fulfilled.v1",
       payload: {
         paymentOrderId: row.id,
+        saleId: sale.saleId,
         offerId,
         employmentId,
         companyId: row.companyId,

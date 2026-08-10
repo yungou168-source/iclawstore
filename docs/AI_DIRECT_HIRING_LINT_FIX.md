@@ -4,6 +4,7 @@
 > 作为完整合并链的最后一步。
 >
 > **关联文档**:
+>
 > - `docs/AI_DIRECT_HIRING_MERGE_EXECUTION_REPORT.md` — 合并过程
 > - `specs/ai-direct-hiring-progress.md` — 全局进度跟踪
 
@@ -19,20 +20,20 @@
 
 ## 2. 修复明细
 
-| 文件 | 修复 |
-|---|---|
-| `convex/devSeed.ts` | 删 `api` / `QueryCtx` / `generateEmbedding` / `buildEmbeddingText` import;`publicCorpusPreparedRowValidator` / `resetPublicCorpusRows` 加 `_` 前缀;删除未用 `metadata` 局部变量 |
-| `src/lib/api.ts` | 删 `getRequiredRuntimeEnv` import;重写 spread headers 逻辑 |
-| `src/lib/aiDirectApi.ts` | 重写 spread headers 逻辑 |
-| `src/lib/fastifyApi.ts` | 重写 spread headers 逻辑 |
-| `src/lib/aiDirectErrorMessages.ts` | 删未用 `ErrorCode` 类型 import |
-| `src/routes/skills/-useSkillsBrowseModel.ts` | 删未用 `Skill` 类型 import |
-| `src/routes/publishers/index.tsx` | 删未用 `label` 局部变量 |
-| `src/routes/employer/projects/$id.tsx` | 删未用 `useParams` import |
-| `src/routes/employer/companies/$id.tsx` | 删未用 `Users` icon + `useParams` import |
-| `src/routes/employer/agents/index.tsx` | 删未用 `Archive` / `Eye` icon import |
-| `src/routes/employer/agents/$id.tsx` | 删未用 `useParams` import |
-| `src/routes/employer/offers/index.tsx` | 删未用 `Link` / `CardHeader` / `CardTitle` import |
+| 文件                                         | 修复                                                                                                                                                                            |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `convex/devSeed.ts`                          | 删 `api` / `QueryCtx` / `generateEmbedding` / `buildEmbeddingText` import;`publicCorpusPreparedRowValidator` / `resetPublicCorpusRows` 加 `_` 前缀;删除未用 `metadata` 局部变量 |
+| `src/lib/api.ts`                             | 删 `getRequiredRuntimeEnv` import;重写 spread headers 逻辑                                                                                                                      |
+| `src/lib/aiDirectApi.ts`                     | 重写 spread headers 逻辑                                                                                                                                                        |
+| `src/lib/fastifyApi.ts`                      | 重写 spread headers 逻辑                                                                                                                                                        |
+| `src/lib/aiDirectErrorMessages.ts`           | 删未用 `ErrorCode` 类型 import                                                                                                                                                  |
+| `src/routes/skills/-useSkillsBrowseModel.ts` | 删未用 `Skill` 类型 import                                                                                                                                                      |
+| `src/routes/publishers/index.tsx`            | 删未用 `label` 局部变量                                                                                                                                                         |
+| `src/routes/employer/projects/$id.tsx`       | 删未用 `useParams` import                                                                                                                                                       |
+| `src/routes/employer/companies/$id.tsx`      | 删未用 `Users` icon + `useParams` import                                                                                                                                        |
+| `src/routes/employer/agents/index.tsx`       | 删未用 `Archive` / `Eye` icon import                                                                                                                                            |
+| `src/routes/employer/agents/$id.tsx`         | 删未用 `useParams` import                                                                                                                                                       |
+| `src/routes/employer/offers/index.tsx`       | 删未用 `Link` / `CardHeader` / `CardTitle` import                                                                                                                               |
 
 合计 **12 文件 / 59 增 / 47 删**。
 
@@ -57,9 +58,13 @@ const response = await fetch(url, {
 const headers: Record<string, string> = { "Content-Type": "application/json" };
 if (options.headers) {
   if (options.headers instanceof Headers) {
-    options.headers.forEach((value, key) => { headers[key] = value; });
+    options.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
   } else if (Array.isArray(options.headers)) {
-    for (const [key, value] of options.headers) { headers[key] = value; }
+    for (const [key, value] of options.headers) {
+      headers[key] = value;
+    }
   } else {
     Object.assign(headers, options.headers);
   }
@@ -90,5 +95,5 @@ bun run lint 2>&1 | grep -E "no-unused-vars|no-misused-spread" | wc -l
 
 ---
 
-*更新时间:2026-08-01 12:30 UTC+8*
-*负责人:K*
+_更新时间:2026-08-01 12:30 UTC+8_
+_负责人:K_

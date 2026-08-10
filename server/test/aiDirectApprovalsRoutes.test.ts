@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'bun:test';
-import { aiDirectApprovalsRoutes } from '../src/routes/aiDirectApprovals.js';
+import { describe, expect, it, vi } from "bun:test";
+import { aiDirectApprovalsRoutes } from "../src/routes/aiDirectApprovals.js";
 
 type RegisteredRoute = {
   path: string;
@@ -19,10 +19,10 @@ async function routesWith(pool: any) {
   const fastify = {
     mysql: pool,
     authenticate: vi.fn(),
-    get: vi.fn((path: string, _options: unknown, handler: RegisteredRoute['handler']) => {
+    get: vi.fn((path: string, _options: unknown, handler: RegisteredRoute["handler"]) => {
       routes.push({ path, handler });
     }),
-    post: vi.fn((path: string, _options: unknown, handler: RegisteredRoute['handler']) => {
+    post: vi.fn((path: string, _options: unknown, handler: RegisteredRoute["handler"]) => {
       routes.push({ path, handler });
     }),
   };
@@ -30,16 +30,16 @@ async function routesWith(pool: any) {
   return routes;
 }
 
-describe('approval routes transaction boundary', () => {
-  it('delegates without performing an unlocked pool pre-read', async () => {
+describe("approval routes transaction boundary", () => {
+  it("delegates without performing an unlocked pool pre-read", async () => {
     const approval = {
-      id: 'approval-1',
-      organizationId: 'org-1',
-      targetType: 'offer',
-      targetId: 'offer-1',
-      requestedByUserId: 'requester-1',
-      approverUserId: 'old-approver',
-      status: 'pending',
+      id: "approval-1",
+      organizationId: "org-1",
+      targetType: "offer",
+      targetId: "offer-1",
+      requestedByUserId: "requester-1",
+      approverUserId: "old-approver",
+      status: "pending",
       expiresAt: null,
       isDue: false,
     };
@@ -49,19 +49,24 @@ describe('approval routes transaction boundary', () => {
       rollback: vi.fn(),
       release: vi.fn(),
       query: vi.fn(async (sql: string, values?: unknown[]) => {
-        if (sql.includes('FROM ai_direct_approvals') && sql.includes('FOR UPDATE')) {
+        if (sql.includes("FROM ai_direct_approvals") && sql.includes("FOR UPDATE")) {
           return [[approval], []];
         }
-        if (sql.includes('FROM ai_direct_organization_members')) {
-          return [[{
-            role: values?.[1] === 'admin-1' ? 'admin' : 'member',
-            status: 'active',
-          }], []];
+        if (sql.includes("FROM ai_direct_organization_members")) {
+          return [
+            [
+              {
+                role: values?.[1] === "admin-1" ? "admin" : "member",
+                status: "active",
+              },
+            ],
+            [],
+          ];
         }
-        if (sql.startsWith('UPDATE ai_direct_approvals')) {
+        if (sql.startsWith("UPDATE ai_direct_approvals")) {
           return [{ affectedRows: 1 }, []];
         }
-        if (sql.includes('MAX(sequence)')) return [[{ nextSequence: 1 }], []];
+        if (sql.includes("MAX(sequence)")) return [[{ nextSequence: 1 }], []];
         return [{ affectedRows: 1 }, []];
       }),
     };
@@ -70,24 +75,24 @@ describe('approval routes transaction boundary', () => {
       getConnection: vi.fn(async () => connection),
     };
     const routes = await routesWith(pool);
-    const route = routes.find(({ path }) => path === '/approvals/:id/delegate');
-    if (!route) throw new Error('delegate route not registered');
+    const route = routes.find(({ path }) => path === "/approvals/:id/delegate");
+    if (!route) throw new Error("delegate route not registered");
     const response = reply();
 
     const result = await route.handler(
       {
-        user: { id: 'admin-1' },
-        params: { id: 'approval-1' },
-        body: { toUserId: 'new-approver', reason: 'handoff' },
-        headers: { 'x-request-id': 'request-1' },
+        user: { id: "admin-1" },
+        params: { id: "approval-1" },
+        body: { toUserId: "new-approver", reason: "handoff" },
+        headers: { "x-request-id": "request-1" },
       },
       response,
     );
 
     expect(result).toMatchObject({
-      approvalId: 'approval-1',
-      fromUserId: 'old-approver',
-      toUserId: 'new-approver',
+      approvalId: "approval-1",
+      fromUserId: "old-approver",
+      toUserId: "new-approver",
     });
     expect(response.status).toHaveBeenCalledWith(201);
     expect(pool.query).not.toHaveBeenCalled();

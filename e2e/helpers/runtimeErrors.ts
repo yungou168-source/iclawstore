@@ -35,5 +35,7 @@ export async function expectHealthyPage(page: Page, errors: string[]) {
 }
 
 export async function waitForHydration(page: Page) {
-  await page.waitForFunction(() => document.readyState === "complete", undefined, { timeout: 15_000 });
+  await page.waitForFunction(() => document.readyState === "complete", undefined, {
+    timeout: 15_000,
+  });
 }

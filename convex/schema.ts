@@ -169,6 +169,11 @@ const users = defineTable({
   handle: v.optional(v.string()),
   displayName: v.optional(v.string()),
   bio: v.optional(v.string()),
+  profileSlug: v.optional(v.string()),
+  imageStorageId: v.optional(v.id("_storage")),
+  developerStatus: v.optional(v.literal("approved")),
+  developerAppliedAt: v.optional(v.number()),
+  developerApprovedAt: v.optional(v.number()),
   role: v.optional(v.union(v.literal("admin"), v.literal("moderator"), v.literal("user"))),
   githubCreatedAt: v.optional(v.number()),
   githubFetchedAt: v.optional(v.number()),
@@ -190,6 +195,7 @@ const users = defineTable({
   .index("email", ["email"])
   .index("phone", ["phone"])
   .index("handle", ["handle"])
+  .index("by_profile_slug", ["profileSlug"])
   .index("by_ban_reason_deleted_at", ["banReason", "deletedAt"])
   .index("by_deactivated_purged_at", ["deactivatedAt", "purgedAt"])
   .index("by_active_handle", ["deletedAt", "deactivatedAt", "handle"]);
@@ -200,6 +206,7 @@ const publishers = defineTable({
   displayName: v.string(),
   bio: v.optional(v.string()),
   image: v.optional(v.string()),
+  imageStorageId: v.optional(v.id("_storage")),
   linkedUserId: v.optional(v.id("users")),
   trustedPublisher: v.optional(v.boolean()),
   publishedSkills: v.optional(v.number()),

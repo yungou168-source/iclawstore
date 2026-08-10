@@ -17,11 +17,11 @@
 
 ### 1.2 后端服务层
 
-| 文件 | 用途 |
-|---|---|
+| 文件                                     | 用途                                                 |
+| ---------------------------------------- | ---------------------------------------------------- |
 | `server/src/services/obsidianExtract.ts` | frontmatter 白名单、敏感模式、20% 摘要上限、批量管道 |
-| `server/src/services/obsidianScanner.ts` | 流式 vault 扫描器、vault 指纹、bounded RawNote |
-| `server/src/routes/aiDirectMemory.ts` | 7 个 REST 端点 |
+| `server/src/services/obsidianScanner.ts` | 流式 vault 扫描器、vault 指纹、bounded RawNote       |
+| `server/src/routes/aiDirectMemory.ts`    | 7 个 REST 端点                                       |
 
 ### 1.3 后端挂载
 
@@ -45,15 +45,15 @@
 
 ## 2. 路由 / 端点
 
-| Method | Path | Auth | 备注 |
-|---|---|---|---|
-| `POST` | `/api/v1/memory/obsidian/bind` | required | 201 / 200 (replay) |
-| `DELETE` | `/api/v1/memory/obsidian/bind` | required | 204，事务内清表 |
-| `GET` | `/api/v1/memory/obsidian/binding` | required | `{configured, vaultFingerprint, ..., noteCount, tagCount, lastSyncAt, updatedAt}` |
-| `GET` | `/api/v1/memory/obsidian/bindings` | required | 工作台摘要 + topTags |
-| `POST` | `/api/v1/memory/obsidian/sync` | required + Idempotency-Key | 200 / 422 |
-| `GET` | `/api/v1/memory/obsidian/notes?limit=N` | required | 1 ≤ N ≤ 200 |
-| `GET` | `/api/v1/memory/obsidian/notes/:notePath` | required | 200 / 404 |
+| Method   | Path                                      | Auth                       | 备注                                                                              |
+| -------- | ----------------------------------------- | -------------------------- | --------------------------------------------------------------------------------- |
+| `POST`   | `/api/v1/memory/obsidian/bind`            | required                   | 201 / 200 (replay)                                                                |
+| `DELETE` | `/api/v1/memory/obsidian/bind`            | required                   | 204，事务内清表                                                                   |
+| `GET`    | `/api/v1/memory/obsidian/binding`         | required                   | `{configured, vaultFingerprint, ..., noteCount, tagCount, lastSyncAt, updatedAt}` |
+| `GET`    | `/api/v1/memory/obsidian/bindings`        | required                   | 工作台摘要 + topTags                                                              |
+| `POST`   | `/api/v1/memory/obsidian/sync`            | required + Idempotency-Key | 200 / 422                                                                         |
+| `GET`    | `/api/v1/memory/obsidian/notes?limit=N`   | required                   | 1 ≤ N ≤ 200                                                                       |
+| `GET`    | `/api/v1/memory/obsidian/notes/:notePath` | required                   | 200 / 404                                                                         |
 
 错误码走 `aiDirectErrors.ts` 的 `ErrorCodes` 枚举（`AUTH_REQUIRED` / `VALIDATION_ERROR`）并写入审计。
 

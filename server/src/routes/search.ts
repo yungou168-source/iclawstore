@@ -7,12 +7,12 @@ import { meili } from "../index.js";
 
 export async function searchRoutes(fastify: FastifyInstance) {
   const SKILLS_INDEX = "skills";
-  
+
   // 初始化索引设置
   async function initIndex() {
     try {
       const index = meili.index(SKILLS_INDEX);
-      
+
       // 设置可搜索属性
       await index.updateSearchableAttributes([
         "displayName",
@@ -22,7 +22,7 @@ export async function searchRoutes(fastify: FastifyInstance) {
         "ownerName",
         "tags",
       ]);
-      
+
       // 设置过滤属性
       await index.updateFilterableAttributes([
         "softDeletedAt",
@@ -30,7 +30,7 @@ export async function searchRoutes(fastify: FastifyInstance) {
         "ownerId",
         "publisherId",
       ]);
-      
+
       // 设置排序属性
       await index.updateSortableAttributes([
         "statsDownloads",
@@ -38,32 +38,27 @@ export async function searchRoutes(fastify: FastifyInstance) {
         "statsInstallsAllTime",
         "createdAt",
       ]);
-      
+
       console.log("Meilisearch index initialized");
     } catch (error) {
       console.error("Failed to init Meilisearch index:", error);
     }
   }
-  
+
   // 搜索技能
   fastify.get("/", async (request, reply) => {
-    const {
-      q = "",
-      page = "1",
-      limit = "20",
-      sort = "statsDownloads:desc",
-    } = request.query as any;
-    
+    const { q = "", page = "1", limit = "20", sort = "statsDownloads:desc" } = request.query as any;
+
     try {
       const index = meili.index(SKILLS_INDEX);
-      
+
       const results = await index.search(q, {
         limit: parseInt(limit),
         offset: (parseInt(page) - 1) * parseInt(limit),
         sort: sort.split(","),
         filter: "softDeletedAt IS NULL",
       });
-      
+
       return {
         hits: results.hits,
         query: q,
@@ -89,23 +84,23 @@ export async function searchRoutes(fastify: FastifyInstance) {
       throw error;
     }
   });
-  
+
   // 获取搜索建议
   fastify.get("/suggestions", async (request, reply) => {
     const { q = "" } = request.query as any;
-    
+
     if (!q || q.length < 2) {
       return { suggestions: [] };
     }
-    
+
     try {
       const index = meili.index(SKILLS_INDEX);
-      
+
       const results = await index.search(q, {
         limit: 5,
         attributesToRetrieve: ["id", "displayName", "slug", "icon"],
       });
-      
+
       return {
         suggestions: results.hits.map((hit: any) => ({
           id: hit.id,

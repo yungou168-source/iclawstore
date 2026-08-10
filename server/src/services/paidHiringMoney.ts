@@ -9,6 +9,21 @@ export type PaidHiringSplit = {
   developerPayableFen: bigint;
 };
 
+export function parseNonNegativeCnyFen(value: unknown): bigint {
+  const normalized = typeof value === "number" ? String(value) : value;
+  if (typeof normalized !== "string" || !/^\d+$/.test(normalized)) {
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "amountFen 必须是非负整数分");
+  }
+  const amount = BigInt(normalized);
+  if (amount > 100_000_000n) {
+    throw new AiDirectHiringError(
+      ErrorCodes.VALIDATION_ERROR,
+      "amountFen 必须在 0 到 100000000 分之间",
+    );
+  }
+  return amount;
+}
+
 export function parseCnyFen(value: unknown): bigint {
   const normalized = typeof value === "number" ? String(value) : value;
   if (typeof normalized !== "string" || !/^\d+$/.test(normalized)) {

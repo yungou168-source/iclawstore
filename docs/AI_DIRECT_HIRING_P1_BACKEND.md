@@ -4,7 +4,7 @@
 >
 > 完整范围、依赖、状态边界和验收统一以 `specs/ai-direct-web-server-roadmap.md` 为准，覆盖：组织/公司管理、Agent publication、候选市场、支付即雇佣与开发者分账、面试、运行中心、形象管理、模板发布审核及中央审计。桌面数据边界继续以 `specs/ai-direct-desktop-platform-integration.md` 为准。
 >
-> 付费雇佣后续实现已于 2026-08-15 落地：创建订单时固化 AgentVersion、开发者、价格、Position 与 20%/80% 金额；只有通过 RSA2 验签并核对商户、订单、交易号和金额的支付宝成功通知，才能在单一事务内创建不可撤回 Offer、Employment、账本、事件、审计与 outbox。实现已通过隔离 MySQL 原子回滚和重复通知门禁，生产迁移与真实支付宝联调仍是发布前置。
+> 付费雇佣后续实现已于 2026-08-15 落地：创建订单时固化 AgentVersion、开发者、价格、Position 与 20%/80% 金额；只有通过 RSA2 验签并核对商户、订单、交易号和金额的支付宝成功通知，才能在单一事务内创建不可撤回 Offer、Employment、账本、事件、审计与 outbox。实现已通过隔离 MySQL 原子回滚和重复通知门禁；两段生产迁移现已应用，固定 release 已上线，但真实 Convex Bearer 授权矩阵和支付宝商户链路仍未完成，因此付费能力保持关闭。
 >
 > 服务器模块必须继续按领域拆分：`IdentitySessionModule`、`OrganizationModule`、`CompanyModule`、`WorkforceModule`、`AgentPublicationModule`、`CandidateCatalogModule`、`HiringModule`、`InterviewModule`、`RuntimeModule`、`TemplatePublication/ReviewModule` 和 `AuditModule`。`aiDirectCore.ts` 只聚合模块；禁止重新挂载整个 `aiDirectHiring.ts`。
 >
@@ -14,9 +14,9 @@
 >
 > 本文主体是早期 Agent 交付记录，分支、worktree、未迁移、缺表和未验证等描述不再代表当前状态。招聘核心现已由 `server/src/routes/aiDirectCore.ts` 聚合并在 `server/src/index.ts` 挂载；`ai_direct_company_members`、运行队列字段、`requestedByUserId` 和 Employment/Offer 唯一约束均已通过后续加法迁移落地。服务端 TypeScript 零错误，核心定向单测 `47/47`，全新临时 MySQL HTTP e2e `44/44`，生产迁移和烟测均完成。旧 `aiDirectHiring.ts` 因包含延后的 Provider/凭据/Worker 依赖而未挂载，这是有意的模块边界，不是招聘核心阻塞。
 >
-> 当前生产迁移链还包括 `20260802_ai_direct_runtime_contract`、`20260803_ai_direct_employment_offer_unique`、`20260804_ai_direct_worker_runtime`，以及已于 2026-08-05 部署的 `20260808_ai_direct_desktop_jobs_cursor`、`20260809_ai_direct_interviews_policy`、`20260810_agent_publication_catalog`、`20260811_ai_direct_workforce`。Prisma 状态为 up to date，运行时 Dispatcher 与受鉴权 Worker 路由已独立上线。
+> 当前生产迁移链已推进至 `20260816_ai_direct_paid_hiring_operations`，Prisma 共识别 19 个迁移并报告 up to date。迁移前一致性备份已通过随机隔离库完整恢复；付费雇佣 7 张新增表和关键列已逐项核验。API、runtime dispatcher 与 audit-export 已切换到固定 release `abd4e5ed79c4ec4ef0d44e9c3032583e15979f6b` 的 Node 编译产物并完成 PM2 持久化。`PAID_HIRING_RELEASE_READY`、支付宝启用和 reconciliation 门禁仍为 `false`。
 >
-> Desktop `1.1.0` 的统一 manifest、OpenAPI 一致性测试与启动路由校验已进入生产门禁。当前 API 构建完成并经 PM2 reload 保持 `online`，生产 discovery/OpenAPI 与全部 protected operation 非 `404` 烟测通过。此证据只确认路由契约发布：生产无专用 smoke token，`candidateCatalog` 默认关闭，也没有已启用组织的完整隔离测试链，因此 Candidate Catalog、Departments、Positions、Candidate Matching 的带认证 `2xx` 业务烟测仍未完成。
+> Desktop `1.1.0` 曾建立统一 manifest、OpenAPI 一致性测试与启动路由校验；当前生产 discovery/OpenAPI 已由 `1.2.0` 取代，并继续通过完整 protected operation 非 `404` 门禁。当前 API 构建完成，固定 release 经 PM2 重建后保持 `online`。此证据只确认路由契约发布：生产无专用 smoke token，`candidateCatalog` 默认关闭，也没有已启用组织的完整隔离测试链，因此 Candidate Catalog、Departments、Positions、Candidate Matching 的带认证 `2xx` 业务烟测仍未完成。
 >
 > 当前分支已实现后续 Provider runtime：加密凭据、金沙 adapter、单并发 Executor、预算/限流/重试与幂等成本审计。实现通过 `aiDirectCore.ts` 的独立 feature gate 接线，Provider 调用不进入 API 或队列服务。`20260805_ai_direct_provider_runtime` 已于后续生产发布中部署，但执行能力仍未生产启用：没有真实金沙 canary、生产 keyring、`executor.env` 或 Executor 进程，执行 kill switch 保持关闭。
 >
@@ -33,35 +33,40 @@
 ## New / Modified Files
 
 ### Prisma Schema
-| File | Change |
-|------|--------|
-| `prisma/schema.prisma` | Added 19 AI Direct Hiring models (P0 + P1) |
-| `prisma/migrations/20260801_ai_direct_hiring_p1/migration.sql` | New P1 table DDL |
-| `prisma/migrations/20260801_ai_direct_hiring_p1/migration_lock.toml` | Provider marker |
+
+| File                                                                 | Change                                     |
+| -------------------------------------------------------------------- | ------------------------------------------ |
+| `prisma/schema.prisma`                                               | Added 19 AI Direct Hiring models (P0 + P1) |
+| `prisma/migrations/20260801_ai_direct_hiring_p1/migration.sql`       | New P1 table DDL                           |
+| `prisma/migrations/20260801_ai_direct_hiring_p1/migration_lock.toml` | Provider marker                            |
 
 ### Middleware
-| File | Exports |
-|------|---------|
-| `server/src/middleware/aiDirectAuth.ts` | `requireAuth`, `AuthRequiredError`, `ForbiddenScopeError`, `AuthenticatedUser` |
+
+| File                                    | Exports                                                                                                                                                               |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `server/src/middleware/aiDirectAuth.ts` | `requireAuth`, `AuthRequiredError`, `ForbiddenScopeError`, `AuthenticatedUser`                                                                                        |
 | `server/src/middleware/aiDirectRbac.ts` | `requireCompanyRole`, `requireEmploymentScope`, `orgMemberAccess`, `parseCompanyRole`, `canManageCompany`, `canManageEmploymentScope`, `companyRoleRank`, `RbacError` |
 
 ### Utilities
-| File | Exports |
-|------|---------|
+
+| File                              | Exports                                                                                                                           |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `server/src/utils/idempotency.ts` | `parseIdempotencyKey`, `idempotencyFingerprint`, `withIdempotency`, `withIdempotencyLock`, `IdempotencyError`, `extractRequestId` |
-| `server/src/utils/requestId.ts` | `extractRequestId` |
+| `server/src/utils/requestId.ts`   | `extractRequestId`                                                                                                                |
 
 ### Tests
-| File | Coverage |
-|------|---------|
+
+| File                               | Coverage                                                           |
+| ---------------------------------- | ------------------------------------------------------------------ |
 | `server/test/aiDirectRbac.test.ts` | Role parsing, rank, `requireCompanyRole`, `requireEmploymentScope` |
-| `server/test/idempotency.test.ts` | `idempotencyFingerprint` stability and key stripping |
+| `server/test/idempotency.test.ts`  | `idempotencyFingerprint` stability and key stripping               |
 
 ---
 
 ## New Prisma Models (18 total)
 
 ### P0 — Foundation (already in base branch schema, added to worktree)
+
 1. `aiDirectModelCatalog`
 2. `aiDirectAgents`
 3. `aiDirectAgentVersions`
@@ -73,6 +78,7 @@
 9. `aiDirectOutboxEvents`
 
 ### P1 — Companies, Projects, Roles, Capabilities, Offers, Employments, Approvals, WorkflowRuns
+
 10. `aiDirectCompanies`
 11. `aiDirectProjects`
 12. `aiDirectAgentRoles`
@@ -93,9 +99,9 @@
 ### `requireAuth(fastify, request)` → `AuthenticatedUser`
 
 ```ts
-import { requireAuth } from './middleware/aiDirectAuth.js';
+import { requireAuth } from "./middleware/aiDirectAuth.js";
 
-fastify.post('/companies', { onRequest: auth }, async (request, reply) => {
+fastify.post("/companies", { onRequest: auth }, async (request, reply) => {
   const user = await requireAuth(fastify, request);
   // user.id is guaranteed non-null
 });
@@ -106,16 +112,16 @@ Throws `AuthRequiredError` if unauthenticated.
 ### `requireCompanyRole(pool, companyId, userId, minRole)` → `CompanyMemberRow`
 
 ```ts
-import { requireCompanyRole, CompanyRole } from './middleware/aiDirectRbac.js';
+import { requireCompanyRole, CompanyRole } from "./middleware/aiDirectRbac.js";
 
-await requireCompanyRole(pool, companyId, user.id, 'manager');
+await requireCompanyRole(pool, companyId, user.id, "manager");
 // → throws RbacError('FORBIDDEN_SCOPE') if rank < manager
 ```
 
 ### `requireEmploymentScope(pool, employmentId, userId)` → `EmploymentRow`
 
 ```ts
-import { requireEmploymentScope } from './middleware/aiDirectRbac.js';
+import { requireEmploymentScope } from "./middleware/aiDirectRbac.js";
 
 await requireEmploymentScope(pool, employmentId, user.id);
 // → allows self + recruiter+ org members
@@ -125,7 +131,7 @@ await requireEmploymentScope(pool, employmentId, user.id);
 ### `extractRequestId(request)` → `string`
 
 ```ts
-import { extractRequestId } from './utils/requestId.js';
+import { extractRequestId } from "./utils/requestId.js";
 
 const requestId = extractRequestId(request);
 // Falls back to randomUUID if header absent
@@ -141,22 +147,27 @@ import {
   idempotencyFingerprint,
   withIdempotency,
   IdempotencyError,
-} from './utils/idempotency.js';
+} from "./utils/idempotency.js";
 
-fastify.post('/companies', { onRequest: auth }, async (request, reply) => {
+fastify.post("/companies", { onRequest: auth }, async (request, reply) => {
   const idempotencyKey = parseIdempotencyKey(request);
   const fingerprint = idempotencyFingerprint(request.body);
 
-  const result = await withIdempotency(pool, {
-    keyColumn: 'idempotencyKey',
-    fingerprintColumn: 'idempotencyFingerprint',
-    table: 'ai_direct_companies',
-    whereClause: 'createdByUserId = ? AND idempotencyKey = ?',
-    whereParams: [user.id, idempotencyKey],
-  }, fingerprint, async () => {
-    // ← only reached on first request
-    await pool.query('INSERT INTO ai_direct_companies ...');
-  });
+  const result = await withIdempotency(
+    pool,
+    {
+      keyColumn: "idempotencyKey",
+      fingerprintColumn: "idempotencyFingerprint",
+      table: "ai_direct_companies",
+      whereClause: "createdByUserId = ? AND idempotencyKey = ?",
+      whereParams: [user.id, idempotencyKey],
+    },
+    fingerprint,
+    async () => {
+      // ← only reached on first request
+      await pool.query("INSERT INTO ai_direct_companies ...");
+    },
+  );
 
   if (result.replayed) {
     return reply.status(200).send({ id: result.existingId, replayed: true });
@@ -186,9 +197,9 @@ fastify.post('/companies', { onRequest: auth }, async (request, reply) => {
 
 ```ts
 const auth = [(fastify as any).authenticate];
-fastify.post('/agents', { onRequest: auth }, async (request, reply) => {
+fastify.post("/agents", { onRequest: auth }, async (request, reply) => {
   const userId = request.user?.id;
-  if (!userId) return reply.status(401).send({ error: 'Unauthenticated' });
+  if (!userId) return reply.status(401).send({ error: "Unauthenticated" });
   // ...
 });
 ```
@@ -196,11 +207,11 @@ fastify.post('/agents', { onRequest: auth }, async (request, reply) => {
 **After** (use `requireAuth`):
 
 ```ts
-import { requireAuth } from './middleware/aiDirectAuth.js';
-import { extractRequestId } from './utils/requestId.js';
+import { requireAuth } from "./middleware/aiDirectAuth.js";
+import { extractRequestId } from "./utils/requestId.js";
 
 const auth = [(fastify as any).authenticate];
-fastify.post('/agents', { onRequest: auth }, async (request, reply) => {
+fastify.post("/agents", { onRequest: auth }, async (request, reply) => {
   const user = await requireAuth(fastify, request);
   const requestId = extractRequestId(request);
   // user.id is guaranteed non-null
@@ -210,11 +221,11 @@ fastify.post('/agents', { onRequest: auth }, async (request, reply) => {
 ### Adding RBAC to company-scoped routes
 
 ```ts
-import { requireCompanyRole } from './middleware/aiDirectRbac.js';
+import { requireCompanyRole } from "./middleware/aiDirectRbac.js";
 
-fastify.post('/companies/:companyId/roles', { onRequest: auth }, async (request, reply) => {
+fastify.post("/companies/:companyId/roles", { onRequest: auth }, async (request, reply) => {
   const user = await requireAuth(fastify, request);
-  await requireCompanyRole(pool, request.params.companyId, user.id, 'manager');
+  await requireCompanyRole(pool, request.params.companyId, user.id, "manager");
   // proceed — manager+ only
 });
 ```
@@ -222,12 +233,16 @@ fastify.post('/companies/:companyId/roles', { onRequest: auth }, async (request,
 ### Adding idempotency to write routes
 
 ```ts
-import { parseIdempotencyKey, idempotencyFingerprint, withIdempotency } from '../utils/idempotency.js';
+import {
+  parseIdempotencyKey,
+  idempotencyFingerprint,
+  withIdempotency,
+} from "../utils/idempotency.js";
 
-fastify.post('/offers', { onRequest: auth }, async (request, reply) => {
+fastify.post("/offers", { onRequest: auth }, async (request, reply) => {
   const user = await requireAuth(fastify, request);
   const key = parseIdempotencyKey(request);
-  if (!key) return reply.status(400).send({ code: 'IDEMPOTENCY_KEY_REQUIRED', error: '...' });
+  if (!key) return reply.status(400).send({ code: "IDEMPOTENCY_KEY_REQUIRED", error: "..." });
   const fp = idempotencyFingerprint(request.body);
   // ...
 });
@@ -237,7 +252,7 @@ fastify.post('/offers', { onRequest: auth }, async (request, reply) => {
 
 ## Commit History
 
-| # | SHA (7 chars) | Message |
-|---|---------------|---------|
-| 1 | `xxxxxxxx` | `feat(ai-direct-hiring): add P1 backend core (companies, projects, roles, capabilities, offers, employments, approvals, workflow runs, RBAC middleware, idempotency)` |
-| 2 | `xxxxxxxx` | `docs(ai-direct-hiring): document P1 backend core delivery` |
+| #   | SHA (7 chars) | Message                                                                                                                                                               |
+| --- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `xxxxxxxx`    | `feat(ai-direct-hiring): add P1 backend core (companies, projects, roles, capabilities, offers, employments, approvals, workflow runs, RBAC middleware, idempotency)` |
+| 2   | `xxxxxxxx`    | `docs(ai-direct-hiring): document P1 backend core delivery`                                                                                                           |

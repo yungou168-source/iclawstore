@@ -914,6 +914,7 @@ export const updateProfile = mutation({
   args: {
     displayName: v.string(),
     bio: v.optional(v.string()),
+    profileSlug: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireUser(ctx);
@@ -921,9 +922,21 @@ export const updateProfile = mutation({
     const now = Date.now();
     const displayName = args.displayName.trim();
     const bio = args.bio?.trim();
+    const profileSlug = (args.profileSlug ?? user?.profileSlug ?? user?.handle ?? "")
+      .trim()
+      .toLowerCase();
+    if (!/^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])?$/.test(profileSlug)) {
+      throw new ConvexError("Profile slug must be 3-40 lowercase letters, numbers, or hyphens");
+    }
+    const slugOwner = await ctx.db
+      .query("users")
+      .withIndex("by_profile_slug", (q) => q.eq("profileSlug", profileSlug))
+      .unique();
+    if (slugOwner && slugOwner._id !== userId) throw new ConvexError("Profile slug is already in use");
     await ctx.db.patch(userId, {
       displayName,
       bio,
+      profileSlug,
       updatedAt: now,
     });
     await ctx.db.insert("auditLogs", {
@@ -935,10 +948,12 @@ export const updateProfile = mutation({
         previous: {
           displayName: user?.displayName ?? null,
           bio: user?.bio ?? null,
+          profileSlug: user?.profileSlug ?? null,
         },
         next: {
           displayName,
           bio: bio ?? null,
+          profileSlug,
         },
       },
       createdAt: now,
@@ -955,6 +970,66 @@ export const updateProfile = mutation({
         { handleConflict: "skip" },
       );
     }
+  },
+});
+
+export const updateAvatar = mutation({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx);
+    const metadata = await ctx.db.system.get("_storage", args.storageId);
+    if (!metadata || !metadata.contentType?.startsWith("image/") || metadata.size > 5 * 1024 * 1024) {
+      throw new ConvexError("Avatar must be an image smaller than 5 MB");
+    }
+    const image = await ctx.storage.getUrl(args.storageId);
+    if (!image) throw new ConvexError("Uploaded avatar was not found");
+    const now = Date.now();
+    await ctx.db.patch(userId, { image, imageStorageId: args.storageId, updatedAt: now });
+    const user = await ctx.db.get(userId);
+    if (user) {
+      await ensurePersonalPublisherForUser(
+        ctx,
+        user,
+        { actorUserId: userId, source: "user.avatar.update" },
+        { handleConflict: "skip" },
+      );
+    }
+    return { image };
+  },
+});
+
+export const applyForDeveloper = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const { userId } = await requireUser(ctx);
+    const now = Date.now();
+    await ctx.db.patch(userId, {
+      developerStatus: "approved",
+      developerAppliedAt: now,
+      developerApprovedAt: now,
+      updatedAt: now,
+    });
+    return { status: "approved" as const, approvedAt: now };
+  },
+});
+
+export const getPublicProfileBySlug = query({
+  args: { slug: v.string() },
+  handler: async (ctx, args) => {
+    const slug = args.slug.trim().toLowerCase();
+    const bySlug = await ctx.db
+      .query("users")
+      .withIndex("by_profile_slug", (q) => q.eq("profileSlug", slug))
+      .unique();
+    const user = bySlug ?? (await getActiveUserByHandleOrPersonalPublisher(ctx, slug));
+    const publicUser = toPublicUser(user);
+    if (!publicUser || !user) return null;
+    const publisher = await getPersonalPublisherForUser(ctx, user._id);
+    return {
+      user: publicUser,
+      profileSlug: user.profileSlug ?? user.handle ?? slug,
+      publisher: publisher ? { handle: publisher.handle, displayName: publisher.displayName } : null,
+    };
   },
 });
 

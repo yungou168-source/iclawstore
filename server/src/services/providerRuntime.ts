@@ -1,10 +1,10 @@
-import type { Pool } from 'mysql2/promise';
-import type { CredentialStore } from '../contracts/credentialStore.js';
-import type { CredentialKeyring } from './credentialKeyring.js';
-import { loadCredentialKeyring } from './credentialKeyring.js';
-import { createJinshaProvider } from './jinshaProvider.js';
-import { createMysqlCredentialStore } from './mysqlCredentialStore.js';
-import { createProviderRegistry, type ProviderRegistry } from './providerRegistry.js';
+import type { Pool } from "mysql2/promise";
+import type { CredentialStore } from "../contracts/credentialStore.js";
+import type { CredentialKeyring } from "./credentialKeyring.js";
+import { loadCredentialKeyring } from "./credentialKeyring.js";
+import { createJinshaProvider } from "./jinshaProvider.js";
+import { createMysqlCredentialStore } from "./mysqlCredentialStore.js";
+import { createProviderRegistry, type ProviderRegistry } from "./providerRegistry.js";
 
 export type ProviderRuntime = Readonly<{
   credentialStore: CredentialStore;
@@ -13,9 +13,9 @@ export type ProviderRuntime = Readonly<{
 }>;
 
 function enabled(value: string | undefined): boolean {
-  if (value === undefined || value === 'false') return false;
-  if (value === 'true') return true;
-  throw new Error('AI_DIRECT_PROVIDER_RUNTIME_ENABLED must be true or false');
+  if (value === undefined || value === "false") return false;
+  if (value === "true") return true;
+  throw new Error("AI_DIRECT_PROVIDER_RUNTIME_ENABLED must be true or false");
 }
 
 function required(value: string | undefined, name: string): string {
@@ -36,17 +36,16 @@ export function loadProviderRuntime(
 ): ProviderRuntime | null {
   if (!enabled(environment.AI_DIRECT_PROVIDER_RUNTIME_ENABLED)) return null;
 
-  const keyring = loadCredentialKeyring(required(
-    environment.CREDENTIAL_KEYRING_PATH,
-    'CREDENTIAL_KEYRING_PATH',
-  ));
+  const keyring = loadCredentialKeyring(
+    required(environment.CREDENTIAL_KEYRING_PATH, "CREDENTIAL_KEYRING_PATH"),
+  );
   try {
     const jinsha = createJinshaProvider({
-      baseUrl: required(environment.JINSHA_BASE_URL, 'JINSHA_BASE_URL'),
-      timeoutMs: optionalInteger(environment.JINSHA_TIMEOUT_MS, 'JINSHA_TIMEOUT_MS'),
+      baseUrl: required(environment.JINSHA_BASE_URL, "JINSHA_BASE_URL"),
+      timeoutMs: optionalInteger(environment.JINSHA_TIMEOUT_MS, "JINSHA_TIMEOUT_MS"),
       maxResponseBytes: optionalInteger(
         environment.JINSHA_MAX_RESPONSE_BYTES,
-        'JINSHA_MAX_RESPONSE_BYTES',
+        "JINSHA_MAX_RESPONSE_BYTES",
       ),
     });
     return Object.freeze({

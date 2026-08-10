@@ -5,7 +5,7 @@ import {
   aiDirectSessionRoutes,
   featureFlagConfigFromEnvironment,
   featureFlagsForOrganization,
-} from '../src/routes/aiDirectSession.js';
+} from "../src/routes/aiDirectSession.js";
 import { AiDirectHiringError, errorResponse } from "../src/services/aiDirectErrors.js";
 
 const apps: FastifyInstance[] = [];
@@ -22,8 +22,20 @@ const user: AuthenticatedUser = {
 };
 
 const organizations = [
-  { id: "org-2", name: "Second", slug: "second", role: "manager", membershipUpdatedAt: '2026-08-01T00:00:00.000Z' },
-  { id: "org-1", name: "First", slug: "first", role: "owner", membershipUpdatedAt: '2026-08-02T00:00:00.000Z' },
+  {
+    id: "org-2",
+    name: "Second",
+    slug: "second",
+    role: "manager",
+    membershipUpdatedAt: "2026-08-01T00:00:00.000Z",
+  },
+  {
+    id: "org-1",
+    name: "First",
+    slug: "first",
+    role: "owner",
+    membershipUpdatedAt: "2026-08-02T00:00:00.000Z",
+  },
 ];
 
 const createApp = async (authenticated = true) => {
@@ -84,11 +96,17 @@ describe("AI Direct Hiring session", () => {
         { id: "org-1", role: "owner" },
       ],
       organizationSelection: {
-        requestedOrganizationId: 'org-1',
-        resolvedOrganizationId: 'org-1',
-        source: 'requested',
+        requestedOrganizationId: "org-1",
+        resolvedOrganizationId: "org-1",
+        source: "requested",
       },
-      featureFlags: { aiDirectHiring: true, desktopIdentityBridge: true, candidateCatalog: false, interviews: false, providerExecution: false },
+      featureFlags: {
+        aiDirectHiring: true,
+        desktopIdentityBridge: true,
+        candidateCatalog: false,
+        interviews: false,
+        providerExecution: false,
+      },
       runtimeCapabilities: {
         desktopJobs: true,
         artifactDownload: false,
@@ -111,9 +129,9 @@ describe("AI Direct Hiring session", () => {
     expect(response.json()).toMatchObject({
       currentOrganization: { id: "org-2" },
       organizationSelection: {
-        requestedOrganizationId: 'revoked-org',
-        resolvedOrganizationId: 'org-2',
-        source: 'default',
+        requestedOrganizationId: "revoked-org",
+        resolvedOrganizationId: "org-2",
+        source: "default",
       },
     });
   });

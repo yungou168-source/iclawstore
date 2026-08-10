@@ -1,17 +1,17 @@
-import type { ProviderFailureClass } from '../contracts/modelProvider.js';
+import type { ProviderFailureClass } from "../contracts/modelProvider.js";
 
 const FAILURE_CODES: Readonly<Record<ProviderFailureClass, string>> = Object.freeze({
-  auth: 'PROVIDER_AUTH_FAILED',
-  rate_limit: 'PROVIDER_RATE_LIMITED',
-  timeout: 'PROVIDER_TIMEOUT',
-  network: 'PROVIDER_NETWORK_FAILED',
-  provider_5xx: 'PROVIDER_UPSTREAM_FAILED',
-  quota: 'PROVIDER_QUOTA_EXCEEDED',
-  invalid_request: 'PROVIDER_REQUEST_INVALID',
-  model_unavailable: 'PROVIDER_MODEL_UNAVAILABLE',
-  protocol: 'PROVIDER_PROTOCOL_INVALID',
-  budget_exceeded: 'PROVIDER_BUDGET_EXCEEDED',
-  provider_unavailable: 'PROVIDER_UNAVAILABLE',
+  auth: "PROVIDER_AUTH_FAILED",
+  rate_limit: "PROVIDER_RATE_LIMITED",
+  timeout: "PROVIDER_TIMEOUT",
+  network: "PROVIDER_NETWORK_FAILED",
+  provider_5xx: "PROVIDER_UPSTREAM_FAILED",
+  quota: "PROVIDER_QUOTA_EXCEEDED",
+  invalid_request: "PROVIDER_REQUEST_INVALID",
+  model_unavailable: "PROVIDER_MODEL_UNAVAILABLE",
+  protocol: "PROVIDER_PROTOCOL_INVALID",
+  budget_exceeded: "PROVIDER_BUDGET_EXCEEDED",
+  provider_unavailable: "PROVIDER_UNAVAILABLE",
 });
 
 export class ProviderExecutionError extends Error {
@@ -30,7 +30,7 @@ export class ProviderExecutionError extends Error {
     }> = {},
   ) {
     super(message, { cause: options.cause });
-    this.name = 'ProviderExecutionError';
+    this.name = "ProviderExecutionError";
     this.code = FAILURE_CODES[failureClass];
     this.failureClass = failureClass;
     this.retryAfterMs = options.retryAfterMs;

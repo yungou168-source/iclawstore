@@ -2,8 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BrowseSidebar } from "../../components/BrowseSidebar";
 import { SKILL_CATEGORIES } from "../../lib/categories";
-import { useLocale } from "../../lib/i18n/context";
+import { fastifyApi } from "../../lib/fastifyApi";
 import { t } from "../../lib/i18n";
+import { useLocale } from "../../lib/i18n/context";
 import { formatCompactStat } from "../../lib/numberFormat";
 import { parseDir, parseSort } from "./-params";
 import { SkillsResults } from "./-SkillsResults";
@@ -12,7 +13,6 @@ import {
   useSkillsBrowseModel,
   type SkillsSearchState,
 } from "./-useSkillsBrowseModel";
-import { fastifyApi } from "../../lib/fastifyApi";
 
 const SKILL_CATEGORY_SLUGS = new Set(SKILL_CATEGORIES.map((category) => category.slug));
 
@@ -48,16 +48,19 @@ export function SkillsIndex() {
   const search = Route.useSearch();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [totalSkills, setTotalSkills] = useState<number | null>(null);
-  
+
   // Fetch total skills count
   useEffect(() => {
-    fastifyApi.getSkills({ limit: 1 }).then((result) => {
-      setTotalSkills(result.pagination.total);
-    }).catch(() => {
-      setTotalSkills(null);
-    });
+    fastifyApi
+      .getSkills({ limit: 1 })
+      .then((result) => {
+        setTotalSkills(result.pagination.total);
+      })
+      .catch(() => {
+        setTotalSkills(null);
+      });
   }, []);
-  
+
   const totalSkillsText = typeof totalSkills === "number" ? formatCompactStat(totalSkills) : null;
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -168,14 +171,19 @@ export function SkillsIndex() {
           categories={SKILL_CATEGORIES}
           activeCategory={model.activeCategory}
           onCategoryChange={handleCategoryChange}
-          sortOptions={[{ value: "featured", label: t("skills.featured", locale) }, ...sortOptionsWithRelevance]}
+          sortOptions={[
+            { value: "featured", label: t("skills.featured", locale) },
+            ...sortOptionsWithRelevance,
+          ]}
           activeSort={model.featuredOnly ? "featured" : model.sort}
           onSortChange={handleSortChange}
         />
         <div className="browse-results">
           <div className="browse-results-toolbar">
             <span className="browse-results-count">
-              {model.isLoadingSkills ? "\u2014" : t("common.results", locale).replace("{count}", String(model.sorted.length))}
+              {model.isLoadingSkills
+                ? "\u2014"
+                : t("common.results", locale).replace("{count}", String(model.sorted.length))}
               {model.hasQuery || model.activeCategory || model.featuredOnly ? (
                 <button className="browse-clear-btn" type="button" onClick={handleClear}>
                   {t("common.clear", locale)}

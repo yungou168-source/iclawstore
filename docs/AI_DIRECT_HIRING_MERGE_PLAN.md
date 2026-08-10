@@ -17,17 +17,17 @@ The working tree on `feature/ai-direct-hire-p1-runtime` (G) currently has uncomm
 
 ## 1. Branch inventory (as of capture time)
 
-| Local branch                              | Commit    | Builds on                          | Subject                                                |
-| ----------------------------------------- | --------- | ---------------------------------- | ------------------------------------------------------ |
-| `master`                                  | `d05bb96` | —                                  | Initial ClawHub commit (pre-AI-Direct-Hiring)          |
-| `feature/ai-direct-hire-foundation`       | `916ce2b` | `master`                           | Baseline report only — diverged from integrated later  |
-| `feature/ai-direct-hire-p1-backend` (B)   | `8788b8a` | `foundation`                       | P1 backend core (already merged into `integrated`)     |
-| `feature/ai-direct-hire-p0-mount` (C)     | `d39eaf9` | `B`                                | P0 mount — errors/audit/outbox/idempotency (merged in)  |
-| `feature/ai-direct-hire-integrated` (D)   | `daf41f0` | `B + C`                            | Integrator's "B+C merged + tracker doc" baseline        |
-| `feature/ai-direct-hire-p2-hiring` (F)    | `ddcdead` | `D`                                | P2 routes + services (companies/projects/roles/...)    |
-| `feature/ai-direct-hire-p1-frontend` (E)  | `2060975` | `D`                                | P1 frontend (employer dashboard, agents, offers, ...)  |
-| `feature/ai-direct-hire-p1-runtime` (G)   | `8284931` | `D` (manually pulled F in `f58a3b4`) | P1 runtime — job queue + projection + jobs/workers routes |
-| `feature/mysql-migration` / `baseline-mysql-migration-fix` | `0d9f0d1` / `916ce2b` | `master`                  | Pre-existing MySQL fix branches — unrelated            |
+| Local branch                                               | Commit                | Builds on                            | Subject                                                   |
+| ---------------------------------------------------------- | --------------------- | ------------------------------------ | --------------------------------------------------------- |
+| `master`                                                   | `d05bb96`             | —                                    | Initial ClawHub commit (pre-AI-Direct-Hiring)             |
+| `feature/ai-direct-hire-foundation`                        | `916ce2b`             | `master`                             | Baseline report only — diverged from integrated later     |
+| `feature/ai-direct-hire-p1-backend` (B)                    | `8788b8a`             | `foundation`                         | P1 backend core (already merged into `integrated`)        |
+| `feature/ai-direct-hire-p0-mount` (C)                      | `d39eaf9`             | `B`                                  | P0 mount — errors/audit/outbox/idempotency (merged in)    |
+| `feature/ai-direct-hire-integrated` (D)                    | `daf41f0`             | `B + C`                              | Integrator's "B+C merged + tracker doc" baseline          |
+| `feature/ai-direct-hire-p2-hiring` (F)                     | `ddcdead`             | `D`                                  | P2 routes + services (companies/projects/roles/...)       |
+| `feature/ai-direct-hire-p1-frontend` (E)                   | `2060975`             | `D`                                  | P1 frontend (employer dashboard, agents, offers, ...)     |
+| `feature/ai-direct-hire-p1-runtime` (G)                    | `8284931`             | `D` (manually pulled F in `f58a3b4`) | P1 runtime — job queue + projection + jobs/workers routes |
+| `feature/mysql-migration` / `baseline-mysql-migration-fix` | `0d9f0d1` / `916ce2b` | `master`                             | Pre-existing MySQL fix branches — unrelated               |
 
 `git merge-base --is-ancestor` confirmed: **E, F, and G are all descendants of `integrated`.** B and C are also descendants but have been fully absorbed — they are not merge-relevant any more.
 
@@ -43,13 +43,13 @@ Only one worktree is attached (the main repo on G). No detached partner worktree
 
 ## 2. Diff stats vs `integrated`
 
-| Branch  | Files changed | Lines (insertions + deletions, `git diff --stat` totals) | Net insertions vs D |
-| ------- | ------------- | ------------------------------------------------------- | ------------------- |
-| **E** (frontend)         | 16 | **+2945 / -0**     | +2945 lines (all additive)                     |
-| **F** (P2 hiring)        | 15 | **+3608 / -0**     | +3608 lines (all additive)                     |
-| **G** (P1 runtime)       | 16 | **+4126 / -0**     | +4126 lines (all additive; F was already copied in) |
-| B (already in D)         |  7 | reverse diff (-2243)                                       | historical only     |
-| C (already in D)         | 12 | reverse diff (-1930)                                       | historical only     |
+| Branch             | Files changed | Lines (insertions + deletions, `git diff --stat` totals) | Net insertions vs D                                 |
+| ------------------ | ------------- | -------------------------------------------------------- | --------------------------------------------------- |
+| **E** (frontend)   | 16            | **+2945 / -0**                                           | +2945 lines (all additive)                          |
+| **F** (P2 hiring)  | 15            | **+3608 / -0**                                           | +3608 lines (all additive)                          |
+| **G** (P1 runtime) | 16            | **+4126 / -0**                                           | +4126 lines (all additive; F was already copied in) |
+| B (already in D)   | 7             | reverse diff (-2243)                                     | historical only                                     |
+| C (already in D)   | 12            | reverse diff (-1930)                                     | historical only                                     |
 
 All three current branches are **additive**: zero deletions vs `integrated`. That's why the conflict surface is concentrated on the per-file content below.
 
@@ -60,12 +60,15 @@ All three current branches are **additive**: zero deletions vs `integrated`. Tha
 Cross-branch file overlap (`comm -12` of `git diff --name-only` output):
 
 ### E ∩ F — empty
+
 E's surface (`src/routes/employer/**`, `src/routes/me/credentials.tsx`, `src/components/employer/**`, `src/lib/aiDirectApi.ts`, `src/lib/aiDirectErrorMessages.ts`, `src/lib/i18n/translations.ts`, `src/lib/nav-items.ts`, `src/components/Header.tsx`) does **not** touch `server/`. **No conflict.**
 
 ### E ∩ G — empty
+
 Same as above. **No conflict.**
 
 ### F ∩ G — 9 files
+
 The conflict surface is between F and G (both backend) and it is concentrated in:
 
 ```
@@ -88,23 +91,23 @@ E does **not** participate in backend conflicts at all.
 
 ### Doc files
 
-| Doc                                                | Touched by    | Conflict risk |
-| -------------------------------------------------- | ------------- | ------------- |
-| `docs/AI_DIRECT_HIRING_BASELINE.md`                | foundation    | none          |
-| `docs/AI_DIRECT_HIRING_P0_MOUNT.md`                | C → integrated | none (already merged) |
-| `docs/AI_DIRECT_HIRING_P1_BACKEND.md`              | B → integrated | none          |
-| `docs/AI_DIRECT_HIRING_P1_RUNTIME.md`              | G only        | none          |
-| `docs/AI_DIRECT_HIRING_P2_HIRING.md`               | F only        | none          |
-| `docs/AI_DIRECT_HIRING_P1_FRONTEND.md`             | E only        | none          |
-| `docs/AI_DIRECT_HIRING_INTEGRATION_REPORT.md`      | D             | none          |
+| Doc                                           | Touched by     | Conflict risk         |
+| --------------------------------------------- | -------------- | --------------------- |
+| `docs/AI_DIRECT_HIRING_BASELINE.md`           | foundation     | none                  |
+| `docs/AI_DIRECT_HIRING_P0_MOUNT.md`           | C → integrated | none (already merged) |
+| `docs/AI_DIRECT_HIRING_P1_BACKEND.md`         | B → integrated | none                  |
+| `docs/AI_DIRECT_HIRING_P1_RUNTIME.md`         | G only         | none                  |
+| `docs/AI_DIRECT_HIRING_P2_HIRING.md`          | F only         | none                  |
+| `docs/AI_DIRECT_HIRING_P1_FRONTEND.md`        | E only         | none                  |
+| `docs/AI_DIRECT_HIRING_INTEGRATION_REPORT.md` | D              | none                  |
 
 Each doc is owned by exactly one branch. **No doc conflicts.**
 
 ### Prisma schema / migrations
 
-| File                                            | Owned by              |
-| ----------------------------------------------- | --------------------- |
-| `prisma/schema.prisma`                          | B (already in D)      |
+| File                                                           | Owned by         |
+| -------------------------------------------------------------- | ---------------- |
+| `prisma/schema.prisma`                                         | B (already in D) |
 | `prisma/migrations/20260801_ai_direct_hiring_p1/migration.sql` | B (already in D) |
 
 **⚠ However**, when capturing this report the working tree on G has **uncommitted** changes to `prisma/schema.prisma` and an untracked migration folder `prisma/migrations/20260801_ai_direct_hiring_obsidian_m1/`. These appear to come from a sibling agent (likely Agent H per the original brief) and are **not part of any branch yet**. Don't merge until that work is either committed on its own branch or stashed away — otherwise `git checkout` collisions will appear.
@@ -115,14 +118,14 @@ Each doc is owned by exactly one branch. **No doc conflicts.**
 
 Assuming the maintainer wants **all four feature branches in one final branch** (the "all-in-one" target):
 
-1. `feature/ai-direct-hire-integrated`  *(base; commit `daf41f0`)*
-2. merge `feature/ai-direct-hire-p2-hiring` *(F; commit `ddcdead`)*
+1. `feature/ai-direct-hire-integrated` _(base; commit `daf41f0`)_
+2. merge `feature/ai-direct-hire-p2-hiring` _(F; commit `ddcdead`)_
    - Likely zero conflicts: G has absorbed F already, but a clean re-merge from `integrated` is still a sanity check.
    - If conflicts appear on the 6 service files, take "theirs" (G's manual integration in `f58a3b4` is the canonical version).
-3. merge `feature/ai-direct-hire-p1-frontend` *(E; commit `2060975`)*
+3. merge `feature/ai-direct-hire-p1-frontend` _(E; commit `2060975`)_
    - Zero expected conflicts in `server/` or `docs/`. Frontend subtree is disjoint.
    - Possible dependency drift in `package.json` — review after the merge.
-4. merge `feature/ai-direct-hire-p1-runtime` *(G; commit `8284931`)*
+4. merge `feature/ai-direct-hire-p1-runtime` _(G; commit `8284931`)_
    - Should land cleanly because G is built atop `f58a3b4` (already includes F). Watch the 9 overlapping files for any delta applied after `f58a3b4` (e.g., the test additions and `runProjection.ts`).
 5. After all four land: re-run `bun run ci:static` locally, then push the resulting branch.
 
@@ -183,17 +186,17 @@ git merge --no-ff feature/ai-direct-hire-p1-frontend   # disjoint from server/
 
 ## 6. Risk register
 
-| Risk                                                  | Impact | Likelihood | Mitigation                                                                                  |
-| ----------------------------------------------------- | ------ | ---------- | ------------------------------------------------------------------------------------------- |
-| All branches are unverified by CI in this environment  | High   | Certain    | Run `bun run ci:static` and at minimum `bun run lint`/`bun run format:check` before pushing |
-| Uncommitted edits on G (schema + new migration + new route + styles + route tree) | High if you checkout naively | Certain | Stash (`git stash push -u`) or commit them on a separate branch first                       |
-| Memory pressure on the dev server (3.4 / 3.6 GB)      | Medium | High       | Defer running `dev` / `build` / `test` until off-hours; CI handles it instead              |
-| E (frontend) may assume backend route names that F/G renamed | Medium | Medium | Read `src/lib/aiDirectApi.ts` and check against the Fastify route register in `server/src/routes/aiDirect*.ts` |
-| G ↔ F overlap on 9 service files                      | Medium | Medium     | Already reconciled in commit `f58a3b4`; favor G during conflicts                              |
-| `prisma/schema.prisma` modified by two agents        | High   | High       | Coordinate ownership before merging — only one agent should hold the schema                  |
-| `prisma/migrations/20260801_ai_direct_hiring_obsidian_m1/` is **untracked** | Medium | Certain | Decide if it should land before or after the merge; `prisma migrate deploy` cannot run inside this session |
-| `feature/ai-direct-hire-foundation` diverged after `integrated` was cut | Low  | Low        | Ignore `foundation` — its history is preserved in `integrated`'s ancestor chain               |
-| Auto-generated `src/routeTree.gen.ts` will collide if E added routes and another agent also touched the file | Low | Low | Recreate with the project's `bun run dev` / codegen script post-merge                      |
+| Risk                                                                                                         | Impact                       | Likelihood | Mitigation                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------ | ---------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------- |
+| All branches are unverified by CI in this environment                                                        | High                         | Certain    | Run `bun run ci:static` and at minimum `bun run lint`/`bun run format:check` before pushing                    |
+| Uncommitted edits on G (schema + new migration + new route + styles + route tree)                            | High if you checkout naively | Certain    | Stash (`git stash push -u`) or commit them on a separate branch first                                          |
+| Memory pressure on the dev server (3.4 / 3.6 GB)                                                             | Medium                       | High       | Defer running `dev` / `build` / `test` until off-hours; CI handles it instead                                  |
+| E (frontend) may assume backend route names that F/G renamed                                                 | Medium                       | Medium     | Read `src/lib/aiDirectApi.ts` and check against the Fastify route register in `server/src/routes/aiDirect*.ts` |
+| G ↔ F overlap on 9 service files                                                                             | Medium                       | Medium     | Already reconciled in commit `f58a3b4`; favor G during conflicts                                               |
+| `prisma/schema.prisma` modified by two agents                                                                | High                         | High       | Coordinate ownership before merging — only one agent should hold the schema                                    |
+| `prisma/migrations/20260801_ai_direct_hiring_obsidian_m1/` is **untracked**                                  | Medium                       | Certain    | Decide if it should land before or after the merge; `prisma migrate deploy` cannot run inside this session     |
+| `feature/ai-direct-hire-foundation` diverged after `integrated` was cut                                      | Low                          | Low        | Ignore `foundation` — its history is preserved in `integrated`'s ancestor chain                                |
+| Auto-generated `src/routeTree.gen.ts` will collide if E added routes and another agent also touched the file | Low                          | Low        | Recreate with the project's `bun run dev` / codegen script post-merge                                          |
 
 ---
 
@@ -222,4 +225,3 @@ git merge --no-ff feature/ai-direct-hire-p1-frontend   # disjoint from server/
 
 - Inspections performed: `git branch -v`, `git worktree list`, `git log --oneline --all --graph -20`, `git merge-base --is-ancestor` (four branches), `git diff --stat` (five branches vs `integrated`), `git diff --name-only` (three branches vs `integrated`), `comm -12` between each pair of changed-file lists, `git log` per-doc and per-migration.
 - Report committed: see next section.
-

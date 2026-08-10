@@ -23,26 +23,14 @@
  *   States `succeeded`, `failed`, `cancelled` are terminal.
  */
 
-import { createHash, randomUUID } from 'node:crypto';
-import { Pool, PoolConnection } from 'mysql2/promise';
-import type { ProviderFailureClass } from '../contracts/modelProvider.js';
+import { createHash, randomUUID } from "node:crypto";
+import { Pool, PoolConnection } from "mysql2/promise";
+import type { ProviderFailureClass } from "../contracts/modelProvider.js";
 
-export const RUN_STATUSES = [
-  'queued',
-  'active',
-  'succeeded',
-  'failed',
-  'cancelled',
-] as const;
+export const RUN_STATUSES = ["queued", "active", "succeeded", "failed", "cancelled"] as const;
 export type RunStatus = (typeof RUN_STATUSES)[number];
 
-export const STEP_STATUSES = [
-  'pending',
-  'running',
-  'succeeded',
-  'failed',
-  'skipped',
-] as const;
+export const STEP_STATUSES = ["pending", "running", "succeeded", "failed", "skipped"] as const;
 export type StepStatus = (typeof STEP_STATUSES)[number];
 
 export const LEASE_TTL_SECONDS = 60;
@@ -70,7 +58,7 @@ export interface ArtifactInput {
   mimeType: string;
   sizeBytes: number;
   sha256: string;
-  visibility: 'organization' | 'requester';
+  visibility: "organization" | "requester";
 }
 
 export interface ModelExecutionAuditInput {
@@ -95,7 +83,7 @@ export interface ProviderFailureInput {
   reason?: string;
   failureClass: ProviderFailureClass;
   retryAfterMs?: number;
-  modelAudit?: Omit<ModelExecutionAuditInput, 'inputTokens' | 'outputTokens' | 'costMicros'>;
+  modelAudit?: Omit<ModelExecutionAuditInput, "inputTokens" | "outputTokens" | "costMicros">;
 }
 
 export interface RunContext {
@@ -127,7 +115,7 @@ function nowPlus(seconds: number): Date {
 }
 
 function isTerminal(status: RunStatus): boolean {
-  return status === 'succeeded' || status === 'failed' || status === 'cancelled';
+  return status === "succeeded" || status === "failed" || status === "cancelled";
 }
 
 async function beginConn(pool: Pool): Promise<PoolConnection> {
@@ -194,9 +182,9 @@ async function writeModelAudit(
   conn: PoolConnection,
   runId: string,
   stepId: string,
-  status: 'succeeded' | 'failed',
+  status: "succeeded" | "failed",
   audit: ModelExecutionAuditInput,
-  failure?: Pick<ProviderFailureInput, 'code' | 'failureClass'>,
+  failure?: Pick<ProviderFailureInput, "code" | "failureClass">,
 ): Promise<void> {
   await conn.query(
     `INSERT INTO ai_direct_model_run_audits
@@ -261,10 +249,12 @@ async function incrementProviderMetric(
 }
 
 function retryableFailure(failureClass: ProviderFailureClass): boolean {
-  return failureClass === 'timeout'
-    || failureClass === 'network'
-    || failureClass === 'provider_5xx'
-    || failureClass === 'rate_limit';
+  return (
+    failureClass === "timeout" ||
+    failureClass === "network" ||
+    failureClass === "provider_5xx" ||
+    failureClass === "rate_limit"
+  );
 }
 
 function retryDelayMs(
@@ -274,30 +264,30 @@ function retryDelayMs(
   retryAfterMs?: number,
 ): number {
   const base = Math.min(1_000 * 2 ** Math.max(0, attempt - 1), 300_000);
-  const hash = createHash('sha256').update(`${runId}:${stepId}:${attempt}`).digest();
+  const hash = createHash("sha256").update(`${runId}:${stepId}:${attempt}`).digest();
   const jitter = hash.readUInt16BE(0) / 0xffff;
   return Math.min(Math.max(retryAfterMs ?? 0, Math.round(base * (0.75 + jitter * 0.5))), 3_600_000);
 }
 
-export function decideProviderFailure(input: Readonly<{
-  runId: string;
-  stepId: string;
-  attempt: number;
-  maxAttempts: number;
-  failureClass: ProviderFailureClass;
-  retryAfterMs?: number;
-  now?: number;
-}>): { retryScheduled: boolean; runAfter: Date | null } {
+export function decideProviderFailure(
+  input: Readonly<{
+    runId: string;
+    stepId: string;
+    attempt: number;
+    maxAttempts: number;
+    failureClass: ProviderFailureClass;
+    retryAfterMs?: number;
+    now?: number;
+  }>,
+): { retryScheduled: boolean; runAfter: Date | null } {
   const retryScheduled = retryableFailure(input.failureClass) && input.attempt < input.maxAttempts;
   return {
     retryScheduled,
     runAfter: retryScheduled
-      ? new Date((input.now ?? Date.now()) + retryDelayMs(
-        input.runId,
-        input.stepId,
-        input.attempt,
-        input.retryAfterMs,
-      ))
+      ? new Date(
+          (input.now ?? Date.now()) +
+            retryDelayMs(input.runId, input.stepId, input.attempt, input.retryAfterMs),
+        )
       : null,
   };
 }
@@ -308,7 +298,7 @@ export async function enqueueWorkflowRun(
   requestId: string,
 ): Promise<{ runId: string; stepIds: string[] }> {
   if (!input.initialSteps.length) {
-    throw new Error('enqueue requires at least one initial step');
+    throw new Error("enqueue requires at least one initial step");
   }
   const runId = randomUUID();
   const stepIds = input.initialSteps.map(() => randomUUID());
@@ -351,8 +341,8 @@ export async function enqueueWorkflowRun(
   await writeAudit(conn, {
     organizationId: input.organizationId ?? null,
     actorUserId: input.requestedByUserId,
-    action: 'workflow_run.enqueued',
-    targetType: 'workflow_run',
+    action: "workflow_run.enqueued",
+    targetType: "workflow_run",
     targetId: runId,
     requestId,
     metadata: {
@@ -362,9 +352,9 @@ export async function enqueueWorkflowRun(
   });
   await publishOutboxEvent(conn, {
     organizationId: input.organizationId ?? null,
-    aggregateType: 'workflow_run',
+    aggregateType: "workflow_run",
     aggregateId: runId,
-    eventType: 'workflow_run.enqueued.v1',
+    eventType: "workflow_run.enqueued.v1",
     payload: {
       runId,
       workflowKey: input.workflowKey,
@@ -412,9 +402,9 @@ export class JobQueueService {
   async leaseNext(
     workerId: string,
     organizationId: string,
-    capability: 'general' | 'provider' = 'general',
+    capability: "general" | "provider" = "general",
   ): Promise<RunContext | null> {
-    const providerStep = capability === 'provider';
+    const providerStep = capability === "provider";
     const conn = await beginConn(this.pool);
     try {
       const [rows] = (await conn.query(
@@ -467,7 +457,7 @@ export class JobQueueService {
          WHERE id = ?`,
         [workerId, leaseExpiresAt, row.id],
       );
-      if (row.status === 'active') {
+      if (row.status === "active") {
         await conn.query(
           `UPDATE ai_direct_workflow_run_steps
            SET attemptCount = attemptCount + 1
@@ -513,7 +503,7 @@ export class JobQueueService {
       }
       await conn.commit();
       const inputSummary = row.inputSummary
-        ? typeof row.inputSummary === 'string'
+        ? typeof row.inputSummary === "string"
           ? JSON.parse(row.inputSummary)
           : row.inputSummary
         : {};
@@ -528,7 +518,7 @@ export class JobQueueService {
         agentVersionId: row.agentVersionId,
         requestedByUserId: row.requestedByUserId,
         workflowKey: row.workflowKey,
-        status: 'active',
+        status: "active",
         stepCount: Number(stepRows[0]?.stepCount ?? 0),
         currentStep: {
           stepId: currentStep.id,
@@ -538,7 +528,7 @@ export class JobQueueService {
           attempt: Number(currentStep.attemptCount),
           maxAttempts: Number(currentStep.maxAttempts),
           metadata: currentStep.metadata
-            ? typeof currentStep.metadata === 'string'
+            ? typeof currentStep.metadata === "string"
               ? JSON.parse(currentStep.metadata)
               : currentStep.metadata
             : {},
@@ -595,8 +585,8 @@ export class JobQueueService {
         [runId],
       )) as any;
       const run = runRows[0];
-      if (!run || run.status !== 'active' || run.leaseOwner !== workerId) {
-        throw new Error('Worker does not hold the active run lease');
+      if (!run || run.status !== "active" || run.leaseOwner !== workerId) {
+        throw new Error("Worker does not hold the active run lease");
       }
       const [stepRows] = (await conn.query(
         `SELECT id, status, attemptCount FROM ai_direct_workflow_run_steps
@@ -604,20 +594,18 @@ export class JobQueueService {
         [runId, sequence],
       )) as any;
       const step = stepRows[0];
-      if (!step || step.status !== 'running') {
-        throw new Error('Step is not the active running step');
+      if (!step || step.status !== "running") {
+        throw new Error("Step is not the active running step");
       }
       if (
-        output.modelAudit
-        && (
-          output.modelAudit.attempt !== Number(step.attemptCount)
-          || output.modelAudit.inputTokens !== output.tokenUsage?.inputTokens
-          || output.modelAudit.outputTokens !== output.tokenUsage?.outputTokens
-          || output.modelAudit.costMicros !== output.costMicros
-          || output.modelAudit.latencyMs !== output.latencyMs
-        )
+        output.modelAudit &&
+        (output.modelAudit.attempt !== Number(step.attemptCount) ||
+          output.modelAudit.inputTokens !== output.tokenUsage?.inputTokens ||
+          output.modelAudit.outputTokens !== output.tokenUsage?.outputTokens ||
+          output.modelAudit.costMicros !== output.costMicros ||
+          output.modelAudit.latencyMs !== output.latencyMs)
       ) {
-        throw new Error('Model audit does not match the active step result');
+        throw new Error("Model audit does not match the active step result");
       }
       await conn.query(
         `UPDATE ai_direct_workflow_run_steps
@@ -637,8 +625,8 @@ export class JobQueueService {
         ],
       );
       if (output.modelAudit) {
-        await writeModelAudit(conn, runId, step.id, 'succeeded', output.modelAudit);
-        await incrementProviderMetric(conn, output.modelAudit.providerKey, 'succeeded');
+        await writeModelAudit(conn, runId, step.id, "succeeded", output.modelAudit);
+        await incrementProviderMetric(conn, output.modelAudit.providerKey, "succeeded");
       }
       await refreshRunUsage(conn, runId);
       for (const artifact of output.artifacts ?? []) {
@@ -654,7 +642,7 @@ export class JobQueueService {
             step.id,
             artifact.kind,
             artifact.storagePath,
-            createHash('sha256').update(artifact.storagePath, 'utf8').digest('hex'),
+            createHash("sha256").update(artifact.storagePath, "utf8").digest("hex"),
             artifact.mimeType,
             artifact.sizeBytes,
             artifact.sha256,
@@ -685,11 +673,11 @@ export class JobQueueService {
             stepId: next.id,
             stepKey: next.stepKey,
             sequence: Number(next.sequence),
-            status: 'pending',
+            status: "pending",
             attempt: Number(next.attemptCount),
             maxAttempts: Number(next.maxAttempts),
             metadata: next.metadata
-              ? typeof next.metadata === 'string'
+              ? typeof next.metadata === "string"
                 ? JSON.parse(next.metadata)
                 : next.metadata
               : {},
@@ -706,16 +694,16 @@ export class JobQueueService {
       await writeAudit(conn, {
         organizationId: run.organizationId,
         actorUserId: `worker:${workerId}`,
-        action: 'workflow_run.succeeded',
-        targetType: 'workflow_run',
+        action: "workflow_run.succeeded",
+        targetType: "workflow_run",
         targetId: runId,
         requestId: this.requestId,
       });
       await publishOutboxEvent(conn, {
         organizationId: run.organizationId,
-        aggregateType: 'workflow_run',
+        aggregateType: "workflow_run",
         aggregateId: runId,
-        eventType: 'workflow_run.succeeded.v1',
+        eventType: "workflow_run.succeeded.v1",
         payload: { runId, workerId },
       });
       await conn.commit();
@@ -746,8 +734,8 @@ export class JobQueueService {
         [runId],
       )) as any;
       const run = runRows[0];
-      if (!run || run.status !== 'active' || run.leaseOwner !== workerId) {
-        throw new Error('Worker does not hold the active run lease');
+      if (!run || run.status !== "active" || run.leaseOwner !== workerId) {
+        throw new Error("Worker does not hold the active run lease");
       }
       const [stepRows] = (await conn.query(
         `SELECT id, status, attemptCount, maxAttempts
@@ -756,15 +744,15 @@ export class JobQueueService {
         [runId, sequence],
       )) as any;
       const step = stepRows[0];
-      if (!step || step.status !== 'running') {
-        throw new Error('Step is not the active running step');
+      if (!step || step.status !== "running") {
+        throw new Error("Step is not the active running step");
       }
       if (failure.modelAudit && failure.modelAudit.attempt !== Number(step.attemptCount)) {
-        throw new Error('Model audit does not match the active step attempt');
+        throw new Error("Model audit does not match the active step attempt");
       }
 
       if (failure.modelAudit) {
-        await writeModelAudit(conn, runId, step.id, 'failed', failure.modelAudit, failure);
+        await writeModelAudit(conn, runId, step.id, "failed", failure.modelAudit, failure);
         await incrementProviderMetric(conn, failure.modelAudit.providerKey, failure.failureClass);
       }
       const decision = decideProviderFailure({
@@ -793,9 +781,9 @@ export class JobQueueService {
         );
         await publishOutboxEvent(conn, {
           organizationId: run.organizationId,
-          aggregateType: 'workflow_run',
+          aggregateType: "workflow_run",
           aggregateId: runId,
-          eventType: 'workflow_run.retry_scheduled.v1',
+          eventType: "workflow_run.retry_scheduled.v1",
           payload: {
             runId,
             sequence,
@@ -821,17 +809,17 @@ export class JobQueueService {
         await writeAudit(conn, {
           organizationId: run.organizationId,
           actorUserId: `worker:${workerId}`,
-          action: 'workflow_run.failed',
-          targetType: 'workflow_run',
+          action: "workflow_run.failed",
+          targetType: "workflow_run",
           targetId: runId,
           requestId: this.requestId,
           metadata: { sequence, code: failure.code, failureClass: failure.failureClass },
         });
         await publishOutboxEvent(conn, {
           organizationId: run.organizationId,
-          aggregateType: 'workflow_run',
+          aggregateType: "workflow_run",
           aggregateId: runId,
-          eventType: 'workflow_run.failed.v1',
+          eventType: "workflow_run.failed.v1",
           payload: {
             runId,
             sequence,
@@ -863,7 +851,7 @@ export class JobQueueService {
         [runId],
       )) as any;
       const row = rows[0];
-      if (!row) throw new Error('Run not found');
+      if (!row) throw new Error("Run not found");
       if (isTerminal(row.status)) {
         await conn.rollback();
         throw new Error(`Run is already terminal (${row.status})`);
@@ -889,17 +877,17 @@ export class JobQueueService {
       await writeAudit(conn, {
         organizationId: row.organizationId,
         actorUserId,
-        action: 'workflow_run.cancelled',
-        targetType: 'workflow_run',
+        action: "workflow_run.cancelled",
+        targetType: "workflow_run",
         targetId: runId,
         requestId: this.requestId,
         metadata: { reason },
       });
       await publishOutboxEvent(conn, {
         organizationId: row.organizationId,
-        aggregateType: 'workflow_run',
+        aggregateType: "workflow_run",
         aggregateId: runId,
-        eventType: 'workflow_run.cancelled.v1',
+        eventType: "workflow_run.cancelled.v1",
         payload: { runId, reason, actorUserId },
       });
       await conn.commit();
@@ -923,8 +911,8 @@ export class JobQueueService {
       [runId],
     )) as any;
     const source = rows[0];
-    if (!source) throw new Error('Source run not found');
-    if (!isTerminal(source.status) && source.status !== 'failed') {
+    if (!source) throw new Error("Source run not found");
+    if (!isTerminal(source.status) && source.status !== "failed") {
       throw new Error(`Only failed/terminal runs can be retried (current: ${source.status})`);
     }
     const [stepRows] = (await this.pool.query(
@@ -933,7 +921,11 @@ export class JobQueueService {
     )) as any;
     const initialSteps = (stepRows as any[]).map((s) => ({
       stepKey: s.stepKey,
-      metadata: s.metadata ? (typeof s.metadata === 'string' ? JSON.parse(s.metadata) : s.metadata) : undefined,
+      metadata: s.metadata
+        ? typeof s.metadata === "string"
+          ? JSON.parse(s.metadata)
+          : s.metadata
+        : undefined,
     }));
     const result = await this.enqueue({
       organizationId: source.organizationId,
@@ -944,12 +936,12 @@ export class JobQueueService {
       requestedByUserId: actorUserId,
       approvalId: source.approvalId,
       requestedModelPolicy: source.requestedModelPolicy
-        ? typeof source.requestedModelPolicy === 'string'
+        ? typeof source.requestedModelPolicy === "string"
           ? JSON.parse(source.requestedModelPolicy)
           : source.requestedModelPolicy
         : null,
       inputSummary: source.inputSummary
-        ? typeof source.inputSummary === 'string'
+        ? typeof source.inputSummary === "string"
           ? JSON.parse(source.inputSummary)
           : source.inputSummary
         : null,

@@ -1,5 +1,5 @@
-import type { RowDataPacket } from 'mysql2/promise';
-import { AiDirectHiringError, ErrorCodes } from './aiDirectErrors.js';
+import type { RowDataPacket } from "mysql2/promise";
+import { AiDirectHiringError, ErrorCodes } from "./aiDirectErrors.js";
 
 export interface AppearanceQueryExecutor {
   query<T extends RowDataPacket[] = RowDataPacket[]>(
@@ -13,7 +13,7 @@ export interface AgentAppearanceScope extends RowDataPacket {
   ownerUserId: string;
   ownerPublisherId: string | null;
   avatarAssetId: string | null;
-  defaultMode: 'image_2d' | 'model_3d';
+  defaultMode: "image_2d" | "model_3d";
   controllerEmploymentId: string | null;
   controllerCompanyId: string | null;
   revision: string | number | bigint | null;
@@ -22,7 +22,7 @@ export interface AgentAppearanceScope extends RowDataPacket {
 
 export interface AppearanceWriteAccess {
   scope: AgentAppearanceScope;
-  authority: 'developer' | 'publisher' | 'company';
+  authority: "developer" | "publisher" | "company";
 }
 
 export async function loadAgentAppearanceScope(
@@ -38,11 +38,11 @@ export async function loadAgentAppearanceScope(
      FROM ai_direct_agents agent
      LEFT JOIN ai_direct_agent_appearance_profiles profile ON profile.agentId = agent.id
      WHERE agent.id = ?
-     LIMIT 1${lock ? ' FOR UPDATE' : ''}`,
+     LIMIT 1${lock ? " FOR UPDATE" : ""}`,
     [agentId],
   );
   if (!rows[0]) {
-    throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Agent 不存在', 404);
+    throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, "Agent 不存在", 404);
   }
   return rows[0];
 }
@@ -69,19 +69,19 @@ export async function requireAppearanceWriteAccess(
       [userId, scope.controllerCompanyId],
     );
     const role = rows[0]?.companyRole;
-    if (role === 'owner' || role === 'admin' || role === 'manager') {
-      return { scope, authority: 'company' };
+    if (role === "owner" || role === "admin" || role === "manager") {
+      return { scope, authority: "company" };
     }
     throw new AiDirectHiringError(
       ErrorCodes.FORBIDDEN_SCOPE,
-      'Agent 任职期间仅控制公司的 owner、admin 或 manager 可修改形象',
+      "Agent 任职期间仅控制公司的 owner、admin 或 manager 可修改形象",
       403,
-      { readOnlyReason: 'controlled_by_employer', controllerCompanyId: scope.controllerCompanyId },
+      { readOnlyReason: "controlled_by_employer", controllerCompanyId: scope.controllerCompanyId },
     );
   }
 
   if (scope.ownerUserId === userId) {
-    return { scope, authority: 'developer' };
+    return { scope, authority: "developer" };
   }
   if (scope.ownerPublisherId) {
     const [rows] = await executor.query<RowDataPacket[]>(
@@ -95,22 +95,23 @@ export async function requireAppearanceWriteAccess(
       [userId, scope.ownerPublisherId, userId],
     );
     if (rows[0]) {
-      return { scope, authority: 'publisher' };
+      return { scope, authority: "publisher" };
     }
   }
-  throw new AiDirectHiringError(
-    ErrorCodes.FORBIDDEN_SCOPE,
-    '用户无权修改该 Agent 形象',
-    403,
-    { readOnlyReason: 'not_agent_owner' },
-  );
+  throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, "用户无权修改该 Agent 形象", 403, {
+    readOnlyReason: "not_agent_owner",
+  });
 }
 
 export async function canWriteAppearance(
   executor: AppearanceQueryExecutor,
   scope: AgentAppearanceScope,
   userId: string,
-): Promise<{ canWrite: boolean; authority: AppearanceWriteAccess['authority'] | null; readOnlyReason: string | null }> {
+): Promise<{
+  canWrite: boolean;
+  authority: AppearanceWriteAccess["authority"] | null;
+  readOnlyReason: string | null;
+}> {
   try {
     const access = await requireAppearanceWriteAccess(executor, scope, userId);
     return { canWrite: true, authority: access.authority, readOnlyReason: null };
@@ -120,7 +121,7 @@ export async function canWriteAppearance(
       return {
         canWrite: false,
         authority: null,
-        readOnlyReason: details?.readOnlyReason ?? 'forbidden',
+        readOnlyReason: details?.readOnlyReason ?? "forbidden",
       };
     }
     throw error;
@@ -128,11 +129,11 @@ export async function canWriteAppearance(
 }
 
 export function appearanceEtag(revision: string | number | bigint | null): string {
-  return `\"appearance-${revision === null ? '0' : String(revision)}\"`;
+  return `\"appearance-${revision === null ? "0" : String(revision)}\"`;
 }
 
 export function parseAppearanceIfMatch(value: unknown): bigint {
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     throw new AiDirectHiringError(
       ErrorCodes.PRECONDITION_REQUIRED,
       '必须提交 If-Match: \"appearance-{revision}\"',
@@ -141,7 +142,7 @@ export function parseAppearanceIfMatch(value: unknown): bigint {
   }
   const match = /^\"?appearance-(0|[1-9][0-9]*)\"?$/.exec(value.trim());
   if (!match) {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'If-Match 格式无效');
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "If-Match 格式无效");
   }
   return BigInt(match[1]!);
 }
@@ -154,7 +155,7 @@ export function assertAppearanceRevision(
   if (expected !== revision) {
     throw new AiDirectHiringError(
       ErrorCodes.REVISION_CONFLICT,
-      'Agent 形象已被其他客户端更新',
+      "Agent 形象已被其他客户端更新",
       409,
       { currentRevision: revision.toString(), etag: appearanceEtag(revision) },
     );

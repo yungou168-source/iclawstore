@@ -1,4 +1,4 @@
-import { monitorEventLoopDelay } from 'node:perf_hooks';
+import { monitorEventLoopDelay } from "node:perf_hooks";
 
 export type RuntimeMetrics = Readonly<{
   role: string;
@@ -25,13 +25,15 @@ export function parseBoundedPositiveInteger(
   return Number.isSafeInteger(parsed) && parsed > 0 ? Math.min(parsed, maximum) : fallback;
 }
 
-export function createRuntimeObserver(input: Readonly<{
-  role: string;
-  mysqlConnectionLimit?: number;
-  resolutionMs?: number;
-  memoryUsage?: () => NodeJS.MemoryUsage;
-  uptime?: () => number;
-}>): RuntimeObserver {
+export function createRuntimeObserver(
+  input: Readonly<{
+    role: string;
+    mysqlConnectionLimit?: number;
+    resolutionMs?: number;
+    memoryUsage?: () => NodeJS.MemoryUsage;
+    uptime?: () => number;
+  }>,
+): RuntimeObserver {
   const delay = monitorEventLoopDelay({ resolution: input.resolutionMs ?? 20 });
   delay.enable();
   const memoryUsage = input.memoryUsage ?? process.memoryUsage;
@@ -49,9 +51,10 @@ export function createRuntimeObserver(input: Readonly<{
         heapUsedBytes: memory.heapUsed,
         heapTotalBytes: memory.heapTotal,
         externalBytes: memory.external,
-        eventLoopDelayP99Ms: Number.isFinite(delayP99Ns) && delayP99Ns > 0
-          ? Number((delayP99Ns / 1_000_000).toFixed(3))
-          : null,
+        eventLoopDelayP99Ms:
+          Number.isFinite(delayP99Ns) && delayP99Ns > 0
+            ? Number((delayP99Ns / 1_000_000).toFixed(3))
+            : null,
         mysqlConnectionLimit: input.mysqlConnectionLimit ?? null,
       };
     },

@@ -1,6 +1,6 @@
-import { getFastifyAccessToken } from './fastifyAuthToken';
+import { getFastifyAccessToken } from "./fastifyAuthToken";
 
-const BASE = '/api/v1/ai-direct-hiring/management';
+const BASE = "/api/v1/ai-direct-hiring/management";
 
 type Page<T> = { items: T[]; nextCursor: string | null };
 
@@ -8,7 +8,7 @@ export type Overview = {
   window: { from: string; to: string };
   employees: { active: number };
   runs: { queued: number; active: number; failed: number };
-  costs: { currency: 'USD'; micros: string; inputTokens: number; outputTokens: number };
+  costs: { currency: "USD"; micros: string; inputTokens: number; outputTokens: number };
   approvals: { pending: number };
 };
 
@@ -53,7 +53,7 @@ async function request<T>(path: string): Promise<T> {
     const token = await getFastifyAccessToken(refresh);
     return fetch(`${BASE}${path}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
-      credentials: 'omit',
+      credentials: "omit",
     });
   };
   let response = await send(false);
@@ -73,7 +73,10 @@ const query = (values: Record<string, string | undefined>) => {
 
 export const aiDirectManagementInsightsApi = {
   overview: (organizationId: string) => request<Overview>(`/overview?${query({ organizationId })}`),
-  systemStatus: (organizationId: string) => request<SystemStatus>(`/system-status?${query({ organizationId })}`),
-  employees: (organizationId: string, cursor?: string) => request<Page<Employee>>(`/employees?${query({ organizationId, cursor })}`),
-  costs: (organizationId: string, cursor?: string) => request<Page<CostEntry>>(`/cost-ledger?${query({ organizationId, cursor })}`),
+  systemStatus: (organizationId: string) =>
+    request<SystemStatus>(`/system-status?${query({ organizationId })}`),
+  employees: (organizationId: string, cursor?: string) =>
+    request<Page<Employee>>(`/employees?${query({ organizationId, cursor })}`),
+  costs: (organizationId: string, cursor?: string) =>
+    request<Page<CostEntry>>(`/cost-ledger?${query({ organizationId, cursor })}`),
 };

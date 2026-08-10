@@ -11,8 +11,8 @@ import {
   type VtAnalysis,
 } from "../components/SkillSecurityScanResults";
 import { convexHttp } from "../convex/client";
-import { useLocale } from "../lib/i18n/context";
 import { t as translate } from "../lib/i18n";
+import { useLocale } from "../lib/i18n/context";
 import {
   PLUGIN_NAV_ICON,
   SKILL_NAV_ICON,
@@ -260,9 +260,7 @@ function AuditsPage() {
             rows.map((row) => <AuditTableRow key={`${row.kind}-${itemHref(row)}`} row={row} />)
           )}
         </div>
-        {error ? (
-          <p className="audits-error">{translate("audits.error", locale)}</p>
-        ) : null}
+        {error ? <p className="audits-error">{translate("audits.error", locale)}</p> : null}
         <div ref={sentinelRef} className="audits-sentinel" aria-hidden="true" />
         {status === "loadingMore" ? <AuditSkeletonRows count={3} /> : null}
         {canLoadMore ? (

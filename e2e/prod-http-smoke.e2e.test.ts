@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   DESKTOP_CLIENT_CONTRACT_ROUTES,
   DESKTOP_CLIENT_CONTRACT_VERSION,
-} from '../server/src/desktopContractManifest.js';
+} from "../server/src/desktopContractManifest.js";
 
 const REQUEST_TIMEOUT_MS = 15_000;
 const MAX_RATE_LIMIT_RETRIES = 3;
@@ -31,7 +31,7 @@ function getSiteBase() {
 }
 
 function getDesktopApiBase() {
-  return process.env.DESKTOP_API_BASE_URL?.trim() || 'https://www.iclawstore.com';
+  return process.env.DESKTOP_API_BASE_URL?.trim() || "https://www.iclawstore.com";
 }
 
 async function fetchWithTimeout(
@@ -137,40 +137,73 @@ describe("prod http smoke", () => {
   });
 });
 
-describe('desktop client production contract', () => {
-  it('publishes the expected discovery and OpenAPI version', async () => {
+describe("package registry production ownership", () => {
+  const missingPackageName = "__routing_smoke_missing__";
+
+  async function expectConvexPackageNotFound(pathname: string) {
+    const response = await fetchWithRetry(new URL(pathname, getSiteBase()), {
+      headers: { Accept: "application/json" },
+    });
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get("content-type")).toContain("text/plain");
+    expect(await response.text()).toBe("Package not found");
+  }
+
+  it("routes the package catalog list to the Convex cursor contract", async () => {
+    const response = await fetchWithRetry(
+      new URL("/api/v1/packages?limit=1", getSiteBase()),
+      { headers: { Accept: "application/json" } },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("application/json");
+    const body = (await response.json()) as { items?: unknown; nextCursor?: unknown };
+    expect(Array.isArray(body.items)).toBe(true);
+    expect(body).toHaveProperty("nextCursor");
+  });
+
+  it("keeps package detail, exact-version security, and download on Convex", async () => {
+    await expectConvexPackageNotFound(`/api/v1/packages/${missingPackageName}`);
+    await expectConvexPackageNotFound(
+      `/api/v1/packages/${missingPackageName}/versions/0.0.0/security`,
+    );
+    await expectConvexPackageNotFound(`/api/v1/packages/${missingPackageName}/download`);
+  });
+});
+
+describe("desktop client production contract", () => {
+  it("publishes the expected discovery and OpenAPI version", async () => {
     const discoveryResponse = await fetchWithRetry(
-      new URL('/api/v1/desktop/contract', getDesktopApiBase()),
+      new URL("/api/v1/desktop/contract", getDesktopApiBase()),
     );
     expect(discoveryResponse.status).toBe(200);
     const discovery = (await discoveryResponse.json()) as { version?: string; openapi?: string };
     expect(discovery.version).toBe(DESKTOP_CLIENT_CONTRACT_VERSION);
 
     const openApiResponse = await fetchWithRetry(
-      new URL(discovery.openapi || '/api/v1/desktop/openapi.yaml', getDesktopApiBase()),
+      new URL(discovery.openapi || "/api/v1/desktop/openapi.yaml", getDesktopApiBase()),
     );
     expect(openApiResponse.status).toBe(200);
-    expect(await openApiResponse.text()).toContain(
-      `version: ${DESKTOP_CLIENT_CONTRACT_VERSION}`,
-    );
+    expect(await openApiResponse.text()).toContain(`version: ${DESKTOP_CLIENT_CONTRACT_VERSION}`);
   });
 
-  it('does not return 404 for any protected operation promised by 1.1.0', async () => {
+  it(`does not return 404 for any protected operation promised by ${DESKTOP_CLIENT_CONTRACT_VERSION}`, async () => {
     const missing: string[] = [];
     for (const route of DESKTOP_CLIENT_CONTRACT_ROUTES) {
       if (route.public) continue;
-      const hasBody = route.method === 'POST' || route.method === 'PUT' || route.method === 'PATCH';
+      const hasBody = route.method === "POST" || route.method === "PUT" || route.method === "PATCH";
       const response = await fetchWithRetry(new URL(route.probePath, getDesktopApiBase()), {
         method: route.method,
         headers: {
-          Accept: 'application/json',
-          ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+          Accept: "application/json",
+          ...(hasBody ? { "Content-Type": "application/json" } : {}),
         },
-        ...(hasBody ? { body: '{}' } : {}),
+        ...(hasBody ? { body: "{}" } : {}),
       });
       if (response.status === 404) missing.push(`${route.method} ${route.openApiPath}`);
     }
 
-    expect(missing, `OpenAPI operations missing in production: ${missing.join(', ')}`).toEqual([]);
+    expect(missing, `OpenAPI operations missing in production: ${missing.join(", ")}`).toEqual([]);
   });
 });

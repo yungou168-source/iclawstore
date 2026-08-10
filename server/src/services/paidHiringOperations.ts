@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Pool, ResultSetHeader, RowDataPacket } from "mysql2/promise";
+import type { Pool, RowDataPacket } from "mysql2/promise";
 import { publishOutboxEvent } from "../utils/outbox.js";
 import { AiDirectHiringError, ErrorCodes } from "./aiDirectErrors.js";
 import { queryAlipayTrade, type AlipayConfig } from "./alipayProvider.js";
@@ -261,7 +261,9 @@ export async function listDeveloperPayableBalances(
   const limit = Math.min(Math.max(input.limit ?? 50, 1), 100);
   const cursor = input.cursor ? Buffer.from(input.cursor, "base64url").toString("utf8") : null;
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT accountOwnerUserId AS developerUserId, currency, SUM(amountFen) AS payableFen, MAX(createdAt) AS createdAt
+    `SELECT accountOwnerUserId AS developerUserId, currency,
+            SUM(CASE WHEN direction = 'credit' THEN amountFen ELSE -amountFen END) AS payableFen,
+            MAX(createdAt) AS createdAt
      FROM ai_direct_revenue_ledger_entries
      WHERE accountType = 'developer_payable' AND status = 'posted'
      GROUP BY accountOwnerUserId, currency
@@ -291,10 +293,29 @@ export async function listSettleableLedgerEntries(
   const limit = Math.min(Math.max(input.limit ?? 50, 1), 100);
   const cursor = decodeCursor(input.cursor);
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT id, paymentOrderId, amountFen, createdAt FROM ai_direct_revenue_ledger_entries
-     WHERE accountType = 'developer_payable' AND accountOwnerUserId = ? AND status = 'posted'
-       AND (? IS NULL OR createdAt < ? OR (createdAt = ? AND id < ?))
-     ORDER BY createdAt DESC, id DESC LIMIT ?`,
+    `SELECT credit.id, credit.paymentOrderId,
+            credit.amountFen - COALESCE((
+              SELECT SUM(debit.amountFen)
+              FROM ai_direct_revenue_ledger_entries debit
+              WHERE debit.saleId = credit.saleId
+                AND debit.accountType = credit.accountType
+                AND debit.accountOwnerUserId = credit.accountOwnerUserId
+                AND debit.direction = 'debit' AND debit.status = 'posted'
+            ), 0) AS amountFen,
+            credit.createdAt
+     FROM ai_direct_revenue_ledger_entries credit
+     WHERE credit.accountType = 'developer_payable' AND credit.accountOwnerUserId = ?
+       AND credit.direction = 'credit' AND credit.status = 'posted'
+       AND credit.amountFen > COALESCE((
+         SELECT SUM(debit.amountFen)
+         FROM ai_direct_revenue_ledger_entries debit
+         WHERE debit.saleId = credit.saleId
+           AND debit.accountType = credit.accountType
+           AND debit.accountOwnerUserId = credit.accountOwnerUserId
+           AND debit.direction = 'debit' AND debit.status = 'posted'
+       ), 0)
+       AND (? IS NULL OR credit.createdAt < ? OR (credit.createdAt = ? AND credit.id < ?))
+     ORDER BY credit.createdAt DESC, credit.id DESC LIMIT ?`,
     [
       input.developerUserId,
       cursor?.createdAt ?? null,
@@ -447,7 +468,12 @@ export async function listOperationalAlerts(
 
 export async function createDeveloperSettlement(
   pool: Pick<Pool, "getConnection">,
-  input: { developerUserId: string; ledgerEntryIds: string[]; createdByUserId: string },
+  input: {
+    developerUserId: string;
+    ledgerEntryIds: string[];
+    createdByUserId: string;
+    requestedByUserId?: string;
+  },
 ): Promise<{ id: string; amountFen: bigint; currency: "CNY"; status: "pending" }> {
   if (input.ledgerEntryIds.length === 0)
     throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "结算至少选择一条分录");
@@ -456,8 +482,27 @@ export async function createDeveloperSettlement(
     await connection.beginTransaction();
     const marks = input.ledgerEntryIds.map(() => "?").join(",");
     const [entries] = await connection.query<RowDataPacket[]>(
-      `SELECT id, amountFen, currency FROM ai_direct_revenue_ledger_entries
-       WHERE id IN (${marks}) AND accountType = 'developer_payable' AND accountOwnerUserId = ? AND status = 'posted'
+      `SELECT credit.id,
+              credit.amountFen - COALESCE((
+                SELECT SUM(debit.amountFen)
+                FROM ai_direct_revenue_ledger_entries debit
+                WHERE debit.saleId = credit.saleId
+                  AND debit.accountType = credit.accountType
+                  AND debit.accountOwnerUserId = credit.accountOwnerUserId
+                  AND debit.direction = 'debit' AND debit.status = 'posted'
+              ), 0) AS amountFen,
+              credit.currency
+       FROM ai_direct_revenue_ledger_entries credit
+       WHERE credit.id IN (${marks}) AND credit.accountType = 'developer_payable'
+         AND credit.accountOwnerUserId = ? AND credit.status = 'posted'
+         AND credit.amountFen > COALESCE((
+           SELECT SUM(debit.amountFen)
+           FROM ai_direct_revenue_ledger_entries debit
+           WHERE debit.saleId = credit.saleId
+             AND debit.accountType = credit.accountType
+             AND debit.accountOwnerUserId = credit.accountOwnerUserId
+             AND debit.direction = 'debit' AND debit.status = 'posted'
+         ), 0)
        FOR UPDATE`,
       [...input.ledgerEntryIds, input.developerUserId],
     );
@@ -474,9 +519,16 @@ export async function createDeveloperSettlement(
     const amountFen = entries.reduce((sum, entry) => sum + BigInt(entry.amountFen), 0n);
     const id = randomUUID();
     await connection.query(
-      `INSERT INTO ai_direct_developer_settlements (id, developerUserId, currency, amountFen, status, createdByUserId)
-       VALUES (?, ?, 'CNY', ?, 'pending', ?)`,
-      [id, input.developerUserId, amountFen, input.createdByUserId],
+      `INSERT INTO ai_direct_developer_settlements
+       (id, developerUserId, currency, amountFen, status, createdByUserId, requestedByUserId)
+       VALUES (?, ?, 'CNY', ?, 'pending', ?, ?)`,
+      [
+        id,
+        input.developerUserId,
+        amountFen,
+        input.createdByUserId,
+        input.requestedByUserId ?? null,
+      ],
     );
     for (const entry of entries) {
       await connection.query(
@@ -485,8 +537,13 @@ export async function createDeveloperSettlement(
       );
     }
     await connection.query(
-      `UPDATE ai_direct_revenue_ledger_entries SET status = 'settlement_pending' WHERE id IN (${marks})`,
-      input.ledgerEntryIds,
+      `UPDATE ai_direct_revenue_ledger_entries ledger
+       JOIN ai_direct_revenue_ledger_entries credit
+         ON credit.saleId = ledger.saleId AND credit.id IN (${marks})
+       SET ledger.status = 'settlement_pending'
+       WHERE ledger.accountType = 'developer_payable'
+         AND ledger.accountOwnerUserId = ? AND ledger.status = 'posted'`,
+      [...input.ledgerEntryIds, input.developerUserId],
     );
     await connection.query(
       `INSERT INTO ai_direct_audit_events (id, actorUserId, action, targetType, targetId, outcome, metadata)
@@ -578,8 +635,11 @@ export async function transitionDeveloperSettlement(
     await connection.query(sql, parameters);
     if (input.action === "completed")
       await connection.query(
-        `UPDATE ai_direct_revenue_ledger_entries l JOIN ai_direct_developer_settlement_items i ON i.ledgerEntryId = l.id
-       SET l.status = 'settled' WHERE i.settlementId = ?`,
+        `UPDATE ai_direct_revenue_ledger_entries ledger
+         JOIN ai_direct_revenue_ledger_entries credit ON credit.saleId = ledger.saleId
+         JOIN ai_direct_developer_settlement_items item ON item.ledgerEntryId = credit.id
+         SET ledger.status = 'settled'
+         WHERE item.settlementId = ? AND ledger.accountType = 'developer_payable'`,
         [input.settlementId],
       );
     await connection.query(

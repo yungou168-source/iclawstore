@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Data Migration Runner
- * 
+ *
  * 将导出的 Convex JSON 数据导入到 MySQL
  */
 
@@ -15,16 +15,16 @@ async function main() {
   console.log("=".repeat(60));
   console.log("ClawHub 数据迁移工具");
   console.log("=".repeat(60));
-  
+
   const prisma = new PrismaClient();
-  
+
   try {
     // 检查导出文件是否存在
     const files = await fs.readdir(EXPORT_DIR);
-    const tableFiles = files.filter(f => f.endsWith(".json") && f !== "export_summary.json");
-    
+    const tableFiles = files.filter((f) => f.endsWith(".json") && f !== "export_summary.json");
+
     console.log(`找到 ${tableFiles.length} 个表文件`);
-    
+
     // 按依赖顺序迁移
     const migrationOrder = [
       { file: "users.json", model: "users", transform: transformUser },
@@ -40,36 +40,40 @@ async function main() {
       { file: "skillReports.json", model: "skillReports", transform: identity },
       { file: "skillAppeals.json", model: "skillAppeals", transform: identity },
       { file: "packages.json", model: "packages", transform: transformPackage },
-      { file: "packageReleases.json", model: "packageReleases", transform: transformPackageRelease },
+      {
+        file: "packageReleases.json",
+        model: "packageReleases",
+        transform: transformPackageRelease,
+      },
       { file: "globalStats.json", model: "globalStats", transform: identity },
     ];
-    
+
     let totalImported = 0;
-    
+
     for (const { file, model, transform } of migrationOrder) {
       if (!tableFiles.includes(file)) {
         console.log(`⏭️  跳过 ${file} (文件不存在)`);
         continue;
       }
-      
+
       console.log(`\n迁移 ${file}...`);
       const rawData = await fs.readFile(path.join(EXPORT_DIR, file), "utf-8");
       const records = JSON.parse(rawData);
-      
+
       console.log(`  找到 ${records.length} 条记录`);
-      
+
       if (records.length === 0) {
         console.log(`  ⏭️  无数据，跳过`);
         continue;
       }
-      
+
       // 分批处理
       const BATCH_SIZE = 100;
       let imported = 0;
       for (let i = 0; i < records.length; i += BATCH_SIZE) {
         const batch = records.slice(i, i + BATCH_SIZE);
         const transformed = batch.map(transform).filter(Boolean);
-        
+
         try {
           await prisma[model].createMany({
             data: transformed,
@@ -91,14 +95,13 @@ async function main() {
           console.log(`  ⚠️  逐条导入完成: ${imported}/${records.length}`);
         }
       }
-      
+
       totalImported += imported;
     }
-    
+
     console.log("\n" + "=".repeat(60));
     console.log(`迁移完成! 共导入 ${totalImported} 条记录`);
     console.log("=".repeat(60));
-    
   } finally {
     await prisma.$disconnect();
   }
@@ -192,11 +195,15 @@ function transformSkill(skill) {
     githubCurrentCommit: skill.githubCurrentCommit,
     githubCurrentContentHash: skill.githubCurrentContentHash,
     githubCurrentStatus: skill.githubCurrentStatus,
-    githubCurrentCheckedAt: skill.githubCurrentCheckedAt ? new Date(skill.githubCurrentCheckedAt) : null,
+    githubCurrentCheckedAt: skill.githubCurrentCheckedAt
+      ? new Date(skill.githubCurrentCheckedAt)
+      : null,
     githubScanStatus: skill.githubScanStatus,
     githubRemovedAt: skill.githubRemovedAt ? new Date(skill.githubRemovedAt) : null,
     latestVersionId: skill.latestVersionId,
-    latestVersionSummary: skill.latestVersionSummary ? JSON.stringify(skill.latestVersionSummary) : null,
+    latestVersionSummary: skill.latestVersionSummary
+      ? JSON.stringify(skill.latestVersionSummary)
+      : null,
     tags: skill.tags ? JSON.stringify(skill.tags) : null,
     capabilityTags: skill.capabilityTags ? JSON.stringify(skill.capabilityTags) : null,
     softDeletedAt: skill.softDeletedAt ? new Date(skill.softDeletedAt) : null,
@@ -204,11 +211,15 @@ function transformSkill(skill) {
     moderationNotes: skill.moderationNotes,
     moderationReason: skill.moderationReason,
     moderationVerdict: skill.moderationVerdict,
-    moderationReasonCodes: skill.moderationReasonCodes ? JSON.stringify(skill.moderationReasonCodes) : null,
+    moderationReasonCodes: skill.moderationReasonCodes
+      ? JSON.stringify(skill.moderationReasonCodes)
+      : null,
     moderationEvidence: skill.moderationEvidence ? JSON.stringify(skill.moderationEvidence) : null,
     moderationSummary: skill.moderationSummary,
     moderationEngineVersion: skill.moderationEngineVersion,
-    moderationEvaluatedAt: skill.moderationEvaluatedAt ? new Date(skill.moderationEvaluatedAt) : null,
+    moderationEvaluatedAt: skill.moderationEvaluatedAt
+      ? new Date(skill.moderationEvaluatedAt)
+      : null,
     manualOverride: skill.manualOverride ? JSON.stringify(skill.manualOverride) : null,
     quality: skill.quality ? JSON.stringify(skill.quality) : null,
     isSuspicious: skill.isSuspicious,
@@ -218,8 +229,12 @@ function transformSkill(skill) {
     scanCheckCount: skill.scanCheckCount,
     hiddenAt: skill.hiddenAt ? new Date(skill.hiddenAt) : null,
     hiddenBy: skill.hiddenBy,
-    unpublishedSlugReservedUntil: skill.unpublishedSlugReservedUntil ? new Date(skill.unpublishedSlugReservedUntil) : null,
-    unpublishedSlugReleasedAt: skill.unpublishedSlugReleasedAt ? new Date(skill.unpublishedSlugReleasedAt) : null,
+    unpublishedSlugReservedUntil: skill.unpublishedSlugReservedUntil
+      ? new Date(skill.unpublishedSlugReservedUntil)
+      : null,
+    unpublishedSlugReleasedAt: skill.unpublishedSlugReleasedAt
+      ? new Date(skill.unpublishedSlugReleasedAt)
+      : null,
     unpublishedOriginalSlug: skill.unpublishedOriginalSlug,
     reportCount: skill.reportCount || 0,
     lastReportedAt: skill.lastReportedAt ? new Date(skill.lastReportedAt) : null,
@@ -251,14 +266,20 @@ function transformSkillVersion(version) {
     createdBy: version.createdBy,
     createdAt: version.createdAt ? new Date(version.createdAt) : new Date(),
     clawScanNote: version.clawScanNote,
-    clawScanNoteUpdatedAt: version.clawScanNoteUpdatedAt ? new Date(version.clawScanNoteUpdatedAt) : null,
+    clawScanNoteUpdatedAt: version.clawScanNoteUpdatedAt
+      ? new Date(version.clawScanNoteUpdatedAt)
+      : null,
     softDeletedAt: version.softDeletedAt ? new Date(version.softDeletedAt) : null,
     sha256hash: version.sha256hash,
     vtAnalysis: version.vtAnalysis ? JSON.stringify(version.vtAnalysis) : null,
-    skillSpectorAnalysis: version.skillSpectorAnalysis ? JSON.stringify(version.skillSpectorAnalysis) : null,
+    skillSpectorAnalysis: version.skillSpectorAnalysis
+      ? JSON.stringify(version.skillSpectorAnalysis)
+      : null,
     llmAnalysis: version.llmAnalysis ? JSON.stringify(version.llmAnalysis) : null,
     capabilityTags: version.capabilityTags ? JSON.stringify(version.capabilityTags) : null,
-    depRegistryAnalysis: version.depRegistryAnalysis ? JSON.stringify(version.depRegistryAnalysis) : null,
+    depRegistryAnalysis: version.depRegistryAnalysis
+      ? JSON.stringify(version.depRegistryAnalysis)
+      : null,
     depRegistryScanStatus: version.depRegistryScanStatus,
     staticScan: version.staticScan ? JSON.stringify(version.staticScan) : null,
     apiKeyRequired: version.apiKeyRequired,
@@ -319,7 +340,9 @@ function transformPackage(pkg) {
     runtimeId: pkg.runtimeId,
     sourceRepo: pkg.sourceRepo,
     latestReleaseId: pkg.latestReleaseId,
-    latestVersionSummary: pkg.latestVersionSummary ? JSON.stringify(pkg.latestVersionSummary) : null,
+    latestVersionSummary: pkg.latestVersionSummary
+      ? JSON.stringify(pkg.latestVersionSummary)
+      : null,
     tags: pkg.tags ? JSON.stringify(pkg.tags) : null,
     capabilityTags: pkg.capabilityTags ? JSON.stringify(pkg.capabilityTags) : null,
     executesCode: pkg.executesCode,
@@ -327,7 +350,9 @@ function transformPackage(pkg) {
     capabilities: pkg.capabilities ? JSON.stringify(pkg.capabilities) : null,
     verification: pkg.verification ? JSON.stringify(pkg.verification) : null,
     scanStatus: pkg.scanStatus || "pending",
-    stats: pkg.stats ? JSON.stringify(pkg.stats) : JSON.stringify({ downloads: 0, installs: 0, stars: 0, versions: 0 }),
+    stats: pkg.stats
+      ? JSON.stringify(pkg.stats)
+      : JSON.stringify({ downloads: 0, installs: 0, stars: 0, versions: 0 }),
     reportCount: pkg.reportCount || 0,
     lastReportedAt: pkg.lastReportedAt ? new Date(pkg.lastReportedAt) : null,
     softDeletedAt: pkg.softDeletedAt ? new Date(pkg.softDeletedAt) : null,
@@ -360,9 +385,15 @@ function transformPackageRelease(release) {
     npmTarballName: release.npmTarballName,
     npmUnpackedSize: release.npmUnpackedSize,
     npmFileCount: release.npmFileCount,
-    extractedPackageJson: release.extractedPackageJson ? JSON.stringify(release.extractedPackageJson) : null,
-    extractedPluginManifest: release.extractedPluginManifest ? JSON.stringify(release.extractedPluginManifest) : null,
-    normalizedBundleManifest: release.normalizedBundleManifest ? JSON.stringify(release.normalizedBundleManifest) : null,
+    extractedPackageJson: release.extractedPackageJson
+      ? JSON.stringify(release.extractedPackageJson)
+      : null,
+    extractedPluginManifest: release.extractedPluginManifest
+      ? JSON.stringify(release.extractedPluginManifest)
+      : null,
+    normalizedBundleManifest: release.normalizedBundleManifest
+      ? JSON.stringify(release.normalizedBundleManifest)
+      : null,
     compatibility: release.compatibility ? JSON.stringify(release.compatibility) : null,
     capabilities: release.capabilities ? JSON.stringify(release.capabilities) : null,
     runtimeId: release.runtimeId,
@@ -370,16 +401,22 @@ function transformPackageRelease(release) {
     verification: release.verification ? JSON.stringify(release.verification) : null,
     sha256hash: release.sha256hash,
     vtAnalysis: release.vtAnalysis ? JSON.stringify(release.vtAnalysis) : null,
-    skillSpectorAnalysis: release.skillSpectorAnalysis ? JSON.stringify(release.skillSpectorAnalysis) : null,
+    skillSpectorAnalysis: release.skillSpectorAnalysis
+      ? JSON.stringify(release.skillSpectorAnalysis)
+      : null,
     llmAnalysis: release.llmAnalysis ? JSON.stringify(release.llmAnalysis) : null,
     staticScan: release.staticScan ? JSON.stringify(release.staticScan) : null,
     manualModeration: release.manualModeration ? JSON.stringify(release.manualModeration) : null,
     source: release.source ? JSON.stringify(release.source) : null,
     createdBy: release.createdBy,
-    publishActor: release.publishActor ? JSON.stringify(release.publishActor) : JSON.stringify({ kind: "user", userId: release.createdBy }),
+    publishActor: release.publishActor
+      ? JSON.stringify(release.publishActor)
+      : JSON.stringify({ kind: "user", userId: release.createdBy }),
     createdAt: release.createdAt ? new Date(release.createdAt) : new Date(),
     clawScanNote: release.clawScanNote,
-    clawScanNoteUpdatedAt: release.clawScanNoteUpdatedAt ? new Date(release.clawScanNoteUpdatedAt) : null,
+    clawScanNoteUpdatedAt: release.clawScanNoteUpdatedAt
+      ? new Date(release.clawScanNoteUpdatedAt)
+      : null,
     softDeletedAt: release.softDeletedAt ? new Date(release.softDeletedAt) : null,
   };
 }

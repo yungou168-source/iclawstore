@@ -1,6 +1,6 @@
-import { createCipheriv, createDecipheriv, createHmac, randomBytes } from 'node:crypto';
-import type { EncryptedCredentialEnvelope } from '../contracts/credentialStore.js';
-import type { CredentialKeyring } from './credentialKeyring.js';
+import { createCipheriv, createDecipheriv, createHmac, randomBytes } from "node:crypto";
+import type { EncryptedCredentialEnvelope } from "../contracts/credentialStore.js";
+import type { CredentialKeyring } from "./credentialKeyring.js";
 
 export type CredentialCipherContext = Readonly<{
   credentialId: string;
@@ -9,22 +9,22 @@ export type CredentialCipherContext = Readonly<{
   credentialVersion: number;
 }>;
 
-const ALGORITHM = 'aes-256-gcm';
+const ALGORITHM = "aes-256-gcm";
 
 function additionalData(context: CredentialCipherContext, keyVersion: string): Buffer {
   if (!Number.isSafeInteger(context.credentialVersion) || context.credentialVersion < 1) {
-    throw new Error('Credential content version is invalid');
+    throw new Error("Credential content version is invalid");
   }
   return Buffer.from(
     JSON.stringify([
-      'ai-direct-credential-v1',
+      "ai-direct-credential-v1",
       context.credentialId,
       context.ownerUserId,
       context.providerKey,
       context.credentialVersion,
       keyVersion,
     ]),
-    'utf8',
+    "utf8",
   );
 }
 
@@ -35,7 +35,7 @@ function encryptionKey(keyring: CredentialKeyring, version: string): Uint8Array 
 }
 
 export function fingerprintCredential(keyring: CredentialKeyring, secret: Uint8Array): string {
-  return createHmac('sha256', keyring.fingerprintKey).update(secret).digest('hex');
+  return createHmac("sha256", keyring.fingerprintKey).update(secret).digest("hex");
 }
 
 export function encryptCredential(
@@ -65,9 +65,10 @@ export function decryptCredential(
   context: CredentialCipherContext,
   envelope: EncryptedCredentialEnvelope,
 ): Uint8Array {
-  if (envelope.algorithm !== ALGORITHM) throw new Error('Credential encryption algorithm is unsupported');
+  if (envelope.algorithm !== ALGORITHM)
+    throw new Error("Credential encryption algorithm is unsupported");
   if (envelope.nonce.byteLength !== 12 || envelope.authenticationTag.byteLength !== 16) {
-    throw new Error('Credential envelope shape is invalid');
+    throw new Error("Credential envelope shape is invalid");
   }
   const decipher = createDecipheriv(
     ALGORITHM,

@@ -237,9 +237,7 @@ async function fetchPaginatedList<T>(
 
   while (true) {
     const searchParams = new URLSearchParams({
-      ...Object.fromEntries(
-        Object.entries(params).map(([k, v]) => [k, String(v)]),
-      ),
+      ...Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)])),
       limit: String(perPage),
     });
 
@@ -354,7 +352,10 @@ function containsSecret(text: string): boolean {
 
 function redactText(text: string): string {
   return text
-    .replace(/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g, "[REDACTED_PRIVATE_KEY]")
+    .replace(
+      /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g,
+      "[REDACTED_PRIVATE_KEY]",
+    )
     .replace(/\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{20,}\b/g, "[REDACTED_GITHUB_TOKEN]")
     .replace(/\bgithub_pat_[A-Za-z0-9_]{20,}\b/g, "[REDACTED_GITHUB_PAT]")
     .replace(/\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b/g, "[REDACTED_OPENAI_KEY]")

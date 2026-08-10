@@ -1,7 +1,7 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import type { Pool } from 'mysql2/promise';
+import { createHash, randomBytes, randomUUID } from "node:crypto";
+import type { Pool } from "mysql2/promise";
 
-export type AuditSource = 'domain' | 'model_run' | 'template';
+export type AuditSource = "domain" | "model_run" | "template";
 
 export type RawAuditProjectionRow = {
   source: AuditSource;
@@ -17,12 +17,13 @@ export type RawAuditProjectionRow = {
   createdAt: Date | string;
 };
 
-export type SafeAuditEvent = Omit<RawAuditProjectionRow, 'metadata' | 'createdAt'> & {
+export type SafeAuditEvent = Omit<RawAuditProjectionRow, "metadata" | "createdAt"> & {
   metadata: Record<string, unknown> | null;
   createdAt: string;
 };
 
-const forbiddenField = /(?:api.?key|model.?key|provider.?key|secret|credential|authorization|prompt|(?:^|_)(?:full_)?input(?:_|$)|(?:^|_)(?:full_)?output(?:_|$)|storage.?path|internal.?retry|retry.?payload|raw.?request|raw.?response|message.?content)/i;
+const forbiddenField =
+  /(?:api.?key|model.?key|provider.?key|secret|credential|authorization|prompt|(?:^|_)(?:full_)?input(?:_|$)|(?:^|_)(?:full_)?output(?:_|$)|storage.?path|internal.?retry|retry.?payload|raw.?request|raw.?response|message.?content)/i;
 const MAX_DEPTH = 5;
 const MAX_ARRAY_ITEMS = 50;
 const MAX_TEXT_LENGTH = 2_000;
@@ -59,15 +60,18 @@ export function auditProjectionSourceSql(): string {
 
 function safeValue(value: unknown, depth: number): unknown {
   if (depth > MAX_DEPTH) return undefined;
-  if (value === null || typeof value === 'boolean' || typeof value === 'number') return value;
-  if (typeof value === 'bigint') return value.toString();
-  if (typeof value === 'string') {
+  if (value === null || typeof value === "boolean" || typeof value === "number") return value;
+  if (typeof value === "bigint") return value.toString();
+  if (typeof value === "string") {
     return value.length <= MAX_TEXT_LENGTH ? value : `${value.slice(0, MAX_TEXT_LENGTH)}…`;
   }
   if (Array.isArray(value)) {
-    return value.slice(0, MAX_ARRAY_ITEMS).map((item) => safeValue(item, depth + 1)).filter((item) => item !== undefined);
+    return value
+      .slice(0, MAX_ARRAY_ITEMS)
+      .map((item) => safeValue(item, depth + 1))
+      .filter((item) => item !== undefined);
   }
-  if (!value || typeof value !== 'object') return undefined;
+  if (!value || typeof value !== "object") return undefined;
   return Object.fromEntries(
     Object.entries(value as Record<string, unknown>)
       .filter(([key]) => !forbiddenField.test(key))
@@ -77,7 +81,7 @@ function safeValue(value: unknown, depth: number): unknown {
 }
 
 export function redactAuditMetadata(value: unknown): Record<string, unknown> | null {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     try {
       return redactAuditMetadata(JSON.parse(value));
     } catch {
@@ -85,8 +89,8 @@ export function redactAuditMetadata(value: unknown): Record<string, unknown> | n
     }
   }
   const redacted = safeValue(value, 0);
-  return redacted && typeof redacted === 'object' && !Array.isArray(redacted)
-    ? redacted as Record<string, unknown>
+  return redacted && typeof redacted === "object" && !Array.isArray(redacted)
+    ? (redacted as Record<string, unknown>)
     : null;
 }
 
@@ -161,15 +165,29 @@ export async function leaseAuditExportJob(
 
 export async function completeAuditExportJob(
   pool: Pool,
-  input: { jobId: string; workerId: string; content: Uint8Array; mimeType: string; fileName: string },
+  input: {
+    jobId: string;
+    workerId: string;
+    content: Uint8Array;
+    mimeType: string;
+    fileName: string;
+  },
 ): Promise<boolean> {
-  const digest = createHash('sha256').update(input.content).digest('hex');
+  const digest = createHash("sha256").update(input.content).digest("hex");
   const [result] = await pool.query(
     `UPDATE ai_direct_audit_export_jobs
      SET status = 'completed', artifact = ?, artifactMimeType = ?, artifactFileName = ?, artifactSha256 = ?,
          artifactSizeBytes = ?, completedAt = NOW(3), leaseOwner = NULL, leaseExpiresAt = NULL, updatedAt = NOW(3)
      WHERE id = ? AND status = 'processing' AND leaseOwner = ?`,
-    [Buffer.from(input.content), input.mimeType, input.fileName, digest, input.content.byteLength, input.jobId, input.workerId],
+    [
+      Buffer.from(input.content),
+      input.mimeType,
+      input.fileName,
+      digest,
+      input.content.byteLength,
+      input.jobId,
+      input.workerId,
+    ],
   );
   return Number((result as { affectedRows?: number }).affectedRows ?? 0) === 1;
 }
@@ -188,16 +206,21 @@ export async function failAuditExportJob(
   return Number((result as { affectedRows?: number }).affectedRows ?? 0) === 1;
 }
 
-export function createDownloadToken(): { id: string; token: string; tokenHash: string; tokenPrefix: string } {
-  const token = `ada_${randomBytes(32).toString('base64url')}`;
+export function createDownloadToken(): {
+  id: string;
+  token: string;
+  tokenHash: string;
+  tokenPrefix: string;
+} {
+  const token = `ada_${randomBytes(32).toString("base64url")}`;
   return {
     id: randomUUID(),
     token,
-    tokenHash: createHash('sha256').update(token).digest('hex'),
+    tokenHash: createHash("sha256").update(token).digest("hex"),
     tokenPrefix: token.slice(0, 12),
   };
 }
 
 export function hashDownloadToken(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
+  return createHash("sha256").update(token).digest("hex");
 }

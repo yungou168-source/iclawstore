@@ -1,159 +1,173 @@
-import { afterEach, describe, expect, it } from 'bun:test';
-import { mkdtemp, readdir, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { Readable } from 'node:stream';
+import { afterEach, describe, expect, it } from "bun:test";
+import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { Readable } from "node:stream";
 import {
   managedAssetDownloadHeaders,
   ManagedAssetStore,
-} from '../src/services/managedAssetStore.js';
+} from "../src/services/managedAssetStore.js";
 
 const temporaryRoots: string[] = [];
 
 async function createStore(): Promise<ManagedAssetStore> {
-  const root = await mkdtemp(join(tmpdir(), 'managed-assets-'));
+  const root = await mkdtemp(join(tmpdir(), "managed-assets-"));
   temporaryRoots.push(root);
   return new ManagedAssetStore(root);
 }
 
 afterEach(async () => {
-  await Promise.all(temporaryRoots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
+  await Promise.all(
+    temporaryRoots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
+  );
 });
 
-describe('ManagedAssetStore', () => {
-  it('streams a validated image into an atomic managed key and reopens it', async () => {
+describe("ManagedAssetStore", () => {
+  it("streams a validated image into an atomic managed key and reopens it", async () => {
     const store = await createStore();
     const png = createPngHeader(640, 480);
     const stored = await store.store({
-      kind: 'avatar',
-      originalFileName: 'avatar.png',
-      declaredMimeType: 'image/png',
+      kind: "avatar",
+      originalFileName: "avatar.png",
+      declaredMimeType: "image/png",
       stream: Readable.from(png),
     });
 
     expect(stored.storageKey).toMatch(/^avatar\/[a-f0-9]{2}\/[a-f0-9-]{36}\.png$/);
-    expect(stored.mimeType).toBe('image/png');
+    expect(stored.mimeType).toBe("image/png");
     expect(stored.sizeBytes).toBe(png.length);
     expect(stored.sha256).toHaveLength(64);
 
     const opened = await store.open(stored.storageKey);
     expect(opened.sizeBytes).toBe(png.length);
     expect(Buffer.concat(await collect(opened.stream))).toEqual(png);
-    expect(await readdir(join(store.root, '.tmp'))).toEqual([]);
+    expect(await readdir(join(store.root, ".tmp"))).toEqual([]);
   });
 
-  it('rejects traversal keys, double extensions, and MIME spoofing', async () => {
+  it("rejects traversal keys, double extensions, and MIME spoofing", async () => {
     const store = await createStore();
-    await expect(store.open('../secret.png')).rejects.toMatchObject({ code: 'INVALID_STORAGE_KEY' });
+    await expect(store.open("../secret.png")).rejects.toMatchObject({
+      code: "INVALID_STORAGE_KEY",
+    });
 
-    await expect(store.store({
-      kind: 'avatar',
-      originalFileName: 'payload.svg.png',
-      declaredMimeType: 'image/png',
-      stream: Readable.from(createPngHeader(1, 1)),
-    })).rejects.toMatchObject({ code: 'INVALID_FILE_NAME' });
+    await expect(
+      store.store({
+        kind: "avatar",
+        originalFileName: "payload.svg.png",
+        declaredMimeType: "image/png",
+        stream: Readable.from(createPngHeader(1, 1)),
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_FILE_NAME" });
 
-    await expect(store.store({
-      kind: 'avatar',
-      originalFileName: 'avatar.png',
-      declaredMimeType: 'image/png',
-      stream: Readable.from(Buffer.from('<svg></svg>')),
-    })).rejects.toMatchObject({ code: 'UNSUPPORTED_MEDIA_TYPE', statusCode: 415 });
-    expect(await readdir(join(store.root, '.tmp'))).toEqual([]);
+    await expect(
+      store.store({
+        kind: "avatar",
+        originalFileName: "avatar.png",
+        declaredMimeType: "image/png",
+        stream: Readable.from(Buffer.from("<svg></svg>")),
+      }),
+    ).rejects.toMatchObject({ code: "UNSUPPORTED_MEDIA_TYPE", statusCode: 415 });
+    expect(await readdir(join(store.root, ".tmp"))).toEqual([]);
   });
 
-  it('accepts a self-contained GLB and rejects external model resources', async () => {
+  it("accepts a self-contained GLB and rejects external model resources", async () => {
     const store = await createStore();
-    const valid = createGlb({ asset: { version: '2.0' }, buffers: [{ byteLength: 0 }] });
+    const valid = createGlb({ asset: { version: "2.0" }, buffers: [{ byteLength: 0 }] });
     const stored = await store.store({
-      kind: 'model_3d',
-      originalFileName: 'agent.glb',
-      declaredMimeType: 'model/gltf-binary',
+      kind: "model_3d",
+      originalFileName: "agent.glb",
+      declaredMimeType: "model/gltf-binary",
       stream: Readable.from(valid),
     });
-    expect(stored.mimeType).toBe('model/gltf-binary');
+    expect(stored.mimeType).toBe("model/gltf-binary");
 
     const external = createGlb({
-      asset: { version: '2.0' },
-      buffers: [{ byteLength: 4, uri: 'https://example.invalid/model.bin' }],
+      asset: { version: "2.0" },
+      buffers: [{ byteLength: 4, uri: "https://example.invalid/model.bin" }],
     });
-    await expect(store.store({
-      kind: 'model_3d',
-      originalFileName: 'external.glb',
-      declaredMimeType: 'model/gltf-binary',
-      stream: Readable.from(external),
-    })).rejects.toMatchObject({ code: 'INVALID_GLB' });
+    await expect(
+      store.store({
+        kind: "model_3d",
+        originalFileName: "external.glb",
+        declaredMimeType: "model/gltf-binary",
+        stream: Readable.from(external),
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_GLB" });
   });
 
-  it('validates template manifest, required files, and archive traversal', async () => {
+  it("validates template manifest, required files, and archive traversal", async () => {
     const store = await createStore();
     const manifest = JSON.stringify({
       schemaVersion: 1,
-      id: 'com.example.workbench',
-      name: '个人工作台',
-      description: '本地工作台',
-      version: '1.0.0',
-      entry: 'index.html',
-      author: { name: 'Example', publisherId: 'publisher-1' },
-      screenshots: ['screenshots/01.png'],
+      id: "com.example.workbench",
+      name: "个人工作台",
+      description: "本地工作台",
+      version: "1.0.0",
+      entry: "index.html",
+      author: { name: "Example", publisherId: "publisher-1" },
+      screenshots: ["screenshots/01.png"],
       dataSchemaVersion: 1,
-      capabilities: ['local-storage', 'markdown-import', 'markdown-export'],
+      capabilities: ["local-storage", "markdown-import", "markdown-export"],
     });
     const archive = createStoredZip([
-      ['manifest.json', Buffer.from(manifest)],
-      ['index.html', Buffer.from('<!doctype html><title>Workbench</title>')],
-      ['screenshots/01.png', createPngHeader(320, 180)],
+      ["manifest.json", Buffer.from(manifest)],
+      ["index.html", Buffer.from("<!doctype html><title>Workbench</title>")],
+      ["screenshots/01.png", createPngHeader(320, 180)],
     ]);
     const stored = await store.store({
-      kind: 'template_package',
-      originalFileName: 'workbench.clawtemplate',
-      declaredMimeType: 'application/zip',
+      kind: "template_package",
+      originalFileName: "workbench.clawtemplate",
+      declaredMimeType: "application/zip",
       stream: Readable.from(archive),
     });
-    expect(stored.mimeType).toBe('application/zip');
+    expect(stored.mimeType).toBe("application/zip");
 
     const unsafeArchive = createStoredZip([
-      ['manifest.json', Buffer.from(manifest)],
-      ['index.html', Buffer.from('<!doctype html>')],
-      ['screenshots/01.png', createPngHeader(1, 1)],
-      ['../escape.txt', Buffer.from('escape')],
+      ["manifest.json", Buffer.from(manifest)],
+      ["index.html", Buffer.from("<!doctype html>")],
+      ["screenshots/01.png", createPngHeader(1, 1)],
+      ["../escape.txt", Buffer.from("escape")],
     ]);
-    await expect(store.store({
-      kind: 'template_package',
-      originalFileName: 'unsafe.clawtemplate',
-      declaredMimeType: 'application/zip',
-      stream: Readable.from(unsafeArchive),
-    })).rejects.toMatchObject({ code: 'INVALID_TEMPLATE_PACKAGE' });
+    await expect(
+      store.store({
+        kind: "template_package",
+        originalFileName: "unsafe.clawtemplate",
+        declaredMimeType: "application/zip",
+        stream: Readable.from(unsafeArchive),
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_TEMPLATE_PACKAGE" });
   });
 
-  it('moves soft-deleted files to an isolated trash key and emits safe download headers', async () => {
+  it("moves soft-deleted files to an isolated trash key and emits safe download headers", async () => {
     const store = await createStore();
     const stored = await store.store({
-      kind: 'sidebar_icon',
-      originalFileName: 'logo.png',
-      declaredMimeType: 'image/png',
+      kind: "sidebar_icon",
+      originalFileName: "logo.png",
+      declaredMimeType: "image/png",
       stream: Readable.from(createPngHeader(32, 32)),
     });
     const trashName = await store.moveToTrash(stored.storageKey);
     await expect(store.open(stored.storageKey)).rejects.toBeTruthy();
     await store.deleteFromTrash(trashName);
 
-    expect(managedAssetDownloadHeaders({
-      mimeType: stored.mimeType,
-      sha256: stored.sha256,
-      originalFileName: '模板 包.clawtemplate',
-      attachment: true,
-    })).toMatchObject({
-      'Content-Type': 'image/png',
-      'X-Content-Type-Options': 'nosniff',
+    expect(
+      managedAssetDownloadHeaders({
+        mimeType: stored.mimeType,
+        sha256: stored.sha256,
+        originalFileName: "模板 包.clawtemplate",
+        attachment: true,
+      }),
+    ).toMatchObject({
+      "Content-Type": "image/png",
+      "X-Content-Type-Options": "nosniff",
       ETag: `"${stored.sha256}"`,
-      'Cache-Control': 'private, max-age=31536000, immutable',
+      "Cache-Control": "private, max-age=31536000, immutable",
     });
   });
 
-  it('requires an absolute managed root', () => {
-    expect(() => new ManagedAssetStore('relative/assets')).toThrow('绝对路径');
-    expect(() => ManagedAssetStore.fromEnvironment({})).toThrow('MANAGED_ASSET_ROOT');
+  it("requires an absolute managed root", () => {
+    expect(() => new ManagedAssetStore("relative/assets")).toThrow("绝对路径");
+    expect(() => ManagedAssetStore.fromEnvironment({})).toThrow("MANAGED_ASSET_ROOT");
   });
 });
 
@@ -161,7 +175,7 @@ function createPngHeader(width: number, height: number): Buffer {
   const buffer = Buffer.alloc(24);
   buffer.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
   buffer.writeUInt32BE(13, 8);
-  buffer.write('IHDR', 12, 'ascii');
+  buffer.write("IHDR", 12, "ascii");
   buffer.writeUInt32BE(width, 16);
   buffer.writeUInt32BE(height, 20);
   return buffer;

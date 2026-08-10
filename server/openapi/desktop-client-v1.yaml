@@ -7,7 +7,7 @@ info:
     desktop sidebar preferences, and the desktop template catalog. Offer is an
     immutable receipt created only after verified payment succeeds.
 servers:
-  - url: https://iclawstore.com
+  - url: https://www.iclawstore.com
 security:
   - bearerAuth: []
 tags:

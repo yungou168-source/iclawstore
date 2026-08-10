@@ -1,78 +1,101 @@
-import { randomUUID } from 'node:crypto';
-import { FastifyInstance } from 'fastify';
-import { requireAuth } from '../middleware/aiDirectAuth.js';
-import { AiDirectHiringError, ErrorCodes } from '../services/aiDirectErrors.js';
+import { randomUUID } from "node:crypto";
+import { FastifyInstance } from "fastify";
+import { requireAuth } from "../middleware/aiDirectAuth.js";
+import { AiDirectHiringError, ErrorCodes } from "../services/aiDirectErrors.js";
 import {
   extractRequestId,
   idempotencyFingerprint,
   parseIdempotencyKey,
-} from '../utils/idempotency.js';
-import { publishOutboxEvent } from '../utils/outbox.js';
+} from "../utils/idempotency.js";
+import { publishOutboxEvent } from "../utils/outbox.js";
 
-const organizationRoles = ['owner', 'admin', 'manager', 'member'] as const;
+const organizationRoles = ["owner", "admin", "manager", "member"] as const;
 type OrganizationRole = (typeof organizationRoles)[number];
 type CursorPayload = { updatedAt: string; id: string };
 
 const organizationPermissions: Record<OrganizationRole, string[]> = {
-  owner: ['organization.read', 'organization.update', 'organization.members.manage', 'company.create'],
-  admin: ['organization.read', 'organization.update', 'organization.members.manage', 'company.create'],
-  manager: ['organization.read', 'company.read', 'project.manage', 'agent_role.manage'],
-  member: ['organization.read', 'company.read'],
+  owner: [
+    "organization.read",
+    "organization.update",
+    "organization.members.manage",
+    "company.create",
+  ],
+  admin: [
+    "organization.read",
+    "organization.update",
+    "organization.members.manage",
+    "company.create",
+  ],
+  manager: ["organization.read", "company.read", "project.manage", "agent_role.manage"],
+  member: ["organization.read", "company.read"],
 };
 
 const encodeCursor = (row: { updatedAt: Date | string; id: string }): string =>
-  Buffer.from(JSON.stringify({ updatedAt: new Date(row.updatedAt).toISOString(), id: row.id }), 'utf8').toString(
-    'base64url',
-  );
+  Buffer.from(
+    JSON.stringify({ updatedAt: new Date(row.updatedAt).toISOString(), id: row.id }),
+    "utf8",
+  ).toString("base64url");
 
 const decodeCursor = (value: unknown): CursorPayload | null => {
   if (value === undefined) return null;
-  if (typeof value !== 'string' || value.length > 512) {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '无效的 cursor');
+  if (typeof value !== "string" || value.length > 512) {
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "无效的 cursor");
   }
   try {
-    const parsed = JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as CursorPayload;
-    if (!parsed || typeof parsed.id !== 'string' || !parsed.id || Number.isNaN(Date.parse(parsed.updatedAt))) {
-      throw new Error('invalid cursor');
+    const parsed = JSON.parse(Buffer.from(value, "base64url").toString("utf8")) as CursorPayload;
+    if (
+      !parsed ||
+      typeof parsed.id !== "string" ||
+      !parsed.id ||
+      Number.isNaN(Date.parse(parsed.updatedAt))
+    ) {
+      throw new Error("invalid cursor");
     }
     return parsed;
   } catch {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '无效的 cursor');
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "无效的 cursor");
   }
 };
 
 const readListQuery = (query: Record<string, unknown>, statuses: readonly string[]) => {
-  const status = query.status === undefined ? undefined : readString(query.status, 'status', 32);
+  const status = query.status === undefined ? undefined : readString(query.status, "status", 32);
   if (status !== undefined && !statuses.includes(status)) {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '无效的 status filter');
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "无效的 status filter");
   }
   const requestedLimit = query.limit === undefined ? 50 : Number(query.limit);
   if (!Number.isInteger(requestedLimit) || requestedLimit < 1 || requestedLimit > 100) {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'limit 必须为 1 到 100');
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "limit 必须为 1 到 100");
   }
   return { status, limit: requestedLimit, cursor: decodeCursor(query.cursor) };
 };
 
 const readBody = (value: unknown): Record<string, unknown> => {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '请求体必须是对象');
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "请求体必须是对象");
   }
   return value as Record<string, unknown>;
 };
 
 const readString = (value: unknown, field: string, maxLength: number): string => {
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, `${field} 必须是字符串`);
   }
   const result = value.trim();
   if (!result || result.length > maxLength) {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, `${field} 长度必须为 1 到 ${maxLength}`);
+    throw new AiDirectHiringError(
+      ErrorCodes.VALIDATION_ERROR,
+      `${field} 长度必须为 1 到 ${maxLength}`,
+    );
   }
   return result;
 };
 
 const slugify = (name: string, id: string): string => {
-  const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'organization';
+  const base =
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "organization";
   return `${base}-${id.slice(0, 8)}`;
 };
 
@@ -116,8 +139,8 @@ const requireOrganizationAdmin = async (
     [organizationId, userId],
   );
   const role = (rows as Array<{ role: OrganizationRole }>)[0]?.role;
-  if (role !== 'owner' && role !== 'admin') {
-    throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '需要组织 owner 或 admin 权限', 403);
+  if (role !== "owner" && role !== "admin") {
+    throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, "需要组织 owner 或 admin 权限", 403);
   }
   return role;
 };
@@ -126,17 +149,21 @@ export async function aiDirectOrganizationsRoutes(fastify: FastifyInstance): Pro
   const pool = (fastify as any).mysql as any;
   const auth = [(fastify as any).authenticate];
 
-  fastify.get('/organizations', { onRequest: auth }, async (request: any) => {
+  fastify.get("/organizations", { onRequest: auth }, async (request: any) => {
     const user = await requireAuth(fastify, request);
-    const { status, limit, cursor } = readListQuery(request.query ?? {}, ['active', 'inactive', 'archived']);
+    const { status, limit, cursor } = readListQuery(request.query ?? {}, [
+      "active",
+      "inactive",
+      "archived",
+    ]);
     const conditions = [`m.userId = ?`, `m.status = 'active'`];
     const values: unknown[] = [user.id];
     if (status) {
-      conditions.push('o.status = ?');
+      conditions.push("o.status = ?");
       values.push(status);
     }
     if (cursor) {
-      conditions.push('(o.updatedAt < ? OR (o.updatedAt = ? AND o.id < ?))');
+      conditions.push("(o.updatedAt < ? OR (o.updatedAt = ? AND o.id < ?))");
       values.push(cursor.updatedAt, cursor.updatedAt, cursor.id);
     }
     values.push(limit + 1);
@@ -144,7 +171,7 @@ export async function aiDirectOrganizationsRoutes(fastify: FastifyInstance): Pro
       `SELECT o.id, o.name, o.slug, o.status, m.role, o.createdAt, o.updatedAt
        FROM ai_direct_organizations o
        JOIN ai_direct_organization_members m ON m.organizationId = o.id
-       WHERE ${conditions.join(' AND ')}
+       WHERE ${conditions.join(" AND ")}
        ORDER BY o.updatedAt DESC, o.id DESC LIMIT ?`,
       values,
     );
@@ -160,14 +187,17 @@ export async function aiDirectOrganizationsRoutes(fastify: FastifyInstance): Pro
     };
   });
 
-  fastify.post('/organizations', { onRequest: auth }, async (request: any, reply) => {
+  fastify.post("/organizations", { onRequest: auth }, async (request: any, reply) => {
     const user = await requireAuth(fastify, request);
     const body = readBody(request.body);
-    const extra = Object.keys(body).filter((key) => key !== 'name');
+    const extra = Object.keys(body).filter((key) => key !== "name");
     if (extra.length) {
-      throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, `不接受以下字段: ${extra.join(', ')}`);
+      throw new AiDirectHiringError(
+        ErrorCodes.VALIDATION_ERROR,
+        `不接受以下字段: ${extra.join(", ")}`,
+      );
     }
-    const name = readString(body.name, 'name', 160);
+    const name = readString(body.name, "name", 160);
     const key = parseIdempotencyKey(request);
     const fingerprint = idempotencyFingerprint({ name });
 
@@ -180,9 +210,15 @@ export async function aiDirectOrganizationsRoutes(fastify: FastifyInstance): Pro
       const existing = (existingRows as any[])[0];
       if (existing) {
         if (existing.idempotencyFingerprint !== fingerprint) {
-          throw new AiDirectHiringError(ErrorCodes.IDEMPOTENCY_KEY_REUSED, '幂等键已用于不同的组织创建请求', 409);
+          throw new AiDirectHiringError(
+            ErrorCodes.IDEMPOTENCY_KEY_REUSED,
+            "幂等键已用于不同的组织创建请求",
+            409,
+          );
         }
-        return reply.status(200).send({ ...existing, idempotencyFingerprint: undefined, replayed: true });
+        return reply
+          .status(200)
+          .send({ ...existing, idempotencyFingerprint: undefined, replayed: true });
       }
     }
 
@@ -206,25 +242,27 @@ export async function aiDirectOrganizationsRoutes(fastify: FastifyInstance): Pro
       await writeAudit(connection, {
         organizationId,
         actorUserId: user.id,
-        action: 'organization.created',
-        targetType: 'organization',
+        action: "organization.created",
+        targetType: "organization",
         targetId: organizationId,
         requestId: extractRequestId(request),
         metadata: { name, slug },
       });
       await publishOutboxEvent(connection, {
         organizationId,
-        aggregateType: 'organization',
+        aggregateType: "organization",
         aggregateId: organizationId,
-        eventType: 'organization.created.v1',
+        eventType: "organization.created.v1",
         payload: { organizationId, name, slug, ownerUserId: user.id },
       });
       await connection.commit();
-      return reply.status(201).send({ id: organizationId, name, slug, status: 'active', role: 'owner' });
+      return reply
+        .status(201)
+        .send({ id: organizationId, name, slug, status: "active", role: "owner" });
     } catch (error) {
       await connection.rollback();
-      if ((error as any)?.code === 'ER_DUP_ENTRY') {
-        throw new AiDirectHiringError(ErrorCodes.DUPLICATE_ENTRY, '组织标识或幂等键已存在', 409);
+      if ((error as any)?.code === "ER_DUP_ENTRY") {
+        throw new AiDirectHiringError(ErrorCodes.DUPLICATE_ENTRY, "组织标识或幂等键已存在", 409);
       }
       throw error;
     } finally {
@@ -232,25 +270,25 @@ export async function aiDirectOrganizationsRoutes(fastify: FastifyInstance): Pro
     }
   });
 
-  fastify.get('/organizations/:id/members', { onRequest: auth }, async (request: any) => {
+  fastify.get("/organizations/:id/members", { onRequest: auth }, async (request: any) => {
     const user = await requireAuth(fastify, request);
-    const organizationId = readString(request.params.id, 'organizationId', 36);
+    const organizationId = readString(request.params.id, "organizationId", 36);
     await requireOrganizationAdmin(pool, organizationId, user.id);
-    const { status, limit, cursor } = readListQuery(request.query ?? {}, ['active', 'inactive']);
-    const conditions = ['organizationId = ?'];
+    const { status, limit, cursor } = readListQuery(request.query ?? {}, ["active", "inactive"]);
+    const conditions = ["organizationId = ?"];
     const values: unknown[] = [organizationId];
     if (status) {
-      conditions.push('status = ?');
+      conditions.push("status = ?");
       values.push(status);
     }
     if (cursor) {
-      conditions.push('(updatedAt < ? OR (updatedAt = ? AND userId < ?))');
+      conditions.push("(updatedAt < ? OR (updatedAt = ? AND userId < ?))");
       values.push(cursor.updatedAt, cursor.updatedAt, cursor.id);
     }
     values.push(limit + 1);
     const [rows] = await pool.query(
       `SELECT userId, role, status, createdByUserId, createdAt, updatedAt
-       FROM ai_direct_organization_members WHERE ${conditions.join(' AND ')}
+       FROM ai_direct_organization_members WHERE ${conditions.join(" AND ")}
        ORDER BY updatedAt DESC, userId DESC LIMIT ?`,
       values,
     );
@@ -260,23 +298,28 @@ export async function aiDirectOrganizationsRoutes(fastify: FastifyInstance): Pro
     const last = items[items.length - 1];
     return {
       items,
-      nextCursor: hasMore && last ? encodeCursor({ updatedAt: last.updatedAt, id: last.userId }) : null,
+      nextCursor:
+        hasMore && last ? encodeCursor({ updatedAt: last.updatedAt, id: last.userId }) : null,
     };
   });
 
-  fastify.put('/organizations/:id/members/:userId', { onRequest: auth }, async (request: any) => {
+  fastify.put("/organizations/:id/members/:userId", { onRequest: auth }, async (request: any) => {
     const actor = await requireAuth(fastify, request);
-    const organizationId = readString(request.params.id, 'organizationId', 36);
-    const targetUserId = readString(request.params.userId, 'userId', 191);
+    const organizationId = readString(request.params.id, "organizationId", 36);
+    const targetUserId = readString(request.params.userId, "userId", 191);
     const actorRole = await requireOrganizationAdmin(pool, organizationId, actor.id);
     const body = readBody(request.body);
-    const role = readString(body.role, 'role', 32) as OrganizationRole;
-    const status = body.status === undefined ? 'active' : readString(body.status, 'status', 32);
-    if (!organizationRoles.includes(role) || !['active', 'inactive'].includes(status)) {
-      throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '无效的 role 或 status');
+    const role = readString(body.role, "role", 32) as OrganizationRole;
+    const status = body.status === undefined ? "active" : readString(body.status, "status", 32);
+    if (!organizationRoles.includes(role) || !["active", "inactive"].includes(status)) {
+      throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "无效的 role 或 status");
     }
-    if (role === 'owner' && actorRole !== 'owner') {
-      throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '只有 owner 可以授予 owner 角色', 403);
+    if (role === "owner" && actorRole !== "owner") {
+      throw new AiDirectHiringError(
+        ErrorCodes.FORBIDDEN_SCOPE,
+        "只有 owner 可以授予 owner 角色",
+        403,
+      );
     }
 
     const connection = await pool.getConnection();
@@ -288,17 +331,25 @@ export async function aiDirectOrganizationsRoutes(fastify: FastifyInstance): Pro
         [organizationId, targetUserId],
       );
       const target = (targetRows as any[])[0];
-      if (target?.role === 'owner' && actorRole !== 'owner') {
-        throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '只有 owner 可以变更 owner 成员', 403);
+      if (target?.role === "owner" && actorRole !== "owner") {
+        throw new AiDirectHiringError(
+          ErrorCodes.FORBIDDEN_SCOPE,
+          "只有 owner 可以变更 owner 成员",
+          403,
+        );
       }
-      if (target?.role === 'owner' && (role !== 'owner' || status !== 'active')) {
+      if (target?.role === "owner" && (role !== "owner" || status !== "active")) {
         const [ownerRows] = await connection.query(
           `SELECT COUNT(*) AS count FROM ai_direct_organization_members
            WHERE organizationId = ? AND role = 'owner' AND status = 'active'`,
           [organizationId],
         );
         if (Number((ownerRows as any[])[0]?.count ?? 0) <= 1) {
-          throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, '组织必须至少保留一个活跃 owner', 409);
+          throw new AiDirectHiringError(
+            ErrorCodes.INVALID_TRANSITION,
+            "组织必须至少保留一个活跃 owner",
+            409,
+          );
         }
       }
       await connection.query(
@@ -311,17 +362,17 @@ export async function aiDirectOrganizationsRoutes(fastify: FastifyInstance): Pro
       await writeAudit(connection, {
         organizationId,
         actorUserId: actor.id,
-        action: target ? 'organization.member.updated' : 'organization.member.created',
-        targetType: 'organization_member',
+        action: target ? "organization.member.updated" : "organization.member.created",
+        targetType: "organization_member",
         targetId: targetUserId,
         requestId: extractRequestId(request),
         metadata: { role, status },
       });
       await publishOutboxEvent(connection, {
         organizationId,
-        aggregateType: 'organization_member',
+        aggregateType: "organization_member",
         aggregateId: targetUserId,
-        eventType: 'organization.member.upserted.v1',
+        eventType: "organization.member.upserted.v1",
         payload: { organizationId, userId: targetUserId, role, status },
       });
       await connection.commit();
@@ -334,64 +385,76 @@ export async function aiDirectOrganizationsRoutes(fastify: FastifyInstance): Pro
     }
   });
 
-  fastify.delete('/organizations/:id/members/:userId', { onRequest: auth }, async (request: any, reply) => {
-    const actor = await requireAuth(fastify, request);
-    const organizationId = readString(request.params.id, 'organizationId', 36);
-    const targetUserId = readString(request.params.userId, 'userId', 191);
-    const actorRole = await requireOrganizationAdmin(pool, organizationId, actor.id);
-    const connection = await pool.getConnection();
-    try {
-      await connection.beginTransaction();
-      const [targetRows] = await connection.query(
-        `SELECT role, status FROM ai_direct_organization_members
+  fastify.delete(
+    "/organizations/:id/members/:userId",
+    { onRequest: auth },
+    async (request: any, reply) => {
+      const actor = await requireAuth(fastify, request);
+      const organizationId = readString(request.params.id, "organizationId", 36);
+      const targetUserId = readString(request.params.userId, "userId", 191);
+      const actorRole = await requireOrganizationAdmin(pool, organizationId, actor.id);
+      const connection = await pool.getConnection();
+      try {
+        await connection.beginTransaction();
+        const [targetRows] = await connection.query(
+          `SELECT role, status FROM ai_direct_organization_members
          WHERE organizationId = ? AND userId = ? LIMIT 1 FOR UPDATE`,
-        [organizationId, targetUserId],
-      );
-      const target = (targetRows as any[])[0];
-      if (!target || target.status !== 'active') {
-        throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, '活跃组织成员不存在', 404);
-      }
-      if (target.role === 'owner' && actorRole !== 'owner') {
-        throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '只有 owner 可以撤销 owner 成员', 403);
-      }
-      if (target.role === 'owner') {
-        const [ownerRows] = await connection.query(
-          `SELECT COUNT(*) AS count FROM ai_direct_organization_members
-           WHERE organizationId = ? AND role = 'owner' AND status = 'active'`,
-          [organizationId],
+          [organizationId, targetUserId],
         );
-        if (Number((ownerRows as any[])[0]?.count ?? 0) <= 1) {
-          throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, '组织必须至少保留一个活跃 owner', 409);
+        const target = (targetRows as any[])[0];
+        if (!target || target.status !== "active") {
+          throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, "活跃组织成员不存在", 404);
         }
-      }
-      await connection.query(
-        `UPDATE ai_direct_organization_members SET status = 'inactive', updatedAt = NOW()
+        if (target.role === "owner" && actorRole !== "owner") {
+          throw new AiDirectHiringError(
+            ErrorCodes.FORBIDDEN_SCOPE,
+            "只有 owner 可以撤销 owner 成员",
+            403,
+          );
+        }
+        if (target.role === "owner") {
+          const [ownerRows] = await connection.query(
+            `SELECT COUNT(*) AS count FROM ai_direct_organization_members
+           WHERE organizationId = ? AND role = 'owner' AND status = 'active'`,
+            [organizationId],
+          );
+          if (Number((ownerRows as any[])[0]?.count ?? 0) <= 1) {
+            throw new AiDirectHiringError(
+              ErrorCodes.INVALID_TRANSITION,
+              "组织必须至少保留一个活跃 owner",
+              409,
+            );
+          }
+        }
+        await connection.query(
+          `UPDATE ai_direct_organization_members SET status = 'inactive', updatedAt = NOW()
          WHERE organizationId = ? AND userId = ?`,
-        [organizationId, targetUserId],
-      );
-      await writeAudit(connection, {
-        organizationId,
-        actorUserId: actor.id,
-        action: 'organization.member.revoked',
-        targetType: 'organization_member',
-        targetId: targetUserId,
-        requestId: extractRequestId(request),
-        metadata: { previousRole: target.role },
-      });
-      await publishOutboxEvent(connection, {
-        organizationId,
-        aggregateType: 'organization_member',
-        aggregateId: targetUserId,
-        eventType: 'organization.member.revoked.v1',
-        payload: { organizationId, userId: targetUserId },
-      });
-      await connection.commit();
-      return reply.status(204).send();
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
-    }
-  });
+          [organizationId, targetUserId],
+        );
+        await writeAudit(connection, {
+          organizationId,
+          actorUserId: actor.id,
+          action: "organization.member.revoked",
+          targetType: "organization_member",
+          targetId: targetUserId,
+          requestId: extractRequestId(request),
+          metadata: { previousRole: target.role },
+        });
+        await publishOutboxEvent(connection, {
+          organizationId,
+          aggregateType: "organization_member",
+          aggregateId: targetUserId,
+          eventType: "organization.member.revoked.v1",
+          payload: { organizationId, userId: targetUserId },
+        });
+        await connection.commit();
+        return reply.status(204).send();
+      } catch (error) {
+        await connection.rollback();
+        throw error;
+      } finally {
+        connection.release();
+      }
+    },
+  );
 }

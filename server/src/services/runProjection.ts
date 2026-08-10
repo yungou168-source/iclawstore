@@ -10,9 +10,9 @@
  * RBAC at the route layer can apply `requireCompanyRole('manager')`.
  */
 
-import { randomUUID } from 'node:crypto';
-import { Pool } from 'mysql2/promise';
-import { RUN_STATUSES, type RunStatus, type StepStatus } from './jobQueue.js';
+import { randomUUID } from "node:crypto";
+import { Pool } from "mysql2/promise";
+import { RUN_STATUSES, type RunStatus, type StepStatus } from "./jobQueue.js";
 
 export interface RunSummary {
   runId: string;
@@ -54,7 +54,7 @@ export interface RunDetailView extends RunSummary {
 
 function parseJson<T>(value: unknown): T | null {
   if (value === null || value === undefined) return null;
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     try {
       return JSON.parse(value) as T;
     } catch {
@@ -66,7 +66,7 @@ function parseJson<T>(value: unknown): T | null {
 
 function safeBigIntToString(value: unknown): string | null {
   if (value === null || value === undefined) return null;
-  if (typeof value === 'bigint') return value.toString();
+  if (typeof value === "bigint") return value.toString();
   return String(value);
 }
 
@@ -81,13 +81,15 @@ export type RunPage = Readonly<{
 }>;
 
 export const encodeRunCursor = (cursor: RunCursor): string =>
-  Buffer.from(JSON.stringify(cursor), 'utf8').toString('base64url');
+  Buffer.from(JSON.stringify(cursor), "utf8").toString("base64url");
 
 export function decodeRunCursor(value: string | undefined): RunCursor | null {
   if (!value) return null;
   try {
-    const parsed = JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as Partial<RunCursor>;
-    if (typeof parsed.createdAt !== 'string' || typeof parsed.runId !== 'string' || !parsed.runId) {
+    const parsed = JSON.parse(
+      Buffer.from(value, "base64url").toString("utf8"),
+    ) as Partial<RunCursor>;
+    if (typeof parsed.createdAt !== "string" || typeof parsed.runId !== "string" || !parsed.runId) {
       return null;
     }
     const createdAt = new Date(parsed.createdAt);
@@ -150,11 +152,11 @@ export class RunProjectionService {
   ): Promise<RunPage> {
     const limit = Math.min(Math.max(input.limit, 1), 50);
     const statuses = input.statuses.length ? input.statuses : RUN_STATUSES;
-    const placeholders = statuses.map(() => '?').join(', ');
+    const placeholders = statuses.map(() => "?").join(", ");
     const params: unknown[] = [organizationId, ...statuses];
     const cursorClause = input.cursor
-      ? ' AND (r.createdAt < ? OR (r.createdAt = ? AND r.id < ?))'
-      : '';
+      ? " AND (r.createdAt < ? OR (r.createdAt = ? AND r.id < ?))"
+      : "";
     if (input.cursor) {
       const createdAt = new Date(input.cursor.createdAt);
       params.push(createdAt, createdAt, input.cursor.runId);
@@ -177,9 +179,10 @@ export class RunProjectionService {
     const last = pageRows.at(-1);
     return {
       items: pageRows.map(runSummary),
-      nextCursor: (rows as any[]).length > limit && last
-        ? encodeRunCursor({ createdAt: asIsoDate(last.createdAt), runId: last.runId })
-        : null,
+      nextCursor:
+        (rows as any[]).length > limit && last
+          ? encodeRunCursor({ createdAt: asIsoDate(last.createdAt), runId: last.runId })
+          : null,
     };
   }
 
@@ -189,9 +192,9 @@ export class RunProjectionService {
    */
   async getRun(runId: string, organizationId?: string): Promise<RunDetailView | null> {
     const runParams: unknown[] = [runId];
-    let orgClause = '';
+    let orgClause = "";
     if (organizationId !== undefined) {
-      orgClause = ' AND organizationId = ?';
+      orgClause = " AND organizationId = ?";
       runParams.push(organizationId);
     }
     const [runRows] = (await this.pool.query(
@@ -219,8 +222,18 @@ export class RunProjectionService {
       stepKey: s.stepKey,
       sequence: Number(s.sequence),
       status: s.status as StepStatus,
-      startedAt: s.startedAt instanceof Date ? s.startedAt.toISOString() : s.startedAt ? String(s.startedAt) : null,
-      finishedAt: s.finishedAt instanceof Date ? s.finishedAt.toISOString() : s.finishedAt ? String(s.finishedAt) : null,
+      startedAt:
+        s.startedAt instanceof Date
+          ? s.startedAt.toISOString()
+          : s.startedAt
+            ? String(s.startedAt)
+            : null,
+      finishedAt:
+        s.finishedAt instanceof Date
+          ? s.finishedAt.toISOString()
+          : s.finishedAt
+            ? String(s.finishedAt)
+            : null,
       latencyMs: s.latencyMs !== null ? Number(s.latencyMs) : null,
       costMicros: safeBigIntToString(s.costMicros),
       failureCode: s.failureCode ?? null,
@@ -234,11 +247,22 @@ export class RunProjectionService {
       employmentId: row.employmentId,
       agentVersionId: row.agentVersionId,
       stepCount: steps.length,
-      completedSteps: steps.filter((s) => s.status === 'succeeded').length,
-      failedSteps: steps.filter((s) => s.status === 'failed').length,
-      createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
-      startedAt: row.startedAt instanceof Date ? row.startedAt.toISOString() : row.startedAt ? String(row.startedAt) : null,
-      finishedAt: row.finishedAt instanceof Date ? row.finishedAt.toISOString() : row.finishedAt ? String(row.finishedAt) : null,
+      completedSteps: steps.filter((s) => s.status === "succeeded").length,
+      failedSteps: steps.filter((s) => s.status === "failed").length,
+      createdAt:
+        row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
+      startedAt:
+        row.startedAt instanceof Date
+          ? row.startedAt.toISOString()
+          : row.startedAt
+            ? String(row.startedAt)
+            : null,
+      finishedAt:
+        row.finishedAt instanceof Date
+          ? row.finishedAt.toISOString()
+          : row.finishedAt
+            ? String(row.finishedAt)
+            : null,
       failureCode: row.failureCode ?? null,
       failureReason: row.failureReason ?? null,
       inputSummary: parseJson<Record<string, unknown>>(row.inputSummary),
@@ -248,8 +272,8 @@ export class RunProjectionService {
         row.leaseExpiresAt instanceof Date
           ? row.leaseExpiresAt.toISOString()
           : row.leaseExpiresAt
-          ? String(row.leaseExpiresAt)
-          : null,
+            ? String(row.leaseExpiresAt)
+            : null,
       steps,
     };
   }

@@ -37,7 +37,9 @@ export function getClawHubSiteUrl() {
 }
 
 export function getAiWorkSiteUrl() {
-  return normalizeClawHubSiteOrigin(getRuntimeEnv("VITE_AI_WORK_SITE_URL")) ?? DEFAULT_AI_WORK_SITE_URL;
+  return (
+    normalizeClawHubSiteOrigin(getRuntimeEnv("VITE_AI_WORK_SITE_URL")) ?? DEFAULT_AI_WORK_SITE_URL
+  );
 }
 
 export function getOnlyCrabsSiteUrl() {

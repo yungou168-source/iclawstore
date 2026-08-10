@@ -1,8 +1,8 @@
-import { createHash } from 'node:crypto';
-import { randomUUID } from 'node:crypto';
-import { FastifyRequest } from 'fastify';
-import { Pool, PoolConnection } from 'mysql2/promise';
-import { AiDirectHiringError, ErrorCodes } from '../services/aiDirectErrors.js';
+import { createHash } from "node:crypto";
+import { randomUUID } from "node:crypto";
+import { FastifyRequest } from "fastify";
+import { Pool, PoolConnection } from "mysql2/promise";
+import { AiDirectHiringError, ErrorCodes } from "../services/aiDirectErrors.js";
 
 /**
  * AI Direct Hiring — Idempotency key & fingerprint utilities.
@@ -26,8 +26,8 @@ export interface RequestContext {
  * Extract or generate X-Request-Id.
  */
 export function extractRequestId(request: { headers: Record<string, unknown> }): string {
-  const value = request.headers['x-request-id'];
-  if (typeof value === 'string' && value.length > 0 && value.length <= 128) {
+  const value = request.headers["x-request-id"];
+  if (typeof value === "string" && value.length > 0 && value.length <= 128) {
     return value;
   }
   return randomUUID();
@@ -38,10 +38,13 @@ export function extractRequestId(request: { headers: Record<string, unknown> }):
  * Returns null if absent; throws if malformed.
  */
 export function parseIdempotencyKey(request: { headers: Record<string, unknown> }): string | null {
-  const value = request.headers['idempotency-key'];
+  const value = request.headers["idempotency-key"];
   if (value === undefined) return null;
-  if (typeof value !== 'string' || value.length === 0 || value.length > 128) {
-    throw new IdempotencyError(ErrorCodes.IDEMPOTENCY_KEY_INVALID, 'Idempotency-Key 长度必须为 1 到 128 字符');
+  if (typeof value !== "string" || value.length === 0 || value.length > 128) {
+    throw new IdempotencyError(
+      ErrorCodes.IDEMPOTENCY_KEY_INVALID,
+      "Idempotency-Key 长度必须为 1 到 128 字符",
+    );
   }
   return value;
 }
@@ -57,24 +60,26 @@ export function parseIdempotencyKey(request: { headers: Record<string, unknown> 
  */
 export function idempotencyFingerprint(body: unknown): string {
   const sanitized = stripNonDeterministicKeys(body);
-  return createHash('sha256').update(JSON.stringify(sanitized)).digest('hex');
+  return createHash("sha256").update(JSON.stringify(sanitized)).digest("hex");
 }
 
 function stripNonDeterministicKeys(value: unknown): unknown {
   if (value === null || value === undefined) return null;
   if (Array.isArray(value)) return value.map(stripNonDeterministicKeys);
-  if (typeof value === 'object') {
+  if (typeof value === "object") {
     const result: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value as Record<string, unknown>).sort(([left], [right]) => left.localeCompare(right))) {
+    for (const [k, v] of Object.entries(value as Record<string, unknown>).sort(([left], [right]) =>
+      left.localeCompare(right),
+    )) {
       const lower = k.toLowerCase();
       if (
-        lower === 'idempotencykey' ||
-        lower === 'idempotency-key' ||
-        lower === 'xrequestid' ||
-        lower === 'requestid' ||
-        lower === 'x-request-id' ||
-        lower === 'timestamp' ||
-        lower === 'clienttimestamp'
+        lower === "idempotencykey" ||
+        lower === "idempotency-key" ||
+        lower === "xrequestid" ||
+        lower === "requestid" ||
+        lower === "x-request-id" ||
+        lower === "timestamp" ||
+        lower === "clienttimestamp"
       ) {
         continue;
       }
@@ -90,9 +95,12 @@ function stripNonDeterministicKeys(value: unknown): unknown {
 // ---------------------------------------------------------------------------
 
 export class IdempotencyError extends AiDirectHiringError {
-  constructor(code: typeof ErrorCodes.IDEMPOTENCY_KEY_INVALID | typeof ErrorCodes.IDEMPOTENCY_KEY_REUSED, message: string) {
+  constructor(
+    code: typeof ErrorCodes.IDEMPOTENCY_KEY_INVALID | typeof ErrorCodes.IDEMPOTENCY_KEY_REUSED,
+    message: string,
+  ) {
     super(code, message, code === ErrorCodes.IDEMPOTENCY_KEY_REUSED ? 409 : 400);
-    this.name = 'IdempotencyError';
+    this.name = "IdempotencyError";
   }
 }
 
@@ -157,7 +165,7 @@ export async function withIdempotency<T>(
 
   if (existing) {
     if (existing.storedFingerprint !== fingerprint) {
-      throw new IdempotencyError(ErrorCodes.IDEMPOTENCY_KEY_REUSED, '幂等键已被用于不同的创建请求');
+      throw new IdempotencyError(ErrorCodes.IDEMPOTENCY_KEY_REUSED, "幂等键已被用于不同的创建请求");
     }
     return { replayed: true, existingId: existing.id };
   }
@@ -198,9 +206,9 @@ export async function withIdempotencyLock(
     await work();
     return true;
   } finally {
-    await pool.query(
-      `DELETE FROM idempotency_locks WHERE \`key\` = ? AND lockId = ?`,
-      [lockKey, lockId],
-    );
+    await pool.query(`DELETE FROM idempotency_locks WHERE \`key\` = ? AND lockId = ?`, [
+      lockKey,
+      lockId,
+    ]);
   }
 }

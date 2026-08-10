@@ -40,13 +40,15 @@ interface AuthenticatedUser {
 
 function getUser(fastify: FastifyInstance, request: FastifyRequest): AuthenticatedUser {
   const user = (request as any).user as AuthenticatedUser | undefined;
-  if (!user?.id) throw new AiDirectHiringError(ErrorCodes.AUTH_REQUIRED, '请先登录', 401);
+  if (!user?.id) throw new AiDirectHiringError(ErrorCodes.AUTH_REQUIRED, "请先登录", 401);
   return user;
 }
 
 function requestIdOf(request: FastifyRequest): string {
   const value = request.headers["x-request-id"];
-  return typeof value === "string" && value.length > 0 && value.length <= 128 ? value : randomUUID();
+  return typeof value === "string" && value.length > 0 && value.length <= 128
+    ? value
+    : randomUUID();
 }
 
 function idempotencyKeyOf(request: FastifyRequest): string {
@@ -89,7 +91,10 @@ function readOptionalString(value: unknown, field: string, max: number): string 
 function readPositiveInt(value: unknown, field: string, max: number): number {
   const numeric = Number(value);
   if (!Number.isInteger(numeric) || numeric < 1 || numeric > max) {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, `${field} 必须是 1-${max} 之间的整数`);
+    throw new AiDirectHiringError(
+      ErrorCodes.VALIDATION_ERROR,
+      `${field} 必须是 1-${max} 之间的整数`,
+    );
   }
   return numeric;
 }
@@ -414,11 +419,7 @@ export async function aiDirectMemoryRoutes(fastify: FastifyInstance) {
       const body = readObject(request.body, "body");
       user = getUser(fastify, request);
       const userId = user.id;
-      const submissionFingerprint = readString(
-        body.vaultFingerprint ?? "",
-        "vaultFingerprint",
-        64,
-      );
+      const submissionFingerprint = readString(body.vaultFingerprint ?? "", "vaultFingerprint", 64);
       assertHex(submissionFingerprint, "vaultFingerprint");
       const evidenceVersion = readString(
         body.evidenceVersion ?? DEFAULT_EVIDENCE_VERSION,
@@ -463,11 +464,7 @@ export async function aiDirectMemoryRoutes(fastify: FastifyInstance) {
         );
       }
       if (rawPointers.length > 5000) {
-        throw new AiDirectHiringError(
-          ErrorCodes.VALIDATION_ERROR,
-          "单次最多 5000 条笔记",
-          422,
-        );
+        throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "单次最多 5000 条笔记", 422);
       }
 
       const pointers = rawPointers.map((value: unknown, index: number) =>
@@ -688,36 +685,42 @@ export async function aiDirectMemoryRoutes(fastify: FastifyInstance) {
     return { items };
   });
 
-  fastify.get("/memory/obsidian/notes/:notePath", { onRequest: auth }, async (request: any, reply) => {
-    const user = getUser(fastify, request);
-    const binding = await loadActiveBinding(prisma, user.id);
-    if (!binding) {
-      return reply.status(404).send({ code: "BINDING_NOT_FOUND", error: "未找到生效中的 vault 绑定" });
-    }
-    const notePath = decodeURIComponent(request.params.notePath);
-    if (!NOTE_PATH.test(notePath)) {
-      return reply.status(400).send({ code: "VALIDATION_ERROR", error: "notePath 格式不正确" });
-    }
-    const row = await prisma.aiDirectMemoryDigests.findFirst({
-      where: { bindingId: binding.id, notePath },
-      select: {
-        notePath: true,
-        title: true,
-        tagsJson: true,
-        linksJson: true,
-        summaryMd: true,
-        summaryBytes: true,
-        sourceBytes: true,
-        frontmatterJson: true,
-        mtime: true,
-        size: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-    if (!row) {
-      return reply.status(404).send({ code: "NOT_FOUND", error: "笔记不在 digest 集合中" });
-    }
-    return row;
-  });
+  fastify.get(
+    "/memory/obsidian/notes/:notePath",
+    { onRequest: auth },
+    async (request: any, reply) => {
+      const user = getUser(fastify, request);
+      const binding = await loadActiveBinding(prisma, user.id);
+      if (!binding) {
+        return reply
+          .status(404)
+          .send({ code: "BINDING_NOT_FOUND", error: "未找到生效中的 vault 绑定" });
+      }
+      const notePath = decodeURIComponent(request.params.notePath);
+      if (!NOTE_PATH.test(notePath)) {
+        return reply.status(400).send({ code: "VALIDATION_ERROR", error: "notePath 格式不正确" });
+      }
+      const row = await prisma.aiDirectMemoryDigests.findFirst({
+        where: { bindingId: binding.id, notePath },
+        select: {
+          notePath: true,
+          title: true,
+          tagsJson: true,
+          linksJson: true,
+          summaryMd: true,
+          summaryBytes: true,
+          sourceBytes: true,
+          frontmatterJson: true,
+          mtime: true,
+          size: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+      if (!row) {
+        return reply.status(404).send({ code: "NOT_FOUND", error: "笔记不在 digest 集合中" });
+      }
+      return row;
+    },
+  );
 }

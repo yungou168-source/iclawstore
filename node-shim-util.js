@@ -11,8 +11,10 @@ function parseEnv(content) {
     if (eqIdx === -1) continue;
     const key = trimmed.slice(0, eqIdx).trim();
     let value = trimmed.slice(eqIdx + 1).trim();
-    if ((value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))) {
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
       value = value.slice(1, -1);
     }
     result[key] = value;
@@ -21,7 +23,10 @@ function parseEnv(content) {
 }
 
 function stripVTControlCharacters(str) {
-  return String(str).replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "").replace(/\x1b[()][AB012]/g, "").replace(/\x1b\[[0-9]?[AJK]/g, "");
+  return String(str)
+    .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "")
+    .replace(/\x1b[()][AB012]/g, "")
+    .replace(/\x1b\[[0-9]?[AJK]/g, "");
 }
 
 function formatWithOptions(inspectOptions, ...args) {

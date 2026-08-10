@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
-import { useLocale } from "../../lib/i18n/context";
 import {
   Select,
   SelectContent,
@@ -16,6 +15,7 @@ import {
   isSkillHighlighted,
   isSkillOfficial,
 } from "../../lib/badges";
+import { useLocale } from "../../lib/i18n/context";
 import {
   formatAuditActionLabel,
   formatAuditMetadataSummary,
@@ -94,9 +94,7 @@ export function SkillsPage({
   return (
     <div className="management-view">
       <h2 className="section-title text-[1.2rem] m-0">{t("management.skills.title")}</h2>
-      <p className="section-subtitle m-0 mt-1">
-        {t("management.skills.subtitle")}
-      </p>
+      <p className="section-subtitle m-0 mt-1">{t("management.skills.subtitle")}</p>
       <div className="management-controls">
         <div className="management-control management-search">
           <span className="mono">{t("management.skills.skill")}</span>
@@ -171,8 +169,10 @@ export function SkillsPage({
                   <div className="section-subtitle m-0">
                     @{owner?.handle ?? owner?.displayName ?? "user"} · v
                     {latestVersion?.version ?? "—"} ·{" "}
-                    {t("management.skills.updated", { time: formatTimestamp(skill.updatedAt, locale) })} ·{" "}
-                    {moderationStatus}
+                    {t("management.skills.updated", {
+                      time: formatTimestamp(skill.updatedAt, locale),
+                    })}{" "}
+                    · {moderationStatus}
                     {badges.length ? ` · ${badges.join(", ").toLowerCase()}` : ""}
                   </div>
                   {skill.moderationFlags?.length ? (
@@ -314,7 +314,9 @@ export function SkillsPage({
                         className="management-field"
                         value={selectedDuplicate}
                         onChange={(event) => onChangeSelectedDuplicate(event.target.value)}
-                        placeholder={canonical?.skill?.slug ?? t("management.skills.canonical_slug")}
+                        placeholder={
+                          canonical?.skill?.slug ?? t("management.skills.canonical_slug")
+                        }
                       />
                     </label>
                     <div className="management-control management-control-stack">

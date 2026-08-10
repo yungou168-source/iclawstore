@@ -1,4 +1,4 @@
-import type { CredentialLease } from './modelProvider.js';
+import type { CredentialLease } from "./modelProvider.js";
 
 export type EncryptedCredentialEnvelope = {
   algorithm: string;
@@ -16,8 +16,8 @@ export type CredentialMetadata = {
   fingerprint: string;
   version: number;
   keyVersion: string;
-  status: 'active' | 'revoked';
-  validationStatus: 'unvalidated' | 'valid' | 'invalid';
+  status: "active" | "revoked";
+  validationStatus: "unvalidated" | "valid" | "invalid";
   validatedAt: Date | null;
   lastUsedAt: Date | null;
   createdAt: Date;
@@ -38,7 +38,10 @@ export type SaveEncryptedCredentialInput = {
 export type CredentialStore = Readonly<{
   saveEncrypted: (input: SaveEncryptedCredentialInput) => Promise<CredentialMetadata>;
   metadata: (credentialId: string, ownerUserId: string) => Promise<CredentialMetadata | null>;
-  metadataForProvider: (ownerUserId: string, providerKey: string) => Promise<CredentialMetadata | null>;
+  metadataForProvider: (
+    ownerUserId: string,
+    providerKey: string,
+  ) => Promise<CredentialMetadata | null>;
   lease: (credentialId: string, ownerUserId: string) => Promise<CredentialLease | null>;
   rotate: (
     credentialId: string,
@@ -57,7 +60,7 @@ export type CredentialStore = Readonly<{
   markValidation: (
     credentialId: string,
     ownerUserId: string,
-    status: 'valid' | 'invalid',
+    status: "valid" | "invalid",
   ) => Promise<boolean>;
   revoke: (credentialId: string, ownerUserId: string) => Promise<boolean>;
 }>;

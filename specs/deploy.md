@@ -84,6 +84,13 @@ Keep one canonical HTTPS web origin. The production configuration uses
 that origin before any login starts. OAuth state cookies are host-only, so a
 mixed `www`/bare-domain login flow loses the verifier and must not be supported.
 
+The HTTPS bare-domain redirect was verified on 2026-08-09: it returns `301` and
+preserves the request path and query string. External probes to both HTTP hosts
+on port 80 timed out, so HTTP-to-HTTPS redirect coverage is not currently
+verified. If port 80 is exposed, both HTTP hosts must redirect directly to the
+canonical HTTPS `www` origin; they must never serve the application or begin an
+OAuth flow.
+
 Convex's management API runs on `127.0.0.1:3210`, while its HTTP site routes
 run on `127.0.0.1:3211`. Nginx must send normal Convex client traffic under
 `/convex/` to `3210`, but route `/convex/api/auth/` to `3211` first. The latter
@@ -110,11 +117,11 @@ JWKS
 
 `JWT_PRIVATE_KEY` 必须是 PKCS#8 PEM RSA 私钥；`JWKS` 必须是同一密钥对的公钥 JWKS JSON。两项均属于生产机密，只能写入 Convex Production deployment 的环境变量，不得提交、粘贴到 issue 或写入工作区文件。密钥轮换必须同时替换两项，再以严格 typecheck 部署。
 
-`SITE_URL` is the final browser destination for OAuth. Email sign-in sends an
-8-digit OTP that is verified inside the login dialog; it must not fall back to
-a magic-link-only flow. `CUSTOM_AUTH_SITE_URL` is the externally reachable
-Convex HTTP site URL. Do not substitute `RESEND_API_KEY` for
-`AUTH_RESEND_KEY`; they serve different paths.
+`SITE_URL` is the final browser destination for OAuth. Email sign-in sends a
+4-digit OTP with a 2-minute lifetime that is verified inside the login dialog;
+it must not fall back to a magic-link-only flow. `CUSTOM_AUTH_SITE_URL` is the
+externally reachable Convex HTTP site URL. Do not substitute `RESEND_API_KEY`
+for `AUTH_RESEND_KEY`; they serve different paths.
 
 The OAuth callback URLs must be exactly:
 
@@ -132,6 +139,16 @@ performing a browser login.
 A source edit is **not** live until both stages below complete. The running
 Node process loads `.output/server/index.mjs` at start-up and does not watch or
 hot-reload that file.
+
+Authentication UI and OTP behavior form one release contract. The 4-digit,
+2-minute OTP backend and the matching compact login dialog must be committed,
+tested, and released together; publishing only one side breaks email login.
+Every workspace navigation variant must also expose the Convex Auth `signOut()`
+action. A production recovery build from an older fixed SHA may correctly fix
+a missing build variable while still restoring that SHA's older login UI. Before
+switching `.output`, compare the selected SHA with the intended authentication
+UI and run signed-out login-dialog plus signed-in sign-out browser smoke checks.
+Never solve this by building the dirty production worktree.
 
 ### Low-memory release design
 
@@ -252,8 +269,14 @@ Ensure Convex env is set (auth + embeddings):
   domain
 - `SITE_URL` (your canonical web app URL)
 - `CUSTOM_AUTH_SITE_URL` (the externally reachable Convex HTTP URL; self-hosted production uses `https://www.iclawstore.com/convex`)
-- `AUTH_RESEND_KEY` and `AUTH_EMAIL_FROM` for 8-digit email OTP sign-in
-- Optional webhook env (see `docs/webhook.md`)
+- `AUTH_RESEND_KEY` and `AUTH_EMAIL_FROM` for 4-digit, 2-minute email OTP sign-in.
+  `AUTH_EMAIL_FROM` defaults to `AI直聘 <no-reply@iclawstore.com>` and may override
+  only the sender; the subject, HTML, and plain-text body remain branded as
+  `AI直聘`. After a Convex production deploy, send one code to a controlled inbox
+  and verify the visible From name, subject, body, 4-digit format, and expiry.
+  Do not record the code or recipient address in release logs.
+- Discord webhook support has been removed. Do not add `DISCORD_WEBHOOK_*`
+  variables to Convex or application environments; see `specs/webhook.md`.
 - Recommended GitHub App env for authenticated GitHub API reads used by publish
   gates and backups:
   - `GITHUB_APP_ID`
@@ -262,7 +285,29 @@ Ensure Convex env is set (auth + embeddings):
 - Optional fallback: `GITHUB_TOKEN` (used when GitHub App auth is unavailable,
   and for arbitrary public repository lookups such as trusted-publisher setup)
 
-## 2) Deploy web app (self-hosted SSR)
+## 2) Deploy MySQL-backed API changes
+
+Features served by the Fastify API must apply their Prisma migrations before the API and web releases that depend on them. For the friendly-link module, `prisma/migrations/20260819_friendly_links` is an additive migration: it creates `friendly_links`, its bounded-read indexes, and the initial links without modifying existing rows or tables.
+
+Run migrations only from a release environment that has the production `DATABASE_URL`; do not copy that credential into the repository or an interactive log:
+
+```bash
+bunx prisma migrate status
+bunx prisma migrate deploy
+bunx prisma migrate status
+```
+
+The required release order is:
+
+1. Confirm the target database and pending migration list.
+2. Run `prisma migrate deploy` and require a zero exit code.
+3. Deploy or restart the Fastify API containing `/friendly-links` and `/admin/friendly-links`.
+4. Deploy the SSR frontend.
+5. Verify anonymous footer reads and administrator create, update, enable/disable, and delete operations.
+
+Do not mark the release complete when `DATABASE_URL` is absent or migration status cannot be read. The footer fallback prevents a temporary empty public footer during rollout, but it does not make the administrator module usable before the table exists.
+
+## 3) Deploy web app (self-hosted SSR)
 
 The GitHub Actions `Deploy` workflow builds the selected `main` SHA on its isolated runner, then streams the verified SSR artifact to `/usr/local/sbin/iclawstore-deploy`. The live `.output` symlink changes only after integrity checks, service restart, and local health verification succeed; the forced command restores the previous release if activation fails.
 
@@ -281,13 +326,13 @@ environment; the workflow must not transfer them over SSH:
 - `SITE_URL` (web app URL)
 - `VITE_APP_BUILD_SHA` (set to the same commit SHA stamped into Convex)
 
-## 3) Route `/api/*` to Convex
+## 4) Route `/api/*` to Convex
 
 The production Nginx configuration proxies `/api/*` to the configured Convex
 HTTP site. Keep that upstream and the registry discovery metadata aligned with
 the production Convex deployment.
 
-## 4) Registry discovery
+## 5) Registry discovery
 
 The CLI can discover the API base from:
 
@@ -297,7 +342,7 @@ The CLI can discover the API base from:
 
 Keep production rewrites and discovery metadata aligned before release.
 
-## 5) Post-deploy checks
+## 6) Post-deploy checks
 
 Run the contract verifier and smoke tests against production after deploy:
 

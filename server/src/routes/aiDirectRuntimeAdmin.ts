@@ -1,28 +1,31 @@
-import type { FastifyInstance } from 'fastify';
-import { AiDirectHiringError, ErrorCodes, errorResponse } from '../services/aiDirectErrors.js';
-import { requireAuth } from '../middleware/aiDirectAuth.js';
-import { requireOrganizationRole } from '../middleware/aiDirectRbac.js';
-import { createWorkerToken, revokeWorkerToken } from '../services/workerTokens.js';
+import type { FastifyInstance } from "fastify";
+import { requireAuth } from "../middleware/aiDirectAuth.js";
+import { requireOrganizationRole } from "../middleware/aiDirectRbac.js";
+import { AiDirectHiringError, ErrorCodes, errorResponse } from "../services/aiDirectErrors.js";
+import { createWorkerToken, revokeWorkerToken } from "../services/workerTokens.js";
 
 function readText(value: unknown, field: string, maxLength: number): string {
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, `${field} 必须是字符串`);
   }
   const result = value.trim();
   if (!result || result.length > maxLength) {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, `${field} 长度必须为 1-${maxLength}`);
+    throw new AiDirectHiringError(
+      ErrorCodes.VALIDATION_ERROR,
+      `${field} 长度必须为 1-${maxLength}`,
+    );
   }
   return result;
 }
 
 function readExpiry(value: unknown): Date | null {
   if (value === undefined || value === null) return null;
-  if (typeof value !== 'string') {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'expiresAt 必须是 ISO 时间字符串');
+  if (typeof value !== "string") {
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "expiresAt 必须是 ISO 时间字符串");
   }
   const result = new Date(value);
   if (!Number.isFinite(result.getTime()) || result <= new Date()) {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'expiresAt 必须是未来时间');
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "expiresAt 必须是未来时间");
   }
   return result;
 }
@@ -31,14 +34,14 @@ export async function aiDirectRuntimeAdminRoutes(fastify: FastifyInstance): Prom
   const pool = (fastify as any).mysql;
   const auth = [(fastify as any).authenticate];
 
-  fastify.post('/worker-tokens', { onRequest: auth }, async (request: any, reply) => {
+  fastify.post("/worker-tokens", { onRequest: auth }, async (request: any, reply) => {
     try {
       const user = await requireAuth(fastify, request);
       const body = (request.body ?? {}) as Record<string, unknown>;
-      const organizationId = readText(body.organizationId, 'organizationId', 36);
-      const workerId = readText(body.workerId, 'workerId', 128);
-      const name = readText(body.name, 'name', 160);
-      await requireOrganizationRole(pool, organizationId, user.id, 'admin');
+      const organizationId = readText(body.organizationId, "organizationId", 36);
+      const workerId = readText(body.workerId, "workerId", 128);
+      const name = readText(body.name, "name", 160);
+      await requireOrganizationRole(pool, organizationId, user.id, "admin");
       const result = await createWorkerToken(pool, {
         organizationId,
         workerId,
@@ -60,11 +63,11 @@ export async function aiDirectRuntimeAdminRoutes(fastify: FastifyInstance): Prom
     }
   });
 
-  fastify.get('/worker-tokens', { onRequest: auth }, async (request: any, reply) => {
+  fastify.get("/worker-tokens", { onRequest: auth }, async (request: any, reply) => {
     try {
       const user = await requireAuth(fastify, request);
-      const organizationId = readText(request.query?.organizationId, 'organizationId', 36);
-      await requireOrganizationRole(pool, organizationId, user.id, 'admin');
+      const organizationId = readText(request.query?.organizationId, "organizationId", 36);
+      await requireOrganizationRole(pool, organizationId, user.id, "admin");
       const [rows] = await pool.query(
         `SELECT id, organizationId, workerId, name, tokenPrefix, status,
                 expiresAt, lastUsedAt, revokedAt, createdByUserId, createdAt, updatedAt
@@ -81,19 +84,19 @@ export async function aiDirectRuntimeAdminRoutes(fastify: FastifyInstance): Prom
     }
   });
 
-  fastify.delete('/worker-tokens/:id', { onRequest: auth }, async (request: any, reply) => {
+  fastify.delete("/worker-tokens/:id", { onRequest: auth }, async (request: any, reply) => {
     try {
       const user = await requireAuth(fastify, request);
-      const tokenId = readText(request.params?.id, 'id', 36);
+      const tokenId = readText(request.params?.id, "id", 36);
       const [rows] = await pool.query(
         `SELECT organizationId FROM ai_direct_worker_tokens WHERE id = ? LIMIT 1`,
         [tokenId],
       );
       const token = (rows as Array<{ organizationId: string }>)[0];
       if (!token) {
-        throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Worker token 不存在', 404);
+        throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, "Worker token 不存在", 404);
       }
-      await requireOrganizationRole(pool, token.organizationId, user.id, 'admin');
+      await requireOrganizationRole(pool, token.organizationId, user.id, "admin");
       const revoked = await revokeWorkerToken(pool, tokenId, token.organizationId);
       return reply.status(200).send({ id: tokenId, revoked });
     } catch (error) {
@@ -104,11 +107,11 @@ export async function aiDirectRuntimeAdminRoutes(fastify: FastifyInstance): Prom
     }
   });
 
-  fastify.get('/runtime/metrics', { onRequest: auth }, async (request: any, reply) => {
+  fastify.get("/runtime/metrics", { onRequest: auth }, async (request: any, reply) => {
     try {
       const user = await requireAuth(fastify, request);
-      const organizationId = readText(request.query?.organizationId, 'organizationId', 36);
-      await requireOrganizationRole(pool, organizationId, user.id, 'manager');
+      const organizationId = readText(request.query?.organizationId, "organizationId", 36);
+      await requireOrganizationRole(pool, organizationId, user.id, "manager");
       const [runRows] = await pool.query(
         `SELECT
            SUM(status = 'queued') AS queued,

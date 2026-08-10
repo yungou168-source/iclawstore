@@ -1,4 +1,4 @@
-export type AccessTokenProvider = (forceRefreshToken: boolean) => Promise<string | null>;
+type AccessTokenProvider = (forceRefreshToken: boolean) => Promise<string | null>;
 
 let accessTokenProvider: AccessTokenProvider | null = null;
 

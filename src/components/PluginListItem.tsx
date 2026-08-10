@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowDownToLine } from "lucide-react";
-import { formatCompactStat } from "../lib/numberFormat";
 import { t, type Locale } from "../lib/i18n";
+import { formatCompactStat } from "../lib/numberFormat";
 import type { PackageListItem } from "../lib/packageApi";
 import { MarketplaceIcon } from "./MarketplaceIcon";
 import { OfficialBadge } from "./OfficialBadge";
@@ -37,9 +37,7 @@ export function PluginListItem({ item, variant = "list", locale = "en" }: Plugin
           <MarketplaceIcon kind="plugin" label={item.displayName} size="md" />
           <h3 className="skill-card-title">{item.displayName}</h3>
         </div>
-        <p className="skill-card-summary">
-          {item.summary ?? fallbackSummary}
-        </p>
+        <p className="skill-card-summary">{item.summary ?? fallbackSummary}</p>
         <div className="skill-card-footer">
           <div className="skill-list-item-meta plugin-card-meta">
             <span className="skill-list-item-meta-item">{itemType}</span>
@@ -77,9 +75,7 @@ export function PluginListItem({ item, variant = "list", locale = "en" }: Plugin
           <span className="skill-list-item-name">{item.displayName}</span>
           {item.isOfficial ? <OfficialBadge label={officialLabel} /> : null}
         </div>
-        <p className="skill-list-item-summary">
-          {item.summary ?? fallbackSummary}
-        </p>
+        <p className="skill-list-item-summary">{item.summary ?? fallbackSummary}</p>
         <div className="skill-list-item-meta">
           <span className="skill-list-item-meta-item">{itemType}</span>
           {item.latestVersion ? (

@@ -152,7 +152,6 @@ export const restoreSkillFromBackup = internalAction({
           bypassNewSkillRateLimit: true,
           bypassQualityGate: true,
           skipBackup: true,
-          skipWebhook: true,
         },
       );
 

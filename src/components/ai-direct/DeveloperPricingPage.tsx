@@ -3,6 +3,7 @@ import {
   aiDirectPaidHiringApi as api,
   formatCnyFen,
   type AgentPriceDto,
+  type AgentSaleDto,
   type OwnedAgentDto,
   type OwnedAgentVersionDto,
 } from "../../lib/aiDirectPaidHiringApi";
@@ -22,6 +23,7 @@ export function DeveloperPricingPage() {
   const [agentId, setAgentId] = useState("");
   const [versions, setVersions] = useState<OwnedAgentVersionDto[]>([]);
   const [prices, setPrices] = useState<AgentPriceDto[]>([]);
+  const [sales, setSales] = useState<AgentSaleDto[]>([]);
   const [versionId, setVersionId] = useState("");
   const [amountFen, setAmountFen] = useState("");
   const [loading, setLoading] = useState(true);
@@ -31,8 +33,12 @@ export function DeveloperPricingPage() {
   const loadAgents = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await api.listOwnedAgents();
+      const [response, saleResponse] = await Promise.all([
+        api.listOwnedAgents(),
+        api.listAgentSales(),
+      ]);
       setAgents(response.items);
+      setSales(saleResponse.items);
       setAgentId((current) =>
         response.items.some((agent) => agent.id === current)
           ? current
@@ -85,7 +91,7 @@ export function DeveloperPricingPage() {
   );
   const activePrice = prices.find((price) => price.status === "active") ?? null;
   const validAmount =
-    /^\d+$/.test(amountFen) && Number(amountFen) > 0 && Number.isSafeInteger(Number(amountFen));
+    /^\d+$/.test(amountFen) && Number(amountFen) >= 0 && Number.isSafeInteger(Number(amountFen));
 
   const setPrice = async () => {
     if (!agentId || !versionId || !validAmount) return;
@@ -224,6 +230,34 @@ export function DeveloperPricingPage() {
           </Card>
         </div>
       ) : null}
+      <Card>
+        <CardHeader>
+          <CardTitle>销售明细</CardTitle>
+          <CardDescription>免费和付费招聘使用同一份不可变出售记录。</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {sales.map((sale) => (
+            <div key={sale.id} className="grid gap-2 rounded-md border p-3 text-sm md:grid-cols-4">
+              <span>
+                <strong>{sale.agentName}</strong> · 价格版本 v{sale.priceVersion}
+              </span>
+              <span>
+                {sale.companyName} · {sale.roleName}
+              </span>
+              <span>
+                <Badge>{sale.pricingMode === "free" ? "免费" : "付费"}</Badge>{" "}
+                {formatCnyFen(sale.grossAmountFen, locale)}
+              </span>
+              <span className="text-muted-foreground">
+                开发者收入 {formatCnyFen(sale.developerRevenueFen, locale)}
+              </span>
+            </div>
+          ))}
+          {!loading && sales.length === 0 ? (
+            <p className="text-sm text-muted-foreground">暂无销售记录。</p>
+          ) : null}
+        </CardContent>
+      </Card>
     </main>
   );
 }

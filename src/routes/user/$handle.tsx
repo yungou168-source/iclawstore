@@ -19,8 +19,8 @@ import { BrowseResultsSkeleton } from "../../components/skeletons/BrowseResultsS
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { Skeleton } from "../../components/ui/skeleton";
-import { useLocale } from "../../lib/i18n/context";
 import { t } from "../../lib/i18n";
+import { useLocale } from "../../lib/i18n/context";
 import { formatCompactStat } from "../../lib/numberFormat";
 import { buildPublisherMeta } from "../../lib/og";
 import type {

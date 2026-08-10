@@ -11,7 +11,25 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 
 vi.mock("../lib/i18n/context", () => ({
-  useLocale: () => ({ locale: "en" }),
+  useLocale: () => ({
+    locale: "en",
+    t: (key: string) =>
+      ({
+        "footer.browse": "Browse",
+        "nav.home": "Home",
+        "header.hire_ai_employees": "Hire AI employees",
+        "header.desktop_client": "Desktop client",
+        "footer.developers": "Developers",
+        "nav.skills": "Skills",
+        "nav.plugins": "Plugins",
+        "footer.friendly_links": "Friendly links",
+        "footer.desktop_client": "AI Direct desktop client",
+        "footer.source_repository": "Source repository",
+        "footer.issue_tracker": "Issue tracker",
+        "footer.social_links": "Social links",
+        "footer.copyright": "© 2026 Ai Work. All rights reserved.",
+      })[key] ?? key,
+  }),
 }));
 
 import { Footer } from "./Footer";
@@ -37,11 +55,11 @@ describe("Footer", () => {
 
     expect(container.querySelectorAll(".footer-col")).toHaveLength(2);
     expect(screen.getByRole("region", { name: "Friendly links" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "AI直聘 desktop" }).getAttribute("href")).toBe(
-      "https://github.com/yungou168-source/iclawstore",
-    );
+    expect(
+      screen.getByRole("link", { name: "AI Direct desktop client" }).getAttribute("href"),
+    ).toBe("https://github.com/yungou168-source/iclawstore");
     expect(screen.getByRole("link", { name: "Desktop client" }).getAttribute("href")).toBe(
-      "https://github.com/yungou168-source/iclawstore/releases",
+      "/desktop-client",
     );
     expect(screen.getByRole("link", { name: "Source repository" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Issue tracker" })).toBeTruthy();
@@ -49,9 +67,9 @@ describe("Footer", () => {
     expect(screen.getByRole("link", { name: "苏ICP备2025218477号" }).getAttribute("href")).toBe(
       "https://beian.miit.gov.cn/",
     );
-    expect(screen.getByRole("link", { name: "苏公网安备32072102010431号" }).getAttribute("href")).toBe(
-      "https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=32072102010431",
-    );
+    expect(
+      screen.getByRole("link", { name: "苏公网安备32072102010431号" }).getAttribute("href"),
+    ).toBe("https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=32072102010431");
   });
 
   it("collapses footer sections by heading until toggled open", async () => {

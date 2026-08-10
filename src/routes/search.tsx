@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useLocale } from "../lib/i18n/context";
-import { t } from "../lib/i18n";
 import { PluginListItem } from "../components/PluginListItem";
 import { BrowseResultsSkeleton } from "../components/skeletons/BrowseResultsSkeleton";
 import { SkillListItem } from "../components/SkillListItem";
 import { Card } from "../components/ui/card";
+import { t } from "../lib/i18n";
+import { useLocale } from "../lib/i18n/context";
 import type { PublicSkill } from "../lib/publicUser";
 import {
   useUnifiedSearch,
@@ -109,9 +109,7 @@ function UnifiedSearchPage() {
     <main className="browse-page">
       <h1 className="browse-title mb-4">
         {search.q ? (
-          <>
-            {t("search.title_with_query", locale).replace("{query}", search.q)}
-          </>
+          <>{t("search.title_with_query", locale).replace("{query}", search.q)}</>
         ) : (
           t("search.title", locale)
         )}
@@ -255,11 +253,16 @@ function SearchEmptyState({
 }) {
   const { locale } = useLocale();
   const browseHref = activeType === "plugins" ? "/plugins" : "/skills";
-  const browseLabel = activeType === "plugins" ? t("search.show_all_plugins", locale) : t("search.show_all_skills", locale);
+  const browseLabel =
+    activeType === "plugins"
+      ? t("search.show_all_plugins", locale)
+      : t("search.show_all_skills", locale);
 
   return (
     <Card className="search-empty-state">
-      <p className="search-empty-title">{t("search.no_matches", locale).replace("{query}", query)}</p>
+      <p className="search-empty-title">
+        {t("search.no_matches", locale).replace("{query}", query)}
+      </p>
       <div className="search-empty-actions">
         {hasOtherTypeMatches ? (
           <button type="button" className="search-empty-action" onClick={onSearchAllTypes}>

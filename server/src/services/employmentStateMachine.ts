@@ -9,19 +9,19 @@
  * throws INVALID_STATE_TRANSITION.
  */
 
-import { AiDirectHiringError, ErrorCodes } from './aiDirectErrors.js';
+import { AiDirectHiringError, ErrorCodes } from "./aiDirectErrors.js";
 
 export const EMPLOYMENT_STATUSES = [
-  'candidate',
-  'evaluating',
-  'offer_pending',
-  'offered',
-  'accepted',
-  'onboarding',
-  'active',
-  'paused',
-  'offboarding',
-  'terminated',
+  "candidate",
+  "evaluating",
+  "offer_pending",
+  "offered",
+  "accepted",
+  "onboarding",
+  "active",
+  "paused",
+  "offboarding",
+  "terminated",
 ] as const;
 
 export type EmploymentStatus = (typeof EMPLOYMENT_STATUSES)[number];
@@ -33,15 +33,15 @@ export interface TransitionResult {
 }
 
 const allowedFrom: Record<EmploymentStatus, Set<EmploymentStatus>> = {
-  candidate: new Set(['evaluating', 'offer_pending', 'terminated']),
-  evaluating: new Set(['offer_pending', 'terminated']),
-  offer_pending: new Set(['offered', 'evaluating', 'terminated']),
-  offered: new Set(['accepted', 'evaluating', 'terminated']),
-  accepted: new Set(['onboarding', 'offboarding', 'terminated']),
-  onboarding: new Set(['active', 'offboarding', 'terminated']),
-  active: new Set(['paused', 'offboarding', 'terminated']),
-  paused: new Set(['active', 'offboarding', 'terminated']),
-  offboarding: new Set(['terminated', 'active', 'paused']),
+  candidate: new Set(["evaluating", "offer_pending", "terminated"]),
+  evaluating: new Set(["offer_pending", "terminated"]),
+  offer_pending: new Set(["offered", "evaluating", "terminated"]),
+  offered: new Set(["accepted", "evaluating", "terminated"]),
+  accepted: new Set(["onboarding", "offboarding", "terminated"]),
+  onboarding: new Set(["active", "offboarding", "terminated"]),
+  active: new Set(["paused", "offboarding", "terminated"]),
+  paused: new Set(["active", "offboarding", "terminated"]),
+  offboarding: new Set(["terminated", "active", "paused"]),
   terminated: new Set([]),
 };
 
@@ -66,7 +66,7 @@ export function transitionEmployment(
 }
 
 export function getEmploymentTerminalStatuses(): EmploymentStatus[] {
-  return ['terminated'];
+  return ["terminated"];
 }
 
 export function isEmploymentTerminal(status: EmploymentStatus): boolean {

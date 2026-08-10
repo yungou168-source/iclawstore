@@ -29,7 +29,6 @@ paths:
   - convex/tokens.ts
   - convex/uploads.ts
   - convex/vt.ts
-  - convex/webhooks.ts
   - convex/lib/access.ts
   - convex/lib/apiTokenAuth.ts
   - convex/lib/commentScamPrompt.ts
@@ -51,7 +50,6 @@ paths:
   - convex/lib/skillSafety.ts
   - convex/lib/staticPublishScan.ts
   - convex/lib/tokens.ts
-  - convex/lib/webhooks.ts
 
 paths-ignore:
   - "**/node_modules"

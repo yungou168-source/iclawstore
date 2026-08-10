@@ -1,51 +1,23 @@
 ---
-summary: "Discord webhook events/payloads for skill publish + highlight."
+summary: "Removal decision for the retired Discord webhook integration."
 read_when:
-  - Working on webhooks/integrations
+  - Reviewing removed integrations or deployment environment variables
 ---
 
-# Webhooks (Discord)
+# Discord webhook removal
 
-ClawHub can post Discord embeds when skills are published or highlighted.
+ClawHub does not use Discord notifications. The outbound Discord webhook
+integration was removed from the Convex backend, including publish/highlight
+scheduling, payload construction, and its tests.
 
-## Setup
+## Invariants
 
-Set the webhook URL in the Convex environment:
-
-- `DISCORD_WEBHOOK_URL` (required): Discord webhook URL.
-- `DISCORD_WEBHOOK_HIGHLIGHTED_ONLY` (optional): `true` to only send for highlighted skills.
-- `SITE_URL` (optional): Base site URL for links (default `https://clawhub.ai`).
-
-## Events
-
-- `skill.publish`: fires on every publish (new or updated version).
-- `skill.highlighted`: fires when a skill is newly highlighted.
-
-### Highlight-only filter
-
-When `DISCORD_WEBHOOK_HIGHLIGHTED_ONLY=true`:
-
-- `skill.publish` only sends if the skill is highlighted.
-- `skill.highlighted` always sends.
-
-## Payload (Discord)
-
-Discord receives a JSON payload with a single embed:
-
-```json
-{
-  "embeds": [
-    {
-      "title": "Demo Skill",
-      "description": "Nice skill",
-      "url": "https://clawhub.ai/owner/demo-skill",
-      "fields": [
-        { "name": "Version", "value": "v1.2.3", "inline": true },
-        { "name": "Owner", "value": "@owner", "inline": true },
-        { "name": "Tags", "value": "latest, discord", "inline": false }
-      ],
-      "footer": { "text": "ClawHub" }
-    }
-  ]
-}
-```
+- Do not configure `DISCORD_WEBHOOK_URL` or
+  `DISCORD_WEBHOOK_HIGHLIGHTED_ONLY` in any ClawHub deployment.
+- Skill publishing and highlighting must not schedule Discord network requests.
+- `SITE_URL` remains a normal application/auth setting; it is no longer read by
+  webhook code.
+- Reintroducing an outbound notification integration requires a new design
+  decision covering destination, event ownership, retries, failure isolation,
+  secret storage, and observability. Do not restore the former Discord code by
+  default.

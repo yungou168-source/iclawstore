@@ -5,7 +5,7 @@ import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig } from "vite";
 
 const require = createRequire(import.meta.url);
 
@@ -16,10 +16,7 @@ const convexBrowserPath = join(convexRoot, "dist/esm/browser/index.js");
 const convexValuesPath = join(convexRoot, "dist/esm/values/index.js");
 const convexAuthReactPath = require.resolve("@convex-dev/auth/react");
 
-function handleRollupWarning(
-  warning: { code?: string; message: string; id?: string },
-  warn: (warning: { code?: string; message: string; id?: string }) => void,
-) {
+function handleRollupWarning(warning, warn) {
   if (
     warning.code === "MODULE_LEVEL_DIRECTIVE" &&
     warning.id?.includes("node_modules") &&
@@ -39,10 +36,7 @@ function handleRollupWarning(
   warn(warning);
 }
 
-type SourceReplacement = readonly [from: string, to: string];
-
-const reflectHas = (target: string, key: string) =>
-  `Reflect.has(${target}, ${JSON.stringify(key)})`;
+const reflectHas = (target, key) => `Reflect.has(${target}, ${JSON.stringify(key)})`;
 
 const arkSafariInOperatorFixes = [
   {
@@ -68,7 +62,7 @@ const arkSafariInOperatorFixes = [
       ['"data" in input', reflectHas("input", "data")],
       ['"get" in desc', reflectHas("desc", "get")],
       ['"set" in desc', reflectHas("desc", "set")],
-    ] satisfies SourceReplacement[],
+    ],
   },
   {
     suffix: "/node_modules/@ark/util/out/serialize.js",
@@ -86,25 +80,19 @@ const arkSafariInOperatorFixes = [
       ['"reference" in schema', reflectHas("schema", "reference")],
       ['"proto" in schema', reflectHas("schema", "proto")],
       ['"domain" in schema', reflectHas("schema", "domain")],
-    ] satisfies SourceReplacement[],
+    ],
   },
   {
     suffix: "/node_modules/@ark/schema/out/node.js",
-    replacements: [
-      ['"value" in transformedInner', reflectHas("transformedInner", "value")],
-    ] satisfies SourceReplacement[],
+    replacements: [['"value" in transformedInner', reflectHas("transformedInner", "value")]],
   },
   {
     suffix: "/node_modules/@ark/schema/out/scope.js",
-    replacements: [
-      ['"branches" in schema', reflectHas("schema", "branches")],
-    ] satisfies SourceReplacement[],
+    replacements: [['"branches" in schema', reflectHas("schema", "branches")]],
   },
   {
     suffix: "/node_modules/@ark/schema/out/structure/optional.js",
-    replacements: [
-      ['"default" in this.inner', reflectHas("this.inner", "default")],
-    ] satisfies SourceReplacement[],
+    replacements: [['"default" in this.inner', reflectHas("this.inner", "default")]],
   },
   {
     suffix: "/node_modules/@ark/schema/out/structure/sequence.js",
@@ -115,34 +103,30 @@ const arkSafariInOperatorFixes = [
       ['"optionals" in schema', reflectHas("schema", "optionals")],
       ['"postfix" in schema', reflectHas("schema", "postfix")],
       ['"minVariadicLength" in schema', reflectHas("schema", "minVariadicLength")],
-    ] satisfies SourceReplacement[],
+    ],
   },
   {
     suffix: "/node_modules/@ark/schema/out/structure/prop.js",
-    replacements: [
-      ['"default" in this.inner', reflectHas("this.inner", "default")],
-    ] satisfies SourceReplacement[],
+    replacements: [['"default" in this.inner', reflectHas("this.inner", "default")]],
   },
   {
     suffix: "/node_modules/@ark/schema/out/shared/implement.js",
-    replacements: [
-      ['"description" in ctx', reflectHas("ctx", "description")],
-    ] satisfies SourceReplacement[],
+    replacements: [['"description" in ctx', reflectHas("ctx", "description")]],
   },
   {
     suffix: "/node_modules/@ark/schema/out/shared/errors.js",
-    replacements: [['"data" in input', reflectHas("input", "data")]] satisfies SourceReplacement[],
+    replacements: [['"data" in input', reflectHas("input", "data")]],
   },
   {
     suffix: "/node_modules/@ark/util/out/clone.js",
     replacements: [
       ['"get" in desc', reflectHas("desc", "get")],
       ['"set" in desc', reflectHas("desc", "set")],
-    ] satisfies SourceReplacement[],
+    ],
   },
-] as const;
+];
 
-function patchArkSafariInOperator(): Plugin {
+function patchArkSafariInOperator() {
   return {
     name: "patch-ark-safari-in-operator",
     enforce: "pre",

@@ -1,3 +1,25 @@
+> **钱包、统一销售与登录邮件更新（2026-08-18，以当前工作区与已记录生产事实为准）**
+>
+> - 迁移 `20260818_ai_direct_agent_sales` 已在工作区落盘：免费和付费招聘统一生成 `Sale → Offer → Employment`，每次 Sale 固定写平台、开发者两条收入分录。免费成交三项金额均为 `0`，不创建伪 PaymentOrder、不扣钱包、不写钱包流水。
+> - 付费成交继续在同一事务内完成钱包扣款、Sale、Offer、Employment、平台 20% 与开发者 80% 分录；余额不足时所有业务事实、钱包流水和 Position 编制回滚。
+> - 退款保留原 Sale 和原 credit，通过同一 `saleId` 的 debit 补偿。开发者可提现查询按 Sale 净收益计算：部分退款只提现剩余净额，全额退款和免费 0 元分录不进入可提现集合。
+> - 全新隔离 MySQL 已从零应用全部 21 段迁移，`server/test/walletSalesMysql.test.ts` 为 `4 pass / 0 fail`；API TypeScript 构建、定向 lint 及 OTP 品牌单测均通过。隔离库已自动删除。
+> - 登录验证码邮件默认发件人、标题、HTML 和纯文本已统一为 `AI直聘`，`AUTH_EMAIL_FROM` 仍可覆盖默认发件人；源码契约测试已通过。Convex 生产部署和真实收件验收尚未完成，不能写成生产已生效。
+> - 生产钱包仍为已发布状态：`20260817_wallet_ledger` 已应用，1.00 元真实支付宝充值已确认异步通知、主动查单、唯一交易号和重复事件幂等；钱包与组织管理入口及空 POST Content-Type 修复均已发布。
+> - 本轮统一销售仍待生产备份、`20260818` 迁移、API/前端增量发布以及免费/付费成交和统一销售查询验收。权威不变量与测试证据见 [`wallet-ledger.md`](./wallet-ledger.md)。
+>
+> **候选目录 QA 组织开关（2026-08-08，以实时运行配置为准）**
+>
+> - 已确认可回收招聘账号能够选择 active 公司 `company-A`，其所属组织为 `qa-employeedirectory-2026-03-14-15aff8b5`（ID：`15aff8b5-4a60-4eea-aaf6-3d8c40c0c754`）。
+> - `candidateCatalog` 保持全局默认关闭，仅通过 `ecosystem.config.cjs` 向 `iclawstore-api` 注入该 QA 组织的显式开启配置；SSR `iclawstore.service` 不消费该变量。
+> - 开启后仍须使用该已认证会话选择一个实际分类，并确认 `GET /api/v1/ai-direct-hiring/catalog/agents` 请求携带 `category` 和 `limit=50`，且页面仅渲染对应分类候选。未完成此项前，不得把分类筛选记为已通过认证验收。
+
+> **构建配置与付费雇佣发布前状态（2026-08-16）**
+>
+> - `vite.config.bundled.mjs` 已移除不被 `.mjs` 支持的 TypeScript 专用语法；`.polyfill.cjs` 的 `Response.ok` 已改为标准属性描述符定义。Node 语法检查和 Vite 配置加载均通过。
+> - 付费雇佣的服务器代码闭环已具备：版本化定价、订单创建、本地状态读取、显式对账、支付宝通知/查询验签、幂等履约、不可变 20%/80% 账本、人工结算批次、运营告警和默认关闭的对账 worker 均已实现。它们不等同于已上线。
+> - v1 发布前不再缺少新的核心服务端功能；当前阻塞是受控环境验收：依序应用两段 migration、配置最小 `AI_DIRECT_SETTLEMENT_STAFF_IDS`、以可回收身份完成 Convex Bearer 权限矩阵、使用支付宝沙箱完成下单/查询/异步通知/重复通知，以及在隔离 `TEST_DATABASE_URL` 上重跑对账与结算的 MySQL 门禁。
+> - 后续产品能力须单独设计和实施：退款、拒付、税费、渠道费、自动向开发者打款、自动冲正、结算周期与最低打款额。它们不得在现有履约、Offer、Employment 或原始账本上隐式实现。
 
 > **QA 组织与公司实测（2026-03-14，以浏览器实际行为为准）**
 >
@@ -17,7 +39,11 @@
 > - 实付金额按整数最小货币单位记账。平台收入按总额的 20% 四舍五入到分，开发者应付取剩余部分；账本必须满足 `实付金额 = 平台收入 + 开发者应付`，不得用浮点金额计算。
 > - 当前代码已完成产品契约收敛：旧 Offer accept/decline/reject/expire/revoke 写入口稳定返回 `409`，Approval 只处理付款前雇佣意图，旧公开 Employment 创建入口不再允许绕过支付。
 > - `20260815_ai_direct_paid_hiring` 已落盘；PaymentOrder 固化 AgentVersion、开发者、价格版本、明确 `positionId` 和 20%/80% 金额。支付宝可信成功通知在单一事务内更新订单、创建唯一 Offer/Employment、账本、事件、审计和 outbox，失败整体回滚。
-> - Prisma validate、服务端 TypeScript、定向 Biome、单元/桌面契约测试和全新隔离 MySQL 迁移/事务测试均通过。生产迁移、真实 Bearer 授权矩阵和支付宝沙箱/商户联调尚未完成，不得把代码闭环标记为生产支付可用。
+> - `20260816_ai_direct_paid_hiring_operations` 已新增但尚未应用：订单新增对账计数、状态、lease 与下次调度字段；`alipay.trade.query` 对请求签名，并对原始 JSON 中的 `alipay_trade_query_response` 节点验签后才读取交易结果。显式对账只允许订单请求者、默认 30 秒冷却；对账 worker 默认退出，只有 `PAID_HIRING_RECONCILIATION_ENABLED=true` 且支付配置完整时才会启动，并以单连接、`FOR UPDATE SKIP LOCKED`、90 秒 lease 和 30 秒至 1 小时指数退避工作。
+> - 开发者价格服务已从订单服务拆出，支持归属校验、已发布版本校验、追加式版本、审计与 outbox。人工结算服务已具备平台 staff 专用的应付余额、可结算分录、批次列表/详情与最小运营告警读取 API；批次在锁定分录后遵循 `pending → processing → failed → processing（retry）→ completed`，创建、processing、failed、retry、completed 均与 audit/outbox 原子提交。完成必须有人工打款参考号；失败原因最多保存最小人工说明，不保存支付渠道原始载荷、签名、密钥或外部打款凭据之外的渠道数据。结算 staff 目前由 `AI_DIRECT_SETTLEMENT_STAFF_IDS` 显式配置，默认无人拥有权限；前端隐藏入口不构成授权。
+> - `TRADE_CLOSED`、查询连续失败、过期 lease 与最高退避均只写可查询的最小化运营告警。任何渠道异常均不得撤销或冲正既有 Offer、Employment 或账本。
+> - 已通过 Prisma validate、服务端 TypeScript，以及支付签名/桌面契约定向测试 `16/16`。隔离 MySQL 的对账 worker、定价和结算并发/回滚门禁已编写，但当前环境未提供 `TEST_DATABASE_URL`，测试处于跳过态，尚未形成真实数据库验收证据。真实 Bearer 授权矩阵与支付宝沙箱/商户联调尚未完成；Web 已接入开发者定价、staff 结算运营和 `/recruit-ai` 的服务端订单/本地状态/受控显式对账 UI。招聘页只允许从公司、部门、开放 Position 与绑定 Role 的服务端读取链路创建订单，支付回跳不声明成功；只有重新读取到 `fulfilled` 且同时包含 Offer/Employment 标识才显示雇佣成功。
+> - 在应用 `20260815_ai_direct_paid_hiring` 和 `20260816_ai_direct_paid_hiring_operations` 前，禁止启动 `runtime:paid-hiring-reconciliation`，禁止配置或开放任何结算运营入口；迁移完成后仍须保持 worker opt-in，直到隔离 MySQL、真实身份和渠道验收通过。
 
 > **审批治理历史实现快照（2026-08-14，以当前代码证据为准，待按新商业契约重构）**
 >
@@ -38,7 +64,6 @@
 > - Prisma 使用本机受限 DDL 迁移账号核验为 `Database schema is up to date`，`20260812_ai_direct_template_review` 与 `20260813_ai_direct_audit_governance` 已应用。
 > - 原生桌面 OAuth、认证 Session 成功链路和 Feature Flag 正反行为**均未完成真实验收**：运行环境缺少桌面 OAuth issuer/client ID/audience 配置，公网 discovery 不含 `auth`；仅确认未认证 `/session` 返回 `401`；没有可回收测试身份或隔离组织用于验证 `/session` 的 `200` 以及开关启用、禁用和组织覆盖。
 > - 因此状态仍是 **部分发布，业务验收未完成**。后续必须按 OAuth discovery/JWKS → PKCE → 认证 `/session` → 各 Feature Flag enabled/disabled 的顺序完成真实闭环；在此之前不得把路由可达、迁移完成或未认证 `401` 记录为 OAuth/Session/Feature Flag 通过。
->
 
 > 完整缺口顺序、状态定义和后续后台工作包见 [`ai-direct-admin-capability-gaps.md`](./ai-direct-admin-capability-gaps.md)。
 >
@@ -54,7 +79,6 @@
 > - `AI Direct Hiring` 仅表示招聘业务模块及 `/api/v1/ai-direct-hiring` 的 API 语义，不能替代平台主名称。
 > - `clawhub`、`clawdhub` 的 CLI、npm 包名、公开 API 路径、发现协议及内部历史标识为兼容层，禁止因本次改名修改；Soul 模式跳转到兼容站点时可继续展示其原名称。
 > - 官方静态 Logo 源为仓库根目录 `ai-work-icon.svg`，发布资产为 `public/ai-work-icon.svg`；根页分享图为 `public/og.svg`。不得继续引用旧红色 OG 或龙虾 Logo 资产。
-
 
 > **Desktop 1.1.0 生产发布更新（2026-08-05）**
 >
@@ -72,19 +96,19 @@
 > - **部分完成**：已有可复用实现，但 DTO、状态机、测试或机器契约仍缺；
 > - **未实现**：当前核心入口没有该领域能力；旧的未挂载源码和仅有表结构不算完成。
 >
-> | 任务 | 当前状态 | 已有证据 | 尚缺 |
-> | --- | --- | --- | --- |
-> | `oauth-identity` | **实现完成，待发布验收** | Convex OAuth/OIDC Provider、Authorization Code + PKCE S256、固定 public client 注册逻辑、双 redirect 类型、refresh rotation/reuse detection、30 天绝对期限、7 天空闲期限、账号停用/删除触发 family revoke、RFC 7009 revoke、Fastify Web/Desktop 双 issuer bridge 与定向测试均已落盘。 | 在目标环境执行并锁定静态 client 注册；真实桌面浏览器授权、custom URI 与 loopback 两条闭环；生产配置烟测；统一静态、类型、迁移和发布门禁。 |
-> | `session-capabilities` | **路由已发布，业务验收部分完成** | `/session` 已挂载，按 active membership 返回用户、组织、显式选择结果、`grantVersion`、角色权限、组织级 flags 与 `runtimeCapabilities`；既有真实 GitHub token `/session` 成功路径与定向路由测试已通过。 | 真实 native OAuth token 的管理员组织权限闭环；Candidate Catalog/Workforce 场景的专用 token + 隔离组织验收。 |
-> | `jobs-artifacts` | **路由契约已发布，业务验收待补** | Jobs cursor 列表/详情、受控 artifact metadata 与内容流式读取已挂载并进入 Desktop OpenAPI；`20260808_ai_direct_desktop_jobs_cursor` 已部署，完整路由烟测通过。 | 配置并验证真实 `AI_DIRECT_ARTIFACT_ROOT`、跨组织可见性与篡改对象的带认证端到端门禁。 |
-> | `agent-publication` | **迁移与路由发布完成，业务验收待补** | 独立 `AgentPublicationModule` 已挂入 core；草稿、版本、审核提交/裁决、发布、审计/outbox 和发布时 digest 更新均已实现；`20260810_agent_publication_catalog` 已部署。 | 补真实认证、RBAC、写入幂等与事务的受控生产验收。 |
-> | `candidate-catalog` | **路由发布完成，组织能力默认关闭** | digest 服务、目录/详情/分类路由、服务端全文搜索、稳定 cursor、组织 membership + feature flag 授权和安全 DTO 已存在；迁移已部署且生产路由不再 `404`。 | 当前无启用 `candidateCatalog` 的组织或专用 smoke token；带认证 `2xx`、跨组织、撤权和投影回归仍待验收。 |
-> | `interviews` | **迁移与路由发布完成，组织能力默认关闭** | 独立路由、保留策略、legal hold、用户删除队列、受管图片/PDF 附件与低资源 cleanup consumer 均已实现；`20260809_ai_direct_interviews_policy` 已部署。 | 按组织显式开启 `interviews`，完成真实认证业务与清理任务验收。 |
-> | `hiring-closure` | **代码与隔离 MySQL 闭环已验证，待生产发布验收** | 版本化价格、固化 Position/开发者/金额快照的 PaymentOrder、支付宝 RSA2 验签、支付成功原子 Offer + Employment、20%/80% 账本、重复通知幂等和事务回滚门禁均已完成；Approval 与旧 Offer/Employment 写入口已按新契约收敛。 | 应用生产迁移；使用真实 Bearer 身份重放权限矩阵；使用支付宝沙箱/真实商户配置验证下单、通知、重复通知及错误商户/金额；保持 feature flag 关闭直至全部通过。 |
-> | `runtime-guardrails` | **受控运行中，验收未完成** | API/dispatcher/executor 已拆分进程预算与连接池：API pool 6、dispatcher pool 2、executor pool 1 且并发 1；executor 保持关闭。 | 完成 30 分钟 RSS/heap/swap/队列深度观测；低内存拒绝与排队压测尚未执行。 |
-> | `workforce` | **迁移与路由发布完成，业务验收待补** | 独立 WorkforceModule、Department → Position → AgentRole、开放职位校验、Candidate Matching 和 Employment 编制投影已实现；`20260811_ai_direct_workforce` 已部署且生产路由不再 `404`。 | 当前无完整隔离测试组织链和短期 token；补 Departments、Positions、Matching 的带认证 `2xx`，以及跨公司、编制满额、重放和终止释放回归。 |
-> | `workforce-audit` | **三个后台核心包代码完成，待验证** | 组织/公司统一 DTO、cursor、状态机和 `/management` 页面已整合；独立模板审核模块具备待审/拒绝/发布/下架、审计/outbox；中央审计具备组织权限、脱敏、cursor、异步导出 Job、短时 token 和单连接 CSV consumer，新路由已挂载且加法迁移/Prisma 声明已落盘。 | 串行完成 schema、服务器定向测试（含导出 worker）、管理前端测试、TypeScript 与隔离 MySQL；将 opt-in consumer 接入生产进程配置；为平台模板事件建立真实组织归属前不得混入组织审计；完成迁移和生产验收。 |
-> | `release-gate` | **路由发布门禁已完成** | Desktop `1.1.0` 使用单一 method/path manifest；OpenAPI 完整一致性测试、Fastify 启动路由校验、故意缺路由失败测试、四段生产迁移和逐 operation 非 `404` 烟测均通过。 | 真实 native OAuth 与 artifact 闭环；对需声明业务可用的组织能力补专用 token + 隔离组织的认证 `2xx` 门禁。 |
+> | 任务                   | 当前状态                                        | 已有证据                                                                                                                                                                                                                                                                              | 尚缺                                                                                                                                                                                                 |
+> | ---------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | `oauth-identity`       | **实现完成，待发布验收**                        | Convex OAuth/OIDC Provider、Authorization Code + PKCE S256、固定 public client 注册逻辑、双 redirect 类型、refresh rotation/reuse detection、30 天绝对期限、7 天空闲期限、账号停用/删除触发 family revoke、RFC 7009 revoke、Fastify Web/Desktop 双 issuer bridge 与定向测试均已落盘。 | 在目标环境执行并锁定静态 client 注册；真实桌面浏览器授权、custom URI 与 loopback 两条闭环；生产配置烟测；统一静态、类型、迁移和发布门禁。                                                            |
+> | `session-capabilities` | **路由已发布，业务验收部分完成**                | `/session` 已挂载，按 active membership 返回用户、组织、显式选择结果、`grantVersion`、角色权限、组织级 flags 与 `runtimeCapabilities`；既有真实 GitHub token `/session` 成功路径与定向路由测试已通过。                                                                                | 真实 native OAuth token 的管理员组织权限闭环；Candidate Catalog/Workforce 场景的专用 token + 隔离组织验收。                                                                                          |
+> | `jobs-artifacts`       | **路由契约已发布，业务验收待补**                | Jobs cursor 列表/详情、受控 artifact metadata 与内容流式读取已挂载并进入 Desktop OpenAPI；`20260808_ai_direct_desktop_jobs_cursor` 已部署，完整路由烟测通过。                                                                                                                         | 配置并验证真实 `AI_DIRECT_ARTIFACT_ROOT`、跨组织可见性与篡改对象的带认证端到端门禁。                                                                                                                 |
+> | `agent-publication`    | **迁移与路由发布完成，业务验收待补**            | 独立 `AgentPublicationModule` 已挂入 core；草稿、版本、审核提交/裁决、发布、审计/outbox 和发布时 digest 更新均已实现；`20260810_agent_publication_catalog` 已部署。                                                                                                                   | 补真实认证、RBAC、写入幂等与事务的受控生产验收。                                                                                                                                                     |
+> | `candidate-catalog`    | **路由发布完成，组织能力默认关闭**              | digest 服务、目录/详情/分类路由、服务端全文搜索、稳定 cursor、组织 membership + feature flag 授权和安全 DTO 已存在；迁移已部署且生产路由不再 `404`。                                                                                                                                  | 当前无启用 `candidateCatalog` 的组织或专用 smoke token；带认证 `2xx`、跨组织、撤权和投影回归仍待验收。                                                                                               |
+> | `interviews`           | **迁移与路由发布完成，组织能力默认关闭**        | 独立路由、保留策略、legal hold、用户删除队列、受管图片/PDF 附件与低资源 cleanup consumer 均已实现；`20260809_ai_direct_interviews_policy` 已部署。                                                                                                                                    | 按组织显式开启 `interviews`，完成真实认证业务与清理任务验收。                                                                                                                                        |
+> | `hiring-closure`       | **代码与隔离 MySQL 闭环已验证，待生产发布验收** | 版本化价格、固化 Position/开发者/金额快照的 PaymentOrder、支付宝 RSA2 验签、支付成功原子 Offer + Employment、20%/80% 账本、重复通知幂等和事务回滚门禁均已完成；Approval 与旧 Offer/Employment 写入口已按新契约收敛。                                                                  | 应用生产迁移；使用真实 Bearer 身份重放权限矩阵；使用支付宝沙箱/真实商户配置验证下单、通知、重复通知及错误商户/金额；保持 feature flag 关闭直至全部通过。                                             |
+> | `runtime-guardrails`   | **受控运行中，验收未完成**                      | API/dispatcher/executor 已拆分进程预算与连接池：API pool 6、dispatcher pool 2、executor pool 1 且并发 1；executor 保持关闭。                                                                                                                                                          | 完成 30 分钟 RSS/heap/swap/队列深度观测；低内存拒绝与排队压测尚未执行。                                                                                                                              |
+> | `workforce`            | **迁移与路由发布完成，业务验收待补**            | 独立 WorkforceModule、Department → Position → AgentRole、开放职位校验、Candidate Matching 和 Employment 编制投影已实现；`20260811_ai_direct_workforce` 已部署且生产路由不再 `404`。                                                                                                   | 当前无完整隔离测试组织链和短期 token；补 Departments、Positions、Matching 的带认证 `2xx`，以及跨公司、编制满额、重放和终止释放回归。                                                                 |
+> | `workforce-audit`      | **三个后台核心包代码完成，待验证**              | 组织/公司统一 DTO、cursor、状态机和 `/management` 页面已整合；独立模板审核模块具备待审/拒绝/发布/下架、审计/outbox；中央审计具备组织权限、脱敏、cursor、异步导出 Job、短时 token 和单连接 CSV consumer，新路由已挂载且加法迁移/Prisma 声明已落盘。                                    | 串行完成 schema、服务器定向测试（含导出 worker）、管理前端测试、TypeScript 与隔离 MySQL；将 opt-in consumer 接入生产进程配置；为平台模板事件建立真实组织归属前不得混入组织审计；完成迁移和生产验收。 |
+> | `release-gate`         | **路由发布门禁已完成**                          | Desktop `1.1.0` 使用单一 method/path manifest；OpenAPI 完整一致性测试、Fastify 启动路由校验、故意缺路由失败测试、四段生产迁移和逐 operation 非 `404` 烟测均通过。                                                                                                                     | 真实 native OAuth 与 artifact 闭环；对需声明业务可用的组织能力补专用 token + 隔离组织的认证 `2xx` 门禁。                                                                                             |
 >
 > **下一发布顺序**：先在目标环境应用 `20260815_ai_direct_paid_hiring`，再使用真实 Bearer 身份验证订单创建权限与跨组织边界，随后使用真实支付宝沙箱/商户配置验证下单、RSA2 通知、重复通知、错误商户和错误金额。最后核对 PaymentOrder、唯一 Offer/Employment、20%/80% 账本、审计和 outbox 的原子结果，全部通过后才能开启支付 feature flag。退款、拒付、税费、渠道费、自动结算和冲正仍是后续独立工作。Candidate Catalog、Workforce、native OAuth 与 artifact 的真实身份验收继续独立推进，Executor 保持关闭。内存受限服务器不得并行运行构建、MySQL 集成测试或全量测试。
 

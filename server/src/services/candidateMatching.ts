@@ -18,28 +18,47 @@ export type CandidateMatch = {
 
 const normalizedStrings = (value: unknown): string[] => {
   if (!Array.isArray(value)) return [];
-  return [...new Set(value.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean))]
-    .sort((left, right) => left.localeCompare(right, 'zh-CN'));
+  return [
+    ...new Set(
+      value
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  ].sort((left, right) => left.localeCompare(right, "zh-CN"));
 };
 
 export const requiredCapabilitiesFrom = (requirementsSummary: unknown): string[] => {
-  if (!requirementsSummary || typeof requirementsSummary !== 'object' || Array.isArray(requirementsSummary)) return [];
+  if (
+    !requirementsSummary ||
+    typeof requirementsSummary !== "object" ||
+    Array.isArray(requirementsSummary)
+  )
+    return [];
   return normalizedStrings((requirementsSummary as Record<string, unknown>).requiredCapabilities);
 };
 
 export const candidateCapabilitiesFrom = (capabilitySummary: unknown): string[] => {
   if (Array.isArray(capabilitySummary)) return normalizedStrings(capabilitySummary);
-  if (!capabilitySummary || typeof capabilitySummary !== 'object') return [];
+  if (!capabilitySummary || typeof capabilitySummary !== "object") return [];
   return normalizedStrings((capabilitySummary as Record<string, unknown>).capabilities);
 };
 
-export const matchCandidate = (requiredCapabilities: string[], candidate: CandidateMatchInput): CandidateMatch => {
+export const matchCandidate = (
+  requiredCapabilities: string[],
+  candidate: CandidateMatchInput,
+): CandidateMatch => {
   const candidateCapabilities = new Set(candidateCapabilitiesFrom(candidate.capabilitySummary));
-  const matchedCapabilities = requiredCapabilities.filter((capability) => candidateCapabilities.has(capability));
-  const missingCapabilities = requiredCapabilities.filter((capability) => !candidateCapabilities.has(capability));
-  const score = requiredCapabilities.length === 0
-    ? 0
-    : Math.round((matchedCapabilities.length * 100) / requiredCapabilities.length);
+  const matchedCapabilities = requiredCapabilities.filter((capability) =>
+    candidateCapabilities.has(capability),
+  );
+  const missingCapabilities = requiredCapabilities.filter(
+    (capability) => !candidateCapabilities.has(capability),
+  );
+  const score =
+    requiredCapabilities.length === 0
+      ? 0
+      : Math.round((matchedCapabilities.length * 100) / requiredCapabilities.length);
 
   return {
     agentId: candidate.agentId,
@@ -52,8 +71,16 @@ export const matchCandidate = (requiredCapabilities: string[], candidate: Candid
   };
 };
 
-export const rankCandidateMatches = (requiredCapabilities: string[], candidates: CandidateMatchInput[]): CandidateMatch[] =>
+export const rankCandidateMatches = (
+  requiredCapabilities: string[],
+  candidates: CandidateMatchInput[],
+): CandidateMatch[] =>
   candidates
-    .filter((candidate) => candidate.availability === 'available')
+    .filter((candidate) => candidate.availability === "available")
     .map((candidate) => matchCandidate(requiredCapabilities, candidate))
-    .sort((left, right) => right.score - left.score || left.displayName.localeCompare(right.displayName, 'zh-CN') || left.agentId.localeCompare(right.agentId));
+    .sort(
+      (left, right) =>
+        right.score - left.score ||
+        left.displayName.localeCompare(right.displayName, "zh-CN") ||
+        left.agentId.localeCompare(right.agentId),
+    );

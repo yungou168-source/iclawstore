@@ -21,7 +21,7 @@ import {
   normalizeAuthErrorMessage,
 } from "../lib/authErrorMessage";
 import { getSiteDescription, getSiteMode, getSiteName, getSiteUrlForMode } from "../lib/site";
-import '../styles.css';
+import "../styles.css";
 
 const OG_IMAGE_VERSION = "20260804-ai-work";
 

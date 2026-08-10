@@ -1,65 +1,78 @@
-import { createHash, randomUUID } from 'node:crypto';
-import { FastifyInstance } from 'fastify';
-import { CatalogModel, parseModelPolicy, resolveModelPolicy, validateModelPolicy } from '../services/jinshaModelPolicy.js';
-import { encryptCredential } from '../services/credentialVault.js';
-import { listJinshaModels } from '../services/jinshaGateway.js';
-import { AiDirectHiringError, ErrorCodes, errorResponse } from '../services/aiDirectErrors.js';
-import { publishOutboxEvent } from '../utils/outbox.js';
-import { aiDirectCompaniesRoutes } from './aiDirectCompanies.js';
-import { aiDirectOffersRoutes } from './aiDirectOffers.js';
-import { aiDirectEmploymentsRoutes } from './aiDirectEmployments.js';
-import { aiDirectApprovalsRoutes } from './aiDirectApprovals.js';
-import { aiDirectCapabilitiesRoutes } from './aiDirectCapabilities.js';
-import { aiDirectJobsRoutes } from './aiDirectJobs.js';
-import { aiDirectWorkersRoutes } from './aiDirectWorkers.js';
+import { createHash, randomUUID } from "node:crypto";
+import { FastifyInstance } from "fastify";
+import { AiDirectHiringError, ErrorCodes, errorResponse } from "../services/aiDirectErrors.js";
+import { encryptCredential } from "../services/credentialVault.js";
+import { listJinshaModels } from "../services/jinshaGateway.js";
+import {
+  CatalogModel,
+  parseModelPolicy,
+  resolveModelPolicy,
+  validateModelPolicy,
+} from "../services/jinshaModelPolicy.js";
+import { publishOutboxEvent } from "../utils/outbox.js";
+import { aiDirectApprovalsRoutes } from "./aiDirectApprovals.js";
+import { aiDirectCapabilitiesRoutes } from "./aiDirectCapabilities.js";
+import { aiDirectCompaniesRoutes } from "./aiDirectCompanies.js";
+import { aiDirectEmploymentsRoutes } from "./aiDirectEmployments.js";
+import { aiDirectJobsRoutes } from "./aiDirectJobs.js";
+import { aiDirectOffersRoutes } from "./aiDirectOffers.js";
+import { aiDirectWorkersRoutes } from "./aiDirectWorkers.js";
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 
 function requestId(request: { headers: Record<string, unknown> }): string {
-  const value = request.headers['x-request-id'];
-  return typeof value === 'string' && value.length > 0 && value.length <= 128 ? value : randomUUID();
+  const value = request.headers["x-request-id"];
+  return typeof value === "string" && value.length > 0 && value.length <= 128
+    ? value
+    : randomUUID();
 }
 
 function idempotencyKey(request: { headers: Record<string, unknown> }): string | null {
-  const value = request.headers['idempotency-key'];
+  const value = request.headers["idempotency-key"];
   if (value === undefined) return null;
-  if (typeof value !== 'string' || value.length === 0 || value.length > 128) {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Idempotency-Key 长度必须为 1 到 128');
+  if (typeof value !== "string" || value.length === 0 || value.length > 128) {
+    throw new AiDirectHiringError(
+      ErrorCodes.VALIDATION_ERROR,
+      "Idempotency-Key 长度必须为 1 到 128",
+    );
   }
   return value;
 }
 
 function createFingerprint(fingerprint: string, idempotencyKey: string): string {
-  return createHash('sha256').update(JSON.stringify({ fingerprint, idempotencyKey })).digest('hex');
+  return createHash("sha256").update(JSON.stringify({ fingerprint, idempotencyKey })).digest("hex");
 }
 
 function readBody(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '请求体必须是对象');
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "请求体必须是对象");
   }
   return value as Record<string, unknown>;
 }
 
 function readString(value: unknown, field: string, maxLength: number): string {
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, `${field} 必须是字符串`);
   }
   const result = value.trim();
   if (!result || result.length > maxLength) {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, `${field} 长度必须为 1 到 ${maxLength}`);
+    throw new AiDirectHiringError(
+      ErrorCodes.VALIDATION_ERROR,
+      `${field} 长度必须为 1 到 ${maxLength}`,
+    );
   }
   return result;
 }
 
 function readObject(value: unknown, field: string): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, `${field} 必须是对象`);
   }
   return value as Record<string, unknown>;
 }
 
 function requireObject(value: unknown, field: string): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new AiDirectHiringError(ErrorCodes.MODEL_POLICY_NO_MATCH, `${field} 必须是对象`);
   }
   return value as Record<string, unknown>;
@@ -70,7 +83,7 @@ function rejectExtraFields(body: Record<string, unknown>, allowed: string[], cal
   if (extra.length > 0) {
     throw new AiDirectHiringError(
       ErrorCodes.VALIDATION_ERROR,
-      `${caller} 不接受以下字段: ${extra.join(', ')}`,
+      `${caller} 不接受以下字段: ${extra.join(", ")}`,
       400,
       { extraFields: extra },
     );
@@ -83,7 +96,7 @@ async function getCatalogModels(pool: any, ids?: string[]): Promise<CatalogModel
   if (ids?.length) {
     const [rows] = await pool.query(
       `SELECT id, modelKey, displayName, status, capabilities, taskProfile, evidenceVersion
-       FROM ai_direct_model_catalog WHERE id IN (${ids.map(() => '?').join(',')})`,
+       FROM ai_direct_model_catalog WHERE id IN (${ids.map(() => "?").join(",")})`,
       ids,
     );
     return rows as CatalogModel[];
@@ -103,7 +116,12 @@ async function assertAgentAccess(pool: any, agentId: string, userId: string): Pr
     [userId, agentId, userId],
   );
   const agent = (rows as any[])[0];
-  if (!agent) throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '未找到 Agent，或当前用户没有访问权限', 403);
+  if (!agent)
+    throw new AiDirectHiringError(
+      ErrorCodes.FORBIDDEN_SCOPE,
+      "未找到 Agent，或当前用户没有访问权限",
+      403,
+    );
 }
 
 async function writeAudit(
@@ -131,7 +149,7 @@ async function writeAudit(
       input.targetType,
       input.targetId,
       input.requestId,
-      input.outcome ?? 'success',
+      input.outcome ?? "success",
       input.metadata ? JSON.stringify(input.metadata) : null,
     ],
   );
@@ -145,7 +163,7 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
 
   // ── Credentials ────────────────────────────────────────────────────────────
 
-  fastify.get('/credentials/jinsha', { onRequest: auth }, async (request: any) => {
+  fastify.get("/credentials/jinsha", { onRequest: auth }, async (request: any) => {
     const [rows] = await pool.query(
       `SELECT updatedAt FROM ai_direct_user_credentials
        WHERE userId = ? AND provider = 'jinsha-token' AND revokedAt IS NULL LIMIT 1`,
@@ -155,7 +173,7 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
     return { configured: Boolean(credential), updatedAt: credential?.updatedAt ?? null };
   });
 
-  fastify.put('/credentials/jinsha', { onRequest: auth }, async (request: any, reply) => {
+  fastify.put("/credentials/jinsha", { onRequest: auth }, async (request: any, reply) => {
     const currentIdempotencyKey = idempotencyKey(request);
     const currentRequestId = requestId(request);
     const actorUserId = request.user.id as string;
@@ -163,11 +181,11 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
     try {
       const body = readBody(request.body);
       // Reject any fields other than apiKey — never accept provider, baseUrl, etc.
-      rejectExtraFields(body, ['apiKey'], 'PUT /credentials/jinsha');
+      rejectExtraFields(body, ["apiKey"], "PUT /credentials/jinsha");
 
-      const apiKey = readString(body.apiKey, 'apiKey', 4096);
+      const apiKey = readString(body.apiKey, "apiKey", 4096);
       if (apiKey.length < 8 || /[\r\n]/.test(apiKey)) {
-        throw new AiDirectHiringError(ErrorCodes.CREDENTIAL_INVALID, '金沙 Key 格式不正确');
+        throw new AiDirectHiringError(ErrorCodes.CREDENTIAL_INVALID, "金沙 Key 格式不正确");
       }
 
       // Verify against Jinsha fixed gateway before saving.
@@ -188,7 +206,7 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
           );
           const existingRow = (existing as any[])[0];
           if (existingRow) {
-            const fingerprint = createHash('sha256').update(apiKey).digest('hex');
+            const fingerprint = createHash("sha256").update(apiKey).digest("hex");
             const [storedFingerprint] = await connection.query(
               `SELECT fingerprint FROM ai_direct_user_credential_fingerprints
                WHERE credentialId = ? LIMIT 1`,
@@ -206,7 +224,7 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
               await connection.rollback();
               return reply.status(409).send({
                 code: ErrorCodes.IDEMPOTENCY_KEY_REUSED,
-                error: '幂等键已用于不同的创建请求',
+                error: "幂等键已用于不同的创建请求",
               });
             }
           }
@@ -233,19 +251,19 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
         await writeAudit(connection, {
           organizationId: null,
           actorUserId,
-          action: 'credential.saved',
-          targetType: 'credential',
+          action: "credential.saved",
+          targetType: "credential",
           targetId: actorUserId,
           requestId: currentRequestId,
-          metadata: { provider: 'jinsha-token' },
+          metadata: { provider: "jinsha-token" },
         });
 
         await publishOutboxEvent(connection, {
           organizationId: null,
-          aggregateType: 'credential',
+          aggregateType: "credential",
           aggregateId: actorUserId,
-          eventType: 'credential.saved.v1',
-          payload: { userId: actorUserId, provider: 'jinsha-token' },
+          eventType: "credential.saved.v1",
+          payload: { userId: actorUserId, provider: "jinsha-token" },
         });
 
         await connection.commit();
@@ -267,17 +285,17 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
       if (err instanceof AiDirectHiringError) {
         return reply.status(err.httpStatus).send(errorResponse(err));
       }
-      if ((err as any)?.code === 'ER_DUP_ENTRY' && currentIdempotencyKey) {
+      if ((err as any)?.code === "ER_DUP_ENTRY" && currentIdempotencyKey) {
         return reply.status(409).send({
           code: ErrorCodes.IDEMPOTENCY_KEY_REUSED,
-          error: '幂等键已用于不同的创建请求',
+          error: "幂等键已用于不同的创建请求",
         });
       }
       throw err;
     }
   });
 
-  fastify.delete('/credentials/jinsha', { onRequest: auth }, async (request: any, reply) => {
+  fastify.delete("/credentials/jinsha", { onRequest: auth }, async (request: any, reply) => {
     const currentRequestId = requestId(request);
     const actorUserId = request.user.id as string;
     const connection = await pool.getConnection();
@@ -301,19 +319,19 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
         await writeAudit(connection, {
           organizationId: null,
           actorUserId,
-          action: 'credential.revoked',
-          targetType: 'credential',
+          action: "credential.revoked",
+          targetType: "credential",
           targetId: actorUserId,
           requestId: currentRequestId,
-          metadata: { provider: 'jinsha-token' },
+          metadata: { provider: "jinsha-token" },
         });
 
         await publishOutboxEvent(connection, {
           organizationId: null,
-          aggregateType: 'credential',
+          aggregateType: "credential",
           aggregateId: actorUserId,
-          eventType: 'credential.revoked.v1',
-          payload: { userId: actorUserId, provider: 'jinsha-token' },
+          eventType: "credential.revoked.v1",
+          payload: { userId: actorUserId, provider: "jinsha-token" },
         });
       }
 
@@ -329,36 +347,37 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
 
   // ── Model Catalog ───────────────────────────────────────────────────────────
 
-  fastify.get('/model-catalog', { onRequest: auth }, async () => {
+  fastify.get("/model-catalog", { onRequest: auth }, async () => {
     return { items: await getCatalogModels(pool) };
   });
 
-  fastify.post('/model-catalog', { onRequest: auth }, async (request: any, reply) => {
-    if (request.user.role !== 'admin') {
+  fastify.post("/model-catalog", { onRequest: auth }, async (request: any, reply) => {
+    if (request.user.role !== "admin") {
       return reply.status(403).send({
         code: ErrorCodes.FORBIDDEN_SCOPE,
-        error: '仅管理员可以维护模型目录',
+        error: "仅管理员可以维护模型目录",
       });
     }
 
     try {
       const body = readBody(request.body);
-      const modelKey = readString(body.modelKey, 'modelKey', 255);
-      const displayName = readString(body.displayName, 'displayName', 255);
-      const status: string = body.status === 'approved' ? 'approved' : 'draft';
+      const modelKey = readString(body.modelKey, "modelKey", 255);
+      const displayName = readString(body.displayName, "displayName", 255);
+      const status: string = body.status === "approved" ? "approved" : "draft";
       const evidenceVersion =
-        body.evidenceVersion !== undefined ? readString(body.evidenceVersion, 'evidenceVersion', 128) : null;
+        body.evidenceVersion !== undefined
+          ? readString(body.evidenceVersion, "evidenceVersion", 128)
+          : null;
       const capabilities =
-        body.capabilities === undefined ? {} : readObject(body.capabilities, 'capabilities');
+        body.capabilities === undefined ? {} : readObject(body.capabilities, "capabilities");
       const taskProfile =
-        body.taskProfile === undefined ? {} : readObject(body.taskProfile, 'taskProfile');
-      const evidence =
-        body.evidence === undefined ? {} : readObject(body.evidence, 'evidence');
+        body.taskProfile === undefined ? {} : readObject(body.taskProfile, "taskProfile");
+      const evidence = body.evidence === undefined ? {} : readObject(body.evidence, "evidence");
 
-      if (status === 'approved' && !evidenceVersion) {
+      if (status === "approved" && !evidenceVersion) {
         throw new AiDirectHiringError(
           ErrorCodes.MODEL_POLICY_NO_MATCH,
-          '批准模型必须提供 evidenceVersion',
+          "批准模型必须提供 evidenceVersion",
         );
       }
 
@@ -387,8 +406,8 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
         await writeAudit(connection, {
           organizationId: null,
           actorUserId: request.user.id,
-          action: 'model_catalog.created',
-          targetType: 'model_catalog',
+          action: "model_catalog.created",
+          targetType: "model_catalog",
           targetId: id,
           requestId: currentRequestId,
           metadata: { modelKey, status, evidenceVersion },
@@ -396,9 +415,9 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
 
         await publishOutboxEvent(connection, {
           organizationId: null,
-          aggregateType: 'model_catalog',
+          aggregateType: "model_catalog",
           aggregateId: id,
-          eventType: 'model_catalog.upserted.v1',
+          eventType: "model_catalog.upserted.v1",
           payload: { id, modelKey, displayName, status, evidenceVersion },
         });
 
@@ -414,155 +433,170 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
       if (err instanceof AiDirectHiringError) {
         return reply.status(err.httpStatus).send(errorResponse(err));
       }
-      if ((err as any)?.code === 'ER_DUP_ENTRY') {
+      if ((err as any)?.code === "ER_DUP_ENTRY") {
         return reply.status(409).send({
           code: ErrorCodes.DUPLICATE_ENTRY,
-          error: '模型标识已存在',
+          error: "模型标识已存在",
         });
       }
       throw err;
     }
   });
 
-  fastify.post('/model-catalog/:modelId/approve', { onRequest: auth }, async (request: any, reply) => {
-    if (request.user.role !== 'admin') {
-      return reply.status(403).send({
-        code: ErrorCodes.FORBIDDEN_SCOPE,
-        error: '仅管理员可以维护模型目录',
-      });
-    }
-
-    try {
-      const body = readBody(request.body ?? {});
-      const evidenceVersion = readString(body.evidenceVersion, 'evidenceVersion', 128);
-      const currentRequestId = requestId(request);
-      const connection = await pool.getConnection();
+  fastify.post(
+    "/model-catalog/:modelId/approve",
+    { onRequest: auth },
+    async (request: any, reply) => {
+      if (request.user.role !== "admin") {
+        return reply.status(403).send({
+          code: ErrorCodes.FORBIDDEN_SCOPE,
+          error: "仅管理员可以维护模型目录",
+        });
+      }
 
       try {
-        await connection.beginTransaction();
-        const [rows] = await connection.query(
-          `SELECT id, modelKey, status FROM ai_direct_model_catalog WHERE id = ? LIMIT 1 FOR UPDATE`,
-          [request.params.modelId],
-        );
-        const model = (rows as any[])[0];
-        if (!model) {
-          throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '模型不存在', 404);
-        }
-        if (model.status === 'approved') {
-          await connection.rollback();
-          return reply.status(200).send({ id: model.id, status: model.status, replayed: true });
-        }
+        const body = readBody(request.body ?? {});
+        const evidenceVersion = readString(body.evidenceVersion, "evidenceVersion", 128);
+        const currentRequestId = requestId(request);
+        const connection = await pool.getConnection();
 
-        await connection.query(
-          `UPDATE ai_direct_model_catalog
+        try {
+          await connection.beginTransaction();
+          const [rows] = await connection.query(
+            `SELECT id, modelKey, status FROM ai_direct_model_catalog WHERE id = ? LIMIT 1 FOR UPDATE`,
+            [request.params.modelId],
+          );
+          const model = (rows as any[])[0];
+          if (!model) {
+            throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "模型不存在", 404);
+          }
+          if (model.status === "approved") {
+            await connection.rollback();
+            return reply.status(200).send({ id: model.id, status: model.status, replayed: true });
+          }
+
+          await connection.query(
+            `UPDATE ai_direct_model_catalog
            SET status = 'approved', evidenceVersion = ?, updatedAt = NOW()
            WHERE id = ?`,
-          [evidenceVersion, request.params.modelId],
-        );
+            [evidenceVersion, request.params.modelId],
+          );
 
-        await writeAudit(connection, {
-          organizationId: null,
-          actorUserId: request.user.id,
-          action: 'model_catalog.approved',
-          targetType: 'model_catalog',
-          targetId: request.params.modelId,
-          requestId: currentRequestId,
-          metadata: { modelKey: model.modelKey, evidenceVersion },
-        });
+          await writeAudit(connection, {
+            organizationId: null,
+            actorUserId: request.user.id,
+            action: "model_catalog.approved",
+            targetType: "model_catalog",
+            targetId: request.params.modelId,
+            requestId: currentRequestId,
+            metadata: { modelKey: model.modelKey, evidenceVersion },
+          });
 
-        await publishOutboxEvent(connection, {
-          organizationId: null,
-          aggregateType: 'model_catalog',
-          aggregateId: request.params.modelId,
-          eventType: 'model_catalog.upserted.v1',
-          payload: { id: request.params.modelId, modelKey: model.modelKey, status: 'approved', evidenceVersion },
-        });
+          await publishOutboxEvent(connection, {
+            organizationId: null,
+            aggregateType: "model_catalog",
+            aggregateId: request.params.modelId,
+            eventType: "model_catalog.upserted.v1",
+            payload: {
+              id: request.params.modelId,
+              modelKey: model.modelKey,
+              status: "approved",
+              evidenceVersion,
+            },
+          });
 
-        await connection.commit();
-        return reply.status(200).send({ id: request.params.modelId, status: 'approved', evidenceVersion });
-      } catch (error) {
-        await connection.rollback();
-        throw error;
-      } finally {
-        connection.release();
+          await connection.commit();
+          return reply
+            .status(200)
+            .send({ id: request.params.modelId, status: "approved", evidenceVersion });
+        } catch (error) {
+          await connection.rollback();
+          throw error;
+        } finally {
+          connection.release();
+        }
+      } catch (err) {
+        if (err instanceof AiDirectHiringError) {
+          return reply.status(err.httpStatus).send(errorResponse(err));
+        }
+        throw err;
       }
-    } catch (err) {
-      if (err instanceof AiDirectHiringError) {
-        return reply.status(err.httpStatus).send(errorResponse(err));
+    },
+  );
+
+  fastify.post(
+    "/model-catalog/:modelId/disable",
+    { onRequest: auth },
+    async (request: any, reply) => {
+      if (request.user.role !== "admin") {
+        return reply.status(403).send({
+          code: ErrorCodes.FORBIDDEN_SCOPE,
+          error: "仅管理员可以维护模型目录",
+        });
       }
-      throw err;
-    }
-  });
-
-  fastify.post('/model-catalog/:modelId/disable', { onRequest: auth }, async (request: any, reply) => {
-    if (request.user.role !== 'admin') {
-      return reply.status(403).send({
-        code: ErrorCodes.FORBIDDEN_SCOPE,
-        error: '仅管理员可以维护模型目录',
-      });
-    }
-
-    try {
-      const currentRequestId = requestId(request);
-      const connection = await pool.getConnection();
 
       try {
-        await connection.beginTransaction();
-        const [rows] = await connection.query(
-          `SELECT id, modelKey, status FROM ai_direct_model_catalog WHERE id = ? LIMIT 1 FOR UPDATE`,
-          [request.params.modelId],
-        );
-        const model = (rows as any[])[0];
-        if (!model) {
-          throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '模型不存在', 404);
-        }
-        if (model.status === 'disabled') {
+        const currentRequestId = requestId(request);
+        const connection = await pool.getConnection();
+
+        try {
+          await connection.beginTransaction();
+          const [rows] = await connection.query(
+            `SELECT id, modelKey, status FROM ai_direct_model_catalog WHERE id = ? LIMIT 1 FOR UPDATE`,
+            [request.params.modelId],
+          );
+          const model = (rows as any[])[0];
+          if (!model) {
+            throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "模型不存在", 404);
+          }
+          if (model.status === "disabled") {
+            await connection.rollback();
+            return reply.status(200).send({ id: model.id, status: model.status, replayed: true });
+          }
+
+          await connection.query(
+            `UPDATE ai_direct_model_catalog SET status = 'disabled', updatedAt = NOW() WHERE id = ?`,
+            [request.params.modelId],
+          );
+
+          await writeAudit(connection, {
+            organizationId: null,
+            actorUserId: request.user.id,
+            action: "model_catalog.disabled",
+            targetType: "model_catalog",
+            targetId: request.params.modelId,
+            requestId: currentRequestId,
+            metadata: { modelKey: model.modelKey },
+          });
+
+          await publishOutboxEvent(connection, {
+            organizationId: null,
+            aggregateType: "model_catalog",
+            aggregateId: request.params.modelId,
+            eventType: "model_catalog.upserted.v1",
+            payload: { id: request.params.modelId, modelKey: model.modelKey, status: "disabled" },
+          });
+
+          await connection.commit();
+          return reply.status(200).send({ id: request.params.modelId, status: "disabled" });
+        } catch (error) {
           await connection.rollback();
-          return reply.status(200).send({ id: model.id, status: model.status, replayed: true });
+          throw error;
+        } finally {
+          connection.release();
         }
-
-        await connection.query(
-          `UPDATE ai_direct_model_catalog SET status = 'disabled', updatedAt = NOW() WHERE id = ?`,
-          [request.params.modelId],
-        );
-
-        await writeAudit(connection, {
-          organizationId: null,
-          actorUserId: request.user.id,
-          action: 'model_catalog.disabled',
-          targetType: 'model_catalog',
-          targetId: request.params.modelId,
-          requestId: currentRequestId,
-          metadata: { modelKey: model.modelKey },
-        });
-
-        await publishOutboxEvent(connection, {
-          organizationId: null,
-          aggregateType: 'model_catalog',
-          aggregateId: request.params.modelId,
-          eventType: 'model_catalog.upserted.v1',
-          payload: { id: request.params.modelId, modelKey: model.modelKey, status: 'disabled' },
-        });
-
-        await connection.commit();
-        return reply.status(200).send({ id: request.params.modelId, status: 'disabled' });
-      } catch (error) {
-        await connection.rollback();
-        throw error;
-      } finally {
-        connection.release();
+      } catch (err) {
+        if (err instanceof AiDirectHiringError) {
+          return reply.status(err.httpStatus).send(errorResponse(err));
+        }
+        throw err;
       }
-    } catch (err) {
-      if (err instanceof AiDirectHiringError) {
-        return reply.status(err.httpStatus).send(errorResponse(err));
-      }
-      throw err;
-    }
-  });
+    },
+  );
 
   // ── Agents ──────────────────────────────────────────────────────────────────
 
-  fastify.get('/agents', { onRequest: auth }, async (request: any) => {
+  fastify.get("/agents", { onRequest: auth }, async (request: any) => {
     const [rows] = await pool.query(
       `SELECT DISTINCT a.id, a.name, a.description, a.status, a.ownerPublisherId, a.createdAt, a.updatedAt,
               v.id AS activeVersionId, v.version AS activeVersion
@@ -575,7 +609,7 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
     return { items: rows };
   });
 
-  fastify.get('/agents/:agentId/versions', { onRequest: auth }, async (request: any) => {
+  fastify.get("/agents/:agentId/versions", { onRequest: auth }, async (request: any) => {
     await assertAgentAccess(pool, request.params.agentId, request.user.id);
     const [rows] = await pool.query(
       `SELECT id, version, status, modelPolicy, executionPolicy, createdByUserId, publishedAt, createdAt
@@ -585,7 +619,7 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
     return { items: rows };
   });
 
-  fastify.get('/agents/:agentId/model-run-audits', { onRequest: auth }, async (request: any) => {
+  fastify.get("/agents/:agentId/model-run-audits", { onRequest: auth }, async (request: any) => {
     await assertAgentAccess(pool, request.params.agentId, request.user.id);
     const limit = Math.max(1, Math.min(Number(request.query?.limit ?? 50) || 50, 100));
     const [rows] = await pool.query(
@@ -597,18 +631,22 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
     return { items: rows };
   });
 
-  fastify.post('/agents', { onRequest: auth }, async (request: any, reply) => {
-    let createInput: { actorUserId: string; idempotencyKey: string | null; fingerprint: string } | null = null;
+  fastify.post("/agents", { onRequest: auth }, async (request: any, reply) => {
+    let createInput: {
+      actorUserId: string;
+      idempotencyKey: string | null;
+      fingerprint: string;
+    } | null = null;
 
     try {
       const body = readBody(request.body);
-      const name = readString(body.name, 'name', 120);
+      const name = readString(body.name, "name", 120);
       const description =
-        body.description !== undefined ? readString(body.description, 'description', 2000) : null;
+        body.description !== undefined ? readString(body.description, "description", 2000) : null;
       const publisherId =
-        body.publisherId !== undefined ? readString(body.publisherId, 'publisherId', 36) : null;
+        body.publisherId !== undefined ? readString(body.publisherId, "publisherId", 36) : null;
 
-      const promptSpec = requireObject(body.promptSpec, 'promptSpec');
+      const promptSpec = requireObject(body.promptSpec, "promptSpec");
       const modelPolicy = parseModelPolicy(body.modelPolicy);
 
       const currentIdempotencyKey = idempotencyKey(request);
@@ -618,11 +656,11 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
       // publisherId must belong to an org the user is a member of.
       if (publisherId) {
         const [memberships] = await pool.query(
-          'SELECT 1 FROM publisherMembers WHERE publisherId = ? AND userId = ? LIMIT 1',
+          "SELECT 1 FROM publisherMembers WHERE publisherId = ? AND userId = ? LIMIT 1",
           [publisherId, actorUserId],
         );
         if (!(memberships as any[]).length) {
-          throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '当前用户不是该组织成员', 403);
+          throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, "当前用户不是该组织成员", 403);
         }
       }
 
@@ -639,7 +677,9 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
       createInput = {
         actorUserId,
         idempotencyKey: currentIdempotencyKey,
-        fingerprint: createHash('sha256').update(JSON.stringify({ name, modelPolicy })).digest('hex'),
+        fingerprint: createHash("sha256")
+          .update(JSON.stringify({ name, modelPolicy }))
+          .digest("hex"),
       };
       const connection = await pool.getConnection();
 
@@ -664,12 +704,12 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
                 await connection.rollback();
                 return reply.status(409).send({
                   code: ErrorCodes.IDEMPOTENCY_KEY_REUSED,
-                  error: '幂等键已用于不同的创建请求',
+                  error: "幂等键已用于不同的创建请求",
                 });
               }
             }
             await connection.rollback();
-            return reply.status(200).send({ id: existingRow.id, status: 'draft', replayed: true });
+            return reply.status(200).send({ id: existingRow.id, status: "draft", replayed: true });
           }
         }
 
@@ -692,14 +732,20 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
           `INSERT INTO ai_direct_agent_versions
            (id, agentId, version, status, promptSpec, modelPolicy, executionPolicy, createdByUserId)
            VALUES (?, ?, 1, 'draft', ?, ?, JSON_OBJECT(), ?)`,
-          [versionId, agentId, JSON.stringify(promptSpec), JSON.stringify(modelPolicy), actorUserId],
+          [
+            versionId,
+            agentId,
+            JSON.stringify(promptSpec),
+            JSON.stringify(modelPolicy),
+            actorUserId,
+          ],
         );
 
         await writeAudit(connection, {
           organizationId: null,
           actorUserId,
-          action: 'agent.created',
-          targetType: 'agent',
+          action: "agent.created",
+          targetType: "agent",
           targetId: agentId,
           requestId: currentRequestId,
           metadata: { versionId, modelIds, name },
@@ -707,14 +753,14 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
 
         await publishOutboxEvent(connection, {
           organizationId: null,
-          aggregateType: 'agent',
+          aggregateType: "agent",
           aggregateId: agentId,
-          eventType: 'agent.created.v1',
+          eventType: "agent.created.v1",
           payload: { id: agentId, versionId, name, modelIds },
         });
 
         await connection.commit();
-        return reply.status(201).send({ id: agentId, activeVersionId: versionId, status: 'draft' });
+        return reply.status(201).send({ id: agentId, activeVersionId: versionId, status: "draft" });
       } catch (error) {
         await connection.rollback();
         throw error;
@@ -725,26 +771,32 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
       if (err instanceof AiDirectHiringError) {
         return reply.status(err.httpStatus).send(errorResponse(err));
       }
-      if ((err as any)?.code === 'ER_DUP_ENTRY' && createInput?.idempotencyKey) {
+      if ((err as any)?.code === "ER_DUP_ENTRY" && createInput?.idempotencyKey) {
         return reply.status(409).send({
           code: ErrorCodes.IDEMPOTENCY_KEY_REUSED,
-          error: '幂等键已用于不同的创建请求',
+          error: "幂等键已用于不同的创建请求",
         });
       }
       throw err;
     }
   });
 
-  fastify.post('/agents/:agentId/versions', { onRequest: auth }, async (request: any, reply) => {
-    let createInput: { actorUserId: string; idempotencyKey: string | null; fingerprint: string } | null = null;
+  fastify.post("/agents/:agentId/versions", { onRequest: auth }, async (request: any, reply) => {
+    let createInput: {
+      actorUserId: string;
+      idempotencyKey: string | null;
+      fingerprint: string;
+    } | null = null;
 
     try {
       await assertAgentAccess(pool, request.params.agentId, request.user.id);
 
       const body = readBody(request.body);
-      const promptSpec = requireObject(body.promptSpec, 'promptSpec');
+      const promptSpec = requireObject(body.promptSpec, "promptSpec");
       const executionPolicy =
-        body.executionPolicy === undefined ? {} : requireObject(body.executionPolicy, 'executionPolicy');
+        body.executionPolicy === undefined
+          ? {}
+          : requireObject(body.executionPolicy, "executionPolicy");
       const modelPolicy = parseModelPolicy(body.modelPolicy);
 
       const currentIdempotencyKey = idempotencyKey(request);
@@ -762,9 +814,9 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
       createInput = {
         actorUserId,
         idempotencyKey: currentIdempotencyKey,
-        fingerprint: createHash('sha256')
+        fingerprint: createHash("sha256")
           .update(JSON.stringify({ modelPolicy, executionPolicy }))
-          .digest('hex'),
+          .digest("hex"),
       };
       const connection = await pool.getConnection();
 
@@ -789,7 +841,7 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
                 await connection.rollback();
                 return reply.status(409).send({
                   code: ErrorCodes.IDEMPOTENCY_KEY_REUSED,
-                  error: '幂等键已用于不同的创建请求',
+                  error: "幂等键已用于不同的创建请求",
                 });
               }
             }
@@ -798,14 +850,14 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
               id: existingRow.id,
               agentId: existingRow.agentId,
               version: existingRow.version,
-              status: 'draft',
+              status: "draft",
               replayed: true,
             });
           }
         }
 
         const [rows] = await connection.query(
-          'SELECT COALESCE(MAX(version), 0) AS latestVersion FROM ai_direct_agent_versions WHERE agentId = ? FOR UPDATE',
+          "SELECT COALESCE(MAX(version), 0) AS latestVersion FROM ai_direct_agent_versions WHERE agentId = ? FOR UPDATE",
           [request.params.agentId],
         );
         const version = Number((rows as any[])[0]?.latestVersion ?? 0) + 1;
@@ -830,8 +882,8 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
         await writeAudit(connection, {
           organizationId: null,
           actorUserId,
-          action: 'agent_version.created',
-          targetType: 'agent_version',
+          action: "agent_version.created",
+          targetType: "agent_version",
           targetId: versionId,
           requestId: currentRequestId,
           metadata: { agentId: request.params.agentId, version, modelIds },
@@ -839,9 +891,9 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
 
         await publishOutboxEvent(connection, {
           organizationId: null,
-          aggregateType: 'agent_version',
+          aggregateType: "agent_version",
           aggregateId: versionId,
-          eventType: 'agent_version.created.v1',
+          eventType: "agent_version.created.v1",
           payload: { id: versionId, agentId: request.params.agentId, version, modelIds },
         });
 
@@ -850,7 +902,7 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
           id: versionId,
           agentId: request.params.agentId,
           version,
-          status: 'draft',
+          status: "draft",
         });
       } catch (error) {
         await connection.rollback();
@@ -862,262 +914,288 @@ export async function aiDirectHiringRoutes(fastify: FastifyInstance) {
       if (err instanceof AiDirectHiringError) {
         return reply.status(err.httpStatus).send(errorResponse(err));
       }
-      if ((err as any)?.code === 'ER_DUP_ENTRY' && createInput?.idempotencyKey) {
+      if ((err as any)?.code === "ER_DUP_ENTRY" && createInput?.idempotencyKey) {
         return reply.status(409).send({
           code: ErrorCodes.IDEMPOTENCY_KEY_REUSED,
-          error: '幂等键已用于不同的创建请求',
+          error: "幂等键已用于不同的创建请求",
         });
       }
       throw err;
     }
   });
 
-  fastify.post('/agent-versions/:versionId/publish', { onRequest: auth }, async (request: any, reply) => {
-    let createInput: { actorUserId: string; idempotencyKey: string | null; fingerprint: string } | null = null;
+  fastify.post(
+    "/agent-versions/:versionId/publish",
+    { onRequest: auth },
+    async (request: any, reply) => {
+      let createInput: {
+        actorUserId: string;
+        idempotencyKey: string | null;
+        fingerprint: string;
+      } | null = null;
 
-    try {
-      const currentIdempotencyKey = idempotencyKey(request);
-      const currentRequestId = requestId(request);
-      const actorUserId = request.user.id as string;
-
-      const [rows] = await pool.query(
-        'SELECT agentId, modelPolicy, status FROM ai_direct_agent_versions WHERE id = ? LIMIT 1',
-        [request.params.versionId],
-      );
-      const version = (rows as any[])[0];
-      if (!version) throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Agent 版本不存在', 404);
-
-      await assertAgentAccess(pool, version.agentId, actorUserId);
-
-      // Idempotent: already published → return 200 without writing anything new.
-      if (version.status === 'published') {
-        return reply.status(200).send({ id: request.params.versionId, status: 'published', replayed: true });
-      }
-
-      // Re-validate the model policy against the current catalog.
-      const policy = parseModelPolicy(
-        typeof version.modelPolicy === 'string' ? JSON.parse(version.modelPolicy) : version.modelPolicy,
-      );
-      const modelIds = [
-        policy.defaultModelId,
-        ...Object.values(policy.taskOverrides ?? {}),
-        ...(policy.fallbackModelIds ?? []),
-      ];
-      validateModelPolicy(policy, await getCatalogModels(pool, modelIds));
-
-      createInput = {
-        actorUserId,
-        idempotencyKey: currentIdempotencyKey,
-        fingerprint: createHash('sha256')
-          .update(JSON.stringify({ versionId: request.params.versionId, policy }))
-          .digest('hex'),
-      };
-
-      const connection = await pool.getConnection();
       try {
-        await connection.beginTransaction();
+        const currentIdempotencyKey = idempotencyKey(request);
+        const currentRequestId = requestId(request);
+        const actorUserId = request.user.id as string;
 
-        if (currentIdempotencyKey) {
-          const [existing] = await connection.query(
-            `SELECT id FROM ai_direct_model_run_audits
-             WHERE agentVersionId = ? AND idempotencyKey = ? AND status = 'published' LIMIT 1`,
-            [request.params.versionId, currentIdempotencyKey],
-          );
-          const existingRow = (existing as any[])[0];
-          if (existingRow) {
-            if (createInput.fingerprint !== null) {
-              const [fpRows] = await connection.query(
-                `SELECT idempotencyFingerprint FROM ai_direct_model_run_audits WHERE id = ?`,
-                [existingRow.id],
-              );
-              const storedFp = (fpRows as any[])[0]?.idempotencyFingerprint;
-              if (storedFp !== createInput.fingerprint) {
-                await connection.rollback();
-                return reply.status(409).send({
-                  code: ErrorCodes.IDEMPOTENCY_KEY_REUSED,
-                  error: '幂等键已用于不同的发布请求',
-                });
-              }
-            }
-            await connection.rollback();
-            return reply.status(200).send({ id: request.params.versionId, status: 'published', replayed: true });
-          }
+        const [rows] = await pool.query(
+          "SELECT agentId, modelPolicy, status FROM ai_direct_agent_versions WHERE id = ? LIMIT 1",
+          [request.params.versionId],
+        );
+        const version = (rows as any[])[0];
+        if (!version)
+          throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "Agent 版本不存在", 404);
+
+        await assertAgentAccess(pool, version.agentId, actorUserId);
+
+        // Idempotent: already published → return 200 without writing anything new.
+        if (version.status === "published") {
+          return reply
+            .status(200)
+            .send({ id: request.params.versionId, status: "published", replayed: true });
         }
 
-        await connection.query(
-          "UPDATE ai_direct_agent_versions SET status = 'published', publishedAt = NOW() WHERE id = ?",
-          [request.params.versionId],
+        // Re-validate the model policy against the current catalog.
+        const policy = parseModelPolicy(
+          typeof version.modelPolicy === "string"
+            ? JSON.parse(version.modelPolicy)
+            : version.modelPolicy,
         );
-        await connection.query(
-          "UPDATE ai_direct_agents SET activeVersionId = ?, status = 'active' WHERE id = ?",
-          [request.params.versionId, version.agentId],
-        );
+        const modelIds = [
+          policy.defaultModelId,
+          ...Object.values(policy.taskOverrides ?? {}),
+          ...(policy.fallbackModelIds ?? []),
+        ];
+        validateModelPolicy(policy, await getCatalogModels(pool, modelIds));
 
-        await writeAudit(connection, {
-          organizationId: null,
+        createInput = {
           actorUserId,
-          action: 'agent_version.published',
-          targetType: 'agent_version',
-          targetId: request.params.versionId,
-          requestId: currentRequestId,
-          metadata: { agentId: version.agentId, modelIds },
-        });
+          idempotencyKey: currentIdempotencyKey,
+          fingerprint: createHash("sha256")
+            .update(JSON.stringify({ versionId: request.params.versionId, policy }))
+            .digest("hex"),
+        };
 
-        await publishOutboxEvent(connection, {
-          organizationId: null,
-          aggregateType: 'agent_version',
-          aggregateId: request.params.versionId,
-          eventType: 'agent_version.published.v1',
-          payload: { id: request.params.versionId, agentId: version.agentId, modelIds },
-        });
+        const connection = await pool.getConnection();
+        try {
+          await connection.beginTransaction();
 
-        await connection.commit();
-        return reply.status(200).send({ id: request.params.versionId, status: 'published' });
-      } catch (error) {
-        await connection.rollback();
-        throw error;
-      } finally {
-        connection.release();
+          if (currentIdempotencyKey) {
+            const [existing] = await connection.query(
+              `SELECT id FROM ai_direct_model_run_audits
+             WHERE agentVersionId = ? AND idempotencyKey = ? AND status = 'published' LIMIT 1`,
+              [request.params.versionId, currentIdempotencyKey],
+            );
+            const existingRow = (existing as any[])[0];
+            if (existingRow) {
+              if (createInput.fingerprint !== null) {
+                const [fpRows] = await connection.query(
+                  `SELECT idempotencyFingerprint FROM ai_direct_model_run_audits WHERE id = ?`,
+                  [existingRow.id],
+                );
+                const storedFp = (fpRows as any[])[0]?.idempotencyFingerprint;
+                if (storedFp !== createInput.fingerprint) {
+                  await connection.rollback();
+                  return reply.status(409).send({
+                    code: ErrorCodes.IDEMPOTENCY_KEY_REUSED,
+                    error: "幂等键已用于不同的发布请求",
+                  });
+                }
+              }
+              await connection.rollback();
+              return reply
+                .status(200)
+                .send({ id: request.params.versionId, status: "published", replayed: true });
+            }
+          }
+
+          await connection.query(
+            "UPDATE ai_direct_agent_versions SET status = 'published', publishedAt = NOW() WHERE id = ?",
+            [request.params.versionId],
+          );
+          await connection.query(
+            "UPDATE ai_direct_agents SET activeVersionId = ?, status = 'active' WHERE id = ?",
+            [request.params.versionId, version.agentId],
+          );
+
+          await writeAudit(connection, {
+            organizationId: null,
+            actorUserId,
+            action: "agent_version.published",
+            targetType: "agent_version",
+            targetId: request.params.versionId,
+            requestId: currentRequestId,
+            metadata: { agentId: version.agentId, modelIds },
+          });
+
+          await publishOutboxEvent(connection, {
+            organizationId: null,
+            aggregateType: "agent_version",
+            aggregateId: request.params.versionId,
+            eventType: "agent_version.published.v1",
+            payload: { id: request.params.versionId, agentId: version.agentId, modelIds },
+          });
+
+          await connection.commit();
+          return reply.status(200).send({ id: request.params.versionId, status: "published" });
+        } catch (error) {
+          await connection.rollback();
+          throw error;
+        } finally {
+          connection.release();
+        }
+      } catch (err) {
+        if (err instanceof AiDirectHiringError) {
+          return reply.status(err.httpStatus).send(errorResponse(err));
+        }
+        if ((err as any)?.code === "ER_DUP_ENTRY" && createInput?.idempotencyKey) {
+          return reply.status(409).send({
+            code: ErrorCodes.IDEMPOTENCY_KEY_REUSED,
+            error: "幂等键已用于不同的发布请求",
+          });
+        }
+        throw err;
       }
-    } catch (err) {
-      if (err instanceof AiDirectHiringError) {
-        return reply.status(err.httpStatus).send(errorResponse(err));
-      }
-      if ((err as any)?.code === 'ER_DUP_ENTRY' && createInput?.idempotencyKey) {
-        return reply.status(409).send({
-          code: ErrorCodes.IDEMPOTENCY_KEY_REUSED,
-          error: '幂等键已用于不同的发布请求',
-        });
-      }
-      throw err;
-    }
-  });
+    },
+  );
 
-  fastify.post('/agents/:agentId/versions/:versionId/archive', { onRequest: auth }, async (request: any, reply) => {
-    try {
-      const currentRequestId = requestId(request);
-      const actorUserId = request.user.id as string;
-
-      const [versionRows] = await pool.query(
-        'SELECT id, agentId, status FROM ai_direct_agent_versions WHERE id = ? AND agentId = ? LIMIT 1',
-        [request.params.versionId, request.params.agentId],
-      );
-      const version = (versionRows as any[])[0];
-      if (!version) {
-        throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Agent 版本不存在', 404);
-      }
-
-      await assertAgentAccess(pool, request.params.agentId, actorUserId);
-
-      if (version.status === 'archived') {
-        return reply.status(200).send({ id: version.id, status: 'archived', replayed: true });
-      }
-
-      const connection = await pool.getConnection();
+  fastify.post(
+    "/agents/:agentId/versions/:versionId/archive",
+    { onRequest: auth },
+    async (request: any, reply) => {
       try {
-        await connection.beginTransaction();
-        await connection.query(
-          "UPDATE ai_direct_agent_versions SET status = 'archived' WHERE id = ?",
-          [request.params.versionId],
+        const currentRequestId = requestId(request);
+        const actorUserId = request.user.id as string;
+
+        const [versionRows] = await pool.query(
+          "SELECT id, agentId, status FROM ai_direct_agent_versions WHERE id = ? AND agentId = ? LIMIT 1",
+          [request.params.versionId, request.params.agentId],
         );
+        const version = (versionRows as any[])[0];
+        if (!version) {
+          throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "Agent 版本不存在", 404);
+        }
 
-        await writeAudit(connection, {
-          organizationId: null,
-          actorUserId,
-          action: 'agent_version.archived',
-          targetType: 'agent_version',
-          targetId: request.params.versionId,
-          requestId: currentRequestId,
-          metadata: { agentId: request.params.agentId },
-        });
+        await assertAgentAccess(pool, request.params.agentId, actorUserId);
 
-        await publishOutboxEvent(connection, {
-          organizationId: null,
-          aggregateType: 'agent_version',
-          aggregateId: request.params.versionId,
-          eventType: 'agent_version.archived.v1',
-          payload: { id: request.params.versionId, agentId: request.params.agentId },
-        });
+        if (version.status === "archived") {
+          return reply.status(200).send({ id: version.id, status: "archived", replayed: true });
+        }
 
-        await connection.commit();
-        return reply.status(200).send({ id: request.params.versionId, status: 'archived' });
-      } catch (error) {
-        await connection.rollback();
-        throw error;
-      } finally {
-        connection.release();
+        const connection = await pool.getConnection();
+        try {
+          await connection.beginTransaction();
+          await connection.query(
+            "UPDATE ai_direct_agent_versions SET status = 'archived' WHERE id = ?",
+            [request.params.versionId],
+          );
+
+          await writeAudit(connection, {
+            organizationId: null,
+            actorUserId,
+            action: "agent_version.archived",
+            targetType: "agent_version",
+            targetId: request.params.versionId,
+            requestId: currentRequestId,
+            metadata: { agentId: request.params.agentId },
+          });
+
+          await publishOutboxEvent(connection, {
+            organizationId: null,
+            aggregateType: "agent_version",
+            aggregateId: request.params.versionId,
+            eventType: "agent_version.archived.v1",
+            payload: { id: request.params.versionId, agentId: request.params.agentId },
+          });
+
+          await connection.commit();
+          return reply.status(200).send({ id: request.params.versionId, status: "archived" });
+        } catch (error) {
+          await connection.rollback();
+          throw error;
+        } finally {
+          connection.release();
+        }
+      } catch (err) {
+        if (err instanceof AiDirectHiringError) {
+          return reply.status(err.httpStatus).send(errorResponse(err));
+        }
+        throw err;
       }
-    } catch (err) {
-      if (err instanceof AiDirectHiringError) {
-        return reply.status(err.httpStatus).send(errorResponse(err));
-      }
-      throw err;
-    }
-  });
+    },
+  );
 
-  fastify.post('/agents/:agentId/resolve-model', { onRequest: auth }, async (request: any, reply) => {
-    try {
-      await assertAgentAccess(pool, request.params.agentId, request.user.id);
-      const body = request.body ? readBody(request.body) : {};
-      const taskType = typeof body.taskType === 'string' ? body.taskType : undefined;
+  fastify.post(
+    "/agents/:agentId/resolve-model",
+    { onRequest: auth },
+    async (request: any, reply) => {
+      try {
+        await assertAgentAccess(pool, request.params.agentId, request.user.id);
+        const body = request.body ? readBody(request.body) : {};
+        const taskType = typeof body.taskType === "string" ? body.taskType : undefined;
 
-      const [rows] = await pool.query(
-        `SELECT v.id, v.modelPolicy FROM ai_direct_agents a
+        const [rows] = await pool.query(
+          `SELECT v.id, v.modelPolicy FROM ai_direct_agents a
          JOIN ai_direct_agent_versions v ON v.id = a.activeVersionId WHERE a.id = ? LIMIT 1`,
-        [request.params.agentId],
-      );
-      const version = (rows as any[])[0];
-      if (!version) throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Agent 尚未配置可用版本', 404);
+          [request.params.agentId],
+        );
+        const version = (rows as any[])[0];
+        if (!version)
+          throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "Agent 尚未配置可用版本", 404);
 
-      const policy = parseModelPolicy(
-        typeof version.modelPolicy === 'string' ? JSON.parse(version.modelPolicy) : version.modelPolicy,
-      );
-      const ids = [
-        policy.defaultModelId,
-        ...Object.values(policy.taskOverrides ?? {}),
-        ...(policy.fallbackModelIds ?? []),
-      ];
-      const model = resolveModelPolicy(policy, await getCatalogModels(pool, ids), taskType);
+        const policy = parseModelPolicy(
+          typeof version.modelPolicy === "string"
+            ? JSON.parse(version.modelPolicy)
+            : version.modelPolicy,
+        );
+        const ids = [
+          policy.defaultModelId,
+          ...Object.values(policy.taskOverrides ?? {}),
+          ...(policy.fallbackModelIds ?? []),
+        ];
+        const model = resolveModelPolicy(policy, await getCatalogModels(pool, ids), taskType);
 
-      const currentRequestId = requestId(request);
-      const routingMeta = {
-        selectionSource: model.selectionSource,
-        evidenceVersion: model.evidenceVersion,
-      };
-
-      await pool.query(
-        `INSERT INTO ai_direct_model_run_audits
-         (id, agentId, agentVersionId, catalogModelId, modelKey, taskType, status, routingMetadata)
-         VALUES (?, ?, ?, ?, ?, ?, 'resolved', ?)`,
-        [
-          randomUUID(),
-          request.params.agentId,
-          version.id,
-          model.catalogModelId,
-          model.modelKey,
-          taskType ?? null,
-          JSON.stringify(routingMeta),
-        ],
-      );
-
-      return {
-        agentVersionId: version.id,
-        taskType: taskType ?? null,
-        model: {
-          catalogModelId: model.catalogModelId,
-          modelKey: model.modelKey,
-          displayName: model.displayName,
+        const currentRequestId = requestId(request);
+        const routingMeta = {
           selectionSource: model.selectionSource,
           evidenceVersion: model.evidenceVersion,
-        },
-      };
-    } catch (err) {
-      if (err instanceof AiDirectHiringError) {
-        return reply.status(err.httpStatus).send(errorResponse(err));
+        };
+
+        await pool.query(
+          `INSERT INTO ai_direct_model_run_audits
+         (id, agentId, agentVersionId, catalogModelId, modelKey, taskType, status, routingMetadata)
+         VALUES (?, ?, ?, ?, ?, ?, 'resolved', ?)`,
+          [
+            randomUUID(),
+            request.params.agentId,
+            version.id,
+            model.catalogModelId,
+            model.modelKey,
+            taskType ?? null,
+            JSON.stringify(routingMeta),
+          ],
+        );
+
+        return {
+          agentVersionId: version.id,
+          taskType: taskType ?? null,
+          model: {
+            catalogModelId: model.catalogModelId,
+            modelKey: model.modelKey,
+            displayName: model.displayName,
+            selectionSource: model.selectionSource,
+            evidenceVersion: model.evidenceVersion,
+          },
+        };
+      } catch (err) {
+        if (err instanceof AiDirectHiringError) {
+          return reply.status(err.httpStatus).send(errorResponse(err));
+        }
+        throw err;
       }
-      throw err;
-    }
-  });
+    },
+  );
 
   // ── P2 Routes ───────────────────────────────────────────────────────────────
   // Companies, Projects, Roles (Agent B / F)

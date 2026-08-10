@@ -30,7 +30,7 @@ export function WeChatWebsiteApp(
       async request({ tokens }: { tokens: TokenSet & { openid?: string } }) {
         const url = new URL("https://api.weixin.qq.com/sns/userinfo");
         url.searchParams.set("access_token", tokens.access_token ?? "");
-        url.searchParams.set("openid", String(tokens.openid ?? ""));
+        url.searchParams.set("openid", tokens.openid ?? "");
         url.searchParams.set("lang", "zh_CN");
         const response = await fetch(url);
         if (!response.ok) throw new Error(`WeChat userinfo failed with HTTP ${response.status}`);

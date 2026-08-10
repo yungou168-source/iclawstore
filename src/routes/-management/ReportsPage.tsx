@@ -27,9 +27,7 @@ export function ReportsPage({
   return (
     <div className="management-view">
       <h2 className="section-title text-[1.2rem] m-0">{t("management.reports.title")}</h2>
-      <p className="section-subtitle m-0 mt-1">
-        {t("management.reports.subtitle")}
-      </p>
+      <p className="section-subtitle m-0 mt-1">{t("management.reports.subtitle")}</p>
       <div className="management-controls">
         <div className="management-control management-search">
           <span className="mono">{t("management.filter")}</span>
@@ -86,9 +84,7 @@ export function ReportsPage({
                       ))}
                     </div>
                   ) : (
-                    <div className="section-subtitle m-0">
-                      {t("management.reports.no_reasons")}
-                    </div>
+                    <div className="section-subtitle m-0">{t("management.reports.no_reasons")}</div>
                   )}
                 </div>
                 <div className="management-actions">

@@ -1732,6 +1732,36 @@ export const updateProfile = mutation({
   },
 });
 
+export const updateAvatar = mutation({
+  args: {
+    publisherId: v.id("publishers"),
+    storageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx);
+    const publisher = await ctx.db.get(args.publisherId);
+    if (!publisher || publisher.kind !== "org" || publisher.deletedAt || publisher.deactivatedAt) {
+      throw new ConvexError("Organization not found");
+    }
+    const membership = await getPublisherMembership(ctx, publisher._id, userId);
+    if (!membership || !isPublisherRoleAllowed(membership.role, ["admin"])) {
+      throw new ConvexError("Forbidden");
+    }
+    const metadata = await ctx.db.system.get("_storage", args.storageId);
+    if (!metadata || !metadata.contentType?.startsWith("image/") || metadata.size > 5 * 1024 * 1024) {
+      throw new ConvexError("Avatar must be an image smaller than 5 MB");
+    }
+    const image = await ctx.storage.getUrl(args.storageId);
+    if (!image) throw new ConvexError("Uploaded avatar was not found");
+    await ctx.db.patch(publisher._id, {
+      image,
+      imageStorageId: args.storageId,
+      updatedAt: Date.now(),
+    });
+    return { image };
+  },
+});
+
 export const migrateLegacyPublisherHandleToOrg = mutation({
   args: {
     handle: v.string(),

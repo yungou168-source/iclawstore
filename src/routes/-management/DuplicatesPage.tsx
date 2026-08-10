@@ -15,12 +15,8 @@ export function DuplicatesPage({
   const { t } = useLocale();
   return (
     <div className="management-view">
-      <h2 className="section-title text-[1.2rem] m-0">
-        {t("management.duplicate_candidates")}
-      </h2>
-      <p className="section-subtitle m-0 mt-1">
-        {t("management.duplicates.subtitle")}
-      </p>
+      <h2 className="section-title text-[1.2rem] m-0">{t("management.duplicate_candidates")}</h2>
+      <p className="section-subtitle m-0 mt-1">{t("management.duplicates.subtitle")}</p>
       <div className="management-list">
         {!duplicateCandidates ? (
           <div className="management-empty">{t("management.duplicates.loading")}</div>

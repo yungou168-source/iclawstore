@@ -1,17 +1,14 @@
-import type { Pool, PoolConnection } from 'mysql2/promise';
-import { enqueueWorkflowRun } from './jobQueue.js';
-import {
-  resolveWorkflowTemplate,
-  type OutboxEvent,
-} from './workflowTemplateRegistry.js';
+import type { Pool, PoolConnection } from "mysql2/promise";
+import { enqueueWorkflowRun } from "./jobQueue.js";
+import { resolveWorkflowTemplate, type OutboxEvent } from "./workflowTemplateRegistry.js";
 
 const MAX_ATTEMPTS = 8;
 const MAX_BACKOFF_SECONDS = 300;
 
 export type DispatchResult =
-  | { kind: 'idle' }
-  | { kind: 'ignored'; eventId: string; eventType: string }
-  | { kind: 'enqueued'; eventId: string; runId: string; workflowKey: string };
+  | { kind: "idle" }
+  | { kind: "ignored"; eventId: string; eventType: string }
+  | { kind: "enqueued"; eventId: string; runId: string; workflowKey: string };
 
 type OutboxRow = {
   id: string;
@@ -31,9 +28,9 @@ type RuntimeContext = {
 };
 
 function parsePayload(payload: unknown): Record<string, unknown> {
-  const value = typeof payload === 'string' ? JSON.parse(payload) : payload;
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error('Outbox payload must be a JSON object');
+  const value = typeof payload === "string" ? JSON.parse(payload) : payload;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Outbox payload must be a JSON object");
   }
   return value as Record<string, unknown>;
 }
@@ -44,9 +41,9 @@ async function resolveRuntimeContext(
   event: OutboxEvent,
 ): Promise<RuntimeContext> {
   const employmentId =
-    typeof event.payload.employmentId === 'string'
+    typeof event.payload.employmentId === "string"
       ? event.payload.employmentId
-      : row.aggregateType === 'employment'
+      : row.aggregateType === "employment"
         ? row.aggregateId
         : null;
 
@@ -56,7 +53,7 @@ async function resolveRuntimeContext(
       organizationId: row.organizationId,
       employmentId: null,
       agentVersionId: null,
-      requestedByUserId: typeof actorUserId === 'string' ? actorUserId : 'system',
+      requestedByUserId: typeof actorUserId === "string" ? actorUserId : "system",
     };
   }
 
@@ -77,9 +74,7 @@ async function resolveRuntimeContext(
     employmentId,
     agentVersionId: employment.agentVersionId ?? null,
     requestedByUserId:
-      typeof actorUserId === 'string'
-        ? actorUserId
-        : employment.requestedByUserId ?? 'system',
+      typeof actorUserId === "string" ? actorUserId : (employment.requestedByUserId ?? "system"),
   };
 }
 
@@ -106,7 +101,7 @@ export class OutboxDispatcher {
       claimed = rows[0] ?? null;
       if (!claimed) {
         await conn.rollback();
-        return { kind: 'idle' };
+        return { kind: "idle" };
       }
 
       const event: OutboxEvent = {
@@ -125,7 +120,7 @@ export class OutboxDispatcher {
           [event.id],
         );
         await conn.commit();
-        return { kind: 'ignored', eventId: event.id, eventType: event.eventType };
+        return { kind: "ignored", eventId: event.id, eventType: event.eventType };
       }
 
       const context = await resolveRuntimeContext(conn, claimed, event);
@@ -158,7 +153,7 @@ export class OutboxDispatcher {
       );
       await conn.commit();
       return {
-        kind: 'enqueued',
+        kind: "enqueued",
         eventId: event.id,
         runId: result.runId,
         workflowKey: template.workflowKey,
@@ -168,14 +163,15 @@ export class OutboxDispatcher {
       if (claimed) {
         const attempts = Number(claimed.attempts ?? 0) + 1;
         const terminal = attempts >= MAX_ATTEMPTS;
-        const reason = error instanceof Error ? error.message.slice(0, 1000) : 'Unknown dispatch error';
+        const reason =
+          error instanceof Error ? error.message.slice(0, 1000) : "Unknown dispatch error";
         await this.pool.query(
           `UPDATE ai_direct_outbox_events
            SET status = ?, attempts = ?, availableAt = TIMESTAMPADD(SECOND, ?, NOW()),
                failedAt = ?, failureReason = ?
            WHERE id = ? AND status = 'pending'`,
           [
-            terminal ? 'failed' : 'pending',
+            terminal ? "failed" : "pending",
             attempts,
             failureBackoffSeconds(attempts),
             terminal ? new Date() : null,
@@ -201,10 +197,10 @@ export async function dispatchAvailableOutboxEvents(
   let ignored = 0;
   while (processed < limit) {
     const result = await dispatcher.dispatchNext();
-    if (result.kind === 'idle') break;
+    if (result.kind === "idle") break;
     processed += 1;
-    if (result.kind === 'enqueued') enqueued += 1;
-    if (result.kind === 'ignored') ignored += 1;
+    if (result.kind === "enqueued") enqueued += 1;
+    if (result.kind === "ignored") ignored += 1;
   }
   return { processed, enqueued, ignored };
 }

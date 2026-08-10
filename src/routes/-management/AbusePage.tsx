@@ -12,8 +12,8 @@ import {
   SheetTitle,
 } from "../../components/ui/sheet";
 import { Textarea } from "../../components/ui/textarea";
-import { useLocale } from "../../lib/i18n/context";
 import type { Locale } from "../../lib/i18n/config";
+import { useLocale } from "../../lib/i18n/context";
 import {
   formatRatio,
   formatScore,
@@ -94,9 +94,7 @@ export function AbusePage({
           <h2 id="pa-title" className="section-title pa-title">
             {t("management.abuse.title")}
           </h2>
-          <p className="section-subtitle pa-subtitle">
-            {t("management.abuse.subtitle")}
-          </p>
+          <p className="section-subtitle pa-subtitle">{t("management.abuse.subtitle")}</p>
         </div>
         <div className="pa-run">
           <dl className="pa-run-meta">
@@ -312,8 +310,7 @@ export function AbusePage({
                   <PublisherAbuseIdentity
                     label={t("management.abuse.user")}
                     value={
-                      selectedItem.nomination.ownerUserId ??
-                      t("management.abuse.no_linked_user")
+                      selectedItem.nomination.ownerUserId ?? t("management.abuse.no_linked_user")
                     }
                   />
                   {selectedPublisher ? (
@@ -352,9 +349,7 @@ export function AbusePage({
                   </div>
                   <div>
                     <span>{t("management.abuse.pressure")}</span>
-                    <strong>
-                      {selectedScore ? formatPressureLabel(selectedScore, t) : "—"}
-                    </strong>
+                    <strong>{selectedScore ? formatPressureLabel(selectedScore, t) : "—"}</strong>
                   </div>
                 </div>
 
@@ -377,9 +372,7 @@ export function AbusePage({
                 </section>
 
                 <section className="pa-zone">
-                  <div className="pa-section-label">
-                    {t("management.abuse.publisher_activity")}
-                  </div>
+                  <div className="pa-section-label">{t("management.abuse.publisher_activity")}</div>
                   <div className="pa-metrics">
                     <PublisherAbuseMetric
                       label={t("management.abuse.published_skills")}
@@ -427,9 +420,7 @@ export function AbusePage({
 
                 {detail?.scoreHistory.length ? (
                   <section className="pa-zone">
-                    <div className="pa-section-label">
-                      {t("management.abuse.scoring_history")}
-                    </div>
+                    <div className="pa-section-label">{t("management.abuse.scoring_history")}</div>
                     <div className="pa-history">
                       {detail.scoreHistory.map((score) => (
                         <div key={score._id} className="pa-history-item">
@@ -566,9 +557,7 @@ function PublisherAbuseMetric({
   return (
     <div className="pa-metric">
       <span>{label}</span>
-      <strong>
-        {ratio ? formatRatio(value, locale) : formatWholeNumber(value, locale)}
-      </strong>
+      <strong>{ratio ? formatRatio(value, locale) : formatWholeNumber(value, locale)}</strong>
     </div>
   );
 }
@@ -790,28 +779,53 @@ function publisherAbuseStatusVariant(status: string): NonNullable<BadgeProps["va
   return "default";
 }
 
-const PUBLISHER_ABUSE_REASON_CODES = new Set([
-  "high_catalog_volume",
-  "extreme_volume_low_engagement",
-  "low_installs_per_skill",
-  "low_stars_per_skill",
-  "low_downloads_per_skill",
-  "temporal_download_spike_flat_installs",
-  "temporal_sustained_downloads_flat_installs",
-]);
+const PUBLISHER_ABUSE_REASON_KEYS = {
+  high_catalog_volume: {
+    label: "management.abuse.reason.high_catalog_volume",
+    description: "management.abuse.reason_desc.high_catalog_volume",
+  },
+  extreme_volume_low_engagement: {
+    label: "management.abuse.reason.extreme_volume_low_engagement",
+    description: "management.abuse.reason_desc.extreme_volume_low_engagement",
+  },
+  low_installs_per_skill: {
+    label: "management.abuse.reason.low_installs_per_skill",
+    description: "management.abuse.reason_desc.low_installs_per_skill",
+  },
+  low_stars_per_skill: {
+    label: "management.abuse.reason.low_stars_per_skill",
+    description: "management.abuse.reason_desc.low_stars_per_skill",
+  },
+  low_downloads_per_skill: {
+    label: "management.abuse.reason.low_downloads_per_skill",
+    description: "management.abuse.reason_desc.low_downloads_per_skill",
+  },
+  temporal_download_spike_flat_installs: {
+    label: "management.abuse.reason.temporal_download_spike_flat_installs",
+    description: "management.abuse.reason_desc.temporal_download_spike_flat_installs",
+  },
+  temporal_sustained_downloads_flat_installs: {
+    label: "management.abuse.reason.temporal_sustained_downloads_flat_installs",
+    description: "management.abuse.reason_desc.temporal_sustained_downloads_flat_installs",
+  },
+} as const;
+
+function getPublisherAbuseReasonKey(reason: string) {
+  return Object.hasOwn(PUBLISHER_ABUSE_REASON_KEYS, reason)
+    ? (reason as keyof typeof PUBLISHER_ABUSE_REASON_KEYS)
+    : null;
+}
 
 function formatReasonCode(reason: string, t: ManagementTranslator) {
-  if (PUBLISHER_ABUSE_REASON_CODES.has(reason)) {
-    return t(`management.abuse.reason.${reason}`);
-  }
-  return reason.replaceAll("_", " ");
+  const key = getPublisherAbuseReasonKey(reason);
+  return key ? t(PUBLISHER_ABUSE_REASON_KEYS[key].label) : reason.replaceAll("_", " ");
 }
 
 function describeReasonCode(reason: string, t: ManagementTranslator) {
-  if (PUBLISHER_ABUSE_REASON_CODES.has(reason)) {
-    return t(`management.abuse.reason_desc.${reason}`);
-  }
-  return t("management.abuse.reason.default");
+  const key = getPublisherAbuseReasonKey(reason);
+  return key
+    ? t(PUBLISHER_ABUSE_REASON_KEYS[key].description)
+    : t("management.abuse.reason.default");
 }
 
 function compactIdentifier(value: string) {

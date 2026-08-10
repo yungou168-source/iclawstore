@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { Download } from "lucide-react";
-import { formatCompactStat } from "../lib/numberFormat";
-import { useLocale } from "../lib/i18n/context";
 import { t } from "../lib/i18n";
+import { useLocale } from "../lib/i18n/context";
+import { formatCompactStat } from "../lib/numberFormat";
 import type { PublicPublisherListItem, PublicPublisherPublishedItem } from "../lib/publicUser";
 import { MarketplaceIcon } from "./MarketplaceIcon";
 import { OfficialBadge } from "./OfficialBadge";

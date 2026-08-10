@@ -1,14 +1,14 @@
-import { randomUUID } from 'node:crypto';
-import type { FastifyInstance } from 'fastify';
-import type { RowDataPacket } from 'mysql2/promise';
-import { requireAuth, type AuthenticatedUser } from '../middleware/aiDirectAuth.js';
-import { AiDirectHiringError, ErrorCodes } from '../services/aiDirectErrors.js';
+import { randomUUID } from "node:crypto";
+import type { FastifyInstance } from "fastify";
+import type { RowDataPacket } from "mysql2/promise";
+import { requireAuth, type AuthenticatedUser } from "../middleware/aiDirectAuth.js";
+import { AiDirectHiringError, ErrorCodes } from "../services/aiDirectErrors.js";
 import {
   managedAssetDownloadHeaders,
   type ManagedAssetStore,
   type StoredManagedAsset,
-} from '../services/managedAssetStore.js';
-import type { TemplateManifest } from '../services/managedAssetValidation.js';
+} from "../services/managedAssetStore.js";
+import type { TemplateManifest } from "../services/managedAssetValidation.js";
 
 interface TemplateRow extends RowDataPacket {
   id: string;
@@ -18,7 +18,7 @@ interface TemplateRow extends RowDataPacket {
   name: string;
   description: string;
   status: string;
-  pricingMode: 'free' | 'paid';
+  pricingMode: "free" | "paid";
   priceMicros: string | number | bigint | null;
   currency: string | null;
   activeVersionId: string | null;
@@ -51,7 +51,7 @@ interface ScreenshotRow extends RowDataPacket {
 
 export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
   return async function desktopTemplateRoutes(fastify: FastifyInstance): Promise<void> {
-    fastify.get('/templates', async (request, reply) => {
+    fastify.get("/templates", async (request, reply) => {
       const user = await requireAuth(fastify, request);
       const query = request.query as { limit?: string; offset?: string };
       const limit = boundedInteger(query.limit, 1, 50, 20);
@@ -63,7 +63,10 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
          LIMIT ? OFFSET ?`,
         [user.id, limit, offset],
       );
-      const screenshots = await loadScreenshots(fastify, rows.flatMap((row) => row.versionId ? [row.versionId] : []));
+      const screenshots = await loadScreenshots(
+        fastify,
+        rows.flatMap((row) => (row.versionId ? [row.versionId] : [])),
+      );
       return reply.status(200).send({
         items: rows.map((row) => templateResponse(row, screenshots)),
         limit,
@@ -72,7 +75,7 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
       });
     });
 
-    fastify.get('/templates/:id', async (request, reply) => {
+    fastify.get("/templates/:id", async (request, reply) => {
       const user = await requireAuth(fastify, request);
       const { id } = request.params as { id: string };
       const row = await findTemplate(fastify, id, user);
@@ -80,7 +83,7 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
       return reply.status(200).send(templateResponse(row, screenshots));
     });
 
-    fastify.get('/publisher/templates', async (request, reply) => {
+    fastify.get("/publisher/templates", async (request, reply) => {
       const user = await requireAuth(fastify, request);
       const [rows] = await fastify.mysql.query<RowDataPacket[]>(
         `SELECT template.id, template.publisherId, template.slug, template.name, template.description,
@@ -98,7 +101,7 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
       return reply.status(200).send({ items: rows });
     });
 
-    fastify.post('/templates', async (request, reply) => {
+    fastify.post("/templates", async (request, reply) => {
       const user = await requireAuth(fastify, request);
       const input = parseCreateTemplate(request.body);
       await requirePublisherMembership(fastify, input.publisherId, user.id);
@@ -123,14 +126,18 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
         );
       } catch (error) {
         if (isDuplicateEntry(error)) {
-          throw new AiDirectHiringError(ErrorCodes.DUPLICATE_ENTRY, 'Publisher 下模板 slug 已存在', 409);
+          throw new AiDirectHiringError(
+            ErrorCodes.DUPLICATE_ENTRY,
+            "Publisher 下模板 slug 已存在",
+            409,
+          );
         }
         throw error;
       }
-      return reply.status(201).send({ id, status: 'draft', ...input, purchaseSupported: false });
+      return reply.status(201).send({ id, status: "draft", ...input, purchaseSupported: false });
     });
 
-    fastify.patch('/templates/:id', async (request, reply) => {
+    fastify.patch("/templates/:id", async (request, reply) => {
       const user = await requireAuth(fastify, request);
       const { id } = request.params as { id: string };
       await requireDraftOwner(fastify, id, user.id);
@@ -158,16 +165,16 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
       return reply.status(200).send({ id, updated: true });
     });
 
-    fastify.post('/templates/:id/versions', async (request, reply) => {
+    fastify.post("/templates/:id/versions", async (request, reply) => {
       const user = await requireAuth(fastify, request);
       const { id: templateId } = request.params as { id: string };
       const template = await requireDraftOwner(fastify, templateId, user.id);
       const part = await request.file();
       if (!part) {
-        throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '必须上传模板包');
+        throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "必须上传模板包");
       }
       const stored = await assetStore.store({
-        kind: 'template_package',
+        kind: "template_package",
         originalFileName: part.filename,
         declaredMimeType: part.mimetype,
         stream: part.file,
@@ -177,7 +184,7 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
         await discardStoredAsset(assetStore, stored);
         throw new AiDirectHiringError(
           ErrorCodes.FORBIDDEN_SCOPE,
-          'manifest author.publisherId 与模板 Publisher 不一致',
+          "manifest author.publisherId 与模板 Publisher 不一致",
           403,
         );
       }
@@ -206,7 +213,7 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
       } catch (error) {
         await discardStoredAsset(assetStore, stored);
         if (isDuplicateEntry(error)) {
-          throw new AiDirectHiringError(ErrorCodes.DUPLICATE_ENTRY, '模板版本已存在', 409);
+          throw new AiDirectHiringError(ErrorCodes.DUPLICATE_ENTRY, "模板版本已存在", 409);
         }
         throw error;
       }
@@ -214,13 +221,13 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
         id: versionId,
         templateId,
         version: manifest.version,
-        status: 'draft',
+        status: "draft",
         manifest,
         sha256: stored.sha256,
       });
     });
 
-    fastify.post('/templates/:id/versions/:versionId/screenshots', async (request, reply) => {
+    fastify.post("/templates/:id/versions/:versionId/screenshots", async (request, reply) => {
       const user = await requireAuth(fastify, request);
       const { id: templateId, versionId } = request.params as { id: string; versionId: string };
       await requireDraftOwner(fastify, templateId, user.id);
@@ -232,14 +239,14 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
         -1,
       );
       if (sortOrder < 0) {
-        throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'sortOrder 必须为 0–3');
+        throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "sortOrder 必须为 0–3");
       }
       const part = await request.file();
       if (!part) {
-        throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '必须上传截图');
+        throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "必须上传截图");
       }
       const stored = await assetStore.store({
-        kind: 'template_screenshot',
+        kind: "template_screenshot",
         originalFileName: part.filename,
         declaredMimeType: part.mimetype,
         stream: part.file,
@@ -263,7 +270,7 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
       } catch (error) {
         await discardStoredAsset(assetStore, stored);
         if (isDuplicateEntry(error)) {
-          throw new AiDirectHiringError(ErrorCodes.DUPLICATE_ENTRY, '该截图顺序已存在', 409);
+          throw new AiDirectHiringError(ErrorCodes.DUPLICATE_ENTRY, "该截图顺序已存在", 409);
         }
         throw error;
       }
@@ -275,21 +282,25 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
       });
     });
 
-    fastify.post('/templates/:id/versions/:versionId/submit', async (request, reply) => {
+    fastify.post("/templates/:id/versions/:versionId/submit", async (request, reply) => {
       const user = await requireAuth(fastify, request);
       const { id: templateId, versionId } = request.params as { id: string; versionId: string };
       await requireDraftOwner(fastify, templateId, user.id);
       const version = await requireDraftVersion(fastify, templateId, versionId);
       const [countRows] = await fastify.mysql.query<Array<RowDataPacket & { count: number }>>(
-        'SELECT COUNT(*) AS count FROM desktop_template_screenshots WHERE templateVersionId = ?',
+        "SELECT COUNT(*) AS count FROM desktop_template_screenshots WHERE templateVersionId = ?",
         [versionId],
       );
       const screenshotCount = Number(countRows[0]?.count ?? 0);
       const manifest = parseManifest(version.manifest);
-      if (screenshotCount < 1 || screenshotCount > 4 || screenshotCount !== manifest.screenshots.length) {
+      if (
+        screenshotCount < 1 ||
+        screenshotCount > 4 ||
+        screenshotCount !== manifest.screenshots.length
+      ) {
         throw new AiDirectHiringError(
           ErrorCodes.VALIDATION_ERROR,
-          '独立截图数量必须与 manifest 的 1–4 张截图一致',
+          "独立截图数量必须与 manifest 的 1–4 张截图一致",
         );
       }
       const [submitResult] = await fastify.mysql.query(
@@ -299,12 +310,18 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
         [versionId, templateId],
       );
       if (affectedRows(submitResult) !== 1) {
-        throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, '模板版本不能从当前状态提交审核', 409);
+        throw new AiDirectHiringError(
+          ErrorCodes.INVALID_TRANSITION,
+          "模板版本不能从当前状态提交审核",
+          409,
+        );
       }
-      return reply.status(200).send({ id: versionId, reviewStatus: 'pending_review', publicationStatus: 'unpublished' });
+      return reply
+        .status(200)
+        .send({ id: versionId, reviewStatus: "pending_review", publicationStatus: "unpublished" });
     });
 
-    fastify.post('/templates/:id/versions/:versionId/resubmit', async (request, reply) => {
+    fastify.post("/templates/:id/versions/:versionId/resubmit", async (request, reply) => {
       const user = await requireAuth(fastify, request);
       const { id: templateId, versionId } = request.params as { id: string; versionId: string };
       await requireDraftOwner(fastify, templateId, user.id);
@@ -315,12 +332,18 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
         [versionId, templateId],
       );
       if (affectedRows(result) !== 1) {
-        throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, '只有被拒绝的模板版本可以重新提交', 409);
+        throw new AiDirectHiringError(
+          ErrorCodes.INVALID_TRANSITION,
+          "只有被拒绝的模板版本可以重新提交",
+          409,
+        );
       }
-      return reply.status(200).send({ id: versionId, reviewStatus: 'pending_review', publicationStatus: 'unpublished' });
+      return reply
+        .status(200)
+        .send({ id: versionId, reviewStatus: "pending_review", publicationStatus: "unpublished" });
     });
 
-    fastify.get('/templates/:id/versions', async (request, reply) => {
+    fastify.get("/templates/:id/versions", async (request, reply) => {
       const user = await requireAuth(fastify, request);
       const { id: templateId } = request.params as { id: string };
       await requireDraftOwner(fastify, templateId, user.id);
@@ -333,7 +356,7 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
       return reply.status(200).send({ items: rows });
     });
 
-    fastify.get('/templates/:id/downloads', async (request, reply) => {
+    fastify.get("/templates/:id/downloads", async (request, reply) => {
       const user = await requireAuth(fastify, request);
       const { id: templateId } = request.params as { id: string };
       await requireDraftOwner(fastify, templateId, user.id);
@@ -348,21 +371,30 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
       return reply.status(200).send({ items: rows });
     });
 
-    fastify.get('/templates/:id/package', async (request, reply) => {
+    fastify.get("/templates/:id/package", async (request, reply) => {
       const user = await requireAuth(fastify, request);
       const { id } = request.params as { id: string };
       const template = await findTemplate(fastify, id, user);
-      if (!template.versionId || !template.packageStorageKey || !template.packageMimeType || !template.packageSha256) {
-        throw new AiDirectHiringError(ErrorCodes.TEMPLATE_NOT_INSTALLABLE, '模板没有可安装版本', 409);
+      if (
+        !template.versionId ||
+        !template.packageStorageKey ||
+        !template.packageMimeType ||
+        !template.packageSha256
+      ) {
+        throw new AiDirectHiringError(
+          ErrorCodes.TEMPLATE_NOT_INSTALLABLE,
+          "模板没有可安装版本",
+          409,
+        );
       }
       const canDownload =
-        template.pricingMode === 'free' ||
-        template.entitlementStatus === 'active' ||
+        template.pricingMode === "free" ||
+        template.entitlementStatus === "active" ||
         template.createdByUserId === user.id;
       if (!canDownload) {
         throw new AiDirectHiringError(
           ErrorCodes.TEMPLATE_ENTITLEMENT_REQUIRED,
-          '付费模板需要有效授权；当前版本不支持在线购买',
+          "付费模板需要有效授权；当前版本不支持在线购买",
           403,
           { purchaseSupported: false },
         );
@@ -378,7 +410,7 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
             template.id,
             template.versionId,
             user.id,
-            template.pricingMode === 'free' ? 'free' : (template.entitlementSource ?? 'owner'),
+            template.pricingMode === "free" ? "free" : (template.entitlementSource ?? "owner"),
             request.id,
           ],
         );
@@ -386,17 +418,19 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
         opened.stream.destroy();
         throw error;
       }
-      reply.headers(managedAssetDownloadHeaders({
-        mimeType: template.packageMimeType,
-        sha256: template.packageSha256,
-        originalFileName: template.packageOriginalFileName ?? `${template.slug}.clawtemplate`,
-        attachment: true,
-      }));
-      reply.header('Content-Length', String(opened.sizeBytes));
+      reply.headers(
+        managedAssetDownloadHeaders({
+          mimeType: template.packageMimeType,
+          sha256: template.packageSha256,
+          originalFileName: template.packageOriginalFileName ?? `${template.slug}.clawtemplate`,
+          attachment: true,
+        }),
+      );
+      reply.header("Content-Length", String(opened.sizeBytes));
       return reply.send(opened.stream);
     });
 
-    fastify.get('/template-screenshots/:id/content', async (request, reply) => {
+    fastify.get("/template-screenshots/:id/content", async (request, reply) => {
       await requireAuth(fastify, request);
       const { id } = request.params as { id: string };
       const [rows] = await fastify.mysql.query<ScreenshotRow[]>(
@@ -410,14 +444,15 @@ export function createDesktopTemplateRoutes(assetStore: ManagedAssetStore) {
       );
       const screenshot = rows[0];
       if (!screenshot) {
-        throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, '模板截图不存在', 404);
+        throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, "模板截图不存在", 404);
       }
       const opened = await assetStore.open(screenshot.storageKey);
-      reply.headers(managedAssetDownloadHeaders({ mimeType: screenshot.mimeType, sha256: screenshot.sha256 }));
-      reply.header('Content-Length', String(opened.sizeBytes));
+      reply.headers(
+        managedAssetDownloadHeaders({ mimeType: screenshot.mimeType, sha256: screenshot.sha256 }),
+      );
+      reply.header("Content-Length", String(opened.sizeBytes));
       return reply.send(opened.stream);
     });
-
   };
 }
 
@@ -456,7 +491,7 @@ async function findTemplate(
     [user.id, id, user.id, user.id],
   );
   if (!rows[0]) {
-    throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, '模板不存在', 404);
+    throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, "模板不存在", 404);
   }
   return rows[0];
 }
@@ -467,7 +502,7 @@ async function loadScreenshots(
 ): Promise<Map<string, Array<Record<string, unknown>>>> {
   const result = new Map<string, Array<Record<string, unknown>>>();
   if (versionIds.length === 0) return result;
-  const placeholders = versionIds.map(() => '?').join(', ');
+  const placeholders = versionIds.map(() => "?").join(", ");
   const [rows] = await fastify.mysql.query<ScreenshotRow[]>(
     `SELECT * FROM desktop_template_screenshots
      WHERE templateVersionId IN (${placeholders})
@@ -506,17 +541,19 @@ function templateResponse(
       currency: row.currency,
       purchaseSupported: false,
     },
-    entitled: row.pricingMode === 'free' || row.entitlementStatus === 'active',
-    activeVersion: row.versionId ? {
-      id: row.versionId,
-      version: row.version,
-      status: row.versionStatus,
-      manifest: row.manifest ? parseManifest(row.manifest) : null,
-      dataSchemaVersion: row.dataSchemaVersion,
-      sha256: row.packageSha256,
-      sizeBytes: row.packageSizeBytes === null ? null : String(row.packageSizeBytes),
-      screenshots: screenshots.get(row.versionId) ?? [],
-    } : null,
+    entitled: row.pricingMode === "free" || row.entitlementStatus === "active",
+    activeVersion: row.versionId
+      ? {
+          id: row.versionId,
+          version: row.version,
+          status: row.versionStatus,
+          manifest: row.manifest ? parseManifest(row.manifest) : null,
+          dataSchemaVersion: row.dataSchemaVersion,
+          sha256: row.packageSha256,
+          sizeBytes: row.packageSizeBytes === null ? null : String(row.packageSizeBytes),
+          screenshots: screenshots.get(row.versionId) ?? [],
+        }
+      : null,
     updatedAt: row.updatedAt,
   };
 }
@@ -537,7 +574,7 @@ async function requirePublisherMembership(
     [userId, publisherId, userId],
   );
   if (!rows[0]) {
-    throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '用户不是该 Publisher 成员', 403);
+    throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, "用户不是该 Publisher 成员", 403);
   }
 }
 
@@ -558,7 +595,7 @@ async function requireDraftOwner(
     [templateId, userId],
   );
   if (!rows[0]) {
-    throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, '只有模板所有者可管理模板', 403);
+    throw new AiDirectHiringError(ErrorCodes.FORBIDDEN_SCOPE, "只有模板所有者可管理模板", 403);
   }
   return rows[0];
 }
@@ -568,39 +605,56 @@ async function requireDraftVersion(
   templateId: string,
   versionId: string,
 ): Promise<RowDataPacket & { manifest: string | TemplateManifest }> {
-  const [rows] = await fastify.mysql.query<Array<RowDataPacket & { manifest: string | TemplateManifest }>>(
+  const [rows] = await fastify.mysql.query<
+    Array<RowDataPacket & { manifest: string | TemplateManifest }>
+  >(
     `SELECT manifest FROM desktop_template_versions
      WHERE id = ? AND templateId = ? AND status = 'draft'
      LIMIT 1`,
     [versionId, templateId],
   );
   if (!rows[0]) {
-    throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, '草稿模板版本不存在', 404);
+    throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, "草稿模板版本不存在", 404);
   }
   return rows[0];
 }
 
 function parseCreateTemplate(value: unknown) {
-  const body = requireObject(value, ['publisherId', 'slug', 'name', 'description', 'pricingMode', 'priceMicros', 'currency']);
-  const publisherId = requiredString(body.publisherId, 'publisherId', 191);
-  const slug = requiredString(body.slug, 'slug', 160);
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) invalid('slug 仅允许小写字母、数字和连字符');
-  const name = requiredString(body.name, 'name', 160);
-  const description = requiredString(body.description, 'description', 2000);
+  const body = requireObject(value, [
+    "publisherId",
+    "slug",
+    "name",
+    "description",
+    "pricingMode",
+    "priceMicros",
+    "currency",
+  ]);
+  const publisherId = requiredString(body.publisherId, "publisherId", 191);
+  const slug = requiredString(body.slug, "slug", 160);
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) invalid("slug 仅允许小写字母、数字和连字符");
+  const name = requiredString(body.name, "name", 160);
+  const description = requiredString(body.description, "description", 2000);
   const pricing = parsePricing(body);
   return { publisherId, slug, name, description, ...pricing };
 }
 
 function parseTemplatePatch(value: unknown) {
-  const body = requireObject(value, ['name', 'description', 'pricingMode', 'priceMicros', 'currency']);
-  if (Object.keys(body).length === 0) invalid('至少提供一个修改字段');
-  const name = body.name === undefined ? undefined : requiredString(body.name, 'name', 160);
-  const description = body.description === undefined
-    ? undefined
-    : requiredString(body.description, 'description', 2000);
+  const body = requireObject(value, [
+    "name",
+    "description",
+    "pricingMode",
+    "priceMicros",
+    "currency",
+  ]);
+  if (Object.keys(body).length === 0) invalid("至少提供一个修改字段");
+  const name = body.name === undefined ? undefined : requiredString(body.name, "name", 160);
+  const description =
+    body.description === undefined
+      ? undefined
+      : requiredString(body.description, "description", 2000);
   if (body.pricingMode === undefined) {
     if (body.priceMicros !== undefined || body.currency !== undefined) {
-      invalid('修改价格时必须同时提供 pricingMode');
+      invalid("修改价格时必须同时提供 pricingMode");
     }
     return {
       name,
@@ -614,45 +668,49 @@ function parseTemplatePatch(value: unknown) {
 }
 
 function parsePricing(body: Record<string, unknown>) {
-  if (body.pricingMode !== 'free' && body.pricingMode !== 'paid') invalid('pricingMode 不合法');
-  if (body.pricingMode === 'free') {
+  if (body.pricingMode !== "free" && body.pricingMode !== "paid") invalid("pricingMode 不合法");
+  if (body.pricingMode === "free") {
     if (body.priceMicros !== undefined && body.priceMicros !== null && body.priceMicros !== 0) {
-      invalid('免费模板不能设置价格');
+      invalid("免费模板不能设置价格");
     }
-    return { pricingMode: 'free' as const, priceMicros: null, currency: null };
+    return { pricingMode: "free" as const, priceMicros: null, currency: null };
   }
   if (!Number.isSafeInteger(body.priceMicros) || (body.priceMicros as number) < 0) {
-    invalid('付费模板 priceMicros 必须是非负安全整数');
+    invalid("付费模板 priceMicros 必须是非负安全整数");
   }
-  if (typeof body.currency !== 'string' || !/^[A-Z]{3}$/.test(body.currency)) {
-    invalid('付费模板 currency 必须是三个大写字母');
+  if (typeof body.currency !== "string" || !/^[A-Z]{3}$/.test(body.currency)) {
+    invalid("付费模板 currency 必须是三个大写字母");
   }
-  return { pricingMode: 'paid' as const, priceMicros: body.priceMicros as number, currency: body.currency };
+  return {
+    pricingMode: "paid" as const,
+    priceMicros: body.priceMicros as number,
+    currency: body.currency,
+  };
 }
 
 function requireObject(value: unknown, keys: string[]): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) invalid('请求正文必须是对象');
+  if (!value || typeof value !== "object" || Array.isArray(value)) invalid("请求正文必须是对象");
   const body = value as Record<string, unknown>;
-  if (Object.keys(body).some((key) => !keys.includes(key))) invalid('请求正文包含未知字段');
+  if (Object.keys(body).some((key) => !keys.includes(key))) invalid("请求正文包含未知字段");
   return body;
 }
 
 function requiredString(value: unknown, field: string, maxLength: number): string {
-  if (typeof value !== 'string' || value.trim().length < 1 || value.trim().length > maxLength) {
+  if (typeof value !== "string" || value.trim().length < 1 || value.trim().length > maxLength) {
     invalid(`${field} 不合法`);
   }
   return value.trim();
 }
 
 function requireTemplateManifest(value: unknown): TemplateManifest {
-  if (!value || typeof value !== 'object' || !('version' in value) || !('author' in value)) {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '模板包未返回有效清单');
+  if (!value || typeof value !== "object" || !("version" in value) || !("author" in value)) {
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "模板包未返回有效清单");
   }
   return value as TemplateManifest;
 }
 
 function parseManifest(value: string | TemplateManifest): TemplateManifest {
-  return (typeof value === 'string' ? JSON.parse(value) : value) as TemplateManifest;
+  return (typeof value === "string" ? JSON.parse(value) : value) as TemplateManifest;
 }
 
 function boundedInteger(
@@ -667,20 +725,25 @@ function boundedInteger(
 }
 
 function affectedRows(result: unknown): number {
-  return typeof result === 'object' && result !== null && 'affectedRows' in result
+  return typeof result === "object" && result !== null && "affectedRows" in result
     ? Number(result.affectedRows)
     : 0;
 }
 
 function isDuplicateEntry(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ER_DUP_ENTRY';
+  return (
+    typeof error === "object" && error !== null && "code" in error && error.code === "ER_DUP_ENTRY"
+  );
 }
 
 function invalid(message: string): never {
   throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, message, 400);
 }
 
-async function discardStoredAsset(assetStore: ManagedAssetStore, stored: StoredManagedAsset): Promise<void> {
+async function discardStoredAsset(
+  assetStore: ManagedAssetStore,
+  stored: StoredManagedAsset,
+): Promise<void> {
   try {
     const trashName = await assetStore.moveToTrash(stored.storageKey);
     await assetStore.deleteFromTrash(trashName);

@@ -1,11 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { AuditCenterPage } from '../components/ai-direct/AuditCenterPage';
+import { createFileRoute } from "@tanstack/react-router";
+import { AuditCenterPage } from "../components/ai-direct/AuditCenterPage";
 
 type AuditSearch = { organizationId?: string };
 
-export const Route = createFileRoute('/ai-work-admin/audit')({
+export const Route = createFileRoute("/ai-work-admin/audit")({
   validateSearch: (search): AuditSearch => ({
-    organizationId: typeof search.organizationId === 'string' ? search.organizationId : undefined,
+    organizationId: typeof search.organizationId === "string" ? search.organizationId : undefined,
   }),
   component: AiWorkAdminAuditRoute,
 });

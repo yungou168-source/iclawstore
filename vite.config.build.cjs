@@ -50,8 +50,7 @@ async function loadPlugins() {
     warn(warning);
   }
 
-  const reflectHas = (target, key) =>
-    `Reflect.has(${target}, ${JSON.stringify(key)})`;
+  const reflectHas = (target, key) => `Reflect.has(${target}, ${JSON.stringify(key)})`;
 
   const arkSafariInOperatorFixes = [
     {
@@ -99,21 +98,15 @@ async function loadPlugins() {
     },
     {
       suffix: "/node_modules/@ark/schema/out/node.js",
-      replacements: [
-        ['"value" in transformedInner', reflectHas("transformedInner", "value")],
-      ],
+      replacements: [['"value" in transformedInner', reflectHas("transformedInner", "value")]],
     },
     {
       suffix: "/node_modules/@ark/schema/out/scope.js",
-      replacements: [
-        ['"branches" in schema', reflectHas("schema", "branches")],
-      ],
+      replacements: [['"branches" in schema', reflectHas("schema", "branches")]],
     },
     {
       suffix: "/node_modules/@ark/schema/out/structure/optional.js",
-      replacements: [
-        ['"default" in this.inner', reflectHas("this.inner", "default")],
-      ],
+      replacements: [['"default" in this.inner', reflectHas("this.inner", "default")]],
     },
     {
       suffix: "/node_modules/@ark/schema/out/structure/sequence.js",
@@ -128,21 +121,15 @@ async function loadPlugins() {
     },
     {
       suffix: "/node_modules/@ark/schema/out/structure/prop.js",
-      replacements: [
-        ['"default" in this.inner', reflectHas("this.inner", "default")],
-      ],
+      replacements: [['"default" in this.inner', reflectHas("this.inner", "default")]],
     },
     {
       suffix: "/node_modules/@ark/schema/out/shared/implement.js",
-      replacements: [
-        ['"description" in ctx', reflectHas("ctx", "description")],
-      ],
+      replacements: [['"description" in ctx', reflectHas("ctx", "description")]],
     },
     {
       suffix: "/node_modules/@ark/schema/out/shared/errors.js",
-      replacements: [
-        ['"data" in input', reflectHas("input", "data")],
-      ],
+      replacements: [['"data" in input', reflectHas("input", "data")]],
     },
     {
       suffix: "/node_modules/@ark/util/out/clone.js",
@@ -159,9 +146,7 @@ async function loadPlugins() {
       enforce: "pre",
       transform(code, id) {
         const normalizedId = id.split("?")[0].replace(/\\/g, "/");
-        const fix = arkSafariInOperatorFixes.find((entry) =>
-          normalizedId.endsWith(entry.suffix)
-        );
+        const fix = arkSafariInOperatorFixes.find((entry) => normalizedId.endsWith(entry.suffix));
         if (!fix) return null;
 
         let nextCode = code;
@@ -192,4 +177,10 @@ async function loadPlugins() {
   };
 }
 
-module.exports = { loadPlugins, __convexReactPath, __convexBrowserPath, __convexValuesPath, __convexAuthReactPath };
+module.exports = {
+  loadPlugins,
+  __convexReactPath,
+  __convexBrowserPath,
+  __convexValuesPath,
+  __convexAuthReactPath,
+};

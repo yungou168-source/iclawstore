@@ -1,15 +1,93 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { fastifyApi, type Skill } from "../../lib/fastifyApi";
+import type { Id } from "../../../convex/_generated/dataModel";
 import {
   ALL_CATEGORY_KEYWORDS,
   getSkillCategoryByKeyword,
   getSkillCategoryBySlug,
   getSkillCategoryForSkill,
 } from "../../lib/categories";
+import { fastifyApi, type Skill } from "../../lib/fastifyApi";
+import type { PublicPublisher, PublicSkill } from "../../lib/publicUser";
 import { parseDir, parseSort, toListSort, type SortDir, type SortKey } from "./-params";
 import type { SkillListEntry, SkillSearchEntry } from "./-types";
 
 const pageSize = 25;
+
+function parseTagVersionIds(value: string | null): Record<string, Id<"skillVersions">> {
+  if (!value) return {};
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed).flatMap(([tag, versionId]) =>
+        typeof versionId === "string" ? [[tag, versionId as Id<"skillVersions">]] : [],
+      ),
+    );
+  } catch {
+    return {};
+  }
+}
+
+function parseCapabilityTags(value: string | null): string[] | undefined {
+  if (!value) return undefined;
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed) && parsed.every((tag) => typeof tag === "string")
+      ? parsed
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function toPublicSkill(skill: Skill): PublicSkill {
+  const createdAt = Date.parse(skill.createdAt);
+  const updatedAt = Date.parse(skill.updatedAt);
+  return {
+    _id: skill.id as Id<"skills">,
+    _creationTime: Number.isFinite(createdAt) ? createdAt : 0,
+    slug: skill.slug,
+    displayName: skill.displayName,
+    summary: skill.summary ?? undefined,
+    icon: skill.icon ?? undefined,
+    ownerUserId: skill.ownerUserId as Id<"users">,
+    ownerPublisherId: skill.ownerPublisherId
+      ? (skill.ownerPublisherId as Id<"publishers">)
+      : undefined,
+    forkOf: undefined,
+    latestVersionId: skill.latestVersionId
+      ? (skill.latestVersionId as Id<"skillVersions">)
+      : undefined,
+    tags: parseTagVersionIds(skill.tags),
+    capabilityTags: parseCapabilityTags(skill.capabilityTags),
+    badges: {},
+    stats: {
+      downloads: skill.statsDownloads,
+      stars: skill.statsStars,
+      installsCurrent: skill.statsInstallsCurrent,
+      installsAllTime: skill.statsInstallsAllTime,
+      versions: skill.statsVersions,
+      comments: skill.statsComments,
+    },
+    isSuspicious: false,
+    createdAt: Number.isFinite(createdAt) ? createdAt : 0,
+    updatedAt: Number.isFinite(updatedAt) ? updatedAt : 0,
+  };
+}
+
+function toPublicPublisher(skill: Skill): PublicPublisher | null {
+  if (!skill.owner) return null;
+  return {
+    _id: skill.owner.id as Id<"publishers">,
+    _creationTime: 0,
+    kind: "user",
+    handle: skill.owner.handle,
+    displayName: skill.owner.displayName,
+    image: skill.owner.image,
+    bio: undefined,
+    linkedUserId: skill.ownerUserId as Id<"users">,
+  };
+}
 
 function isNavigationAbortError(err: unknown) {
   if (!(err instanceof Error)) return false;
@@ -120,30 +198,19 @@ export function useSkillsBrowseModel({
           limit: pageSize,
           sort: listSort as "downloads" | "stars" | "installs" | "created" | "name" | undefined,
         });
-        
+
         if (generation !== fetchGeneration.current) return;
-        
+
         // Transform Fastify response to match expected format
-        const transformedSkills = result.skills.map((skill) => ({
-          skill: {
-            ...skill,
-            // Normalize nested stats to top-level for compatibility
-            stats: {
-              downloads: skill.statsDownloads,
-              stars: skill.statsStars,
-              installsCurrent: skill.statsInstallsCurrent,
-              installsAllTime: skill.statsInstallsAllTime,
-              versions: skill.statsVersions,
-              comments: skill.statsComments,
-            },
-          },
+        const transformedSkills: SkillListEntry[] = result.skills.map((skill) => ({
+          skill: toPublicSkill(skill),
           latestVersion: skill.latestVersionSummary ? JSON.parse(skill.latestVersionSummary) : null,
           ownerHandle: skill.owner?.handle ?? null,
-          owner: skill.owner ?? null,
+          owner: toPublicPublisher(skill),
         }));
-        
+
         setListResults((prev) => (cursor ? [...prev, ...transformedSkills] : transformedSkills));
-        
+
         // Calculate if there are more pages
         const canAdvance = result.pagination.page < result.pagination.pages;
         setListCursor(canAdvance ? String(result.pagination.page) : null);
@@ -222,26 +289,19 @@ export function useSkillsBrowseModel({
             limit: searchLimit,
             sort: "statsDownloads:desc",
           });
-          
+
           // Transform Meilisearch results to SkillSearchEntry format
-          const data = result.hits.map((hit: any) => ({
-            skill: {
-              ...hit,
-              stats: {
-                downloads: hit.statsDownloads ?? 0,
-                stars: hit.statsStars ?? 0,
-                installsAllTime: hit.statsInstallsAllTime ?? 0,
-              },
-            },
-            version: hit.latestVersionSummary ? JSON.parse(hit.latestVersionSummary) : null,
-            ownerHandle: hit.ownerHandle ?? null,
-            owner: hit.owner ?? null,
+          const data: SkillSearchEntry[] = result.hits.map((hit) => ({
+            skill: toPublicSkill(hit),
+            version: null,
+            ownerHandle: hit.ownerHandle ?? hit.owner?.handle ?? null,
+            owner: toPublicPublisher(hit),
             score: hit._rankingScore ?? 0,
             apiKeyRequired: hit.apiKeyRequired ?? false,
           }));
-          
+
           if (requestId === searchRequest.current) {
-            setSearchResults(data as SkillSearchEntry[]);
+            setSearchResults(data);
           }
         } finally {
           if (requestId === searchRequest.current) {

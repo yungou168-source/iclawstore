@@ -152,15 +152,9 @@
     "name": "Example Developer",
     "publisherId": "publisher-id"
   },
-  "screenshots": [
-    "screenshots/01.png"
-  ],
+  "screenshots": ["screenshots/01.png"],
   "dataSchemaVersion": 1,
-  "capabilities": [
-    "local-storage",
-    "markdown-import",
-    "markdown-export"
-  ]
+  "capabilities": ["local-storage", "markdown-import", "markdown-export"]
 }
 ```
 
@@ -263,7 +257,7 @@ interface ClawTemplateBridgeV1 {
   registerDataAdapter(adapter: {
     exportMarkdown(): Promise<string>;
     previewImport(markdown: string): Promise<ImportPreview>;
-    applyImport(markdown: string, mode: 'merge' | 'replace'): Promise<ImportResult>;
+    applyImport(markdown: string, mode: "merge" | "replace"): Promise<ImportResult>;
   }): void;
   requestExport(options?: { suggestedName?: string }): Promise<void>;
   requestImport(): Promise<void>;

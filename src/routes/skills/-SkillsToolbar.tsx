@@ -25,9 +25,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
-import { useLocale } from "../../lib/i18n/context";
-import { t } from "../../lib/i18n";
 import { SKILL_CATEGORIES, type SkillCategory } from "../../lib/categories";
+import { t } from "../../lib/i18n";
+import { useLocale } from "../../lib/i18n/context";
 import { type SortDir, type SortKey } from "./-params";
 import type { SkillsView } from "./-useSkillsBrowseModel";
 

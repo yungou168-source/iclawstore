@@ -14,21 +14,25 @@ account.
 
 ## Web sign-in
 
-Enter your email address to receive an 8-digit one-time verification code, then
-enter that code in the sign-in dialog. The verification-code field remains
-visible before and after sending so password managers and browser OTP autofill
-can target a stable form. Email addresses use the browser's email validation
-and are limited to 38 characters.
+Enter your email address to receive a 4-digit one-time verification code, then
+enter that code in the sign-in dialog. AI直聘 login emails use the subject
+`AI直聘登录验证码`; the default sender is
+`AI直聘 <no-reply@iclawstore.com>`. Operators may override only the sender with
+`AUTH_EMAIL_FROM`; the subject and message body remain branded as AI直聘.
+
+The verification-code field remains visible before and after sending so
+password managers and browser OTP autofill can target a stable form. Email
+addresses use the browser's email validation and are limited to 38 characters.
 
 A code is bound to the normalized email address that requested it. Changing the
 email clears the entered code and invalidates the dialog's pending verification
 state; request a new code for the new address. The client accepts digits only
-and enables verification only after all 8 digits are present. You can also
+and enables verification only after all 4 digits are present. You can also
 choose **GitHub**, **Google**, or **WeChat**. These methods create the same type
 of authenticated session; there is no password-based account.
 
 If a verification code does not arrive, check the address and spam folder, then
-retry after a short wait. Codes expire after 20 minutes and a successful newer
+retry after a short wait. Codes expire after 2 minutes and a successful newer
 request replaces the code that was previously valid for that address. Contact
 the site operator if the UI reports a server error or a valid code cannot be
 verified.

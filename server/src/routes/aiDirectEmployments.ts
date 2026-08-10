@@ -9,37 +9,34 @@
  *   GET  /api/v1/ai-direct-hiring/employments/:id/events        — event log
  */
 
-import { FastifyInstance } from 'fastify';
-import { randomUUID } from 'node:crypto';
-import { AiDirectHiringError, ErrorCodes } from '../services/aiDirectErrors.js';
-import { publishOutboxEvent } from '../utils/outbox.js';
-import { requireAuth } from '../middleware/aiDirectAuth.js';
-import { requireCompanyRole, requireEmploymentScope } from '../middleware/aiDirectRbac.js';
-import {
-  transitionEmployment,
-  type EmploymentStatus,
-} from '../services/employmentStateMachine.js';
-import { countsTowardHeadcount } from '../services/workforceStateMachine.js';
-import { synchronizeWorkforceEmployeeDigest } from '../services/workforceEmployeeDigestSync.js';
+import { randomUUID } from "node:crypto";
+import { FastifyInstance } from "fastify";
+import { requireAuth } from "../middleware/aiDirectAuth.js";
+import { requireCompanyRole, requireEmploymentScope } from "../middleware/aiDirectRbac.js";
+import { AiDirectHiringError, ErrorCodes } from "../services/aiDirectErrors.js";
+import { transitionEmployment, type EmploymentStatus } from "../services/employmentStateMachine.js";
+import { synchronizeWorkforceEmployeeDigest } from "../services/workforceEmployeeDigestSync.js";
+import { countsTowardHeadcount } from "../services/workforceStateMachine.js";
+import { publishOutboxEvent } from "../utils/outbox.js";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
 function requestIdFrom(request: { headers: Record<string, unknown> }): string {
-  const value = request.headers['x-request-id'];
-  return typeof value === 'string' && value.length > 0 && value.length <= 128
+  const value = request.headers["x-request-id"];
+  return typeof value === "string" && value.length > 0 && value.length <= 128
     ? value
     : randomUUID();
 }
 
 function readBody(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, '请求体必须是对象');
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "请求体必须是对象");
   }
   return value as Record<string, unknown>;
 }
 
 function readString(value: unknown, field: string, maxLength: number): string {
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, `${field} 必须是字符串`);
   }
   const result = value.trim();
@@ -57,7 +54,7 @@ function rejectExtra(body: Record<string, unknown>, allowed: string[], caller: s
   if (extra.length > 0) {
     throw new AiDirectHiringError(
       ErrorCodes.VALIDATION_ERROR,
-      `${caller} 不接受以下字段: ${extra.join(', ')}`,
+      `${caller} 不接受以下字段: ${extra.join(", ")}`,
       400,
       { extraFields: extra },
     );
@@ -89,7 +86,7 @@ async function writeAudit(
       input.targetType,
       input.targetId,
       input.requestId,
-      input.outcome ?? 'success',
+      input.outcome ?? "success",
       input.metadata ? JSON.stringify(input.metadata) : null,
     ],
   );
@@ -105,11 +102,7 @@ async function advanceEmploymentStatus(
   approvalId?: string | null,
   extra?: Record<string, unknown>,
 ): Promise<any> {
-  const transition = transitionEmployment(
-    employment.status as EmploymentStatus,
-    toStatus,
-    event,
-  );
+  const transition = transitionEmployment(employment.status as EmploymentStatus, toStatus, event);
 
   await synchronizeAppearanceControl(
     conn,
@@ -120,17 +113,17 @@ async function advanceEmploymentStatus(
     reqId,
   );
 
-  const updateFields: string[] = ['status = ?', 'updatedAt = NOW()'];
+  const updateFields: string[] = ["status = ?", "updatedAt = NOW()"];
   const updateParams: unknown[] = [toStatus];
 
-  if (toStatus === 'active' && !employment.startedAt) {
-    updateFields.push('startedAt = NOW()');
+  if (toStatus === "active" && !employment.startedAt) {
+    updateFields.push("startedAt = NOW()");
   }
-  if (toStatus === 'terminated') {
-    updateFields.push('endedAt = NOW()');
+  if (toStatus === "terminated") {
+    updateFields.push("endedAt = NOW()");
   }
 
-  const updateQuery = `UPDATE ai_direct_employments SET ${updateFields.join(', ')} WHERE id = ?`;
+  const updateQuery = `UPDATE ai_direct_employments SET ${updateFields.join(", ")} WHERE id = ?`;
   await conn.query(updateQuery, [...updateParams, employment.id]);
   await synchronizeWorkforceEmployeeDigest(conn, employment.id);
 
@@ -150,7 +143,11 @@ async function advanceEmploymentStatus(
         [position.id],
       );
       if ((headcountUpdate as any).affectedRows !== 1) {
-        throw new AiDirectHiringError(ErrorCodes.INVALID_TRANSITION, 'Position 编制投影不一致', 409);
+        throw new AiDirectHiringError(
+          ErrorCodes.INVALID_TRANSITION,
+          "Position 编制投影不一致",
+          409,
+        );
       }
     }
   }
@@ -184,7 +181,7 @@ async function advanceEmploymentStatus(
     organizationId: null,
     actorUserId,
     action: `employment.${event}`,
-    targetType: 'employment',
+    targetType: "employment",
     targetId: employment.id,
     requestId: reqId,
     metadata: { from: transition.from, to: transition.to, ...extra },
@@ -192,7 +189,7 @@ async function advanceEmploymentStatus(
 
   await publishOutboxEvent(conn, {
     organizationId: null,
-    aggregateType: 'employment',
+    aggregateType: "employment",
     aggregateId: employment.id,
     eventType: `employment.${event}.v1`,
     payload: {
@@ -227,7 +224,7 @@ async function synchronizeAppearanceControl(
   actorUserId: string,
   reqId: string,
 ): Promise<void> {
-  if (toStatus !== 'accepted' && toStatus !== 'terminated') return;
+  if (toStatus !== "accepted" && toStatus !== "terminated") return;
 
   // Locking the Agent serializes competing Employments even when no profile row exists yet.
   const [agentRows] = await conn.query(
@@ -236,7 +233,7 @@ async function synchronizeAppearanceControl(
   );
   const agent = (agentRows as any[])[0];
   if (!agent) {
-    throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Employment 对应的 Agent 不存在', 404);
+    throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, "Employment 对应的 Agent 不存在", 404);
   }
   const [profileRows] = await conn.query(
     `SELECT controllerEmploymentId, controllerCompanyId, revision
@@ -246,11 +243,11 @@ async function synchronizeAppearanceControl(
   );
   const profile = (profileRows as any[])[0];
 
-  if (toStatus === 'accepted') {
+  if (toStatus === "accepted") {
     if (profile?.controllerEmploymentId && profile.controllerEmploymentId !== employment.id) {
       throw new AiDirectHiringError(
         ErrorCodes.APPEARANCE_CONTROL_CONFLICT,
-        '该 Agent 的形象控制权已由另一 Employment 持有',
+        "该 Agent 的形象控制权已由另一 Employment 持有",
         409,
         {
           agentId: employment.agentId,
@@ -289,14 +286,15 @@ async function synchronizeAppearanceControl(
     );
   }
 
-  const action = toStatus === 'accepted'
-    ? 'agent_appearance.control.transferred.v1'
-    : 'agent_appearance.control.released.v1';
+  const action =
+    toStatus === "accepted"
+      ? "agent_appearance.control.transferred.v1"
+      : "agent_appearance.control.released.v1";
   await writeAudit(conn, {
     organizationId: null,
     actorUserId,
     action,
-    targetType: 'agent_appearance',
+    targetType: "agent_appearance",
     targetId: employment.agentId,
     requestId: reqId,
     metadata: {
@@ -308,11 +306,12 @@ async function synchronizeAppearanceControl(
   });
   await publishOutboxEvent(conn, {
     organizationId: null,
-    aggregateType: 'agent_appearance',
+    aggregateType: "agent_appearance",
     aggregateId: employment.agentId,
-    eventType: toStatus === 'accepted'
-      ? 'agent_appearance.control.transferred.v1'
-      : 'agent_appearance.control.released.v1',
+    eventType:
+      toStatus === "accepted"
+        ? "agent_appearance.control.transferred.v1"
+        : "agent_appearance.control.released.v1",
     payload: {
       agentId: employment.agentId,
       employmentId: employment.id,
@@ -329,9 +328,9 @@ export async function aiDirectEmploymentsRoutes(fastify: FastifyInstance) {
   const auth = [(fastify as any).authenticate];
 
   // GET /api/v1/ai-direct-hiring/employments — list employments
-  fastify.get('/employments', { onRequest: auth }, async (request: any) => {
+  fastify.get("/employments", { onRequest: auth }, async (request: any) => {
     const user = await requireAuth(fastify, request);
-    const status = typeof request.query?.status === 'string' ? request.query.status : null;
+    const status = typeof request.query?.status === "string" ? request.query.status : null;
 
     let sql = `
       SELECT e.id, e.companyId, e.agentId, e.agentVersionId, e.roleId, e.projectId,
@@ -362,26 +361,30 @@ export async function aiDirectEmploymentsRoutes(fastify: FastifyInstance) {
   });
 
   // Legacy implementation kept unmounted; the public route below is the single creation boundary.
-  fastify.post('/internal/employments/from-accepted-offer', { onRequest: auth }, async (_request: any) => {
-    throw new AiDirectHiringError(
-      ErrorCodes.INVALID_TRANSITION,
-      '旧的 accepted Offer 创建 Employment 流程已停用；Employment 仅由支付成功履约事务创建',
-      409,
-    );
-  });
+  fastify.post(
+    "/internal/employments/from-accepted-offer",
+    { onRequest: auth },
+    async (_request: any) => {
+      throw new AiDirectHiringError(
+        ErrorCodes.INVALID_TRANSITION,
+        "旧的 accepted Offer 创建 Employment 流程已停用；Employment 仅由支付成功履约事务创建",
+        409,
+      );
+    },
+  );
 
   // POST /api/v1/ai-direct-hiring/employments is retained only as a compatibility guard.
   // Employment creation belongs to the offer-accept transaction so no accepted Offer can exist without it.
-  fastify.post('/employments', { onRequest: auth }, async (_request: any) => {
+  fastify.post("/employments", { onRequest: auth }, async (_request: any) => {
     throw new AiDirectHiringError(
       ErrorCodes.INVALID_TRANSITION,
-      'Employment 只能由支付成功履约事务原子创建',
+      "Employment 只能由支付成功履约事务原子创建",
       409,
     );
   });
 
   // GET /api/v1/ai-direct-hiring/employments/:id — employment detail
-  fastify.get('/employments/:id', { onRequest: auth }, async (request: any) => {
+  fastify.get("/employments/:id", { onRequest: auth }, async (request: any) => {
     const user = await requireAuth(fastify, request);
     const { id } = request.params;
     await requireEmploymentScope(pool, id, user.id);
@@ -397,27 +400,37 @@ export async function aiDirectEmploymentsRoutes(fastify: FastifyInstance) {
       [id],
     );
     const employment = (rows as any[])[0];
-    if (!employment) throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, 'Employment 不存在', 404);
+    if (!employment)
+      throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, "Employment 不存在", 404);
     return employment;
   });
 
   // POST /api/v1/ai-direct-hiring/employments/:id/transition — explicit state machine transition
-  fastify.post('/employments/:id/transition', { onRequest: auth }, async (request: any, reply) => {
+  fastify.post("/employments/:id/transition", { onRequest: auth }, async (request: any, reply) => {
     const user = await requireAuth(fastify, request);
     const reqId = requestIdFrom(request);
     const { id } = request.params;
     const body = readBody(request.body ?? {});
-    rejectExtra(body, ['toStatus', 'reason', 'approvalId'], 'POST /employments/:id/transition');
+    rejectExtra(body, ["toStatus", "reason", "approvalId"], "POST /employments/:id/transition");
 
-    const toStatus = readString(body.toStatus, 'toStatus', 32);
-    const reason = typeof body.reason === 'string' ? body.reason.slice(0, 500) : null;
+    const toStatus = readString(body.toStatus, "toStatus", 32);
+    const reason = typeof body.reason === "string" ? body.reason.slice(0, 500) : null;
     const approvalId =
-      typeof body.approvalId === 'string' && body.approvalId.length > 0
-        ? body.approvalId
-        : null;
+      typeof body.approvalId === "string" && body.approvalId.length > 0 ? body.approvalId : null;
 
     // Validate target status is a known EmploymentStatus
-    const validStatuses = ['candidate', 'evaluating', 'offer_pending', 'offered', 'accepted', 'onboarding', 'active', 'paused', 'offboarding', 'terminated'];
+    const validStatuses = [
+      "candidate",
+      "evaluating",
+      "offer_pending",
+      "offered",
+      "accepted",
+      "onboarding",
+      "active",
+      "paused",
+      "offboarding",
+      "terminated",
+    ];
     if (!validStatuses.includes(toStatus)) {
       throw new AiDirectHiringError(ErrorCodes.VALIDATION_ERROR, `无效的 toStatus: ${toStatus}`);
     }
@@ -435,11 +448,17 @@ export async function aiDirectEmploymentsRoutes(fastify: FastifyInstance) {
       );
       const employment = (lockedRows as any[])[0];
       if (!employment) {
-        throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Employment 不存在', 404);
+        throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, "Employment 不存在", 404);
       }
       const updated = await advanceEmploymentStatus(
-        conn, employment, toStatus as EmploymentStatus, 'transition',
-        user.id, reqId, approvalId, { reason },
+        conn,
+        employment,
+        toStatus as EmploymentStatus,
+        "transition",
+        user.id,
+        reqId,
+        approvalId,
+        { reason },
       );
       await conn.commit();
       return reply.status(200).send(updated);
@@ -452,7 +471,7 @@ export async function aiDirectEmploymentsRoutes(fastify: FastifyInstance) {
   });
 
   // GET /api/v1/ai-direct-hiring/employments/:id/events — event log
-  fastify.get('/employments/:id/events', { onRequest: auth }, async (request: any) => {
+  fastify.get("/employments/:id/events", { onRequest: auth }, async (request: any) => {
     const user = await requireAuth(fastify, request);
     const { id } = request.params;
     await requireEmploymentScope(pool, id, user.id);

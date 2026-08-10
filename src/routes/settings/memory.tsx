@@ -14,13 +14,20 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookOpen, Eye, EyeOff, RotateCw, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { SignInPrompt } from '../../components/SignInPrompt';
-import { SettingsSkeleton } from '../../components/skeletons/ProtectedPageSkeletons';
-import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { useAuthStatus } from '../../lib/useAuthStatus';
-import { fastifyApi } from '../../lib/fastifyApi';
+import { SignInPrompt } from "../../components/SignInPrompt";
+import { SettingsSkeleton } from "../../components/skeletons/ProtectedPageSkeletons";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { fastifyApi } from "../../lib/fastifyApi";
+import { useLocale } from "../../lib/i18n/context";
+import { useAuthStatus } from "../../lib/useAuthStatus";
 
 type BindingState = {
   configured: boolean;
@@ -53,7 +60,7 @@ type NoteDetail = {
   summaryMd: string | null;
   summaryBytes: number;
   sourceBytes: number;
-  frontmatterJson: string | null;
+  frontmatterJson: Record<string, unknown> | null;
   mtime: string | null;
   size: number;
 };
@@ -66,6 +73,7 @@ const EVIDENCE_VERSION = "2026-08-01";
 const EXTRACTOR_VERSION = "2026-08-01";
 
 function MemorySettings() {
+  const { t } = useLocale();
   const { isAuthenticated, isLoading } = useAuthStatus();
   const [binding, setBinding] = useState<BindingState | null>(null);
   const [notes, setNotes] = useState<NotesState | null>(null);
@@ -84,9 +92,9 @@ function MemorySettings() {
       setNotes(notesPayload);
       setLoadError(null);
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : "加载失败");
+      setLoadError(error instanceof Error ? error.message : t("settings.memory.load_failed"));
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -124,10 +132,10 @@ function MemorySettings() {
         extractorVersion: EXTRACTOR_VERSION,
         evidenceVersion: EVIDENCE_VERSION,
       });
-      toast.success("已创建 vault 绑定占位。请在桌面端完成实际扫描。");
+      toast.success(t("settings.memory.placeholder_created"));
       await refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "绑定失败");
+      toast.error(error instanceof Error ? error.message : t("settings.memory.bind_failed"));
     } finally {
       setBusy(false);
     }
@@ -135,16 +143,16 @@ function MemorySettings() {
 
   const handleRevoke = async () => {
     if (!binding?.configured) return;
-    if (!window.confirm("撤销绑定将清空所有已上传的摘要。继续？")) return;
+    if (!window.confirm(t("settings.memory.revoke_confirm"))) return;
     setBusy(true);
     try {
       await fastifyApi.revokeMemoryVault();
       setOpenPath(null);
       setOpenNote(null);
       await refresh();
-      toast.success("绑定已撤销。");
+      toast.success(t("settings.memory.revoked"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "撤销失败");
+      toast.error(error instanceof Error ? error.message : t("settings.memory.revoke_failed"));
     } finally {
       setBusy(false);
     }
@@ -157,7 +165,9 @@ function MemorySettings() {
       setOpenNote(detail);
     } catch (error) {
       setOpenNote(null);
-      toast.error(error instanceof Error ? error.message : "摘要读取失败");
+      toast.error(
+        error instanceof Error ? error.message : t("settings.memory.summary_load_failed"),
+      );
     }
   };
 
@@ -166,7 +176,7 @@ function MemorySettings() {
   }
 
   if (!isAuthenticated) {
-    return <SignInPrompt title="登录后管理 Obsidian 记忆绑定" />;
+    return <SignInPrompt title={t("settings.memory.sign_in_title")} />;
   }
 
   if (loadError) {
@@ -174,7 +184,7 @@ function MemorySettings() {
       <main className="section">
         <Card>
           <CardHeader>
-            <CardTitle>记忆绑定</CardTitle>
+            <CardTitle>{t("settings.memory.title")}</CardTitle>
             <CardDescription>{loadError}</CardDescription>
           </CardHeader>
         </Card>
@@ -187,8 +197,8 @@ function MemorySettings() {
       <main className="section">
         <Card>
           <CardHeader>
-            <CardTitle>Obsidian 记忆绑定</CardTitle>
-            <CardDescription>正在加载绑定状态…</CardDescription>
+            <CardTitle>{t("settings.memory.title")}</CardTitle>
+            <CardDescription>{t("settings.memory.loading_status")}</CardDescription>
           </CardHeader>
         </Card>
       </main>
@@ -199,70 +209,67 @@ function MemorySettings() {
     <main className="section">
       <div className="section-header">
         <div>
-          <h1 className="section-title">Obsidian 记忆绑定</h1>
-          <p className="section-subtitle">
-            将本机 Obsidian 库的脱敏摘要与本平台同步。原文、正文、附件本地保留，
-            仅标签、标题与 ≤ 20% 摘要会上传。
-          </p>
+          <h1 className="section-title">{t("settings.memory.title")}</h1>
+          <p className="section-subtitle">{t("settings.memory.subtitle")}</p>
         </div>
         <Link to="/settings" search={{ view: undefined }} className="text-sm">
-          返回设置
+          {t("settings.memory.back")}
         </Link>
       </div>
 
       <Card className="memory-card">
         <CardHeader>
-          <CardTitle>绑定状态</CardTitle>
+          <CardTitle>{t("settings.memory.binding_status")}</CardTitle>
           <CardDescription>
             {binding.configured
-              ? "当前已绑定一个本地 vault。原文不会离开你的设备。"
-              : "尚未绑定任何 vault。绑定后可在桌面端运行扫描。"}
+              ? t("settings.memory.configured_description")
+              : t("settings.memory.unconfigured_description")}
           </CardDescription>
         </CardHeader>
         <CardContent className="memory-status">
           <div className="memory-row">
-            <span className="memory-label">已绑定</span>
+            <span className="memory-label">{t("settings.memory.configured")}</span>
             <span className="memory-value">
-              {binding.configured ? "是" : "否"}
+              {binding.configured ? t("settings.memory.yes") : t("settings.memory.no")}
             </span>
           </div>
           <div className="memory-row">
-            <span className="memory-label">Vault 指纹</span>
+            <span className="memory-label">{t("settings.memory.vault_fingerprint")}</span>
             <code className="memory-mono">{binding.vaultFingerprint ?? "—"}</code>
           </div>
           <div className="memory-row">
-            <span className="memory-label">Extractor 版本</span>
+            <span className="memory-label">{t("settings.memory.extractor_version")}</span>
             <span className="memory-value">{binding.extractorVersion ?? "—"}</span>
           </div>
           <div className="memory-row">
-            <span className="memory-label">Evidence 版本</span>
+            <span className="memory-label">{t("settings.memory.evidence_version")}</span>
             <span className="memory-value">{binding.evidenceVersion ?? "—"}</span>
           </div>
           <div className="memory-row">
-            <span className="memory-label">笔记数</span>
+            <span className="memory-label">{t("settings.memory.note_count")}</span>
             <span className="memory-value">{binding.noteCount}</span>
           </div>
           <div className="memory-row">
-            <span className="memory-label">标签数</span>
+            <span className="memory-label">{t("settings.memory.tag_count")}</span>
             <span className="memory-value">{binding.tagCount}</span>
           </div>
           <div className="memory-row">
-            <span className="memory-label">最近同步</span>
+            <span className="memory-label">{t("settings.memory.last_sync")}</span>
             <span className="memory-value">{binding.lastSyncAt ?? "—"}</span>
           </div>
           <div className="memory-actions">
             {binding.configured ? (
               <>
                 <Button variant="outline" disabled={busy} onClick={() => void refresh()}>
-                  <RotateCw className="mr-2 h-4 w-4" /> 刷新
+                  <RotateCw className="mr-2 h-4 w-4" /> {t("settings.memory.refresh")}
                 </Button>
                 <Button variant="destructive" disabled={busy} onClick={handleRevoke}>
-                  <Trash2 className="mr-2 h-4 w-4" /> 撤销绑定
+                  <Trash2 className="mr-2 h-4 w-4" /> {t("settings.memory.revoke")}
                 </Button>
               </>
             ) : (
               <Button disabled={busy} onClick={handleBind}>
-                <BookOpen className="mr-2 h-4 w-4" /> 创建绑定（占位）
+                <BookOpen className="mr-2 h-4 w-4" /> {t("settings.memory.create_placeholder")}
               </Button>
             )}
           </div>
@@ -272,16 +279,14 @@ function MemorySettings() {
       {binding.configured && (
         <Card className="memory-card">
           <CardHeader>
-            <CardTitle>最近摘要</CardTitle>
-            <CardDescription>
-              仅显示摘要元信息；点击展开查看摘要。原文需要回到桌面端。
-            </CardDescription>
+            <CardTitle>{t("settings.memory.recent_summaries")}</CardTitle>
+            <CardDescription>{t("settings.memory.recent_summaries_description")}</CardDescription>
           </CardHeader>
           <CardContent>
             {topTags.length > 0 && (
               <div className="memory-tags">
                 {topTags.map((tag) => (
-                  <Badge key={tag} variant="secondary">
+                  <Badge key={tag} variant="compact">
                     #{tag}
                   </Badge>
                 ))}
@@ -303,8 +308,12 @@ function MemorySettings() {
                       size="sm"
                       onClick={() => void openNoteSummary(note.notePath)}
                     >
-                      {openPath === note.notePath ? <EyeOff className="mr-1 h-4 w-4" /> : <Eye className="mr-1 h-4 w-4" />}
-                      摘要
+                      {openPath === note.notePath ? (
+                        <EyeOff className="mr-1 h-4 w-4" />
+                      ) : (
+                        <Eye className="mr-1 h-4 w-4" />
+                      )}
+                      {t("settings.memory.summary")}
                     </Button>
                   </div>
                 </li>
@@ -313,7 +322,9 @@ function MemorySettings() {
             {openNote && (
               <div className="memory-summary">
                 <div className="memory-summary-title">{openNote.title ?? openNote.notePath}</div>
-                <pre className="memory-summary-pre">{openNote.summaryMd ?? "(无摘要)"}</pre>
+                <pre className="memory-summary-pre">
+                  {openNote.summaryMd ?? t("settings.memory.no_summary")}
+                </pre>
               </div>
             )}
           </CardContent>
@@ -322,18 +333,19 @@ function MemorySettings() {
 
       <Card className="memory-card">
         <CardHeader>
-          <CardTitle>下一步</CardTitle>
+          <CardTitle>{t("settings.memory.next_steps")}</CardTitle>
           <CardDescription>
-            M1 范围。Agent 上下文注入、设备控制、跨端实时刷新等能力在 M2+ 解锁。
-            完整规格见 <code>specs/ai-direct-hiring-obsidian-sync.md</code>。
+            {t("settings.memory.next_steps_description", {
+              path: "specs/ai-direct-hiring-obsidian-sync.md",
+            })}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <ul className="memory-bullets">
-            <li>桌面端运行本地抽取器，生成 64 位 hex 指纹与摘要，POST 到 <code>/api/v1/memory/obsidian/sync</code>。</li>
-            <li>正文、绝对路径、剪贴板、附件、密钥一概不上传；任何含敏感模式的笔记会被整条丢弃。</li>
-            <li>摘要长度不得超过原文 20% 且 ≤ 1MB/批次，单次最多 5000 条。</li>
-            <li>撤销绑定后 24 小时内清理所有 digest 记录。</li>
+            <li>{t("settings.memory.step_one", { path: "/api/v1/memory/obsidian/sync" })}</li>
+            <li>{t("settings.memory.step_two")}</li>
+            <li>{t("settings.memory.step_three")}</li>
+            <li>{t("settings.memory.step_four")}</li>
           </ul>
         </CardContent>
       </Card>

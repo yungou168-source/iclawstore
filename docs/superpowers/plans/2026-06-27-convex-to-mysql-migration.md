@@ -19,13 +19,13 @@ ClawHub 当前使用 Convex Cloud 作为后端服务，所有数据存储在 Con
 
 ### 1.2 迁移范围
 
-| 模块 | 数据量 | 复杂度 |
-|------|--------|--------|
-| 用户系统 | ~18万用户 | 🔴 高 |
-| 技能(Skills) | ~5.2万 | 🟡 中 |
-| 插件(Packages) | 数千 | 🟡 中 |
-| 搜索索引 | 向量数据 | 🔴 高 |
-| 认证系统 | GitHub OAuth | 🔴 高 |
+| 模块           | 数据量       | 复杂度 |
+| -------------- | ------------ | ------ |
+| 用户系统       | ~18万用户    | 🔴 高  |
+| 技能(Skills)   | ~5.2万       | 🟡 中  |
+| 插件(Packages) | 数千         | 🟡 中  |
+| 搜索索引       | 向量数据     | 🔴 高  |
+| 认证系统       | GitHub OAuth | 🔴 高  |
 
 ---
 
@@ -79,7 +79,7 @@ ClawHub 当前使用 Convex Cloud 作为后端服务，所有数据存储在 Con
 ### 2.2 关键依赖
 
 - **向量搜索**: Convex 内置向量索引 (1536 维)
-- **文件存储**: Convex Storage (_storage 表)
+- **文件存储**: Convex Storage (\_storage 表)
 - **实时订阅**: Convex 实时查询
 - **认证**: @convex-dev/auth (GitHub OAuth)
 
@@ -631,15 +631,15 @@ CREATE TABLE reserved_slugs (
 
 ### 4.1 后端技术栈
 
-| 组件 | 选择 | 原因 |
-|------|------|------|
-| **后端框架** | Node.js + Express 或 Fastify | 与前端 TypeScript 统一语言 |
-| **ORM** | Prisma 或 Drizzle | 类型安全，与 TypeScript 集成好 |
-| **数据库** | MySQL 8.0+ | 用户已有，使用 InnoDB 引擎 |
-| **搜索** | MySQL FULLTEXT + Meilisearch | 向量搜索用 Meilisearch 替代 |
-| **文件存储** | 本地 MinIO 或 OSS | 替代 Convex Storage |
-| **实时推送** | Socket.io 或 SSE | 替代 Convex 实时订阅 |
-| **认证** | 保留 GitHub OAuth + 考虑国内方案 | 关键决策点 |
+| 组件         | 选择                             | 原因                           |
+| ------------ | -------------------------------- | ------------------------------ |
+| **后端框架** | Node.js + Express 或 Fastify     | 与前端 TypeScript 统一语言     |
+| **ORM**      | Prisma 或 Drizzle                | 类型安全，与 TypeScript 集成好 |
+| **数据库**   | MySQL 8.0+                       | 用户已有，使用 InnoDB 引擎     |
+| **搜索**     | MySQL FULLTEXT + Meilisearch     | 向量搜索用 Meilisearch 替代    |
+| **文件存储** | 本地 MinIO 或 OSS                | 替代 Convex Storage            |
+| **实时推送** | Socket.io 或 SSE                 | 替代 Convex 实时订阅           |
+| **认证**     | 保留 GitHub OAuth + 考虑国内方案 | 关键决策点                     |
 
 ### 4.2 迁移后架构
 
@@ -676,12 +676,14 @@ CREATE TABLE reserved_slugs (
 ### 阶段 1: 准备阶段 (1-2 周)
 
 #### 1.1 环境搭建
+
 - [ ] 在宝塔安装 Node.js 18+
 - [ ] 配置 MySQL 数据库
 - [ ] 部署 MinIO 文件存储
 - [ ] 部署 Meilisearch 搜索服务
 
 #### 1.2 数据导出准备
+
 - [ ] 创建 Convex 数据导出脚本
 - [ ] 导出所有表数据为 JSON
 - [ ] 导出文件存储内容
@@ -690,12 +692,14 @@ CREATE TABLE reserved_slugs (
 ### 阶段 2: 后端开发 (3-4 周)
 
 #### 2.1 数据库迁移
+
 - [ ] 创建 MySQL schema
 - [ ] 编写数据转换脚本
 - [ ] 执行数据迁移
 - [ ] 验证数据完整性
 
 #### 2.2 API 开发
+
 - [ ] 搭建 Fastify 项目
 - [ ] 实现用户认证 API
 - [ ] 实现技能 CRUD API
@@ -704,6 +708,7 @@ CREATE TABLE reserved_slugs (
 - [ ] 实现文件上传/下载 API
 
 #### 2.3 搜索服务
+
 - [ ] 配置 Meilisearch
 - [ ] 导入技能/插件索引
 - [ ] 实现向量搜索替代
@@ -711,11 +716,13 @@ CREATE TABLE reserved_slugs (
 ### 阶段 3: 前端适配 (2-3 周)
 
 #### 3.1 API 层重构
+
 - [ ] 替换 Convex query/mutation 为 REST API 调用
 - [ ] 实现认证状态管理
 - [ ] 实现文件上传组件
 
 #### 3.2 功能适配
+
 - [ ] 适配搜索组件
 - [ ] 适配实时更新（WebSocket）
 - [ ] 测试所有页面功能
@@ -723,12 +730,14 @@ CREATE TABLE reserved_slugs (
 ### 阶段 4: 测试与部署 (1-2 周)
 
 #### 4.1 测试
+
 - [ ] 单元测试
 - [ ] 集成测试
 - [ ] 性能测试
 - [ ] 安全测试
 
 #### 4.2 部署
+
 - [ ] 生产环境部署
 - [ ] DNS 切换
 - [ ] 监控配置
@@ -740,31 +749,31 @@ CREATE TABLE reserved_slugs (
 
 ### 6.1 认证系统
 
-| 方案 | 实现 | 工作量 |
-|------|------|--------|
-| **A. 保留 GitHub OAuth** | 继续使用 @convex-dev/auth 的 GitHub 方案 | 中 |
-| **B. 改用手机号/微信** | 实现国内 OAuth + 短信验证 | 高 |
-| **C. 两者并存** | GitHub OAuth + 手机号/微信登录 | 很高 |
+| 方案                     | 实现                                     | 工作量 |
+| ------------------------ | ---------------------------------------- | ------ |
+| **A. 保留 GitHub OAuth** | 继续使用 @convex-dev/auth 的 GitHub 方案 | 中     |
+| **B. 改用手机号/微信**   | 实现国内 OAuth + 短信验证                | 高     |
+| **C. 两者并存**          | GitHub OAuth + 手机号/微信登录           | 很高   |
 
 **建议**: 方案 A（保留 GitHub OAuth），后续迭代添加国内登录
 
 ### 6.2 ID 格式
 
-| 方案 | 格式 | 兼容性 |
-|------|------|--------|
-| **A. 保留 Convex ID** | `a1b2c3d4e5f6g7h8i9j0k1l2` | 好 |
-| **B. UUID** | `550e8400-e29b-41d4-a716-446655440000` | 一般 |
-| **C. 自增 ID** | `1, 2, 3, ...` | 需要映射 |
+| 方案                  | 格式                                   | 兼容性   |
+| --------------------- | -------------------------------------- | -------- |
+| **A. 保留 Convex ID** | `a1b2c3d4e5f6g7h8i9j0k1l2`             | 好       |
+| **B. UUID**           | `550e8400-e29b-41d4-a716-446655440000` | 一般     |
+| **C. 自增 ID**        | `1, 2, 3, ...`                         | 需要映射 |
 
 **建议**: 方案 A（保留 Convex ID 格式，避免前端代码大幅修改）
 
 ### 6.3 搜索方案
 
-| 方案 | 优点 | 缺点 |
-|------|------|------|
+| 方案                  | 优点           | 缺点           |
+| --------------------- | -------------- | -------------- |
 | **A. MySQL FULLTEXT** | 简单，兼容性好 | 不支持向量搜索 |
-| **B. Meilisearch** | 速度快，功能全 | 需要额外服务 |
-| **C. Elasticsearch** | 功能最强 | 资源占用高 |
+| **B. Meilisearch**    | 速度快，功能全 | 需要额外服务   |
+| **C. Elasticsearch**  | 功能最强       | 资源占用高     |
 
 **建议**: 方案 B（Meilisearch），性价比最高
 
@@ -772,25 +781,25 @@ CREATE TABLE reserved_slugs (
 
 ## 7. 风险与应对
 
-| 风险 | 影响 | 应对措施 |
-|------|------|----------|
-| 数据丢失 | 🔴 高 | 完整备份，迁移验证脚本 |
+| 风险         | 影响  | 应对措施                        |
+| ------------ | ----- | ------------------------------- |
+| 数据丢失     | 🔴 高 | 完整备份，迁移验证脚本          |
 | 向量搜索丢失 | 🟡 中 | 使用 Meilisearch 替代，功能近似 |
-| 实时订阅失效 | 🟡 中 | WebSocket 实现，使用 Socket.io |
-| 性能下降 | 🟡 中 | 数据库索引优化，缓存层 |
-| 认证中断 | 🔴 高 | 并行运行认证，逐步切换 |
+| 实时订阅失效 | 🟡 中 | WebSocket 实现，使用 Socket.io  |
+| 性能下降     | 🟡 中 | 数据库索引优化，缓存层          |
+| 认证中断     | 🔴 高 | 并行运行认证，逐步切换          |
 
 ---
 
 ## 8. 资源估算
 
-| 资源 | 当前 | 迁移后需求 |
-|------|------|-----------|
-| **CPU** | Convex 托管 | 4+ 核 |
-| **内存** | Convex 托管 | 8GB+ |
-| **磁盘** | Convex 存储 | 100GB+ (MinIO) |
-| **MySQL** | 现有 | 50GB+ |
-| **Meilisearch** | 无 | 4GB+ |
+| 资源            | 当前        | 迁移后需求     |
+| --------------- | ----------- | -------------- |
+| **CPU**         | Convex 托管 | 4+ 核          |
+| **内存**        | Convex 托管 | 8GB+           |
+| **磁盘**        | Convex 存储 | 100GB+ (MinIO) |
+| **MySQL**       | 现有        | 50GB+          |
+| **Meilisearch** | 无          | 4GB+           |
 
 ---
 
@@ -809,21 +818,22 @@ CREATE TABLE reserved_slugs (
 
 ### A. Convex → MySQL 类型映射
 
-| Convex 类型 | MySQL 类型 |
-|-------------|------------|
-| `v.string()` | `VARCHAR(255)` / `TEXT` |
-| `v.number()` | `BIGINT` / `DOUBLE` |
-| `v.boolean()` | `BOOLEAN` |
-| `v.id("table")` | `VARCHAR(24)` |
-| `v.optional(...)` | nullable |
-| `v.array(...)` | `JSON` |
-| `v.record(...)` | `JSON` |
-| `v.union(...)` | `ENUM` / `JSON` |
-| `v.literal(...)` | `ENUM` |
+| Convex 类型       | MySQL 类型              |
+| ----------------- | ----------------------- |
+| `v.string()`      | `VARCHAR(255)` / `TEXT` |
+| `v.number()`      | `BIGINT` / `DOUBLE`     |
+| `v.boolean()`     | `BOOLEAN`               |
+| `v.id("table")`   | `VARCHAR(24)`           |
+| `v.optional(...)` | nullable                |
+| `v.array(...)`    | `JSON`                  |
+| `v.record(...)`   | `JSON`                  |
+| `v.union(...)`    | `ENUM` / `JSON`         |
+| `v.literal(...)`  | `ENUM`                  |
 
 ### B. Convex Storage 迁移
 
 Convex 的 `_storage` 表存储文件，需要：
+
 1. 列出所有 storage IDs
 2. 下载文件内容
 3. 上传到 MinIO

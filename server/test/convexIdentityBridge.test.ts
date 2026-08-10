@@ -8,9 +8,7 @@ import {
 
 describe("Convex identity bridge subject", () => {
   it("extracts the stable user ID from a valid userId|sessionId subject", () => {
-    expect(convexAuthUserIdFromSubject("convex-user-1|auth-session-1")).toBe(
-      "convex-user-1",
-    );
+    expect(convexAuthUserIdFromSubject("convex-user-1|auth-session-1")).toBe("convex-user-1");
   });
 
   it("keeps the identity mapping stable across session rotation", () => {
@@ -33,15 +31,13 @@ describe("Convex identity bridge subject", () => {
   });
 
   it("rejects a subject user ID that differs from users:me", () => {
-    expect(() =>
-      assertConvexAuthUserIdMatches("convex-user-1", "convex-user-2"),
-    ).toThrow(AuthRequiredError);
+    expect(() => assertConvexAuthUserIdMatches("convex-user-1", "convex-user-2")).toThrow(
+      AuthRequiredError,
+    );
   });
 
   it("accepts a subject user ID matching users:me", () => {
-    expect(() =>
-      assertConvexAuthUserIdMatches("convex-user-1", "convex-user-1"),
-    ).not.toThrow();
+    expect(() => assertConvexAuthUserIdMatches("convex-user-1", "convex-user-1")).not.toThrow();
   });
 });
 
@@ -74,21 +70,13 @@ describe("desktop OAuth access token claims", () => {
 
   it("rejects an ID token in place of an access token", () => {
     expect(() =>
-      assertDesktopAccessTokenClaims(
-        validPayload,
-        { alg: "RS256", typ: "JWT" },
-        "desktop-client",
-      ),
+      assertDesktopAccessTokenClaims(validPayload, { alg: "RS256", typ: "JWT" }, "desktop-client"),
     ).toThrow(AuthRequiredError);
   });
 
   it("rejects a token issued to another desktop client", () => {
     expect(() =>
-      assertDesktopAccessTokenClaims(
-        validPayload,
-        { alg: "RS256", typ: "at+jwt" },
-        "other-client",
-      ),
+      assertDesktopAccessTokenClaims(validPayload, { alg: "RS256", typ: "at+jwt" }, "other-client"),
     ).toThrow(AuthRequiredError);
   });
 

@@ -6,11 +6,7 @@
     "actorUserId": "vn7abbqqx3tz5wpdb4dqb3zr2189ctb3",
     "createdAt": 1782486556099,
     "metadata": {
-      "changedFields": [
-        "handle",
-        "displayName",
-        "linkedUserId"
-      ],
+      "changedFields": ["handle", "displayName", "linkedUserId"],
       "created": true,
       "memberCreated": true,
       "next": {
@@ -62,9 +58,7 @@
     "actorUserId": "vn7abbqqx3tz5wpdb4dqb3zr2189ctb3",
     "createdAt": 1782486556750,
     "metadata": {
-      "changedFields": [
-        "displayName"
-      ],
+      "changedFields": ["displayName"],
       "created": false,
       "memberCreated": false,
       "next": {

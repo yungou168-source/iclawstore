@@ -5,8 +5,8 @@ import { api } from "../../../convex/_generated/api";
 import { PublisherListItem } from "../../components/PublisherListItem";
 import { Button } from "../../components/ui/button";
 import { convexHttp } from "../../convex/client";
-import { useLocale } from "../../lib/i18n/context";
 import { t } from "../../lib/i18n";
+import { useLocale } from "../../lib/i18n/context";
 import type { PublicPublisherListItem } from "../../lib/publicUser";
 import { getSiteMode, getSiteName, getSiteUrlForMode } from "../../lib/site";
 
@@ -37,26 +37,12 @@ type PublishersLoaderResult = {
 
 const PUBLISHER_PAGE_SIZE = 25;
 
-function listedCountLabel(
-  value: number,
-  total: number,
-  kind?: PublisherKindSearch,
-  locale = "en",
-) {
-  const label =
-    kind === "orgs"
-      ? total === 1
-        ? t("publishers.org_label", locale as "zh-CN" | "en")
-        : t("publishers.orgs_label", locale as "zh-CN" | "en")
-      : kind === "builders"
-        ? total === 1
-          ? t("publishers.builder_label", locale as "zh-CN" | "en")
-          : t("publishers.builders_label", locale as "zh-CN" | "en")
-        : total === 1
-          ? t("publishers.publisher_label", locale as "zh-CN" | "en")
-          : t("publishers.publishers_label", locale as "zh-CN" | "en");
+function listedCountLabel(value: number, total: number, locale = "en") {
   return total > value
-    ? t("publishers.showing_of", locale as "zh-CN" | "en", { value: String(value), total: String(total) })
+    ? t("publishers.showing_of", locale as "zh-CN" | "en", {
+        value: String(value),
+        total: String(total),
+      })
     : t("publishers.showing_all", locale as "zh-CN" | "en", { total: String(total) });
 }
 
@@ -218,7 +204,7 @@ function PublishersIndex() {
 
         <div className="browse-results-toolbar publishers-toolbar">
           <span className="browse-results-count publisher-listed-count">
-            {listedCountLabel(publishers.length, activeTotal, activeKind, locale)}
+            {listedCountLabel(publishers.length, activeTotal, locale)}
             {hasQuery || activeKind ? (
               <button className="browse-clear-btn" type="button" onClick={handleClear}>
                 {t("common.clear", locale)}

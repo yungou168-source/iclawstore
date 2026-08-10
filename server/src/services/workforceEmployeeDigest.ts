@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash } from "node:crypto";
 
 export interface WorkforceEmployeeDigestInput {
   employmentId: string;
@@ -22,15 +22,16 @@ export interface WorkforceEmployeeDigest extends WorkforceEmployeeDigestInput {
   revision: string;
 }
 
-const canonical = (value: WorkforceEmployeeDigestInput): string => JSON.stringify({
-  ...value,
-  startedAt: value.startedAt?.toISOString() ?? null,
-});
+const canonical = (value: WorkforceEmployeeDigestInput): string =>
+  JSON.stringify({
+    ...value,
+    startedAt: value.startedAt?.toISOString() ?? null,
+  });
 
 /** Produces a stable value revision so unchanged projections need not be rewritten. */
 export const buildWorkforceEmployeeDigest = (
   value: WorkforceEmployeeDigestInput,
 ): WorkforceEmployeeDigest => ({
   ...value,
-  revision: createHash('sha256').update(canonical(value)).digest('hex'),
+  revision: createHash("sha256").update(canonical(value)).digest("hex"),
 });

@@ -1,8 +1,9 @@
 import type { FunctionReturnType } from "convex/server";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import type { Locale } from "../../lib/i18n/config";
 import { getUserFacingConvexError } from "../../lib/convexError";
+import type { Locale } from "../../lib/i18n/config";
+import type { TranslationKey } from "../../lib/i18n/translations";
 
 export const SKILL_AUDIT_LOG_LIMIT = 10;
 export const USER_BAN_REASON_MAX_LENGTH = 500;
@@ -39,11 +40,14 @@ export type ManagementView =
   | "recent"
   | "organizations"
   | "templates"
+  | "wallets"
+  | "settlements"
   | "audit"
   | "system"
   | "employees"
   | "costs"
   | "approvals"
+  | "friendly-links"
   | "settings";
 
 export type ManagementOwnerOption = {
@@ -52,7 +56,7 @@ export type ManagementOwnerOption = {
 };
 
 export type ManagementTranslator = (
-  key: string,
+  key: TranslationKey,
   vars?: Record<string, string | number>,
 ) => string;
 
@@ -173,7 +177,9 @@ export function formatAuditActionLabel(
   }
   if (action.startsWith("skill.transfer.")) {
     const transferAction = action.slice("skill.transfer.".length).replaceAll("_", " ");
-    return t?.("management.audit.transfer", { action: transferAction }) ?? `Transfer ${transferAction}`;
+    return (
+      t?.("management.audit.transfer", { action: transferAction }) ?? `Transfer ${transferAction}`
+    );
   }
   if (action.startsWith("skill.")) {
     return action.slice("skill.".length).replaceAll(".", " ").replaceAll("_", " ");

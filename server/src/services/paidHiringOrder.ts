@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import type { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
+import type { Pool, PoolConnection, RowDataPacket } from "mysql2/promise";
 import { publishOutboxEvent } from "../utils/outbox.js";
 import { AiDirectHiringError, ErrorCodes } from "./aiDirectErrors.js";
 import { splitPaidHiringAmount } from "./paidHiringMoney.js";
@@ -20,7 +20,7 @@ export type PaidHiringOrder = {
   id: string;
   outTradeNo: string;
   hiringIntentId: string;
-  status: "pending";
+  status: "pending" | "fulfilled";
   currency: "CNY";
   grossAmountFen: bigint;
   platformFeeFen: bigint;
@@ -30,7 +30,7 @@ export type PaidHiringOrder = {
   replayed: boolean;
 };
 
-type HiringContextRow = RowDataPacket & {
+export type HiringContextRow = RowDataPacket & {
   organizationId: string;
   companyId: string;
   projectId: string | null;
@@ -82,7 +82,7 @@ function existingToOrder(row: ExistingOrderRow, fingerprint: string): PaidHiring
       409,
     );
   }
-  if (row.status !== "pending") {
+  if (row.status !== "pending" && row.status !== "fulfilled") {
     throw new AiDirectHiringError(
       ErrorCodes.INVALID_TRANSITION,
       `该幂等请求对应的支付订单已处于 '${row.status}' 状态`,
@@ -93,7 +93,7 @@ function existingToOrder(row: ExistingOrderRow, fingerprint: string): PaidHiring
     id: row.id,
     outTradeNo: row.outTradeNo,
     hiringIntentId: row.hiringIntentId,
-    status: "pending",
+    status: row.status as "pending" | "fulfilled",
     currency: "CNY",
     grossAmountFen: BigInt(row.grossAmountFen),
     platformFeeFen: BigInt(row.platformFeeFen),
@@ -104,7 +104,7 @@ function existingToOrder(row: ExistingOrderRow, fingerprint: string): PaidHiring
   };
 }
 
-async function loadHiringContext(
+export async function loadHiringContext(
   connection: PoolConnection,
   input: CreatePaidHiringOrderInput,
 ): Promise<HiringContextRow> {

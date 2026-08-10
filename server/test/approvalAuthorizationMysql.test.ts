@@ -1,23 +1,23 @@
-import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
-import { createPool, type Pool } from 'mysql2/promise';
-import { authorizeApprovalAction } from '../src/services/approvalAuthorization.js';
-import { decideApproval, type ApprovalDecision } from '../src/services/approvalDecision.js';
-import { delegateApproval } from '../src/services/approvalDelegation.js';
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { createPool, type Pool } from "mysql2/promise";
+import { authorizeApprovalAction } from "../src/services/approvalAuthorization.js";
+import { decideApproval, type ApprovalDecision } from "../src/services/approvalDecision.js";
+import { delegateApproval } from "../src/services/approvalDelegation.js";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const integration = databaseUrl ? describe : describe.skip;
 
-const organizationId = '60000000-0000-4000-8000-000000000001';
+const organizationId = "60000000-0000-4000-8000-000000000001";
 const users = {
-  owner: 'mysql-owner',
-  admin: 'mysql-admin',
-  member: 'mysql-member',
-  requester: 'mysql-requester',
-  oldApprover: 'mysql-old-approver',
-  newApprover: 'mysql-new-approver',
+  owner: "mysql-owner",
+  admin: "mysql-admin",
+  member: "mysql-member",
+  requester: "mysql-requester",
+  oldApprover: "mysql-old-approver",
+  newApprover: "mysql-new-approver",
 };
 
-integration('approval authorization and delegation MySQL closure', () => {
+integration("approval authorization and delegation MySQL closure", () => {
   let pool: Pool;
   let sequence = 0;
 
@@ -30,15 +30,15 @@ integration('approval authorization and delegation MySQL closure', () => {
       [organizationId, users.owner],
     );
     const members = [
-      [users.owner, 'owner'],
-      [users.admin, 'admin'],
-      [users.member, 'member'],
-      [users.requester, 'member'],
-      [users.oldApprover, 'member'],
-      [users.newApprover, 'member'],
+      [users.owner, "owner"],
+      [users.admin, "admin"],
+      [users.member, "member"],
+      [users.requester, "member"],
+      [users.oldApprover, "member"],
+      [users.newApprover, "member"],
     ] as const;
     for (const [index, [userId, role]] of members.entries()) {
-      const memberId = `61000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`;
+      const memberId = `61000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`;
       await pool.query(
         `INSERT INTO ai_direct_organization_members
          (id, organizationId, userId, role, status, createdByUserId)
@@ -54,7 +54,7 @@ integration('approval authorization and delegation MySQL closure', () => {
 
   async function createPendingApproval(options: { due?: boolean } = {}) {
     sequence += 1;
-    const suffix = String(sequence).padStart(12, '0');
+    const suffix = String(sequence).padStart(12, "0");
     const offerId = `62000000-0000-4000-8000-${suffix}`;
     const approvalId = `63000000-0000-4000-8000-${suffix}`;
     await pool.query(
@@ -86,16 +86,9 @@ integration('approval authorization and delegation MySQL closure', () => {
     return { approvalId, offerId };
   }
 
-  async function decideAs(
-    approvalId: string,
-    decision: ApprovalDecision,
-    actorUserId: string,
-  ) {
-    const action = decision === 'approved'
-      ? 'approve'
-      : decision === 'rejected'
-        ? 'reject'
-        : 'cancel';
+  async function decideAs(approvalId: string, decision: ApprovalDecision, actorUserId: string) {
+    const action =
+      decision === "approved" ? "approve" : decision === "rejected" ? "reject" : "cancel";
     return decideApproval(pool, {
       approvalId,
       decision,
@@ -106,28 +99,28 @@ integration('approval authorization and delegation MySQL closure', () => {
     });
   }
 
-  it('enforces designated approver, organization admin, member, and cancellation authority', async () => {
+  it("enforces designated approver, organization admin, member, and cancellation authority", async () => {
     const designated = await createPendingApproval();
-    await decideAs(designated.approvalId, 'approved', users.oldApprover);
+    await decideAs(designated.approvalId, "approved", users.oldApprover);
 
     const admin = await createPendingApproval();
-    await decideAs(admin.approvalId, 'rejected', users.admin);
+    await decideAs(admin.approvalId, "rejected", users.admin);
 
     const member = await createPendingApproval();
-    await expect(
-      decideAs(member.approvalId, 'approved', users.member),
-    ).rejects.toMatchObject({ code: 'FORBIDDEN_SCOPE' });
+    await expect(decideAs(member.approvalId, "approved", users.member)).rejects.toMatchObject({
+      code: "FORBIDDEN_SCOPE",
+    });
 
     const requester = await createPendingApproval();
-    await decideAs(requester.approvalId, 'cancelled', users.requester);
+    await decideAs(requester.approvalId, "cancelled", users.requester);
 
     const unrelatedOwner = await createPendingApproval();
     await expect(
-      decideAs(unrelatedOwner.approvalId, 'cancelled', users.owner),
-    ).rejects.toMatchObject({ code: 'FORBIDDEN_SCOPE' });
+      decideAs(unrelatedOwner.approvalId, "cancelled", users.owner),
+    ).rejects.toMatchObject({ code: "FORBIDDEN_SCOPE" });
 
     const [rows] = await pool.query<any[]>(
-      'SELECT id, status FROM ai_direct_approvals WHERE id IN (?, ?, ?, ?, ?)',
+      "SELECT id, status FROM ai_direct_approvals WHERE id IN (?, ?, ?, ?, ?)",
       [
         designated.approvalId,
         admin.approvalId,
@@ -138,31 +131,31 @@ integration('approval authorization and delegation MySQL closure', () => {
     );
     const statuses = Object.fromEntries(rows.map((row) => [row.id, row.status]));
     expect(statuses).toMatchObject({
-      [designated.approvalId]: 'approved',
-      [admin.approvalId]: 'rejected',
-      [member.approvalId]: 'pending',
-      [requester.approvalId]: 'cancelled',
-      [unrelatedOwner.approvalId]: 'pending',
+      [designated.approvalId]: "approved",
+      [admin.approvalId]: "rejected",
+      [member.approvalId]: "pending",
+      [requester.approvalId]: "cancelled",
+      [unrelatedOwner.approvalId]: "pending",
     });
   });
 
-  it('makes the old approver lose authority immediately after delegation', async () => {
+  it("makes the old approver lose authority immediately after delegation", async () => {
     const fixture = await createPendingApproval();
     await delegateApproval(pool, {
       approvalId: fixture.approvalId,
       actorUserId: users.admin,
       toUserId: users.newApprover,
       requestId: `mysql-delegate:${fixture.approvalId}`,
-      reason: 'handoff',
+      reason: "handoff",
     });
 
-    await expect(
-      decideAs(fixture.approvalId, 'approved', users.oldApprover),
-    ).rejects.toMatchObject({ code: 'FORBIDDEN_SCOPE' });
-    await decideAs(fixture.approvalId, 'approved', users.newApprover);
+    await expect(decideAs(fixture.approvalId, "approved", users.oldApprover)).rejects.toMatchObject(
+      { code: "FORBIDDEN_SCOPE" },
+    );
+    await decideAs(fixture.approvalId, "approved", users.newApprover);
 
     const [[approval]] = await pool.query<any[]>(
-      'SELECT status, approverUserId FROM ai_direct_approvals WHERE id = ?',
+      "SELECT status, approverUserId FROM ai_direct_approvals WHERE id = ?",
       [fixture.approvalId],
     );
     const [events] = await pool.query<any[]>(
@@ -172,14 +165,14 @@ integration('approval authorization and delegation MySQL closure', () => {
        ORDER BY sequence`,
       [fixture.approvalId],
     );
-    expect(approval).toMatchObject({ status: 'approved', approverUserId: users.newApprover });
+    expect(approval).toMatchObject({ status: "approved", approverUserId: users.newApprover });
     expect(events).toEqual([
-      { eventType: 'approval.delegated', sequence: 1 },
-      { eventType: 'approval.approved', sequence: 2 },
+      { eventType: "approval.delegated", sequence: 1 },
+      { eventType: "approval.approved", sequence: 2 },
     ]);
   });
 
-  it('serializes delegation against a terminal decision without stale authority', async () => {
+  it("serializes delegation against a terminal decision without stale authority", async () => {
     const fixture = await createPendingApproval();
     const results = await Promise.allSettled([
       delegateApproval(pool, {
@@ -188,14 +181,14 @@ integration('approval authorization and delegation MySQL closure', () => {
         toUserId: users.newApprover,
         requestId: `mysql-race-delegate:${fixture.approvalId}`,
       }),
-      decideAs(fixture.approvalId, 'approved', users.oldApprover),
+      decideAs(fixture.approvalId, "approved", users.oldApprover),
     ]);
 
-    expect(results.filter(({ status }) => status === 'fulfilled')).toHaveLength(1);
-    expect(results.filter(({ status }) => status === 'rejected')).toHaveLength(1);
+    expect(results.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
+    expect(results.filter(({ status }) => status === "rejected")).toHaveLength(1);
 
     const [[approval]] = await pool.query<any[]>(
-      'SELECT status, approverUserId FROM ai_direct_approvals WHERE id = ?',
+      "SELECT status, approverUserId FROM ai_direct_approvals WHERE id = ?",
       [fixture.approvalId],
     );
     const [[counts]] = await pool.query<any[]>(
@@ -204,16 +197,16 @@ integration('approval authorization and delegation MySQL closure', () => {
          (SELECT COUNT(*) FROM ai_direct_approval_events WHERE approvalId = ?) AS eventCount`,
       [fixture.approvalId, fixture.approvalId],
     );
-    if (approval.status === 'approved') {
+    if (approval.status === "approved") {
       expect(approval.approverUserId).toBe(users.oldApprover);
       expect(counts).toMatchObject({ delegationCount: 0, eventCount: 1 });
     } else {
-      expect(approval).toMatchObject({ status: 'pending', approverUserId: users.newApprover });
+      expect(approval).toMatchObject({ status: "pending", approverUserId: users.newApprover });
       expect(counts).toMatchObject({ delegationCount: 1, eventCount: 1 });
     }
   });
 
-  it('allows timeout to use the latest delegated state', async () => {
+  it("allows timeout to use the latest delegated state", async () => {
     const fixture = await createPendingApproval({ due: true });
     await delegateApproval(pool, {
       approvalId: fixture.approvalId,
@@ -223,16 +216,16 @@ integration('approval authorization and delegation MySQL closure', () => {
     });
     await decideApproval(pool, {
       approvalId: fixture.approvalId,
-      decision: 'expired',
+      decision: "expired",
       actorUserId: null,
       requestId: `approval-timeout:${fixture.approvalId}`,
-      reason: 'deadline_reached',
+      reason: "deadline_reached",
     });
 
     const [[approval]] = await pool.query<any[]>(
-      'SELECT status, approverUserId FROM ai_direct_approvals WHERE id = ?',
+      "SELECT status, approverUserId FROM ai_direct_approvals WHERE id = ?",
       [fixture.approvalId],
     );
-    expect(approval).toMatchObject({ status: 'expired', approverUserId: users.newApprover });
+    expect(approval).toMatchObject({ status: "expired", approverUserId: users.newApprover });
   });
 });

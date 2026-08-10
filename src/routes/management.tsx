@@ -7,10 +7,12 @@ import {
   ClipboardList,
   FileCheck2,
   GitBranch,
+  Link2,
   PackageSearch,
   Plug,
   ShieldCheck,
   UserRound,
+  WalletCards,
   Wrench,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -23,6 +25,7 @@ import { ManagementInsightsPage } from "../components/ai-direct/ManagementInsigh
 import { OrganizationAdminPage } from "../components/ai-direct/OrganizationAdminPage";
 import { SettlementOperationsPage } from "../components/ai-direct/SettlementOperationsPage";
 import { TemplateReviewPage } from "../components/ai-direct/TemplateReviewPage";
+import { WalletOperationsPage } from "../components/ai-direct/WalletOperationsPage";
 import { ManagementSkeleton } from "../components/skeletons/ProtectedPageSkeletons";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
@@ -49,6 +52,7 @@ import {
   getPublisherAbuseVisiblePendingItems,
 } from "./-management/AbusePage";
 import { DuplicatesPage } from "./-management/DuplicatesPage";
+import { FriendlyLinksPage } from "./-management/FriendlyLinksPage";
 import {
   formatManagementUserLabel,
   formatMutationError,
@@ -84,12 +88,14 @@ const MANAGEMENT_VIEWS = new Set<string>([
   "recent",
   "organizations",
   "templates",
+  "wallets",
   "settlements",
   "audit",
   "system",
   "employees",
   "costs",
   "approvals",
+  "friendly-links",
   "settings",
 ]);
 
@@ -797,6 +803,7 @@ export function Management() {
           />
         ) : null}
         {activeView === "organizations" ? <OrganizationAdminPage /> : null}
+        {settlementStaff && activeView === "wallets" ? <WalletOperationsPage /> : null}
         {settlementStaff && activeView === "settlements" ? (
           <SettlementOperationsPage onStaffAccessChange={setSettlementStaff} />
         ) : null}
@@ -804,6 +811,13 @@ export function Management() {
         {activeView === "audit" ? <AuditCenterPage /> : null}
         {activeView === "approvals" ? <ApprovalCenterPage /> : null}
         {activeView === "system" ? <ManagementInsightsPage view="system" /> : null}
+        {admin && activeView === "friendly-links" ? <FriendlyLinksPage /> : null}
+        {!admin && activeView === "friendly-links" ? (
+          <ManagementPlaceholder
+            title={t("management.friendly_links")}
+            description={t("management.placeholder.friendly_links")}
+          />
+        ) : null}
         {activeView === "settings" ? (
           <ManagementPlaceholder
             title={t("management.settings")}
@@ -935,12 +949,20 @@ function ManagementSidebar({
             />
           ) : null}
           {settlementStaff ? (
-            <ManagementSidebarLink
-              active={activeView === "settlements"}
-              icon={<FileCheck2 size={15} />}
-              label={t("management.settlements")}
-              view="settlements"
-            />
+            <>
+              <ManagementSidebarLink
+                active={activeView === "wallets"}
+                icon={<WalletCards size={15} />}
+                label={t("management.wallets")}
+                view="wallets"
+              />
+              <ManagementSidebarLink
+                active={activeView === "settlements"}
+                icon={<FileCheck2 size={15} />}
+                label={t("management.settlements")}
+                view="settlements"
+              />
+            </>
           ) : null}
           <ManagementSidebarLink
             active={activeView === "audit"}
@@ -953,13 +975,21 @@ function ManagementSidebar({
         <div className="management-sidebar-section-title">{t("management.staff_tools")}</div>
         <div className="management-sidebar-group">
           {admin ? (
-            <ManagementSidebarLink
-              active={activeView === "users"}
-              badge={userCount === undefined ? undefined : formatWholeNumber(userCount, locale)}
-              icon={<UserRound size={15} />}
-              label={t("management.users")}
-              view="users"
-            />
+            <>
+              <ManagementSidebarLink
+                active={activeView === "users"}
+                badge={userCount === undefined ? undefined : formatWholeNumber(userCount, locale)}
+                icon={<UserRound size={15} />}
+                label={t("management.users")}
+                view="users"
+              />
+              <ManagementSidebarLink
+                active={activeView === "friendly-links"}
+                icon={<Link2 size={15} />}
+                label={t("management.friendly_links")}
+                view="friendly-links"
+              />
+            </>
           ) : null}
           <ManagementSidebarLink
             active={activeView === "skills"}
@@ -1027,12 +1057,14 @@ const MANAGEMENT_VIEW_KEYS: Record<ManagementView, TranslationKey> = {
   recent: "management.recent_pushes",
   organizations: "management.organizations",
   templates: "management.template_review",
+  wallets: "management.wallets",
   settlements: "management.settlements",
   audit: "management.audit_log",
   system: "management.system",
   employees: "management.employee_directory",
   costs: "management.cost_ledger",
   approvals: "management.approval_center",
+  "friendly-links": "management.friendly_links",
   settings: "management.settings",
 };
 

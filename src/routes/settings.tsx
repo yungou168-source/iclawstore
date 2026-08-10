@@ -7,6 +7,7 @@ import {
   Copy,
   GitBranch,
   KeyRound,
+  ImageUp,
   Monitor,
   Moon,
   Package,
@@ -19,7 +20,6 @@ import {
   type LucideIcon,
   UserRound,
   Users,
-  X,
 } from "lucide-react";
 import {
   type ComponentProps,
@@ -63,7 +63,9 @@ import { Textarea } from "../components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group";
 import { getUserFacingConvexError } from "../lib/convexError";
 import { useLocale } from "../lib/i18n/context";
+import type { TranslationKey } from "../lib/i18n/translations";
 import { useThemeMode } from "../lib/theme";
+import { uploadFile } from "../lib/uploadUtils";
 import { useAuthStatus } from "../lib/useAuthStatus";
 
 const settingsViews = ["account", "organizations", "githubSources", "tokens", "danger"] as const;
@@ -171,8 +173,8 @@ type GitHubSkillSource = {
 const navigationGroups: Array<{
   items: Array<{
     view: SettingsView;
-    labelKey: string;
-    mobileLabelKey: string;
+    labelKey: TranslationKey;
+    mobileLabelKey: TranslationKey;
     icon: LucideIcon;
   }>;
 }> = [
@@ -225,9 +227,11 @@ const themeToggleItemClass =
   "!h-20 min-w-0 flex-1 flex-col gap-2 !rounded-[var(--r-btn)] border border-[color:var(--line)] bg-[color:var(--surface)] px-3 text-sm font-semibold text-[color:var(--ink-soft)] opacity-70 hover:border-[color:var(--border-ui-hover)] hover:bg-[color:var(--surface-muted)] hover:text-[color:var(--ink)] hover:opacity-100 data-[state=on]:border-[color:var(--accent)] data-[state=on]:!bg-[color:var(--surface-muted)] data-[state=on]:text-[color:var(--ink)] data-[state=on]:opacity-100 sm:!w-28 sm:flex-none";
 
 export function Settings() {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const { isAuthenticated, isLoading: isAuthLoading, me } = useAuthStatus();
   const updateProfile = useMutation(api.users.updateProfile);
+  const updateAvatar = useMutation(api.users.updateAvatar);
+  const generateUploadUrl = useMutation(api.uploads.generateUploadUrl);
   const deleteAccount = useMutation(api.users.deleteAccount);
   const { mode: themeMode, setMode: setThemeMode } = useThemeMode();
   const tokens = useQuery(api.tokens.listMine, me ? {} : "skip") as Array<ApiToken> | undefined;
@@ -239,12 +243,15 @@ export function Settings() {
   const createOrg = useMutation(api.publishers.createOrg);
   const deleteOrg = useMutation(api.publishers.deleteOrg);
   const updateOrgProfile = useMutation(api.publishers.updateProfile);
+  const updateOrgAvatar = useMutation(api.publishers.updateAvatar);
   const addOrgMember = useMutation(api.publishers.addMember);
   const removeOrgMember = useMutation(api.publishers.removeMember);
   const configureGitHubSource = useAction(api.githubSkillSync.configurePublicGitHubSkillSource);
   const deleteGitHubSource = useMutation(api.githubSkillSources.deleteForPublisher);
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
+  const [profileSlug, setProfileSlug] = useState("");
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [tokenLabel, setTokenLabel] = useState("");
   const [newToken, setNewToken] = useState<string | null>(null);
   const [orgHandle, setOrgHandle] = useState("");
@@ -295,7 +302,9 @@ export function Settings() {
       selectedOrgImage !== (selectedOrg.publisher.image ?? "")
     : false;
   const hasProfileChanges = me
-    ? displayName !== (me.displayName ?? "") || bio !== (me.bio ?? "")
+    ? displayName !== (me.displayName ?? "") ||
+      bio !== (me.bio ?? "") ||
+      profileSlug !== (me.profileSlug ?? me.handle ?? "")
     : false;
   const activeTokens = (tokens ?? []).filter((token) => !token.revokedAt);
   const revokedTokens = (tokens ?? []).filter((token) => token.revokedAt);
@@ -317,6 +326,7 @@ export function Settings() {
     if (!me) return;
     setDisplayName(me.displayName ?? "");
     setBio(me.bio ?? "");
+    setProfileSlug(me.profileSlug ?? me.handle ?? "");
   }, [me]);
 
   useEffect(() => {
@@ -384,8 +394,31 @@ export function Settings() {
 
   async function onSave(event: FormEvent) {
     event.preventDefault();
-    await updateProfile({ displayName, bio });
+    await updateProfile({ displayName, bio, profileSlug });
     toast.success(t("settings.saved"));
+  }
+
+  async function onUploadAvatar(file: File, publisherId?: Id<"publishers">) {
+    if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) {
+      toast.error("请选择小于 5 MB 的图片文件");
+      return;
+    }
+    setIsUploadingAvatar(true);
+    try {
+      const uploadUrl = await generateUploadUrl();
+      const storageId = (await uploadFile(uploadUrl, file)) as Id<"_storage">;
+      if (publisherId) {
+        const result = await updateOrgAvatar({ publisherId, storageId });
+        setSelectedOrgImage(result.image);
+      } else {
+        await updateAvatar({ storageId });
+      }
+      toast.success("头像已更新");
+    } catch (error) {
+      toast.error(getUserFacingConvexError(error, "头像上传失败"));
+    } finally {
+      setIsUploadingAvatar(false);
+    }
   }
 
   async function onDelete() {
@@ -458,7 +491,7 @@ export function Settings() {
         repo,
       });
       setGithubRepo("");
-      toast.success(formatGitHubSourceSyncToast(result?.stats, locale));
+      toast.success(formatGitHubSourceSyncToast(result?.stats));
     } catch (error) {
       toast.error(getUserFacingConvexError(error, t("settings.github_sync_error")));
     } finally {
@@ -583,27 +616,56 @@ export function Settings() {
                         </p>
                       </div>
                     </div>
-                    <Avatar
-                      className="hidden h-14 w-14 rounded-full sm:flex"
-                      title={t("settings.github_avatar")}
-                    >
-                      {accountAvatar ? (
-                        <AvatarImage src={accountAvatar} alt={t("settings.github_avatar")} />
-                      ) : null}
-                      <AvatarFallback>{accountInitial}</AvatarFallback>
-                    </Avatar>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Avatar className="hidden h-14 w-14 rounded-full sm:flex" title="用户头像">
+                        {accountAvatar ? <AvatarImage src={accountAvatar} alt="用户头像" /> : null}
+                        <AvatarFallback>{accountInitial}</AvatarFallback>
+                      </Avatar>
+                      <Button asChild type="button" variant="outline" size="sm">
+                        <label className="cursor-pointer">
+                          <ImageUp size={15} />
+                          {isUploadingAvatar ? "上传中…" : "上传头像"}
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp,image/gif"
+                            className="sr-only"
+                            disabled={isUploadingAvatar}
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              if (file) void onUploadAvatar(file);
+                              event.target.value = "";
+                            }}
+                          />
+                        </label>
+                      </Button>
+                    </div>
                   </div>
 
                   <form className="flex min-w-0 flex-col gap-4" onSubmit={onSave}>
-                    <Field
-                      label={t("settings.display_name")}
-                      htmlFor="settings-display-name"
-                    >
+                    <Field label={t("settings.display_name")} htmlFor="settings-display-name">
                       <Input
                         id="settings-display-name"
                         value={displayName}
                         onChange={(event) => setDisplayName(event.target.value)}
                       />
+                    </Field>
+                    <Field label="用户介绍页地址" htmlFor="settings-profile-slug">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-[color:var(--ink-soft)]">/profile/</span>
+                        <Input
+                          id="settings-profile-slug"
+                          value={profileSlug}
+                          onChange={(event) => setProfileSlug(event.target.value.toLowerCase())}
+                          placeholder="your-profile"
+                        />
+                        {profileSlug ? (
+                          <Button asChild type="button" variant="outline" size="sm">
+                            <Link to="/profile/$slug" params={{ slug: profileSlug }}>
+                              查看
+                            </Link>
+                          </Button>
+                        ) : null}
+                      </div>
                     </Field>
                     <Field label={t("settings.bio")} htmlFor="settings-bio">
                       <Textarea
@@ -713,7 +775,8 @@ export function Settings() {
                                 className="h-6 w-6"
                               />
                               <span className="truncate">
-                                @{selectedOrg.publisher.handle} · {t(`settings.role.${selectedOrg.role}`)}
+                                @{selectedOrg.publisher.handle} ·{" "}
+                                {t(`settings.role.${selectedOrg.role}`)}
                               </span>
                             </span>
                           ) : (
@@ -759,7 +822,7 @@ export function Settings() {
                             </DialogDescription>
                           </DialogHeader>
                           <div className="grid gap-4">
-                            <Field label={t("settings.handle")} htmlFor="settings-org-handle">
+                            <Field label="公司名（英文）" htmlFor="settings-org-handle">
                               <Input
                                 id="settings-org-handle"
                                 value={orgHandle}
@@ -767,13 +830,10 @@ export function Settings() {
                                   setOrgHandle(event.target.value);
                                   setCreateOrgError(null);
                                 }}
-                                placeholder="openclaw"
+                                placeholder="请输入公司英文名"
                               />
                             </Field>
-                            <Field
-                              label={t("settings.display_name")}
-                              htmlFor="settings-org-display-name"
-                            >
+                            <Field label="公司名（中文）" htmlFor="settings-org-display-name">
                               <Input
                                 id="settings-org-display-name"
                                 value={orgDisplayName}
@@ -781,7 +841,7 @@ export function Settings() {
                                   setOrgDisplayName(event.target.value);
                                   setCreateOrgError(null);
                                 }}
-                                placeholder="OpenClaw"
+                                placeholder="请输入公司中文名"
                               />
                             </Field>
                           </div>
@@ -845,38 +905,44 @@ export function Settings() {
                                   onChange={(event) =>
                                     setSelectedOrgDisplayName(event.target.value)
                                   }
-                                  placeholder="OpenClaw"
+                                  placeholder="请输入公司中文名"
                                 />
                               </Field>
-                              <div className="flex min-w-0 items-center gap-2">
+                              <div className="flex min-w-0 items-end gap-2">
                                 <div className="min-w-0 flex-1">
-                                  <Field
-                                    label={t("settings.avatar_url")}
-                                    htmlFor="settings-selected-org-image"
-                                  >
-                                    <Input
-                                      id="settings-selected-org-image"
-                                      value={selectedOrgImage}
-                                      onChange={(event) => setSelectedOrgImage(event.target.value)}
-                                      placeholder="https://example.com/logo.png"
-                                    />
+                                  <Field label="公司头像" htmlFor="settings-selected-org-image">
+                                    <Button
+                                      asChild
+                                      type="button"
+                                      variant="outline"
+                                      className="w-full"
+                                    >
+                                      <label className="cursor-pointer">
+                                        <ImageUp size={15} />
+                                        {isUploadingAvatar ? "上传中…" : "从本地上传图片"}
+                                        <input
+                                          id="settings-selected-org-image"
+                                          type="file"
+                                          accept="image/png,image/jpeg,image/webp,image/gif"
+                                          className="sr-only"
+                                          disabled={isUploadingAvatar}
+                                          onChange={(event) => {
+                                            const file = event.target.files?.[0];
+                                            if (file)
+                                              void onUploadAvatar(file, selectedOrg.publisher._id);
+                                            event.target.value = "";
+                                          }}
+                                        />
+                                      </label>
+                                    </Button>
                                   </Field>
                                 </div>
-                                {selectedOrgImage ? (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    aria-label={t("settings.clear_avatar_url")}
-                                    className="mt-6 shrink-0"
-                                    onClick={() => setSelectedOrgImage("")}
-                                  >
-                                    <X size={15} />
-                                  </Button>
-                                ) : null}
                               </div>
                               <div className="lg:col-span-2">
-                                <Field label={t("settings.bio")} htmlFor="settings-selected-org-bio">
+                                <Field
+                                  label={t("settings.bio")}
+                                  htmlFor="settings-selected-org-bio"
+                                >
                                   <Textarea
                                     id="settings-selected-org-bio"
                                     rows={4}
@@ -1175,10 +1241,7 @@ export function Settings() {
                             </DialogDescription>
                           </DialogHeader>
                           <div className="grid gap-4">
-                            <Field
-                              label={t("settings.handle")}
-                              htmlFor="settings-org-handle-empty"
-                            >
+                            <Field label="公司名（英文）" htmlFor="settings-org-handle-empty">
                               <Input
                                 id="settings-org-handle-empty"
                                 value={orgHandle}
@@ -1186,13 +1249,10 @@ export function Settings() {
                                   setOrgHandle(event.target.value);
                                   setCreateOrgError(null);
                                 }}
-                                placeholder="openclaw"
+                                placeholder="请输入公司英文名"
                               />
                             </Field>
-                            <Field
-                              label={t("settings.display_name")}
-                              htmlFor="settings-org-display-name-empty"
-                            >
+                            <Field label="公司名（中文）" htmlFor="settings-org-display-name-empty">
                               <Input
                                 id="settings-org-display-name-empty"
                                 value={orgDisplayName}
@@ -1200,7 +1260,7 @@ export function Settings() {
                                   setOrgDisplayName(event.target.value);
                                   setCreateOrgError(null);
                                 }}
-                                placeholder="OpenClaw"
+                                placeholder="请输入公司中文名"
                               />
                             </Field>
                           </div>
@@ -1761,9 +1821,7 @@ function GitHubSourceList({
       </div>
 
       {sources === undefined ? (
-        <p className="text-sm text-[color:var(--ink-soft)]">
-          {t("settings.loading_sources")}
-        </p>
+        <p className="text-sm text-[color:var(--ink-soft)]">{t("settings.loading_sources")}</p>
       ) : sources.length ? (
         <div className="flex flex-col gap-3">
           {sources.map((source) => (
@@ -1982,7 +2040,9 @@ function GitHubSourceHealth({ source }: { source: GitHubSkillSource }) {
           <GitHubSourceStatusPill needsAttention={needsAttention} />
         </GitHubSourceOverviewRow>
         <GitHubSourceOverviewRow label={t("settings.last_synced")}>
-          {lastSuccessfulSync ? formatSettingsTimeAgo(lastSuccessfulSync, locale) : t("settings.never")}
+          {lastSuccessfulSync
+            ? formatSettingsTimeAgo(lastSuccessfulSync, locale)
+            : t("settings.never")}
         </GitHubSourceOverviewRow>
         <GitHubSourceOverviewRow label={t("settings.current_commit")}>
           {source.displayManifestCommit ? (
@@ -2222,9 +2282,7 @@ function TokenList({
               <th className="pb-3 text-left font-semibold">
                 <span className="pl-7">{t("settings.token_name")}</span>
               </th>
-              <th className="pb-3 text-left font-semibold">
-                {t("settings.token_created_label")}
-              </th>
+              <th className="pb-3 text-left font-semibold">{t("settings.token_created_label")}</th>
               <th className="pb-3 text-left font-semibold">
                 {t("settings.token_last_used_label")}
               </th>
@@ -2328,7 +2386,7 @@ function TokenList({
                 {t("settings.token_created_label")}
               </span>
               <span className="text-xs text-[color:var(--ink-soft)]">
-                {formatShortDate(token.createdAt)}
+                {formatShortDate(token.createdAt, locale)}
               </span>
             </div>
 

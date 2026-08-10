@@ -26,12 +26,12 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
 import { VersionInput } from "../../components/VersionInput";
-import { useLocale } from "../../lib/i18n/context";
-import { t } from "../../lib/i18n";
 import {
   detectRelativeReadmeAssets,
   type RelativeReadmeAssetReport,
 } from "../../lib/detectRelativeReadmeAssets";
+import { t } from "../../lib/i18n";
+import { useLocale } from "../../lib/i18n/context";
 import {
   buildPackageUploadEntries,
   filterIgnoredPackageFiles,

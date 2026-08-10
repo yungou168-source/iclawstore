@@ -2,7 +2,7 @@
 
 > 文档状态：服务器端开发基准
 > 桌面产品真值：`AI直聘桌面端/docs/`
-> 最近对齐：2026-08-05
+> 最近对齐：2026-08-16
 > 适用范围：`/api/v1/desktop`、`/api/v1/ai-direct-hiring`、MySQL/Prisma、运行时与桌面客户端联调
 
 ## 1. 目的
@@ -25,31 +25,38 @@ OpenAPI 不能仅因 discovery 版本已更新就获得更高可信度。机器�
 
 服务器后续文档和代码必须显式标注所属层级。
 
-| 层级 | 状态 | 权威入口 | 使用规则 |
-| --- | --- | --- | --- |
-| Desktop Client API v1 | `1.2.0` 代码契约待发布；`1.1.0` 已生产发布 | `server/openapi/desktop-client-v1.yaml`、`server/src/desktopContractManifest.ts`、`docs/AI_DIRECT_DESKTOP_CLIENT_API_V1.md` | 保持 `1.x` 向后兼容；`1.2.0` 新增付费雇佣能力并明确旧 Offer 写操作不可用。发布前必须通过启动路由校验、逐 operation 非 `404` 烟测和真实业务门禁。 |
-| Remote Runtime v1 | 已生产上线，文档契约 | `docs/AI_DIRECT_HIRING_P1_RUNTIME.md`、桌面端 `REMOTE_RUNTIME_CLIENT.md` | 覆盖 Jobs、Worker 后端和运行投影；面向桌面的 Jobs DTO 已进入 Desktop `1.1.0` OpenAPI，Worker 协议仍由独立运行时契约维护。 |
-| Platform Backend proposed v1 | 产品提案，默认关闭 | 桌面端 `PLATFORM_BACKEND_INTEGRATION_CONTRACT.md` | 身份、企业目录、面试、支付、远程员工、迁移等必须逐能力实现和验收，不能整体宣称可用。 |
-| Desktop local-only contract | 客户端本地真值 | 桌面端 `DESKTOP_WORKSPACE_CONTRACT.md` | 项目、队列、产物、审批辅助记录、备份、模板业务数据默认不上传。 |
+| 层级                         | 状态                                            | 权威入口                                                                                                                    | 使用规则                                                                                                                                                     |
+| ---------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Desktop Client API v1        | `1.2.0` 已生产发布；付费雇佣业务能力保持关闭   | `server/openapi/desktop-client-v1.yaml`、`server/src/desktopContractManifest.ts`、`docs/AI_DIRECT_DESKTOP_CLIENT_API_V1.md` | 保持 `1.x` 向后兼容；`1.2.0` 已发布付费雇佣机器契约并关闭旧 Offer 写操作。业务开放仍须独立通过真实身份、支付渠道和运行门禁。                    |
+| Remote Runtime v1            | 已生产上线，文档契约                            | `docs/AI_DIRECT_HIRING_P1_RUNTIME.md`、桌面端 `REMOTE_RUNTIME_CLIENT.md`                                                    | 覆盖 Jobs、Worker 后端和运行投影；Jobs DTO 已进入 Desktop `1.x` OpenAPI，Worker 协议仍由独立运行时契约维护。                                               |
+| Platform Backend proposed v1 | 产品提案，默认关闭                              | 桌面端 `PLATFORM_BACKEND_INTEGRATION_CONTRACT.md`                                                                           | 身份、企业目录、面试、支付、远程员工、迁移等必须逐能力实现和验收，不能整体宣称可用。                                                                         |
+| Desktop local-only contract  | 客户端本地真值                                  | 桌面端 `DESKTOP_WORKSPACE_CONTRACT.md`                                                                                      | 项目、队列、产物、审批辅助记录、备份、模板业务数据默认不上传。                                                                                               |
 
-`GET /api/v1/desktop/contract` 当前发现 Desktop Client API `1.1.0`。生产已应用 `20260808` 至 `20260811` 的四段加法迁移，当前 API 构建已部署并通过启动 manifest 校验与逐 operation 非 `404` 烟测，原 Candidate Catalog、Workforce 和 Candidate Matching 路由漂移已经解除。该结论只证明机器契约和路由装配有效；生产 `candidateCatalog` 默认仍为关闭，且尚未使用专用短期 token 和隔离组织完成这些能力的带认证 `2xx` 业务烟测。
+`GET /api/v1/desktop/contract` 当前发现 Desktop Client API `1.2.0`。生产已应用包括 `20260815_ai_direct_paid_hiring` 与 `20260816_ai_direct_paid_hiring_operations` 在内的 19 个迁移；付费雇佣新增 7 张表和关键列已逐项核验。API、dispatcher 与 audit-export 已切换到固定 release `abd4e5ed79c4ec4ef0d44e9c3032583e15979f6b` 的 Node 编译产物并写入 PM2 持久化清单。当前运行门禁 `PAID_HIRING_RELEASE_READY`、`ALIPAY_PAID_HIRING_ENABLED` 与 `PAID_HIRING_RECONCILIATION_ENABLED` 均为 `false`，因此 discovery 明确返回 `paidHiringSupported: false`。该状态表示机器契约和数据库结构已发布，不表示支付业务可用。
+
+### 2.1 公共包 API 所有权
+
+- Convex `convex/httpApiV1/packagesV1.ts` 是 `/api/v1/packages` 及其全部子路径的唯一业务真值；列表、详情、精确版本安全信息、下载、发布和治理操作必须保持同一数据源与授权语义。
+- 生产 Nginx 必须在通用 Fastify `/api/` 代理之前，分别以精确匹配 `/api/v1/packages` 和前缀匹配 `/api/v1/packages/` 转发到 Convex HTTP，并原样保留路径、查询参数和认证上下文。
+- 禁止挂载 `server/src/routes/packages.ts` 作为兼容实现。该历史路由使用 MySQL、offset 分页和不同 DTO，不能承担 Convex registry 的降级或回退职责。
+- `e2e/prod-http-smoke.e2e.test.ts` 必须持续验证公网列表返回 Convex cursor DTO，并验证详情、精确版本安全信息和下载请求不会落入 Fastify 通用 404。
 
 ## 3. 不可突破的数据归属
 
-| 数据 | 权威位置 | 服务器责任 |
-| --- | --- | --- |
-| 用户、组织、公司、成员、角色授权 | MySQL/Prisma | 认证后逐请求解析租户与 RBAC；客户端标签不能授权。 |
-| Agent、不可变 AgentVersion、发布与目录可见性 | MySQL/Prisma；既有资产目录仅作兼容来源 | 服务器审核、版本化、裁决可见性和 availability。 |
-| Offer、Employment、控制权、能力授权、审计、outbox | MySQL/Prisma | 状态、事件、审计和 outbox 原子提交。 |
-| WorkflowRun、步骤、成本、模型审计、产物索引 | MySQL/Prisma | 服务器授权、调度和审计；本地队列不能合并为云端事实。 |
-| 账号级金沙 Key | 服务器加密凭据库 | 只返回配置状态；禁止返回明文、密文、nonce 或 tag。 |
-| 桌面项目、工作流草稿、本地队列、本地输出 | 当前设备 | 不提供后台扫描或静默上传。 |
-| 桌面审批责任标签和本地审计 | 当前设备 | 不接受其作为身份、企业审批或中央审计证据。 |
-| `.aidhbackup` 与 recovery key | 用户控制的文件传输 | 除非用户明确选择迁移，不作为云备份；服务器不得接收任意路径。 |
-| 模板业务数据、Markdown 备份 | 当前设备、每安装实例隔离 | 服务端仅管理目录、包、截图和 entitlement。 |
-| 对话正文、附件、完整推理上下文 | 默认当前设备 | 远端面试或同步必须使用单独的同意、保留、删除和加密契约。 |
-| 消息渠道凭据 | 未来服务器受管 enrollment | 桌面只能保存本地通知偏好，不得把偏好当作已绑定渠道。 |
-| Obsidian/持久记忆 | 当前为显式本地导入导出 | 禁止后台扫描；未来远端同步必须 preview 后再 apply。 |
+| 数据                                              | 权威位置                               | 服务器责任                                                   |
+| ------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------ |
+| 用户、组织、公司、成员、角色授权                  | MySQL/Prisma                           | 认证后逐请求解析租户与 RBAC；客户端标签不能授权。            |
+| Agent、不可变 AgentVersion、发布与目录可见性      | MySQL/Prisma；既有资产目录仅作兼容来源 | 服务器审核、版本化、裁决可见性和 availability。              |
+| Offer、Employment、控制权、能力授权、审计、outbox | MySQL/Prisma                           | 状态、事件、审计和 outbox 原子提交。                         |
+| WorkflowRun、步骤、成本、模型审计、产物索引       | MySQL/Prisma                           | 服务器授权、调度和审计；本地队列不能合并为云端事实。         |
+| 账号级金沙 Key                                    | 服务器加密凭据库                       | 只返回配置状态；禁止返回明文、密文、nonce 或 tag。           |
+| 桌面项目、工作流草稿、本地队列、本地输出          | 当前设备                               | 不提供后台扫描或静默上传。                                   |
+| 桌面审批责任标签和本地审计                        | 当前设备                               | 不接受其作为身份、企业审批或中央审计证据。                   |
+| `.aidhbackup` 与 recovery key                     | 用户控制的文件传输                     | 除非用户明确选择迁移，不作为云备份；服务器不得接收任意路径。 |
+| 模板业务数据、Markdown 备份                       | 当前设备、每安装实例隔离               | 服务端仅管理目录、包、截图和 entitlement。                   |
+| 对话正文、附件、完整推理上下文                    | 默认当前设备                           | 远端面试或同步必须使用单独的同意、保留、删除和加密契约。     |
+| 消息渠道凭据                                      | 未来服务器受管 enrollment              | 桌面只能保存本地通知偏好，不得把偏好当作已绑定渠道。         |
+| Obsidian/持久记忆                                 | 当前为显式本地导入导出                 | 禁止后台扫描；未来远端同步必须 preview 后再 apply。          |
 
 ### 3.1 `projectId` 不是平台项目主键
 
@@ -66,38 +73,38 @@ OpenAPI 不能仅因 discovery 版本已更新就获得更高可信度。机器�
 - **部分实现**：存在可用后端模块，但未满足桌面 proposed 契约或未进入机器契约；
 - **未实现**：当前挂载服务没有该产品能力；未挂载旧源码不算实现。
 
-| 桌面能力 | 当前服务器状态 | 已有基础 | 主要差距 |
-| --- | --- | --- | --- |
-| Desktop contract discovery | **路由契约已生产发布** | discovery/OpenAPI 返回 `1.1.0`；完整 manifest、OpenAPI 同步测试、启动路由校验和生产逐 operation 非 `404` 烟测均通过 | 继续保留启动与生产路由门禁；补 Candidate Catalog/Workforce/Matching 的带认证 `2xx` 业务烟测。 |
-| Agent 头像、2D/3D 资产 | 已上线 | 受管本地存储、ETag、权限、控制权事务 | 桌面渲染组件、病毒扫描不属于服务器 v1。 |
-| 账号级侧栏与 Logo | 已上线 | revision/ETag、首次 `sidebar-0`、受管 Logo | 与桌面最新“本地导航偏好”文字存在范围冲突，见第 9 节。 |
-| 桌面模板目录和包 | 已上线 | 目录、版本、1–4 截图、审核、entitlement | 购买、签名、客户端沙箱、安装/升级不在 v1。 |
-| 云端 Jobs | 路由契约已发布，业务验收待补 | cursor 列表/详情、产物元数据与受控下载已挂载并进入 Desktop OpenAPI；`20260808_ai_direct_desktop_jobs_cursor` 已部署，生产逐 operation 烟测通过 | 配置并验证真实 `AI_DIRECT_ARTIFACT_ROOT` 受管产物、带认证可见性和下载链路。 |
-| OAuth/OIDC 桌面身份 | 实现待发布 | 独立 issuer/audience、Authorization Code + PKCE S256、固定 custom URI + IP loopback、OIDC discovery/JWKS/userinfo、refresh rotation/reuse detection、30 天绝对期限、7 天空闲期限、账号停用/删除触发 token family revoke、RFC 7009 revocation、Fastify 双 issuer bridge、Desktop contract `1.1.0` auth metadata | 尚缺目标环境静态 client 注册锁定、真实浏览器 custom URI/loopback 两条授权闭环、生产配置烟测和统一发布门禁。 |
-| `/session` 与 feature flags | 路由已发布，业务验收部分完成 | session 已解析 Bearer 主体，并按 active membership 返回用户、组织、显式组织选择、`grantVersion`、角色权限、组织级 flags 与 `runtimeCapabilities`；既有真实 GitHub token `/session` 成功路径已验证 | 缺专用生产 smoke token 对 Candidate Catalog/Workforce 场景的组织权限闭环；能力 flag 继续默认关闭。 |
-| 设备注册与真实性 | 未实现，本期非目标 | 无 | 不能由客户端自证；不得影响本期接口验收。 |
-| 组织、公司、项目、岗位 | 部分实现 | organizations、companies、projects、roles 与成员 RBAC | proposed 角色集合、grant 版本、部门层级和统一分页尚未对齐。 |
-| Agent 创建与不可变版本发布 | 迁移与路由发布完成，业务验收待补 | 独立 `AgentPublicationModule` 已挂入 core，包含草稿、版本、审核、发布和 digest；`20260810_agent_publication_catalog` 已部署 | 补真实认证、RBAC、写入幂等与事务的生产级受控验收；未启用组织不能视为可用。 |
-| Agent 候选目录 | 路由发布完成，组织能力默认关闭 | 独立目录/详情/分类路由、digest、稳定 cursor、组织 flag 与安全 DTO 已挂载；`20260810_agent_publication_catalog` 已部署且生产路由不再 `404` | 当前没有启用 `candidateCatalog` 的组织或专用 smoke token；带认证 `2xx`、跨组织、撤权和投影回归仍待验收。 |
-| 面试与未读数 | 迁移与路由发布完成，组织能力默认关闭 | conversation/messages/read cursor、保留策略、legal hold、附件与 cleanup consumer 已挂载；`20260809_ai_direct_interviews_policy` 已部署且路由探测非 `404` | 按组织显式开启并完成真实认证业务与清理任务验收。 |
-| 报价、支付与开发者分账 | **代码与隔离数据库闭环已验证，待发布验收** | 支付宝/CNY、开发者版本化定价、固化 `positionId` 与开发者归属的 PaymentOrder、RSA2 验签、可信通知核对、20% 平台收入/80% 开发者应付账本和人工 settlement 模型均已落地；重复通知与并发履约只产生一份结果。 | 应用 `20260815_ai_direct_paid_hiring`，配置真实支付宝商户参数，完成真实下单/通知/错误商户与金额联调，以及生产 Bearer/RBAC 烟测；缺少商户配置时必须保持失败关闭。 |
-| Offer | **新契约已实现，待发布验收** | Offer 只在支付成功事务内生成，是唯一、不可撤回的雇佣凭证；读取能力保留，accept/decline/reject/expire/revoke 写入口稳定返回 `409`。 | 发布前确认桌面端不再依赖旧 Offer 状态和写操作，并完成生产契约烟测。 |
-| Employment | **支付创建路径已实现，待发布验收** | 只有可信支付通知能在同一事务内创建 Employment；旧公开直接创建入口已关闭，订单固化明确 Position，避免履约时从 Role 的多个 Position 猜测。 | 完成生产迁移、真实身份权限矩阵和支付宝沙箱/商户联调；后续 Employment 生命周期仍按独立状态机治理。 |
-| 部门、远程员工和部门任务 | 员工目录实现待运行验收 | `ai_direct_workforce_employee_digests` 已部署；`GET /workforce/employees` 从该投影按公司 recruiter RBAC、状态/部门/职位过滤和稳定 opaque cursor 返回安全展示字段；Offer 接受与 Employment 状态转换在同一事务同步投影 | 缺专用 QA 组织和短期 Bearer token，尚未完成认证 `2xx`、空目录和跨公司 `403` 生产验收；assignment、department-task、统一 dismiss 与公开 audit 查询仍缺。 |
-| 中央审计 | 部分实现 | 高风险写入已有 audit/outbox | 缺面向授权用户的 `GET /audit-events`、防篡改证明、统一保留与导出契约。 |
-| 签名 Plugin/MCP | 未实现 | capability grant 数据与 API | 缺包签名、Publisher 身份、兼容范围、撤销和运行时 allowlist 验证闭环。 |
-| AI 团队市场 | 未实现 | 桌面本地 team 不是远端团队 | 缺不可变 team version、目录、entitlement；支付相关继续延后。 |
-| 本地试用数据迁移 | 未实现 | 无 | 缺 preview/apply、digest、ID mapping、幂等和失败不写入保证。 |
-| 消息渠道 | 未实现 | 只有本地偏好 | 缺 enrollment、callback 验签、nonce/state、撤销、策略、去重投递与审计。 |
-| 持久记忆远端同步 | 与目标契约不一致 | 已有 `/api/v1/memory/obsidian/*` 旧接口 | proposed 要求显式文件、preview/apply、collection/document grant；旧接口不能直接作为 `persistent_memory_sync_v1`。 |
-| 开发者皮肤包市场 | 未实现 | Agent 形象和桌面模板资产存储可复用校验模块 | 商品、版本、预览、审核、entitlement 均需独立建模；不能把本地图片上传为商品。 |
-| 金沙凭据跨端状态 | 部分实现，执行关闭 | 加密 vault、状态/保存/撤销路由模块、`20260805` 已部署 | Provider runtime 与 Executor 未生产启用；路由是否挂载依赖运行配置，不能把迁移部署等同于可调用。 |
-| Provider 执行 | 实现但未启用 | 独立单并发 Executor、预算/限流/审计 | 无生产 keyring/Executor/真实 canary；两个 kill switch 保持关闭。 |
-| 签名更新、设备策略、MDM/proxy | 未实现，后置 | 桌面本地发布流程 | 必须独立版本契约和安全验收，不在当前 v1 中伪造。 |
+| 桌面能力                      | 当前服务器状态                       | 已有基础                                                                                                                                                                                                                                                                                                              | 主要差距                                                                                                                                                                                                                                   |
+| ----------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Desktop contract discovery    | **`1.2.0` 路由契约已生产发布**        | discovery/OpenAPI 返回 `1.2.0`；完整 manifest、OpenAPI 同步测试、启动路由校验和生产契约烟测均通过，运行时 `paidHiringSupported` 在门禁关闭时返回 `false`                                                                                                                                                   | 继续保留启动与生产路由门禁；业务能力必须依据运行时 capability，而不是依据 operation 存在推断。                                                                                                                                             |
+| Agent 头像、2D/3D 资产        | 已上线                               | 受管本地存储、ETag、权限、控制权事务                                                                                                                                                                                                                                                                                  | 桌面渲染组件、病毒扫描不属于服务器 v1。                                                                                                                                                                                                    |
+| 账号级侧栏与 Logo             | 已上线                               | revision/ETag、首次 `sidebar-0`、受管 Logo                                                                                                                                                                                                                                                                            | 与桌面最新“本地导航偏好”文字存在范围冲突，见第 9 节。                                                                                                                                                                                      |
+| 桌面模板目录和包              | 已上线                               | 目录、版本、1–4 截图、审核、entitlement                                                                                                                                                                                                                                                                               | 购买、签名、客户端沙箱、安装/升级不在 v1。                                                                                                                                                                                                 |
+| 云端 Jobs                     | 路由契约已发布，业务验收待补         | cursor 列表/详情、产物元数据与受控下载已挂载并进入 Desktop OpenAPI；`20260808_ai_direct_desktop_jobs_cursor` 已部署，生产逐 operation 烟测通过                                                                                                                                                                        | 配置并验证真实 `AI_DIRECT_ARTIFACT_ROOT` 受管产物、带认证可见性和下载链路。                                                                                                                                                                |
+| OAuth/OIDC 桌面身份           | 实现待发布                           | 独立 issuer/audience、Authorization Code + PKCE S256、固定 custom URI + IP loopback、OIDC discovery/JWKS/userinfo、refresh rotation/reuse detection、30 天绝对期限、7 天空闲期限、账号停用/删除触发 token family revoke、RFC 7009 revocation、Fastify 双 issuer bridge、Desktop contract `1.1.0` auth metadata        | 尚缺目标环境静态 client 注册锁定、真实浏览器 custom URI/loopback 两条授权闭环、生产配置烟测和统一发布门禁。                                                                                                                                |
+| `/session` 与 feature flags   | 路由已发布，业务验收部分完成         | session 已解析 Bearer 主体，并按 active membership 返回用户、组织、显式组织选择、`grantVersion`、角色权限、组织级 flags 与 `runtimeCapabilities`；既有真实 GitHub token `/session` 成功路径已验证                                                                                                                     | 缺专用生产 smoke token 对 Candidate Catalog/Workforce 场景的组织权限闭环；能力 flag 继续默认关闭。                                                                                                                                         |
+| 设备注册与真实性              | 未实现，本期非目标                   | 无                                                                                                                                                                                                                                                                                                                    | 不能由客户端自证；不得影响本期接口验收。                                                                                                                                                                                                   |
+| 组织、公司、项目、岗位        | 部分实现                             | organizations、companies、projects、roles 与成员 RBAC                                                                                                                                                                                                                                                                 | proposed 角色集合、grant 版本、部门层级和统一分页尚未对齐。                                                                                                                                                                                |
+| Agent 创建与不可变版本发布    | 迁移与路由发布完成，业务验收待补     | 独立 `AgentPublicationModule` 已挂入 core，包含草稿、版本、审核、发布和 digest；`20260810_agent_publication_catalog` 已部署                                                                                                                                                                                           | 补真实认证、RBAC、写入幂等与事务的生产级受控验收；未启用组织不能视为可用。                                                                                                                                                                 |
+| Agent 候选目录                | 路由发布完成，组织能力默认关闭       | 独立目录/详情/分类路由、digest、稳定 cursor、组织 flag 与安全 DTO 已挂载；`20260810_agent_publication_catalog` 已部署且生产路由不再 `404`                                                                                                                                                                             | 当前没有启用 `candidateCatalog` 的组织或专用 smoke token；带认证 `2xx`、跨组织、撤权和投影回归仍待验收。                                                                                                                                   |
+| 面试与未读数                  | 迁移与路由发布完成，组织能力默认关闭 | conversation/messages/read cursor、保留策略、legal hold、附件与 cleanup consumer 已挂载；`20260809_ai_direct_interviews_policy` 已部署且路由探测非 `404`                                                                                                                                                              | 按组织显式开启并完成真实认证业务与清理任务验收。                                                                                                                                                                                           |
+| 报价、支付与开发者分账        | **结构与 `1.2.0` 契约已发布，业务关闭** | 支付宝/CNY、开发者版本化定价、固化 `positionId` 与开发者归属的 PaymentOrder、RSA2 通知与查询响应验签、20% 平台收入/80% 开发者应付账本和人工 settlement 模型均已落地；两段生产迁移已应用，固定 release 已运行，重复通知与并发履约只产生一份结果。订单创建、本地状态读取、受控显式对账、不可变 Offer 读取和 Employment 状态迁移已进入 `1.2.0` manifest/OpenAPI。 | 生产缺少支付宝 app/seller ID、私钥、公钥和 notify URL，且真实 Convex Bearer/RBAC 与支付宝下单/查询/通知链路未验收；三个支付/对账门禁必须保持 `false`。                                                                                       |
+| Offer                         | **新契约已发布，业务验收待补**         | Offer 只在支付成功事务内生成，是唯一、不可撤回的雇佣凭证；读取能力保留，accept/decline/reject/expire/revoke 写入口稳定返回 `409`。                                                                                                                                                                                    | 确认桌面端不再依赖旧 Offer 状态和写操作，并完成真实支付履约后的生产读取烟测。                                                                                                                                                                 |
+| Employment                    | **支付创建结构已发布，业务验收待补**   | 只有可信支付通知能在同一事务内创建 Employment；旧公开直接创建入口已关闭，订单固化明确 Position，避免履约时从 Role 的多个 Position 猜测。                                                                                                                                                                              | 完成真实身份权限矩阵和支付宝沙箱/商户联调；后续 Employment 生命周期仍按独立状态机治理。                                                                                                                                                     |
+| 部门、远程员工和部门任务      | 员工目录实现待运行验收               | `ai_direct_workforce_employee_digests` 已部署；`GET /workforce/employees` 从该投影按公司 recruiter RBAC、状态/部门/职位过滤和稳定 opaque cursor 返回安全展示字段；Offer 接受与 Employment 状态转换在同一事务同步投影                                                                                                  | 缺专用 QA 组织和短期 Bearer token，尚未完成认证 `2xx`、空目录和跨公司 `403` 生产验收；assignment、department-task、统一 dismiss 与公开 audit 查询仍缺。                                                                                    |
+| 中央审计                      | 部分实现                             | 高风险写入已有 audit/outbox                                                                                                                                                                                                                                                                                           | 缺面向授权用户的 `GET /audit-events`、防篡改证明、统一保留与导出契约。                                                                                                                                                                     |
+| 签名 Plugin/MCP               | 未实现                               | capability grant 数据与 API                                                                                                                                                                                                                                                                                           | 缺包签名、Publisher 身份、兼容范围、撤销和运行时 allowlist 验证闭环。                                                                                                                                                                      |
+| AI 团队市场                   | 未实现                               | 桌面本地 team 不是远端团队                                                                                                                                                                                                                                                                                            | 缺不可变 team version、目录、entitlement；支付相关继续延后。                                                                                                                                                                               |
+| 本地试用数据迁移              | 未实现                               | 无                                                                                                                                                                                                                                                                                                                    | 缺 preview/apply、digest、ID mapping、幂等和失败不写入保证。                                                                                                                                                                               |
+| 消息渠道                      | 未实现                               | 只有本地偏好                                                                                                                                                                                                                                                                                                          | 缺 enrollment、callback 验签、nonce/state、撤销、策略、去重投递与审计。                                                                                                                                                                    |
+| 持久记忆远端同步              | 与目标契约不一致                     | 已有 `/api/v1/memory/obsidian/*` 旧接口                                                                                                                                                                                                                                                                               | proposed 要求显式文件、preview/apply、collection/document grant；旧接口不能直接作为 `persistent_memory_sync_v1`。                                                                                                                          |
+| 开发者皮肤包市场              | 未实现                               | Agent 形象和桌面模板资产存储可复用校验模块                                                                                                                                                                                                                                                                            | 商品、版本、预览、审核、entitlement 均需独立建模；不能把本地图片上传为商品。                                                                                                                                                               |
+| 金沙凭据跨端状态              | 部分实现，执行关闭                   | 加密 vault、状态/保存/撤销路由模块、`20260805` 已部署                                                                                                                                                                                                                                                                 | Provider runtime 与 Executor 未生产启用；路由是否挂载依赖运行配置，不能把迁移部署等同于可调用。                                                                                                                                            |
+| Provider 执行                 | 实现但未启用                         | 独立单并发 Executor、预算/限流/审计                                                                                                                                                                                                                                                                                   | 无生产 keyring/Executor/真实 canary；两个 kill switch 保持关闭。                                                                                                                                                                           |
+| 签名更新、设备策略、MDM/proxy | 未实现，后置                         | 桌面本地发布流程                                                                                                                                                                                                                                                                                                      | 必须独立版本契约和安全验收，不在当前 v1 中伪造。                                                                                                                                                                                           |
 
 ## 4.1 当前桌面联调入口
 
-Web 登录链路已在生产完成 GitHub OAuth 与邮箱 magic link 的真实验证。Desktop `1.1.0` discovery、迁移和完整路由契约已经发布；原生桌面 OAuth 仍需真实授权闭环后才能作为正式客户端登录契约。桌面客户端当前只能通过平台拥有的短期 Bearer `TokenProvider` 调用已启用的受保护能力。
+Web 登录链路已在生产完成 GitHub OAuth 与邮箱 magic link 的真实验证。Desktop `1.1.0` 是已发布的历史基线，当前生产 discovery、迁移和完整路由契约已推进至 `1.2.0`；原生桌面 OAuth 仍需真实授权闭环后才能作为正式客户端登录契约。桌面客户端当前只能通过平台拥有的短期 Bearer `TokenProvider` 调用已启用的受保护能力。
 
 当前联调顺序：
 
@@ -135,14 +142,14 @@ Offer 不存在 `accepted/rejected/expired/revoked` 产品状态。旧写入口�
 
 桌面 proposed 契约不能直接覆盖已上线 Desktop API v1。
 
-| 项目 | 已上线 Desktop API v1 | proposed 平台契约 | 兼容策略 |
-| --- | --- | --- | --- |
-| 错误体 | `{ code, error, details? }` | `{ code, error, details?, requestId }` | 可向 v1 加可选 `requestId`；客户端不得要求其必有。 |
-| 并发冲突 | `409 REVISION_CONFLICT` | `412 VERSION_CONFLICT` | v1 继续 409；新资源可采用 412，但必须在对应 OpenAPI 固定。 |
-| 缺少 `If-Match` | `428 PRECONDITION_REQUIRED` | 未单列 | 保留 v1 行为。 |
-| 写请求 | JWT；部分写接口支持/要求幂等 | Bearer + `X-Request-Id` + `Idempotency-Key` | 新高风险接口强制；旧 v1 不做破坏性变更。 |
-| 分页 | 模板 `limit/offset` | cursor | 现有 v1 保留；新目录/事件使用 cursor。 |
-| 身份 | Convex Auth 短期 Bearer；桌面先经 `/session` 建立 scope | OAuth/OIDC PKCE session | `1.1.0` auth discovery 和服务端 PKCE/refresh/revoke 已实现但未发布；统一门禁前仍只支持平台拥有的 TokenProvider。 |
+| 项目            | 已上线 Desktop API v1                                   | proposed 平台契约                           | 兼容策略                                                                                                         |
+| --------------- | ------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| 错误体          | `{ code, error, details? }`                             | `{ code, error, details?, requestId }`      | 可向 v1 加可选 `requestId`；客户端不得要求其必有。                                                               |
+| 并发冲突        | `409 REVISION_CONFLICT`                                 | `412 VERSION_CONFLICT`                      | v1 继续 409；新资源可采用 412，但必须在对应 OpenAPI 固定。                                                       |
+| 缺少 `If-Match` | `428 PRECONDITION_REQUIRED`                             | 未单列                                      | 保留 v1 行为。                                                                                                   |
+| 写请求          | JWT；部分写接口支持/要求幂等                            | Bearer + `X-Request-Id` + `Idempotency-Key` | 新高风险接口强制；旧 v1 不做破坏性变更。                                                                         |
+| 分页            | 模板 `limit/offset`                                     | cursor                                      | 现有 v1 保留；新目录/事件使用 cursor。                                                                           |
+| 身份            | Convex Auth 短期 Bearer；桌面先经 `/session` 建立 scope | OAuth/OIDC PKCE session                     | `1.1.0` auth discovery 和服务端 PKCE/refresh/revoke 已实现但未发布；统一门禁前仍只支持平台拥有的 TokenProvider。 |
 
 后端不得同时对同一资源随机返回 `REVISION_CONFLICT` 和 `VERSION_CONFLICT`。错误码是机器契约，不是文案。
 

@@ -129,6 +129,23 @@ model officialPublishers {
   @@index([publisherId])
 }
 
+model friendlyLinks {
+  id              String   @id @db.VarChar(36)
+  label           String   @db.VarChar(80)
+  url             String   @db.VarChar(2048)
+  description     String?  @db.VarChar(240)
+  sortOrder       Int      @default(100) @db.UnsignedInt
+  isActive        Boolean  @default(true)
+  createdByUserId String?  @db.VarChar(191)
+  updatedByUserId String?  @db.VarChar(191)
+  createdAt       DateTime @default(now()) @db.DateTime(3)
+  updatedAt       DateTime @updatedAt @db.DateTime(3)
+
+  @@index([isActive, sortOrder, id], map: "friendly_links_active_sort_idx")
+  @@index([sortOrder, id], map: "friendly_links_sort_idx")
+  @@map("friendly_links")
+}
+
 // ============================================
 // Skills Tables
 // ============================================
@@ -1134,10 +1151,46 @@ model aiDirectPaymentOrders {
   @@map("ai_direct_payment_orders")
 }
 
+model aiDirectAgentSales {
+  id                   String   @id @db.VarChar(36)
+  saleNo               String   @unique(map: "ai_direct_agent_sales_sale_no_key") @db.VarChar(64)
+  hiringIntentId       String   @unique(map: "ai_direct_agent_sales_intent_key") @db.VarChar(36)
+  employmentId         String   @unique(map: "ai_direct_agent_sales_employment_key") @db.VarChar(36)
+  offerId              String   @unique(map: "ai_direct_agent_sales_offer_key") @db.VarChar(36)
+  paymentOrderId       String?  @unique(map: "ai_direct_agent_sales_payment_order_key") @db.VarChar(36)
+  organizationId       String   @db.VarChar(36)
+  companyId            String   @db.VarChar(36)
+  projectId            String?  @db.VarChar(36)
+  roleId               String   @db.VarChar(36)
+  positionId           String   @db.VarChar(36)
+  buyerUserId          String   @db.VarChar(191)
+  developerUserId      String   @db.VarChar(191)
+  agentId              String   @db.VarChar(36)
+  agentVersionId       String   @db.VarChar(36)
+  priceId              String   @db.VarChar(36)
+  priceVersion         Int
+  pricingMode          String   @db.VarChar(16)
+  currency             String   @default("CNY") @db.Char(3)
+  grossAmountFen       BigInt   @db.UnsignedBigInt
+  platformRevenueFen   BigInt   @db.UnsignedBigInt
+  developerRevenueFen  BigInt   @db.UnsignedBigInt
+  refundedFen          BigInt   @default(0) @db.UnsignedBigInt
+  status               String   @default("completed") @db.VarChar(32)
+  completedAt          DateTime @default(now())
+  createdAt            DateTime @default(now())
+
+  @@index([developerUserId, createdAt, id], map: "ai_direct_agent_sales_developer_created_idx")
+  @@index([buyerUserId, createdAt, id], map: "ai_direct_agent_sales_buyer_created_idx")
+  @@index([agentId, createdAt, id], map: "ai_direct_agent_sales_agent_created_idx")
+  @@index([companyId, createdAt, id], map: "ai_direct_agent_sales_company_created_idx")
+  @@map("ai_direct_agent_sales")
+}
+
 model aiDirectRevenueLedgerEntries {
   id                 String   @id @db.VarChar(36)
   entryKey           String   @unique(map: "ai_direct_revenue_ledger_entry_key") @db.VarChar(191)
-  paymentOrderId     String   @db.VarChar(36)
+  saleId             String   @db.VarChar(36)
+  paymentOrderId     String?  @db.VarChar(36)
   accountType        String   @db.VarChar(32)
   accountOwnerUserId String?  @db.VarChar(191)
   direction          String   @default("credit") @db.VarChar(16)
@@ -1147,6 +1200,7 @@ model aiDirectRevenueLedgerEntries {
   metadata           Json?
   createdAt          DateTime @default(now())
 
+  @@index([saleId, createdAt], map: "ai_direct_revenue_ledger_sale_idx")
   @@index([paymentOrderId, createdAt], map: "ai_direct_revenue_ledger_order_idx")
   @@index([accountOwnerUserId, accountType, status, createdAt], map: "ai_direct_revenue_ledger_owner_status_idx")
   @@map("ai_direct_revenue_ledger_entries")

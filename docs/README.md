@@ -25,13 +25,14 @@ Reading order:
 1. `docs/clawhub.md`: public overview for discovery, install, publish, and trust.
 2. `docs/quickstart.md`: product quickstart for users and publishers.
 3. `docs/how-it-works.md`: listings, versions, installs, publishing, scans, and API access.
-4. `docs/publishing.md`: owner-scoped skill/plugin publishing flow.
-5. `docs/cli.md`: ClawHub CLI reference.
-6. `docs/skill-format.md`: skill bundle metadata and package shape.
-7. `docs/soul-format.md`: SOUL.md bundle format.
-8. `docs/auth.md`: GitHub OAuth, email magic links, API tokens, and CLI login.
-9. `docs/telemetry.md`: what `clawhub sync` reports and how to opt out.
-10. `docs/troubleshooting.md`: user-facing CLI, install, publish, sync, update, and API fixes.
+4. `docs/user-center.md`: profile, organization, developer access, AI employees, and public profile.
+5. `docs/publishing.md`: owner-scoped skill/plugin publishing flow.
+6. `docs/cli.md`: ClawHub CLI reference.
+7. `docs/skill-format.md`: skill bundle metadata and package shape.
+8. `docs/soul-format.md`: SOUL.md bundle format.
+9. `docs/auth.md`: GitHub OAuth, email magic links, API tokens, and CLI login.
+10. `docs/telemetry.md`: what `clawhub sync` reports and how to opt out.
+11. `docs/troubleshooting.md`: user-facing CLI, install, publish, sync, update, and API fixes.
 
 Policy, API, and trust docs:
 

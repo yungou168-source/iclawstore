@@ -190,12 +190,36 @@ jobs:
       - name: Build self-hosted SSR artifact
         if: needs.validate-deploy-request.outputs.deploy_frontend == 'true'
         env:
+          VITE_CONVEX_URL: https://www.iclawstore.com/convex
+          VITE_CONVEX_SITE_URL: https://www.iclawstore.com
           VITE_SITE_URL: https://www.iclawstore.com
           VITE_AI_WORK_SITE_URL: https://www.iclawstore.com
+          VITE_APP_BUILD_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           bun run build
           test -f .output/server/index.mjs
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          const assetsDir = '.output/public/assets';
+          const runtimeEnvAsset = fs
+            .readdirSync(assetsDir)
+            .find((name) => /^runtimeEnv-.*\.js$/.test(name));
+          if (!runtimeEnvAsset) throw new Error('runtimeEnv client asset is missing');
+
+          const source = fs.readFileSync(`${assetsDir}/${runtimeEnvAsset}`, 'utf8');
+          const requiredValues = [
+            process.env.VITE_CONVEX_URL,
+            process.env.VITE_CONVEX_SITE_URL,
+            process.env.VITE_APP_BUILD_SHA,
+          ];
+          for (const value of requiredValues) {
+            if (!value || !source.includes(value)) {
+              throw new Error('required production build value was not embedded');
+            }
+          }
+          NODE
           tar -C .output -czf "$RUNNER_TEMP/iclawstore-ssr.tar.gz" .
           sha256sum "$RUNNER_TEMP/iclawstore-ssr.tar.gz" | cut -d ' ' -f 1 > "$RUNNER_TEMP/iclawstore-ssr.tar.gz.sha256"
           stat --format='%s' "$RUNNER_TEMP/iclawstore-ssr.tar.gz" > "$RUNNER_TEMP/iclawstore-ssr.tar.gz.size"
@@ -203,7 +227,7 @@ jobs:
       - name: Deploy self-hosted SSR
         if: needs.validate-deploy-request.outputs.deploy_frontend == 'true'
         env:
-          SSH_AUTH_SOCK: ''
+          SSH_AUTH_SOCK: ""
         run: |
           set -euo pipefail
           artifact="$RUNNER_TEMP/iclawstore-ssr.tar.gz"
@@ -236,7 +260,6 @@ jobs:
       - name: Smoke test production UI
         if: needs.validate-deploy-request.outputs.run_smoke == 'true' && needs.validate-deploy-request.outputs.deploy_frontend == 'true'
         run: bunx playwright test --workers=1 e2e/menu-smoke.pw.test.ts e2e/publish-entry-workflows.pw.test.ts e2e/upload-auth-smoke.pw.test.ts
-
 
   tag-production-deployment:
     runs-on: ubuntu-latest

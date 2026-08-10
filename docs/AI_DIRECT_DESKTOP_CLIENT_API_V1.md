@@ -1,17 +1,24 @@
 # AI Direct / Desktop Client API v1
 
-> Contract version: `1.1.0`（当前 production discovery）
-> Release status: **运行态与迁移已验收；原生 OAuth、认证 Session、组织级 Feature Flag 业务验收未完成**
+> Contract version: production discovery 为 `1.2.0`
+> Release status: **`1.2.0` 机器契约与生产迁移已发布；付费雇佣业务能力因真实身份和支付宝门禁未完成而保持关闭**
 > OpenAPI: `server/openapi/desktop-client-v1.yaml`
 > Runtime discovery: `GET /api/v1/desktop/contract`
-> Scope: Agent appearance, desktop sidebar synchronization, desktop templates, Session capability negotiation, Jobs/artifacts, interviews, candidate catalog, and workforce endpoints listed by OpenAPI.
+> Scope: Agent appearance, desktop sidebar synchronization, desktop templates, Session capability negotiation, Jobs/artifacts, interviews, candidate catalog, workforce, and the `1.2.0` paid-hiring endpoints listed by OpenAPI.
 
-## 当前生产验收状态（2026-08-05）
+## 当前生产 `1.2.0` 付费雇佣契约
+
+- 已发布开发者定价读取/追加、支付订单创建、本地订单状态读取、请求者显式对账、不可变 Offer 读取和 Employment 状态迁移的机器契约。
+- 支付成功只由服务器验证支付宝通知或受控查询后履约；桌面客户端不得根据跳转参数或支付页面状态声明成功。
+- `20260815_ai_direct_paid_hiring` 与 `20260816_ai_direct_paid_hiring_operations` 已应用，生产 Prisma 19 个迁移均为 up to date；API、dispatcher 与 audit-export 运行固定 release `abd4e5ed79c4ec4ef0d44e9c3032583e15979f6b`。
+- 当前 `PAID_HIRING_RELEASE_READY=false`、`ALIPAY_PAID_HIRING_ENABLED=false`、`PAID_HIRING_RECONCILIATION_ENABLED=false`，`GET /api/v1/desktop/contract` 返回 `paidHiringSupported:false`。缺少支付宝生产 app/seller ID、私钥、公钥和 notify URL，且真实 Convex Bearer 权限矩阵及支付渠道链路尚未验收，因此客户端不得展示或调用付费雇佣能力。
+
+## 当前生产验收状态
 
 以下状态以当日运行时命令为准，优先级高于本文其余历史发布记录：
 
-- Prisma 使用受限迁移账号执行 `migrate status`，结果为 **Database schema is up to date**，包括 `20260812_ai_direct_template_review` 与 `20260813_ai_direct_audit_governance`。
-- `iclawstore-api` 已由受限 PM2 配置重新加载，内存上限 `256M`；本机 `GET /health` 和公网 `GET https://www.iclawstore.com/api/v1/desktop/contract` 均返回 `200`，Discovery 为 `1.1.0`。API 启动前会校验完整契约路由表，缺路由将拒绝监听。
+- Prisma 使用受限迁移账号执行 `migrate deploy` 与 `migrate status`，结果为 **Database schema is up to date**。生产现有 19 个迁移，包括 `20260815_ai_direct_paid_hiring` 与 `20260816_ai_direct_paid_hiring_operations`；付费雇佣 7 张新增表和关键列已从 `information_schema` 逐项核验。
+- `iclawstore-api`、`iclawstore-runtime-dispatcher` 与 `iclawstore-audit-export` 已从脏工作区 Bun/TypeScript 进程切换为固定 release `abd4e5ed79c4ec4ef0d44e9c3032583e15979f6b` 的 Node 编译产物。三个进程稳定 `online`、切换后 0 次重启，`pm2 save` 已完成；本机 `GET /health` 与 `GET /api/v1/desktop/contract` 均返回 `200`，discovery 为 `1.2.0`。
 - `iclawstore-runtime-dispatcher` 保持独立运行，内存上限 `128M`。本次只读队列核验没有 pending、published 或 failed outbox 项；其最新运行指标保持在预算内。历史错误日志不能作为当前派发失败的结论。
 - `20260814_ai_direct_workforce_employee_directory` 已应用；`GET /api/v1/ai-direct-hiring/workforce/employees` 已进入 `1.1.0` manifest 与 OpenAPI，按 `companyId` 的 recruiter 级 RBAC 从 employee digest 读取，并以 opaque `updatedAt/employmentId` cursor 分页。构建、目录路由测试和运行时契约测试已通过；认证 QA 组织的正向、空页和越权生产验收仍缺少可回收身份与隔离组织。
 - 原生桌面 OAuth **未验收且未发布**：生产环境缺少 `CONVEX_DESKTOP_AUTH_ISSUER`、`AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID` 与显式 audience 配置，公网 discovery 不包含 `auth`。因此尚未执行 OIDC discovery/JWKS、Authorization Code + PKCE、refresh/revoke 或原生 access token 验收。
@@ -37,20 +44,20 @@
 
 ## Contract boundary
 
-This document describes the **Desktop Client API v1 machine contract**. Production returns `1.1.0` discovery and OpenAPI, and the Candidate Catalog、Workforce 与 Candidate Matching operations declared by that contract are now mounted. The production migration chain is up to date, API startup accepted the complete manifest, and the production smoke found no protected operation returning `404`. This proves route-contract availability only; it does not imply that an organization feature flag is enabled or that an authenticated caller has business access.
+This document describes the **Desktop Client API v1 machine contract**. Production returns `1.2.0` discovery and OpenAPI. The production migration chain is up to date, API startup accepted the complete manifest, and runtime discovery reports `paidHiringSupported: false` while payment gates are closed. This proves route-contract and schema availability only; it does not imply that an organization feature flag is enabled, that an authenticated caller has business access, or that the payment channel is usable.
 
 ### Delivery and runtime status
 
-The deployed server enforces a unified `1.1.0` release gate:
+The deployed server enforces a unified `1.2.0` release gate:
 
-- API startup resolves every method/path in the `1.1.0` manifest after Fastify registration and refuses to listen if any route is absent;
+- API startup resolves every method/path in the `1.2.0` manifest after Fastify registration and refuses to listen if any route is absent;
 - tests require the manifest and OpenAPI operations to match exactly;
-- production smoke requests every protected operation without credentials. Authentication、authorization、validation or feature-disabled responses are acceptable, but any `404` blocks release;
-- production migrations `20260808_ai_direct_desktop_jobs_cursor`、`20260809_ai_direct_interviews_policy`、`20260810_agent_publication_catalog` 与 `20260811_ai_direct_workforce` have been applied, and Prisma reports the schema up to date;
-- the deployed API passed its TypeScript build, PM2 reload, startup contract validation, discovery/OpenAPI check, and full protected-operation non-`404` smoke;
+- production migrations through `20260816_ai_direct_paid_hiring_operations` have been applied, and Prisma reports all 19 migrations up to date;
+- the deployed API passed its TypeScript build, fixed-release startup validation, health check, and discovery check; paid-hiring route/service tests and isolated MySQL migration/state-machine tests passed before cutover;
+- payment capability remains fail-closed because required Alipay configuration and real authenticated payment-flow evidence are absent;
 - authenticated `2xx` business smoke for Candidate Catalog、Departments、Positions and Candidate Matching remains unverified: production has no dedicated smoke token, `candidateCatalog` defaults to false, and no enabled organization currently provides a complete isolated test chain;
 - the Provider Executor remains disabled until an administrator has completed the OAuth-to-worker-token authorization chain; route availability is not permission to start provider execution;
-- API, dispatcher, and executor retain separate low-memory process budgets and single-purpose responsibilities.
+- API, dispatcher, and audit-export run as separate fixed-release Node processes with single-purpose responsibilities.
 
 The server-side comparison, data ownership rules, implementation gaps, feature flags, and delivery priorities are maintained in `specs/ai-direct-desktop-platform-integration.md`. In particular:
 
@@ -89,7 +96,7 @@ export const authorizedFetch = async (
   init: RequestInit = {},
 ) => {
   const token = await tokenProvider.getAccessToken();
-  if (!token) throw new Error('AUTH_REQUIRED');
+  if (!token) throw new Error("AUTH_REQUIRED");
 
   return fetch(input, {
     ...init,
@@ -206,15 +213,15 @@ Agent appearance and desktop sidebar writes use strong revision ETags.
 const read = await fetch(`${baseUrl}/api/v1/desktop/sidebar`, {
   headers: { Authorization: `Bearer ${token}` },
 });
-const etag = read.headers.get('etag');
-if (!etag) throw new Error('Missing sidebar ETag');
+const etag = read.headers.get("etag");
+if (!etag) throw new Error("Missing sidebar ETag");
 
 const write = await fetch(`${baseUrl}/api/v1/desktop/sidebar`, {
-  method: 'PUT',
+  method: "PUT",
   headers: {
     Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-    'If-Match': etag,
+    "Content-Type": "application/json",
+    "If-Match": etag,
   },
   body: JSON.stringify(nextConfig),
 });
@@ -226,11 +233,11 @@ const write = await fetch(`${baseUrl}/api/v1/desktop/sidebar`, {
 
 The server derives control from Employment state. A client cannot submit a controller, company ID, or claimed role.
 
-| Employment state | Appearance writer |
-| --- | --- |
-| no Employment, `candidate`, `evaluating`, `offer_pending`, `offered` | Agent developer or current Publisher member |
-| `accepted`, `onboarding`, `active`, `paused`, `offboarding` | controlling company `owner`, `admin`, or `manager` |
-| `terminated` | Agent developer or current Publisher member |
+| Employment state                                                     | Appearance writer                                  |
+| -------------------------------------------------------------------- | -------------------------------------------------- |
+| no Employment, `candidate`, `evaluating`, `offer_pending`, `offered` | Agent developer or current Publisher member        |
+| `accepted`, `onboarding`, `active`, `paused`, `offboarding`          | controlling company `owner`, `admin`, or `manager` |
+| `terminated`                                                         | Agent developer or current Publisher member        |
 
 During company control, the developer and company `recruiter` receive `403 FORBIDDEN_SCOPE`. Transition into `accepted` obtains control in the same MySQL transaction. A second Employment cannot replace an existing controller and receives `409 APPEARANCE_CONTROL_CONFLICT`. Transition into `terminated` releases control only if that Employment still owns it.
 
@@ -368,19 +375,19 @@ Moving managed server assets from local disk to object storage must not change t
 
 ## 10. Stable errors
 
-| Code | Typical HTTP | Meaning |
-| --- | ---: | --- |
-| `AUTH_REQUIRED` | 401 | JWT missing, invalid, or expired |
-| `FORBIDDEN_SCOPE` | 403 | Authenticated, but role/ownership scope is insufficient |
-| `REVISION_CONFLICT` | 409 | `If-Match` is stale |
-| `PRECONDITION_REQUIRED` | 428 | Revision precondition is missing |
-| `APPEARANCE_CONTROL_CONFLICT` | 409 | Another Employment controls the Agent appearance |
-| `ASSET_LIMIT_EXCEEDED` | 409 | Active asset count limit reached |
-| `ASSET_TOO_LARGE` | 413 | Upload exceeds the kind-specific limit |
-| `UNSUPPORTED_MEDIA_TYPE` | 415 | Extension, MIME, magic, or format is rejected |
-| `ASSET_IN_USE` | 409 | Referenced resource cannot be deleted |
-| `TEMPLATE_ENTITLEMENT_REQUIRED` | 403 | Paid package requires entitlement |
-| `TEMPLATE_NOT_INSTALLABLE` | 409 | No published downloadable version exists |
+| Code                            | Typical HTTP | Meaning                                                 |
+| ------------------------------- | -----------: | ------------------------------------------------------- |
+| `AUTH_REQUIRED`                 |          401 | JWT missing, invalid, or expired                        |
+| `FORBIDDEN_SCOPE`               |          403 | Authenticated, but role/ownership scope is insufficient |
+| `REVISION_CONFLICT`             |          409 | `If-Match` is stale                                     |
+| `PRECONDITION_REQUIRED`         |          428 | Revision precondition is missing                        |
+| `APPEARANCE_CONTROL_CONFLICT`   |          409 | Another Employment controls the Agent appearance        |
+| `ASSET_LIMIT_EXCEEDED`          |          409 | Active asset count limit reached                        |
+| `ASSET_TOO_LARGE`               |          413 | Upload exceeds the kind-specific limit                  |
+| `UNSUPPORTED_MEDIA_TYPE`        |          415 | Extension, MIME, magic, or format is rejected           |
+| `ASSET_IN_USE`                  |          409 | Referenced resource cannot be deleted                   |
+| `TEMPLATE_ENTITLEMENT_REQUIRED` |          403 | Paid package requires entitlement                       |
+| `TEMPLATE_NOT_INSTALLABLE`      |          409 | No published downloadable version exists                |
 
 The complete DTO and operation definitions are authoritative in `server/openapi/desktop-client-v1.yaml`.
 
@@ -397,15 +404,17 @@ The optional `limit` is an integer from 1 to 50 (default 20). Pass the previousl
   "scoringVersion": "capability-coverage-v1",
   "positionId": "position-id",
   "requiredCapabilities": ["sql", "typescript"],
-  "items": [{
-    "agentId": "agent-id",
-    "displayName": "Research Agent",
-    "score": 100,
-    "matchedCapabilities": ["sql", "typescript"],
-    "missingCapabilities": [],
-    "availability": "available",
-    "viewerDisclosure": { "isEmployedByCurrentOrganization": false }
-  }],
+  "items": [
+    {
+      "agentId": "agent-id",
+      "displayName": "Research Agent",
+      "score": 100,
+      "matchedCapabilities": ["sql", "typescript"],
+      "missingCapabilities": [],
+      "availability": "available",
+      "viewerDisclosure": { "isEmployedByCurrentOrganization": false }
+    }
+  ],
   "nextCursor": "opaque-or-null"
 }
 ```

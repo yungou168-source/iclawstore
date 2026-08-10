@@ -1,6 +1,6 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import type { Pool } from 'mysql2/promise';
-import { AiDirectHiringError, ErrorCodes } from './aiDirectErrors.js';
+import { createHash, randomBytes, randomUUID } from "node:crypto";
+import type { Pool } from "mysql2/promise";
+import { AiDirectHiringError, ErrorCodes } from "./aiDirectErrors.js";
 
 export type WorkerIdentity = {
   tokenId: string;
@@ -9,7 +9,7 @@ export type WorkerIdentity = {
 };
 
 const hashToken = (token: string): string =>
-  createHash('sha256').update(token, 'utf8').digest('hex');
+  createHash("sha256").update(token, "utf8").digest("hex");
 
 export async function createWorkerToken(
   pool: Pool,
@@ -22,7 +22,7 @@ export async function createWorkerToken(
   },
 ): Promise<{ id: string; token: string; tokenPrefix: string }> {
   const id = randomUUID();
-  const token = `adw_${randomBytes(32).toString('base64url')}`;
+  const token = `adw_${randomBytes(32).toString("base64url")}`;
   const tokenPrefix = token.slice(0, 12);
   await pool.query(
     `INSERT INTO ai_direct_worker_tokens
@@ -43,12 +43,12 @@ export async function createWorkerToken(
 }
 
 function readBearerToken(value: unknown): string {
-  if (typeof value !== 'string' || !value.startsWith('Bearer ')) {
-    throw new AiDirectHiringError(ErrorCodes.AUTH_REQUIRED, 'Worker token 无效', 401);
+  if (typeof value !== "string" || !value.startsWith("Bearer ")) {
+    throw new AiDirectHiringError(ErrorCodes.AUTH_REQUIRED, "Worker token 无效", 401);
   }
-  const token = value.slice('Bearer '.length).trim();
+  const token = value.slice("Bearer ".length).trim();
   if (!/^adw_[A-Za-z0-9_-]{43}$/.test(token)) {
-    throw new AiDirectHiringError(ErrorCodes.AUTH_REQUIRED, 'Worker token 无效', 401);
+    throw new AiDirectHiringError(ErrorCodes.AUTH_REQUIRED, "Worker token 无效", 401);
   }
   return token;
 }
@@ -58,9 +58,9 @@ export async function authenticateWorker(
   headers: Record<string, unknown>,
 ): Promise<WorkerIdentity> {
   const token = readBearerToken(headers.authorization);
-  const workerId = headers['x-worker-id'];
-  if (typeof workerId !== 'string' || !workerId || workerId.length > 128) {
-    throw new AiDirectHiringError(ErrorCodes.AUTH_REQUIRED, 'Worker identity 无效', 401);
+  const workerId = headers["x-worker-id"];
+  if (typeof workerId !== "string" || !workerId || workerId.length > 128) {
+    throw new AiDirectHiringError(ErrorCodes.AUTH_REQUIRED, "Worker identity 无效", 401);
   }
   const [rows] = await pool.query(
     `SELECT id, organizationId, workerId
@@ -72,12 +72,11 @@ export async function authenticateWorker(
   );
   const identity = (rows as Array<{ id: string; organizationId: string; workerId: string }>)[0];
   if (!identity || identity.workerId !== workerId) {
-    throw new AiDirectHiringError(ErrorCodes.AUTH_REQUIRED, 'Worker token 无效', 401);
+    throw new AiDirectHiringError(ErrorCodes.AUTH_REQUIRED, "Worker token 无效", 401);
   }
-  await pool.query(
-    `UPDATE ai_direct_worker_tokens SET lastUsedAt = NOW(3) WHERE id = ?`,
-    [identity.id],
-  );
+  await pool.query(`UPDATE ai_direct_worker_tokens SET lastUsedAt = NOW(3) WHERE id = ?`, [
+    identity.id,
+  ]);
   return {
     tokenId: identity.id,
     organizationId: identity.organizationId,

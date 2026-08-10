@@ -47,32 +47,38 @@ export interface Skill {
   };
 }
 
-export interface Pagination {
+interface Pagination {
   page: number;
   limit: number;
   total: number;
   pages: number;
 }
 
-export interface SkillsListResponse {
+interface SkillsListResponse {
   skills: Skill[];
   pagination: Pagination;
 }
 
-export interface SkillDetailResponse extends Skill {
-  versions?: any[];
-  comments?: any[];
+interface SkillDetailResponse extends Skill {
+  versions?: unknown[];
+  comments?: unknown[];
   starsCount?: number;
 }
 
+interface SearchSkillHit extends Skill {
+  apiKeyRequired?: boolean;
+  ownerHandle?: string | null;
+  _rankingScore?: number;
+}
+
 export interface SearchResponse {
-  hits: any[];
+  hits: SearchSkillHit[];
   query: string;
   pagination: Pagination;
   processingTimeMs: number;
 }
 
-export interface User {
+interface User {
   id: string;
   handle: string;
   displayName: string;
@@ -87,7 +93,7 @@ export interface User {
   createdAt: string;
 }
 
-export interface AiDirectOrganizationSession {
+interface AiDirectOrganizationSession {
   id: string;
   name: string;
   slug: string;
@@ -95,7 +101,7 @@ export interface AiDirectOrganizationSession {
   permissions: string[];
 }
 
-export interface AiDirectSession {
+interface AiDirectSession {
   user: {
     id: string;
     convexUserId: string | null;
@@ -111,7 +117,7 @@ export interface AiDirectSession {
   featureFlags: Record<string, boolean>;
 }
 
-export interface MemoryBinding {
+interface MemoryBinding {
   configured: boolean;
   vaultFingerprint: string | null;
   extractorVersion: string | null;
@@ -122,7 +128,7 @@ export interface MemoryBinding {
   updatedAt: string | null;
 }
 
-export interface MemoryNoteSummary {
+interface MemoryNoteSummary {
   notePath: string;
   title: string | null;
   tagsJson: string[] | null;
@@ -134,12 +140,12 @@ export interface MemoryNoteSummary {
   updatedAt: string;
 }
 
-export interface MemoryNoteDetail extends MemoryNoteSummary {
+interface MemoryNoteDetail extends MemoryNoteSummary {
   summaryMd: string | null;
   frontmatterJson: Record<string, unknown> | null;
 }
 
-export interface MemoryVaultBindingInput {
+interface MemoryVaultBindingInput {
   vaultFingerprint: string;
   extractorVersion: string;
   evidenceVersion: string;
@@ -205,12 +211,12 @@ class FastifyApiClient {
     });
   }
 
-  async getSkillVersions(id: string, args?: { page?: number; limit?: number }): Promise<any> {
+  async getSkillVersions(id: string, args?: { page?: number; limit?: number }): Promise<unknown> {
     const params = new URLSearchParams();
     if (args?.page) params.set("page", String(args.page));
     if (args?.limit) params.set("limit", String(args.limit));
 
-    return this.request<any>(`/skills/${id}/versions?${params.toString()}`);
+    return this.request<unknown>(`/skills/${id}/versions?${params.toString()}`);
   }
 
   // Search API
@@ -230,8 +236,8 @@ class FastifyApiClient {
     return this.request<SearchResponse>(`/search?${params.toString()}`);
   }
 
-  async getSearchSuggestions(query: string): Promise<{ suggestions: any[] }> {
-    return this.request<{ suggestions: any[] }>(
+  async getSearchSuggestions(query: string): Promise<{ suggestions: unknown[] }> {
+    return this.request<{ suggestions: unknown[] }>(
       `/search/suggestions?q=${encodeURIComponent(query)}`,
     );
   }
@@ -268,25 +274,25 @@ class FastifyApiClient {
   }
 
   // Packages API
-  async getPackages(args?: { page?: number; limit?: number }): Promise<any> {
+  async getPackages(args?: { page?: number; limit?: number }): Promise<unknown> {
     const params = new URLSearchParams();
     if (args?.page) params.set("page", String(args.page));
     if (args?.limit) params.set("limit", String(args.limit));
 
-    return this.request<any>(`/packages?${params.toString()}`);
+    return this.request<unknown>(`/packages?${params.toString()}`);
   }
 
-  async getPackage(id: string): Promise<any> {
-    return this.request<any>(`/packages/${id}`);
+  async getPackage(id: string): Promise<unknown> {
+    return this.request<unknown>(`/packages/${id}`);
   }
 
   // Publishers API
-  async getPublisher(handle: string): Promise<any> {
-    return this.request<any>(`/publishers/${encodeURIComponent(handle)}`);
+  async getPublisher(handle: string): Promise<unknown> {
+    return this.request<unknown>(`/publishers/${encodeURIComponent(handle)}`);
   }
 
-  async getMyPublishers(): Promise<any[]> {
-    return this.request<any[]>("/publishers/mine");
+  async getMyPublishers(): Promise<unknown[]> {
+    return this.request<unknown[]>("/publishers/mine");
   }
 
   async getAiDirectSession(organizationId?: string): Promise<AiDirectSession> {

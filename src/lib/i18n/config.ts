@@ -7,8 +7,8 @@ export const LOCALES: { value: Locale; label: string; flag: string }[] = [
 
 export const DEFAULT_LOCALE: Locale = "zh-CN";
 
-export const LOCALE_COOKIE_KEY = "clawhub-locale";
-export const LOCALE_STORAGE_KEY = "clawhub-locale";
+const LOCALE_COOKIE_KEY = "clawhub-locale";
+const LOCALE_STORAGE_KEY = "clawhub-locale";
 
 export function getLocaleFromStorage(): Locale {
   if (typeof window === "undefined") return DEFAULT_LOCALE;

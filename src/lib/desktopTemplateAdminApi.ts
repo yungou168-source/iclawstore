@@ -1,6 +1,6 @@
-import { getFastifyAccessToken } from './fastifyAuthToken';
+import { getFastifyAccessToken } from "./fastifyAuthToken";
 
-const BASE_URL = '/api/v1/desktop';
+const BASE_URL = "/api/v1/desktop";
 
 export interface TemplateReviewQueueItem {
   id: string;
@@ -16,9 +16,9 @@ export interface TemplateReviewQueueItem {
   sha256: string;
 }
 
-export interface TemplateReviewDecision {
+interface TemplateReviewDecision {
   id: string;
-  decision: 'approved' | 'rejected';
+  decision: "approved" | "rejected";
   reason: string | null;
   actorUserId: string;
   createdAt: string;
@@ -61,23 +61,27 @@ export class DesktopTemplateAdminApiError extends Error {
     readonly code: string | null,
   ) {
     super(message);
-    this.name = 'DesktopTemplateAdminApiError';
+    this.name = "DesktopTemplateAdminApiError";
   }
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const send = async (refresh: boolean) => {
     const headers = new Headers(init.headers);
-    if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+    if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
     const token = await getFastifyAccessToken(refresh);
-    if (token) headers.set('Authorization', `Bearer ${token}`);
-    return fetch(`${BASE_URL}${path}`, { ...init, headers, credentials: 'omit' });
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    return fetch(`${BASE_URL}${path}`, { ...init, headers, credentials: "omit" });
   };
   let response = await send(false);
   if (response.status === 401) response = await send(true);
   if (!response.ok) {
-    const body = await response.json().catch(() => ({})) as { error?: string; code?: string };
-    throw new DesktopTemplateAdminApiError(body.error ?? `HTTP ${response.status}`, response.status, body.code ?? null);
+    const body = (await response.json().catch(() => ({}))) as { error?: string; code?: string };
+    throw new DesktopTemplateAdminApiError(
+      body.error ?? `HTTP ${response.status}`,
+      response.status,
+      body.code ?? null,
+    );
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
@@ -85,58 +89,60 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 export const desktopTemplateAdminApi = {
   listPublisherTemplates() {
-    return request<{ items: PublisherTemplateVersionItem[] }>('/publisher/templates');
+    return request<{ items: PublisherTemplateVersionItem[] }>("/publisher/templates");
   },
   resubmit(templateId: string, versionId: string) {
     return request<{ id: string; reviewStatus: string }>(
       `/templates/${encodeURIComponent(templateId)}/versions/${encodeURIComponent(versionId)}/resubmit`,
-      { method: 'POST' },
+      { method: "POST" },
     );
   },
   listQueue(cursor?: string, limit = 25) {
     const params = new URLSearchParams({ limit: String(limit) });
-    if (cursor) params.set('cursor', cursor);
+    if (cursor) params.set("cursor", cursor);
     return request<{ items: TemplateReviewQueueItem[]; nextCursor: string | null }>(
       `/template-review/queue?${params}`,
     );
   },
   getDetail(versionId: string) {
-    return request<TemplateReviewDetail>(`/template-review/versions/${encodeURIComponent(versionId)}`);
+    return request<TemplateReviewDetail>(
+      `/template-review/versions/${encodeURIComponent(versionId)}`,
+    );
   },
   approve(versionId: string, reason?: string) {
     return request<{ id: string; reviewStatus: string }>(
       `/template-review/versions/${encodeURIComponent(versionId)}/approve`,
-      { method: 'POST', body: JSON.stringify({ reason: reason?.trim() || null }) },
+      { method: "POST", body: JSON.stringify({ reason: reason?.trim() || null }) },
     );
   },
   reject(versionId: string, reason: string) {
     return request<{ id: string; reviewStatus: string; reason: string }>(
       `/template-review/versions/${encodeURIComponent(versionId)}/reject`,
-      { method: 'POST', body: JSON.stringify({ reason }) },
+      { method: "POST", body: JSON.stringify({ reason }) },
     );
   },
   publish(versionId: string) {
     return request<{ id: string; publicationStatus: string }>(
       `/template-review/versions/${encodeURIComponent(versionId)}/publish`,
-      { method: 'POST' },
+      { method: "POST" },
     );
   },
   unpublish(versionId: string) {
     return request<{ id: string; publicationStatus: string }>(
       `/template-review/versions/${encodeURIComponent(versionId)}/unpublish`,
-      { method: 'POST' },
+      { method: "POST" },
     );
   },
   grantEntitlement(templateId: string, userId: string, reference?: string) {
     return request<{ templateId: string; userId: string; status: string }>(
       `/template-review/templates/${encodeURIComponent(templateId)}/entitlements/${encodeURIComponent(userId)}`,
-      { method: 'PUT', body: JSON.stringify({ reference: reference?.trim() || null }) },
+      { method: "PUT", body: JSON.stringify({ reference: reference?.trim() || null }) },
     );
   },
   revokeEntitlement(templateId: string, userId: string) {
     return request<void>(
       `/template-review/templates/${encodeURIComponent(templateId)}/entitlements/${encodeURIComponent(userId)}`,
-      { method: 'DELETE' },
+      { method: "DELETE" },
     );
   },
 };

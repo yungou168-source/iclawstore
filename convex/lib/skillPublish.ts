@@ -3,12 +3,10 @@ import { ConvexError } from "convex/values";
 import semver from "semver";
 import { api, internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
-import type { ActionCtx, MutationCtx } from "../_generated/server";
-import { getSkillBadgeMap, isSkillHighlighted } from "./badges";
+import type { ActionCtx } from "../_generated/server";
 import { generateChangelogForPublish } from "./changelog";
 import { generateEmbedding } from "./embeddings";
 import { requireGitHubAccountAge } from "./githubAccount";
-import type { PublicUser } from "./public";
 import {
   findOversizedPublishFile,
   getPublishFileSizeError,
@@ -38,7 +36,6 @@ import {
 import { assertValidSkillSlug, normalizeSkillSlug } from "./skillSlugValidator";
 import { generateSkillSummary } from "./skillSummary";
 import { runStaticPublishScan } from "./staticPublishScan";
-import type { WebhookSkillPayload } from "./webhooks";
 
 const MAX_FILES_FOR_EMBEDDING = 40;
 const QUALITY_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -85,7 +82,6 @@ export type PublishOptions = {
   bypassNewSkillRateLimit?: boolean;
   bypassQualityGate?: boolean;
   skipBackup?: boolean;
-  skipWebhook?: boolean;
   ownerPublisherId?: Id<"publishers">;
   sourceProvenance?: PublishVersionArgs["source"];
   // Explicit opt-in to owner migration. The `insertVersion` mutation refuses
@@ -406,14 +402,6 @@ export async function publishVersionForUser(
       });
   }
 
-  if (!options.skipWebhook) {
-    void schedulePublishWebhook(ctx, {
-      slug,
-      version,
-      displayName,
-    });
-  }
-
   return publishResult;
 }
 
@@ -466,29 +454,6 @@ export const __test = {
   toStructuralFingerprint,
 };
 
-export async function queueHighlightedWebhook(ctx: MutationCtx, skillId: Id<"skills">) {
-  const skill = await ctx.db.get(skillId);
-  if (!skill) return;
-  const owner = await ctx.db.get(skill.ownerUserId);
-  const latestVersion = skill.latestVersionId ? await ctx.db.get(skill.latestVersionId) : null;
-
-  const badges = await getSkillBadgeMap(ctx, skillId);
-  const payload: WebhookSkillPayload = {
-    slug: skill.slug,
-    displayName: skill.displayName,
-    summary: skill.summary ?? undefined,
-    version: latestVersion?.version ?? undefined,
-    ownerHandle: owner?.handle ?? owner?.name ?? undefined,
-    highlighted: isSkillHighlighted({ badges }),
-    tags: Object.keys(skill.tags ?? {}),
-  };
-
-  await ctx.scheduler.runAfter(0, internal.webhooks.sendDiscordWebhook, {
-    event: "skill.highlighted",
-    skill: payload,
-  });
-}
-
 export async function fetchText(
   ctx: { storage: { get: (id: Id<"_storage">) => Promise<Blob | null> } },
   storageId: Id<"_storage">,
@@ -508,29 +473,4 @@ function formatEmbeddingError(error: unknown) {
     }
   }
   return "Embedding failed. Please try again.";
-}
-
-async function schedulePublishWebhook(
-  ctx: ActionCtx,
-  params: { slug: string; version: string; displayName: string },
-) {
-  const result = (await ctx.runQuery(api.skills.getBySlug, {
-    slug: params.slug,
-  })) as { skill: Doc<"skills">; owner: PublicUser | null } | null;
-  if (!result?.skill) return;
-
-  const payload: WebhookSkillPayload = {
-    slug: result.skill.slug,
-    displayName: result.skill.displayName || params.displayName,
-    summary: result.skill.summary ?? undefined,
-    version: params.version,
-    ownerHandle: result.owner?.handle ?? result.owner?.name ?? undefined,
-    highlighted: isSkillHighlighted(result.skill),
-    tags: Object.keys(result.skill.tags ?? {}),
-  };
-
-  await ctx.scheduler.runAfter(0, internal.webhooks.sendDiscordWebhook, {
-    event: "skill.publish",
-    skill: payload,
-  });
 }

@@ -1,8 +1,8 @@
-import { randomUUID } from 'node:crypto';
-import type { Pool, PoolConnection, ResultSetHeader } from 'mysql2/promise';
-import type { EncryptedCredentialEnvelope } from '../contracts/credentialStore.js';
-import type { CredentialKeyring } from './credentialKeyring.js';
-import { decryptCredential, encryptCredential } from './credentialVault.js';
+import { randomUUID } from "node:crypto";
+import type { Pool, PoolConnection, ResultSetHeader } from "mysql2/promise";
+import type { EncryptedCredentialEnvelope } from "../contracts/credentialStore.js";
+import type { CredentialKeyring } from "./credentialKeyring.js";
+import { decryptCredential, encryptCredential } from "./credentialVault.js";
 
 type RotationCandidate = {
   id: string;
@@ -45,16 +45,16 @@ function readBoundedInteger(value: number | undefined, fallback: number, max: nu
 
 function decodeEnvelope(row: RotationCandidate): EncryptedCredentialEnvelope {
   return {
-    algorithm: 'aes-256-gcm',
+    algorithm: "aes-256-gcm",
     keyVersion: row.keyVersion,
-    ciphertext: Uint8Array.from(Buffer.from(row.cipherText, 'base64')),
-    nonce: Uint8Array.from(Buffer.from(row.iv, 'base64')),
-    authenticationTag: Uint8Array.from(Buffer.from(row.authTag, 'base64')),
+    ciphertext: Uint8Array.from(Buffer.from(row.cipherText, "base64")),
+    nonce: Uint8Array.from(Buffer.from(row.iv, "base64")),
+    authenticationTag: Uint8Array.from(Buffer.from(row.authTag, "base64")),
   };
 }
 
 function encode(value: Uint8Array): string {
-  return Buffer.from(value).toString('base64');
+  return Buffer.from(value).toString("base64");
 }
 
 async function keyVersionCounts(pool: Pool): Promise<CredentialKeyVersionCount[]> {
@@ -118,7 +118,7 @@ async function rewrapLockedCandidate(
         candidate.keyVersion,
       ],
     );
-    if (updated.affectedRows !== 1) throw new Error('Credential key rotation conflict');
+    if (updated.affectedRows !== 1) throw new Error("Credential key rotation conflict");
 
     await connection.query(
       `INSERT INTO ai_direct_audit_events

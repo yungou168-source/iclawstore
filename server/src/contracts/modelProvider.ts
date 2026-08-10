@@ -1,19 +1,19 @@
 export type ProviderFailureClass =
-  | 'auth'
-  | 'rate_limit'
-  | 'timeout'
-  | 'network'
-  | 'provider_5xx'
-  | 'quota'
-  | 'invalid_request'
-  | 'model_unavailable'
-  | 'protocol'
-  | 'budget_exceeded'
-  | 'provider_unavailable';
+  | "auth"
+  | "rate_limit"
+  | "timeout"
+  | "network"
+  | "provider_5xx"
+  | "quota"
+  | "invalid_request"
+  | "model_unavailable"
+  | "protocol"
+  | "budget_exceeded"
+  | "provider_unavailable";
 
 export type ProviderHealth =
-  | { status: 'available'; checkedAt: Date; latencyMs?: number }
-  | { status: 'unavailable'; checkedAt: Date; reason: string };
+  | { status: "available"; checkedAt: Date; latencyMs?: number }
+  | { status: "unavailable"; checkedAt: Date; reason: string };
 
 export type ProviderModel = {
   providerKey: string;

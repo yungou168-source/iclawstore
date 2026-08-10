@@ -7,14 +7,14 @@ import { PluginListItem } from "../../components/PluginListItem";
 import { BrowseResultsSkeleton } from "../../components/skeletons/BrowseResultsSkeleton";
 import { Button } from "../../components/ui/button";
 import { PLUGIN_CATEGORIES } from "../../lib/categories";
+import { t } from "../../lib/i18n";
+import type { Locale } from "../../lib/i18n/config";
+import { useLocale } from "../../lib/i18n/context";
 import {
   fetchPluginCatalog,
   isRateLimitedPackageApiError,
   type PackageListItem,
 } from "../../lib/packageApi";
-import { useLocale } from "../../lib/i18n/context";
-import { t } from "../../lib/i18n";
-import type { Locale } from "../../lib/i18n/config";
 
 type PluginSort = "relevance" | "updated" | "downloads" | "newest" | "name";
 
@@ -107,13 +107,23 @@ function sortPluginSearchItems(items: PackageListItem[], sort: PluginSort) {
   return sorted;
 }
 
-function formatPluginHeadingCount(count: number, hasNextPage: boolean, hasPreviousPage: boolean, locale: Locale = "en") {
+function formatPluginHeadingCount(
+  count: number,
+  hasNextPage: boolean,
+  hasPreviousPage: boolean,
+  locale: Locale = "en",
+) {
   if (hasPreviousPage) return t("plugins.showing", locale, { count });
   if (hasNextPage) return `${count}+`;
   return String(count);
 }
 
-function formatPluginResultsCount(count: number, hasNextPage: boolean, hasPreviousPage: boolean, locale: Locale = "en") {
+function formatPluginResultsCount(
+  count: number,
+  hasNextPage: boolean,
+  hasPreviousPage: boolean,
+  locale: Locale = "en",
+) {
   if (hasPreviousPage) return t("plugins.results_shown", locale, { count });
   if (hasNextPage) return t("plugins.results_plus", locale, { count });
   return t("plugins.results_total", locale, { count });
@@ -454,7 +464,11 @@ function PluginsIndex() {
           activeSort={activeSort}
           onSortChange={handleSortChange}
           filters={[
-            { key: "official", label: t("plugins.official", locale), active: search.official ?? false },
+            {
+              key: "official",
+              label: t("plugins.official", locale),
+              active: search.official ?? false,
+            },
             {
               key: "executesCode",
               label: t("plugins.executes_code", locale),

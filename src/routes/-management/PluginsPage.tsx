@@ -26,9 +26,7 @@ export function PluginsPage({
   return (
     <div className="management-view">
       <h2 className="section-title text-[1.2rem] m-0">{t("management.plugins.title")}</h2>
-      <p className="section-subtitle m-0 mt-1">
-        {t("management.plugins.subtitle")}
-      </p>
+      <p className="section-subtitle m-0 mt-1">{t("management.plugins.subtitle")}</p>
       <div className="management-controls">
         <div className="management-control management-search">
           <span className="mono">{t("management.plugins.package")}</span>
@@ -87,11 +85,11 @@ export function PluginsPage({
                     {plugin.displayName}
                   </Link>
                   <div className="section-subtitle m-0">
-                    {owner?.handle
-                      ? `@${owner.handle}`
-                      : t("management.plugins.unknown_owner")} · {familyLabel(plugin.family)} · v
-                    {latestRelease?.version ?? "—"} ·{" "}
-                    {t("management.plugins.updated", { time: formatTimestamp(plugin.updatedAt, locale) })}
+                    {owner?.handle ? `@${owner.handle}` : t("management.plugins.unknown_owner")} ·{" "}
+                    {familyLabel(plugin.family)} · v{latestRelease?.version ?? "—"} ·{" "}
+                    {t("management.plugins.updated", {
+                      time: formatTimestamp(plugin.updatedAt, locale),
+                    })}
                     {plugin.softDeletedAt ? ` · ${t("management.plugins.hidden")}` : ""}
                     {isHighlighted ? ` · ${t("management.plugins.highlighted")}` : ""}
                   </div>

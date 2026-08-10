@@ -1,14 +1,19 @@
-import { createPool } from 'mysql2/promise';
-import { clearProviderRuntime, loadProviderRuntime } from './services/providerRuntime.js';
-import { createProviderRateLimiter } from './services/providerRateLimiter.js';
-import { createWorkerExecutor } from './services/workerExecutor.js';
-import { createWorkerRuntimeClient } from './services/workerRuntimeClient.js';
+import { createPool } from "mysql2/promise";
+import { createProviderRateLimiter } from "./services/providerRateLimiter.js";
+import { clearProviderRuntime, loadProviderRuntime } from "./services/providerRuntime.js";
 import {
   createRuntimeObserver,
   startRuntimeMetricsLogging,
-} from './services/runtimeObservability.js';
+} from "./services/runtimeObservability.js";
+import { createWorkerExecutor } from "./services/workerExecutor.js";
+import { createWorkerRuntimeClient } from "./services/workerRuntimeClient.js";
 
-function integer(value: string | undefined, fallback: number, minimum: number, maximum: number): number {
+function integer(
+  value: string | undefined,
+  fallback: number,
+  minimum: number,
+  maximum: number,
+): number {
   if (value === undefined) return fallback;
   const parsed = Number(value);
   if (!Number.isSafeInteger(parsed) || parsed < minimum || parsed > maximum) {
@@ -18,30 +23,30 @@ function integer(value: string | undefined, fallback: number, minimum: number, m
 }
 
 function enabled(value: string | undefined): boolean {
-  if (value === undefined || value === 'false') return false;
-  if (value === 'true') return true;
-  throw new Error('PROVIDER_EXECUTION_ENABLED must be true or false');
+  if (value === undefined || value === "false") return false;
+  if (value === "true") return true;
+  throw new Error("PROVIDER_EXECUTION_ENABLED must be true or false");
 }
 
 const stop = new AbortController();
-for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.once(signal, () => stop.abort(new Error(`Executor received ${signal}`)));
 }
 
 if (!enabled(process.env.PROVIDER_EXECUTION_ENABLED)) {
-  console.info(JSON.stringify({ event: 'provider.executor.disabled' }));
+  console.info(JSON.stringify({ event: "provider.executor.disabled" }));
   await new Promise<void>((resolve) => {
     if (stop.signal.aborted) return resolve();
-    stop.signal.addEventListener('abort', () => resolve(), { once: true });
+    stop.signal.addEventListener("abort", () => resolve(), { once: true });
   });
 } else {
   const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl?.startsWith('mysql')) throw new Error('DATABASE_URL must be a MySQL URL');
+  if (!databaseUrl?.startsWith("mysql")) throw new Error("DATABASE_URL must be a MySQL URL");
   const workerId = process.env.WORKER_ID;
   const workerToken = process.env.WORKER_TOKEN;
   const workerApiBaseUrl = process.env.WORKER_API_BASE_URL;
   if (!workerId || !workerToken || !workerApiBaseUrl) {
-    throw new Error('WORKER_ID, WORKER_TOKEN, and WORKER_API_BASE_URL are required');
+    throw new Error("WORKER_ID, WORKER_TOKEN, and WORKER_API_BASE_URL are required");
   }
 
   const pool = createPool({
@@ -50,10 +55,10 @@ if (!enabled(process.env.PROVIDER_EXECUTION_ENABLED)) {
     waitForConnections: true,
     enableKeepAlive: true,
   });
-  const observer = createRuntimeObserver({ role: 'executor', mysqlConnectionLimit: 1 });
+  const observer = createRuntimeObserver({ role: "executor", mysqlConnectionLimit: 1 });
   const stopMetricsLogging = startRuntimeMetricsLogging(
     observer,
-    (metrics) => console.info(JSON.stringify({ event: 'runtime.metrics', ...metrics })),
+    (metrics) => console.info(JSON.stringify({ event: "runtime.metrics", ...metrics })),
     integer(process.env.RUNTIME_METRICS_INTERVAL_MS, 60_000, 1_000, 300_000),
   );
   const runtime = loadProviderRuntime(pool);
@@ -61,7 +66,7 @@ if (!enabled(process.env.PROVIDER_EXECUTION_ENABLED)) {
     stopMetricsLogging();
     observer.close();
     await pool.end();
-    throw new Error('AI Direct provider runtime must be enabled for the Executor');
+    throw new Error("AI Direct provider runtime must be enabled for the Executor");
   }
 
   const executor = createWorkerExecutor({
@@ -86,7 +91,7 @@ if (!enabled(process.env.PROVIDER_EXECUTION_ENABLED)) {
     },
   });
 
-  console.info(JSON.stringify({ event: 'provider.executor.started', concurrency: 1 }));
+  console.info(JSON.stringify({ event: "provider.executor.started", concurrency: 1 }));
   try {
     await executor.run(stop.signal);
   } catch (error) {
@@ -96,6 +101,6 @@ if (!enabled(process.env.PROVIDER_EXECUTION_ENABLED)) {
     observer.close();
     clearProviderRuntime(runtime);
     await pool.end();
-    console.info(JSON.stringify({ event: 'provider.executor.stopped' }));
+    console.info(JSON.stringify({ event: "provider.executor.stopped" }));
   }
 }

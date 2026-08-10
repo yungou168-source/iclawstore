@@ -92,8 +92,49 @@ const authStatusMock = vi.fn<() => HeaderAuthStatus>(() => ({
 vi.mock("../lib/i18n/context", () => ({
   useLocale: () => ({
     locale: "en",
-    setLocale: vi.fn(),
-    t: (key: string) => key,
+    t: (key: string, vars?: Record<string, string | number>) => {
+      const translations: Record<string, string> = {
+        "nav.home": "Home",
+        "nav.skills": "Skills",
+        "nav.plugins": "Plugins",
+        "nav.souls": "Souls",
+        "nav.publishers": "Publishers",
+        "header.primary_navigation": "Primary navigation",
+        "header.content_types": "Content types",
+        "header.site_search": "Site search",
+        "header.search": "Search",
+        "header.search_placeholder": "Search skills and plugins",
+        "header.search_souls_placeholder": "Search souls...",
+        "header.search_suggestions": "Search suggestions",
+        "header.searching": "Searching…",
+        "header.search_no_results": 'No skills or plugins found for "{query}"',
+        "header.typeahead_skills": 'See skill results for "{query}"',
+        "header.typeahead_plugins": 'See plugin results for "{query}"',
+        "header.theme_controls": "Theme controls",
+        "header.theme_mode": "Theme mode",
+        "header.theme_mode_current": "Cycle theme mode. Current: {mode}",
+        "header.theme_system": "System theme",
+        "header.theme_light": "Light theme",
+        "header.theme_dark": "Dark theme",
+        "header.open_menu": "Open menu",
+        "header.browse_sections": "Browse sections, switch theme, and access account actions.",
+        "header.dashboard": "Dashboard",
+        "header.ai_direct_organizations": "Organizations & companies",
+        "header.wallet": "Wallet & billing",
+        "header.stars": "Stars",
+        "header.settings": "Settings",
+        "header.sign_out": "Sign out",
+        "header.workspace": "Workspace",
+        "header.developers": "Developers",
+        "header.hire_ai_employees": "Hire AI employees",
+        "header.desktop_client": "Desktop client",
+        "header.clawhub": "ClawHub",
+        "header.user_avatar": "User avatar",
+      };
+      return (translations[key] ?? key).replace(/\{(\w+)\}/g, (_, name) =>
+        String(vars?.[name] ?? `{${name}}`),
+      );
+    },
   }),
 }));
 
@@ -152,13 +193,9 @@ vi.mock("../lib/useUnifiedSearch", () => ({
 vi.mock("../components/ui/dropdown-menu", () => ({
   DropdownMenu: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   DropdownMenuContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  DropdownMenuItem: ({
-    children,
-    onClick,
-  }: {
-    children: ReactNode;
-    onClick?: () => void;
-  }) => <div onClick={onClick}>{children}</div>,
+  DropdownMenuItem: ({ children, onClick }: { children: ReactNode; onClick?: () => void }) => (
+    <div onClick={onClick}>{children}</div>
+  ),
   DropdownMenuSeparator: () => <hr />,
   DropdownMenuTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
@@ -261,6 +298,7 @@ describe("Header", () => {
     expect(screen.queryByText("Docs")).toBeNull();
     expect(screen.queryByText("About")).toBeNull();
     expect(screen.getByText("Dashboard")).toBeTruthy();
+    expect(screen.getByText("Organizations & companies")).toBeTruthy();
     expect(screen.queryByText("Manage")).toBeNull();
     expect(screen.getByPlaceholderText("Search skills and plugins")).toBeTruthy();
 
@@ -302,7 +340,11 @@ describe("Header", () => {
 
     expect(screen.getByRole("button", { name: /Workspace/ })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Dashboard" })).toBeTruthy();
+    const walletLink = screen.getByRole("link", { name: "Wallet & billing" });
+    expect(walletLink.getAttribute("href")).toBe("/wallet");
     expect(screen.getByRole("link", { name: "Settings" })).toBeTruthy();
+    const organizationLink = screen.getByRole("link", { name: "Organizations & companies" });
+    expect(organizationLink.getAttribute("href")).toBe("/ai-work-admin/organizations");
     fireEvent.click(screen.getByText("Sign out"));
     expect(signOutMock).toHaveBeenCalledTimes(1);
   });
@@ -316,6 +358,8 @@ describe("Header", () => {
       "/settings",
       "/stars",
       "/dashboard",
+      "/wallet",
+      "/ai-work-admin/organizations",
     ];
 
     for (const pathname of workspacePaths) {

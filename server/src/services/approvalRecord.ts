@@ -1,6 +1,6 @@
-import type { PoolConnection } from 'mysql2/promise';
-import { AiDirectHiringError, ErrorCodes } from './aiDirectErrors.js';
-import type { ApprovalStatus } from './approvalStateMachine.js';
+import type { PoolConnection } from "mysql2/promise";
+import { AiDirectHiringError, ErrorCodes } from "./aiDirectErrors.js";
+import type { ApprovalStatus } from "./approvalStateMachine.js";
 
 export type ApprovalRow = {
   id: string;
@@ -16,7 +16,7 @@ export type ApprovalRow = {
 };
 
 export async function lockApproval(
-  connection: Pick<PoolConnection, 'query'>,
+  connection: Pick<PoolConnection, "query">,
   approvalId: string,
 ): Promise<ApprovalRow> {
   const [rows] = await connection.query(
@@ -29,7 +29,7 @@ export async function lockApproval(
   );
   const approval = (rows as ApprovalRow[])[0];
   if (!approval) {
-    throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, 'Approval 不存在', 404);
+    throw new AiDirectHiringError(ErrorCodes.NOT_FOUND, "Approval 不存在", 404);
   }
   return approval;
 }

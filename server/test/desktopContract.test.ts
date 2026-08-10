@@ -110,6 +110,7 @@ describe("desktop client contract", () => {
     expect(response.headers["content-type"]).toContain("application/vnd.oai.openapi");
     expect(response.body).toContain("openapi: 3.1.0");
     expect(response.body).toContain(`version: ${DESKTOP_CLIENT_CONTRACT_VERSION}`);
+    expect(response.body).toContain("  - url: https://www.iclawstore.com");
   });
 
   it("keeps every OpenAPI operation synchronized with the release manifest", async () => {

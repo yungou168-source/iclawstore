@@ -125,7 +125,7 @@ describe("prod http smoke", () => {
     const html = await fetchHtml("/recruit-ai");
 
     expect(html).toContain("AI 员工目录");
-    expect(html).toContain("在客户端继续招聘");
+    expect(html).toContain("选择 Agent 并发起付费雇佣");
     expect(html).not.toContain("Something went wrong!");
   });
 

@@ -1,64 +1,227 @@
 openapi: 3.1.0
 info:
-  title: ClawHub Desktop Client API
-  version: 1.2.0
+  title: AI直聘桌面客户端 API
+  version: 1.3.0
   description: |
-    Versioned contract for Agent appearance, paid hiring, account-synchronized
-    desktop sidebar preferences, and the desktop template catalog. Offer is an
-    immutable receipt created only after verified payment succeeds.
+    AI直聘桌面客户端的版本化生产契约，覆盖 Agent 形象、账号侧栏、桌面模板、
+    会话能力协商、Jobs 与产物、面试、候选目录、企业人员以及付费招聘。
+
+    重要：接口出现在本文档中只表示机器契约已定义，不等于生产业务已经启用。
+    客户端必须先读取 GET /api/v1/desktop/contract 的 capabilities，再读取
+    GET /api/v1/ai-direct-hiring/session 的组织功能开关与运行能力。
+    手工填写 Bearer Token 仅用于接口调试，不代表 OAuth 登录已经发布。
+
+    能力状态：available（生产已启用）、documented_disabled（已定义但关闭）、
+    planned（规划中、尚未实现）、deprecated（兼容保留）。
 servers:
   - url: https://www.iclawstore.com
+    description: AI直聘生产环境
 security:
   - bearerAuth: []
 tags:
-  - name: Contract
-  - name: Agent Appearance
-  - name: Employments
-  - name: Offers
-  - name: Desktop Sidebar
-  - name: Desktop Templates
-  - name: Session
+  - name: 契约发现
+    description: 版本、能力状态与 OpenAPI 机器契约
+  - name: Agent 形象
+    description: Agent 头像、2D/3D 资产与展示控制
+  - name: 雇佣关系
+  - name: Offer 凭证
+  - name: 桌面侧栏
+  - name: 桌面模板
+  - name: 会话
   - name: Jobs
-  - name: Interviews
-  - name: Candidate Catalog
-  - name: Workforce
+  - name: 面试
+  - name: 候选目录
+  - name: 企业人员
+  - name: 开发者发布
+x-capability-status-definitions:
+  available: 生产已经启用，仍须通过身份、组织权限和会话能力校验。
+  documented_disabled: 契约已定义，但生产功能开关或运行配置关闭。
+  planned: 规划能力，尚未形成可调用的生产接口。
+  deprecated: 兼容保留能力，新客户端不得继续依赖。
+x-capabilities:
+  auth: { status: documented_disabled, reason: 生产 OAuth/OIDC + PKCE 配置尚未发布 }
+  session: { status: available }
+  agentAppearance: { status: available }
+  desktopSidebar: { status: available }
+  desktopTemplates: { status: available }
+  desktopTemplatePurchase: { status: documented_disabled, reason: Desktop API v1 不支持模板购买 }
+  paidHiring: { status: documented_disabled, reason: 支付与付费招聘生产门禁尚未开启 }
+  jobs: { status: available }
+  jobControl: { status: available }
+  interviews: { status: available }
+  candidateCatalog: { status: available }
+  workforce: { status: available }
+  agentPublication: { status: available }
+  agentPublicationEditing:
+    { status: planned, reason: Agent 单项读取、PATCH 编辑、归档、下架与回滚尚未形成完整桌面契约 }
+  jinshaCredentialSync:
+    { status: documented_disabled, reason: 仅在 Provider Runtime 与凭据密钥环配置完成后挂载 }
+  jinshaModelPolicy: { status: planned }
+  deviceManagement: { status: planned }
+  realtimeEvents: { status: planned }
+  teamMarketplace: { status: planned }
+  localTrialMigration: { status: planned }
+  messageChannels: { status: planned }
+  persistentMemorySync: { status: planned }
+  skinMarketplace: { status: planned }
+  centralizedGovernance: { status: planned }
+  legacyInterviewRead:
+    status: deprecated
+    replacedBy: PUT /api/v1/ai-direct-hiring/interviews/{conversationId}/read-cursor
 paths:
   /api/v1/desktop/contract:
     get:
-      tags: [Contract]
-      summary: Discover the current desktop contract
+      tags: [契约发现]
+      summary: 发现当前桌面客户端契约
       security: []
       operationId: getDesktopContract
       responses:
         "200":
-          description: Contract metadata
+          description: 契约元数据
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ContractMetadata"
   /api/v1/desktop/openapi.yaml:
     get:
-      tags: [Contract]
-      summary: Download this OpenAPI document
+      tags: [契约发现]
+      summary: 下载本 OpenAPI 文档
       security: []
       operationId: getDesktopOpenApi
       responses:
         "200":
-          description: OpenAPI 3.1 YAML
+          description: OpenAPI 3.1 YAML 文档
           content:
             application/vnd.oai.openapi:
               schema:
                 type: string
+  /api/v1/ai-direct-hiring/agents:
+    get:
+      tags: [开发者发布]
+      summary: 查询当前开发者可管理的 Agent
+      operationId: listDeveloperAgents
+      responses:
+        "200": { description: Agent 列表，最多 100 项 }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+    post:
+      tags: [开发者发布]
+      summary: 创建 Agent 及其首个草稿版本
+      operationId: createDeveloperAgent
+      parameters:
+        - {
+            name: Idempotency-Key,
+            in: header,
+            required: false,
+            schema: { type: string, maxLength: 128 },
+          }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgentCreateRequest" }
+      responses:
+        "201": { description: Agent 与首个草稿版本已创建 }
+        "200": { description: 幂等重放返回既有 Agent }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/v1/ai-direct-hiring/agents/{agentId}/versions:
+    get:
+      tags: [开发者发布]
+      summary: 查询 Agent 版本历史
+      operationId: listDeveloperAgentVersions
+      parameters:
+        - { name: agentId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      responses:
+        "200": { description: 版本列表，最多 100 项 }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: [开发者发布]
+      summary: 为 Agent 创建新的不可变版本草稿
+      operationId: createDeveloperAgentVersion
+      parameters:
+        - { name: agentId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+        - {
+            name: Idempotency-Key,
+            in: header,
+            required: false,
+            schema: { type: string, maxLength: 128 },
+          }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgentVersionCreateRequest" }
+      responses:
+        "201": { description: Agent 版本草稿已创建 }
+        "200": { description: 幂等重放返回既有版本 }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/v1/ai-direct-hiring/agent-versions/{versionId}/submit:
+    post:
+      tags: [开发者发布]
+      summary: 提交 Agent 版本以供审核
+      description: 命令型操作，不接受请求体；审核材料来自已保存的版本内容。
+      operationId: submitDeveloperAgentVersion
+      parameters:
+        - { name: versionId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      responses:
+        "200": { description: 版本已提交 }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/v1/ai-direct-hiring/agent-versions/{versionId}/review:
+    post:
+      tags: [开发者发布]
+      summary: 审核 Agent 版本（平台管理员）
+      operationId: reviewDeveloperAgentVersion
+      parameters:
+        - { name: versionId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [approved, rejected] }
+                securityStatus: { type: string, enum: [approved, rejected], default: approved }
+      responses:
+        "200": { description: 审核裁决已记录 }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/v1/ai-direct-hiring/agent-versions/{versionId}/publish:
+    post:
+      tags: [开发者发布]
+      summary: 发布已通过审核的 Agent 版本
+      description: 命令型操作，不接受请求体；服务端根据已保存的审核与安全状态决定是否允许发布。
+      operationId: publishDeveloperAgentVersion
+      parameters:
+        - { name: versionId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      responses:
+        "200": { description: 版本已发布；重复调用返回 replayed }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /api/v1/ai-direct-hiring/agents/{agentId}/appearance:
     parameters:
       - $ref: "#/components/parameters/AgentId"
     get:
-      tags: [Agent Appearance]
-      summary: Read Agent appearance and current write authority
+      tags: [Agent 形象]
+      summary: 读取 Agent 形象及当前写入权限
       operationId: getAgentAppearance
       responses:
         "200":
-          description: Appearance profile
+          description: Agent 形象配置
           headers:
             ETag:
               $ref: "#/components/headers/AppearanceEtag"
@@ -69,8 +232,8 @@ paths:
         "401": { $ref: "#/components/responses/AuthRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
     patch:
-      tags: [Agent Appearance]
-      summary: Update avatar reference or default presentation mode
+      tags: [Agent 形象]
+      summary: 更新头像引用或默认展示模式
       operationId: updateAgentAppearance
       parameters:
         - $ref: "#/components/parameters/AppearanceIfMatch"
@@ -82,7 +245,7 @@ paths:
               $ref: "#/components/schemas/AgentAppearancePatch"
       responses:
         "200":
-          description: Updated revision
+          description: 更新后的修订版本
           headers:
             ETag:
               $ref: "#/components/headers/AppearanceEtag"
@@ -96,8 +259,8 @@ paths:
         "428": { $ref: "#/components/responses/PreconditionRequired" }
   /api/v1/ai-direct-hiring/agents/{agentId}/appearance/assets:
     post:
-      tags: [Agent Appearance]
-      summary: Upload an Agent appearance asset
+      tags: [Agent 形象]
+      summary: 上传 Agent 形象资产
       operationId: uploadAgentAppearanceAsset
       parameters:
         - $ref: "#/components/parameters/AgentId"
@@ -118,7 +281,7 @@ paths:
                   format: binary
       responses:
         "201":
-          description: Stored asset
+          description: 已存储的资产
           headers:
             ETag:
               $ref: "#/components/headers/AppearanceEtag"
@@ -134,8 +297,8 @@ paths:
         "428": { $ref: "#/components/responses/PreconditionRequired" }
   /api/v1/ai-direct-hiring/agents/{agentId}/appearance/assets/reorder:
     post:
-      tags: [Agent Appearance]
-      summary: Replace the complete order for one appearance kind
+      tags: [Agent 形象]
+      summary: 替换同类形象资产的完整排序
       operationId: reorderAgentAppearanceAssets
       parameters:
         - $ref: "#/components/parameters/AgentId"
@@ -158,7 +321,7 @@ paths:
                   items: { type: string, format: uuid }
       responses:
         "200":
-          description: New order and revision
+          description: 新排序和修订版本
           headers:
             ETag:
               $ref: "#/components/headers/AppearanceEtag"
@@ -179,29 +342,29 @@ paths:
         "428": { $ref: "#/components/responses/PreconditionRequired" }
   /api/v1/ai-direct-hiring/agents/{agentId}/appearance/assets/{assetId}:
     delete:
-      tags: [Agent Appearance]
-      summary: Soft-delete an appearance asset
+      tags: [Agent 形象]
+      summary: 软删除形象资产
       operationId: deleteAgentAppearanceAsset
       parameters:
         - $ref: "#/components/parameters/AgentId"
         - $ref: "#/components/parameters/AssetId"
         - $ref: "#/components/parameters/AppearanceIfMatch"
       responses:
-        "204": { description: Asset deleted }
+        "204": { description: 资产已删除 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
         "409": { $ref: "#/components/responses/Conflict" }
         "428": { $ref: "#/components/responses/PreconditionRequired" }
   /api/v1/ai-direct-hiring/appearance-assets/{assetId}/content:
     get:
-      tags: [Agent Appearance]
-      summary: Stream an active appearance asset
+      tags: [Agent 形象]
+      summary: 读取有效的形象资产内容
       operationId: getAgentAppearanceAssetContent
       parameters:
         - $ref: "#/components/parameters/AssetId"
       responses:
         "200":
-          description: PNG, JPEG, WebP, or self-contained GLB bytes
+          description: PNG、JPEG、WebP 或自包含的 GLB 二进制内容
           headers:
             ETag: { schema: { type: string } }
             X-Content-Type-Options: { schema: { type: string, const: nosniff } }
@@ -214,18 +377,18 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/ai-direct-hiring/agents/{agentId}/prices:
     get:
-      tags: [Offers]
-      summary: List the authenticated developer's immutable price history
+      tags: [Offer 凭证]
+      summary: 查询当前开发者的不可变价格历史
       operationId: listAgentHiringPrices
       parameters:
         - { name: agentId, in: path, required: true, schema: { type: string, maxLength: 36 } }
       responses:
-        "200": { description: Price versions, newest first }
+        "200": { description: 价格版本列表，按最新优先排序 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
     post:
-      tags: [Offers]
-      summary: Set the developer-owned CNY hiring price for a published Agent version
+      tags: [Offer 凭证]
+      summary: 为已发布 Agent 版本设置开发者拥有的人民币招聘价格
       operationId: setAgentHiringPrice
       parameters:
         - { name: agentId, in: path, required: true, schema: { type: string, maxLength: 36 } }
@@ -242,15 +405,15 @@ paths:
                 amountFen: { type: string, pattern: "^[0-9]+$" }
                 currency: { type: string, const: CNY }
       responses:
-        "201": { description: New active immutable price version }
+        "201": { description: 新的有效不可变价格版本 }
         "400": { $ref: "#/components/responses/ValidationError" }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
         "409": { $ref: "#/components/responses/Conflict" }
   /api/v1/ai-direct-hiring/paid-hiring/orders:
     post:
-      tags: [Offers]
-      summary: Create an idempotent Alipay hiring order from the server-side price
+      tags: [Offer 凭证]
+      summary: 根据服务端价格创建幂等的支付宝招聘订单
       operationId: createPaidHiringOrder
       parameters:
         - {
@@ -274,65 +437,65 @@ paths:
                 positionId: { type: string, maxLength: 36 }
                 agentId: { type: string, maxLength: 36 }
       responses:
-        "201": { description: Pending Alipay order with a server-signed payUrl }
-        "200": { description: Replay of the same idempotent pending order }
+        "201": { description: 待支付的支付宝订单，包含服务端签名的 payUrl }
+        "200": { description: 返回同一幂等键对应的待支付订单 }
         "400": { $ref: "#/components/responses/ValidationError" }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
         "409": { $ref: "#/components/responses/Conflict" }
-        "503": { description: Alipay merchant configuration is unavailable }
+        "503": { description: 支付宝商户配置不可用 }
   /api/v1/ai-direct-hiring/paid-hiring/orders/{orderId}:
     get:
-      tags: [Offers]
-      summary: Read the requester's local payment status and fulfilled references
+      tags: [Offer 凭证]
+      summary: 查询请求者的本地支付状态和履约引用
       operationId: getPaidHiringOrder
       parameters:
         - { name: orderId, in: path, required: true, schema: { type: string, maxLength: 36 } }
       responses:
-        "200": { description: Local order status only; no provider request is made }
+        "200": { description: 仅返回本地订单状态，不向支付渠道发起请求 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/ai-direct-hiring/paid-hiring/orders/{orderId}/reconcile:
     post:
-      tags: [Offers]
-      summary: Perform one cooldown-limited server-side Alipay reconciliation
+      tags: [Offer 凭证]
+      summary: 执行一次受冷却时间限制的服务端支付宝对账
+      description: 命令型操作，不接受请求体；服务端使用订单快照和支付渠道配置执行查询。
       operationId: reconcilePaidHiringOrder
       parameters:
         - { name: orderId, in: path, required: true, schema: { type: string, maxLength: 36 } }
       responses:
-        "200": { description: Updated local order status }
+        "200": { description: 更新后的本地订单状态 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
-        "429": { description: Reconciliation cooldown is active }
-        "503": { description: Alipay merchant configuration is unavailable }
+        "429": { description: 对账冷却时间尚未结束 }
+        "503": { description: 支付宝商户配置不可用 }
   /api/v1/ai-direct-hiring/offers:
     get:
-      tags: [Offers]
-      summary: List immutable Offer receipts created by verified payment fulfillment
+      tags: [Offer 凭证]
+      summary: 查询支付验证履约后生成的不可变 Offer 凭证
       operationId: listIssuedOffers
       responses:
-        "200": { description: Issued Offer receipts visible to the current organization member }
+        "200": { description: 当前组织成员可见的已签发 Offer 凭证 }
         "401": { $ref: "#/components/responses/AuthRequired" }
   /api/v1/ai-direct-hiring/offers/{offerId}:
     get:
-      tags: [Offers]
-      summary: Read an immutable Offer receipt and its payment split
+      tags: [Offer 凭证]
+      summary: 读取不可变 Offer 凭证及其支付分账
       operationId: getIssuedOffer
       parameters:
         - { name: offerId, in: path, required: true, schema: { type: string, maxLength: 36 } }
       responses:
-        "200": { description: Issued Offer receipt }
+        "200": { description: 已签发的 Offer 凭证 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/ai-direct-hiring/employments/{employmentId}/transition:
     post:
-      tags: [Employments]
-      summary: Transition Employment and atomically synchronize appearance control
+      tags: [雇佣关系]
+      summary: 转换雇佣状态并原子同步形象控制权
       description: |
-        Entering accepted acquires the Agent appearance controller in the same
-        MySQL transaction. Entering terminated conditionally releases control
-        only when this Employment is still the controller.
+        进入 accepted 状态时，会在同一 MySQL 事务中取得 Agent 形象控制权。
+        进入 terminated 状态时，仅当该雇佣关系仍持有控制权才会释放。
       operationId: transitionEmployment
       parameters:
         - $ref: "#/components/parameters/EmploymentId"
@@ -344,7 +507,7 @@ paths:
               $ref: "#/components/schemas/EmploymentTransitionRequest"
       responses:
         "200":
-          description: Employment after the committed transition
+          description: 已提交事务后的雇佣关系
           content:
             application/json:
               schema:
@@ -354,19 +517,19 @@ paths:
         "403": { $ref: "#/components/responses/ForbiddenScope" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
-          description: Invalid state transition or Agent appearance already controlled by another Employment
+          description: 状态转换无效，或 Agent 形象已被其他雇佣关系控制
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
   /api/v1/desktop/sidebar:
     get:
-      tags: [Desktop Sidebar]
-      summary: Read the account-level sidebar override
+      tags: [桌面侧栏]
+      summary: 读取账号级侧栏覆盖配置
       operationId: getDesktopSidebar
       responses:
         "200":
-          description: Current override or the revision-zero default marker
+          description: 当前覆盖配置，或修订号为零的默认标记
           headers:
             ETag:
               $ref: "#/components/headers/SidebarEtag"
@@ -376,8 +539,8 @@ paths:
                 $ref: "#/components/schemas/SidebarPreference"
         "401": { $ref: "#/components/responses/AuthRequired" }
     put:
-      tags: [Desktop Sidebar]
-      summary: Replace the account-level sidebar override
+      tags: [桌面侧栏]
+      summary: 替换账号级侧栏覆盖配置
       operationId: putDesktopSidebar
       parameters:
         - $ref: "#/components/parameters/SidebarIfMatch"
@@ -389,7 +552,7 @@ paths:
               $ref: "#/components/schemas/SidebarConfig"
       responses:
         "200":
-          description: Saved override
+          description: 已保存的覆盖配置
           headers:
             ETag:
               $ref: "#/components/headers/SidebarEtag"
@@ -403,14 +566,14 @@ paths:
         "409": { $ref: "#/components/responses/RevisionConflict" }
         "428": { $ref: "#/components/responses/PreconditionRequired" }
     delete:
-      tags: [Desktop Sidebar]
-      summary: Delete the override and return to client defaults
+      tags: [桌面侧栏]
+      summary: 删除覆盖配置并恢复客户端默认值
       operationId: resetDesktopSidebar
       parameters:
         - $ref: "#/components/parameters/SidebarIfMatch"
       responses:
         "204":
-          description: Override deleted; response ETag is sidebar-0
+          description: 覆盖配置已删除；响应 ETag 为 sidebar-0
           headers:
             ETag:
               $ref: "#/components/headers/SidebarEtag"
@@ -419,8 +582,8 @@ paths:
         "428": { $ref: "#/components/responses/PreconditionRequired" }
   /api/v1/desktop/sidebar/icons:
     post:
-      tags: [Desktop Sidebar]
-      summary: Upload an account-owned sidebar icon
+      tags: [桌面侧栏]
+      summary: 上传账号拥有的侧栏图标
       operationId: uploadDesktopSidebarIcon
       requestBody:
         required: true
@@ -433,7 +596,7 @@ paths:
                 file: { type: string, format: binary }
       responses:
         "201":
-          description: Stored icon metadata
+          description: 已存储的图标元数据
           content:
             application/json:
               schema:
@@ -443,14 +606,14 @@ paths:
         "415": { $ref: "#/components/responses/UnsupportedMediaType" }
   /api/v1/desktop/sidebar/icons/{assetId}/content:
     get:
-      tags: [Desktop Sidebar]
-      summary: Stream an icon owned by the authenticated account
+      tags: [桌面侧栏]
+      summary: 读取当前账号拥有的图标内容
       operationId: getDesktopSidebarIconContent
       parameters:
         - $ref: "#/components/parameters/AssetId"
       responses:
         "200":
-          description: Image bytes
+          description: 图片二进制内容
           content:
             image/png: { schema: { type: string, format: binary } }
             image/jpeg: { schema: { type: string, format: binary } }
@@ -459,20 +622,20 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/desktop/sidebar/icons/{assetId}:
     delete:
-      tags: [Desktop Sidebar]
-      summary: Delete an unused account-owned icon
+      tags: [桌面侧栏]
+      summary: 删除未使用的账号图标
       operationId: deleteDesktopSidebarIcon
       parameters:
         - $ref: "#/components/parameters/AssetId"
       responses:
-        "204": { description: Icon deleted }
+        "204": { description: 图标已删除 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
   /api/v1/desktop/templates:
     get:
-      tags: [Desktop Templates]
-      summary: List published desktop templates
+      tags: [桌面模板]
+      summary: 查询已发布的桌面模板
       operationId: listDesktopTemplates
       parameters:
         - {
@@ -487,7 +650,7 @@ paths:
           }
       responses:
         "200":
-          description: Published templates; purchaseSupported is always false in v1
+          description: 已发布的模板；v1 中 purchaseSupported 始终为 false
           content:
             application/json:
               schema:
@@ -502,8 +665,8 @@ paths:
                   purchaseSupported: { type: boolean, const: false }
         "401": { $ref: "#/components/responses/AuthRequired" }
     post:
-      tags: [Desktop Templates]
-      summary: Create a Publisher-owned template draft
+      tags: [桌面模板]
+      summary: 创建 Publisher 拥有的模板草稿
       operationId: createDesktopTemplate
       requestBody:
         required: true
@@ -512,7 +675,7 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateTemplate"
       responses:
-        "201": { description: Template draft created }
+        "201": { description: 模板草稿已创建 }
         "400": { $ref: "#/components/responses/ValidationError" }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
@@ -521,20 +684,20 @@ paths:
     parameters:
       - $ref: "#/components/parameters/TemplateId"
     get:
-      tags: [Desktop Templates]
-      summary: Read a published or owned template
+      tags: [桌面模板]
+      summary: 读取已发布或当前账号拥有的模板
       operationId: getDesktopTemplate
       responses:
         "200":
-          description: Template details
+          description: 模板详情
           content:
             application/json:
               schema: { $ref: "#/components/schemas/DesktopTemplate" }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
     patch:
-      tags: [Desktop Templates]
-      summary: Update an owned template draft
+      tags: [桌面模板]
+      summary: 更新当前账号拥有的模板草稿
       operationId: updateDesktopTemplateDraft
       requestBody:
         required: true
@@ -543,14 +706,14 @@ paths:
             schema:
               $ref: "#/components/schemas/UpdateTemplate"
       responses:
-        "200": { description: Draft updated }
+        "200": { description: 草稿已更新 }
         "400": { $ref: "#/components/responses/ValidationError" }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/desktop/templates/{templateId}/versions:
     post:
-      tags: [Desktop Templates]
-      summary: Upload a validated .clawtemplate package for an owned draft
+      tags: [桌面模板]
+      summary: 为模板草稿上传已校验的 .clawtemplate 包
       operationId: uploadDesktopTemplateVersion
       parameters:
         - $ref: "#/components/parameters/TemplateId"
@@ -564,7 +727,7 @@ paths:
               properties:
                 file: { type: string, format: binary }
       responses:
-        "201": { description: Draft version created }
+        "201": { description: 草稿版本已创建 }
         "400": { $ref: "#/components/responses/ValidationError" }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
@@ -572,8 +735,8 @@ paths:
         "415": { $ref: "#/components/responses/UnsupportedMediaType" }
   /api/v1/desktop/templates/{templateId}/versions/{versionId}/screenshots:
     post:
-      tags: [Desktop Templates]
-      summary: Upload one of 1–4 template screenshots
+      tags: [桌面模板]
+      summary: 上传 1–4 张模板截图中的一张
       operationId: uploadDesktopTemplateScreenshot
       parameters:
         - $ref: "#/components/parameters/TemplateId"
@@ -592,47 +755,58 @@ paths:
               properties:
                 file: { type: string, format: binary }
       responses:
-        "201": { description: Screenshot stored }
+        "201": { description: 截图已存储 }
         "400": { $ref: "#/components/responses/ValidationError" }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
         "409": { $ref: "#/components/responses/Conflict" }
   /api/v1/desktop/templates/{templateId}/versions/{versionId}/submit:
     post:
-      tags: [Desktop Templates]
-      summary: Submit a complete draft version for review
+      tags: [桌面模板]
+      summary: 提交完整模板草稿版本以供审核
+      description: 命令型操作，不接受请求体；服务端校验已保存的模板包、manifest 与 1–4 张截图。
       operationId: submitDesktopTemplateVersion
       parameters:
         - $ref: "#/components/parameters/TemplateId"
         - $ref: "#/components/parameters/VersionId"
       responses:
-        "200": { description: Version is pending review }
+        "200": { description: 版本已进入待审核状态 }
         "400": { $ref: "#/components/responses/ValidationError" }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/desktop/templates/{templateId}/versions/{versionId}/approve:
     post:
-      tags: [Desktop Templates]
-      summary: Approve and publish a submitted version (platform admin)
+      tags: [桌面模板]
+      summary: 审批并发布已提交的模板版本（平台管理员）
+      description: 审核身份和结果由服务端上下文确定，可选 reason 会写入审核记录。
       operationId: approveDesktopTemplateVersion
       parameters:
         - $ref: "#/components/parameters/TemplateId"
         - $ref: "#/components/parameters/VersionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                reason: { type: string, minLength: 1, maxLength: 2000 }
       responses:
-        "200": { description: Version published }
+        "200": { description: 版本已发布 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
         "409": { $ref: "#/components/responses/Conflict" }
   /api/v1/desktop/templates/{templateId}/package:
     get:
-      tags: [Desktop Templates]
-      summary: Download a free or entitled published package
+      tags: [桌面模板]
+      summary: 下载免费或已获权益的已发布模板包
       operationId: downloadDesktopTemplatePackage
       parameters:
         - $ref: "#/components/parameters/TemplateId"
       responses:
         "200":
-          description: .clawtemplate ZIP package
+          description: .clawtemplate ZIP 压缩包
           headers:
             Content-Disposition: { schema: { type: string } }
             ETag: { schema: { type: string } }
@@ -643,19 +817,19 @@ paths:
         "409": { $ref: "#/components/responses/Conflict" }
   /api/v1/desktop/template-screenshots/{assetId}/content:
     get:
-      tags: [Desktop Templates]
-      summary: Stream a published template screenshot
+      tags: [桌面模板]
+      summary: 读取已发布模板的截图
       operationId: getDesktopTemplateScreenshot
       parameters:
         - $ref: "#/components/parameters/AssetId"
       responses:
-        "200": { description: Screenshot image bytes }
+        "200": { description: 截图二进制内容 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/desktop/templates/{templateId}/entitlements/{userId}:
     put:
-      tags: [Desktop Templates]
-      summary: Grant a test/admin entitlement (platform admin)
+      tags: [桌面模板]
+      summary: 授予测试或管理权益（平台管理员）
       operationId: grantDesktopTemplateEntitlement
       parameters:
         - $ref: "#/components/parameters/TemplateId"
@@ -669,36 +843,36 @@ paths:
               properties:
                 reference: { type: [string, "null"], maxLength: 191 }
       responses:
-        "200": { description: Entitlement active }
+        "200": { description: 权益已生效 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
     delete:
-      tags: [Desktop Templates]
-      summary: Revoke an entitlement (platform admin)
+      tags: [桌面模板]
+      summary: 撤销模板权益（平台管理员）
       operationId: revokeDesktopTemplateEntitlement
       parameters:
         - $ref: "#/components/parameters/TemplateId"
         - $ref: "#/components/parameters/UserId"
       responses:
-        "204": { description: Entitlement revoked }
+        "204": { description: 权益已撤销 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/session:
     get:
-      tags: [Session]
-      summary: Resolve the authenticated desktop identity, organization scope, and enabled capabilities
+      tags: [会话]
+      summary: 解析桌面端身份、组织范围和已启用能力
       operationId: getDesktopSession
       parameters:
         - { name: X-Organization-Id, in: header, schema: { type: string, maxLength: 36 } }
       responses:
         "200":
-          description: Server-authoritative desktop session scope
+          description: 服务端确定的桌面会话范围
           content: { application/json: { schema: { $ref: "#/components/schemas/DesktopSession" } } }
         "401": { $ref: "#/components/responses/AuthRequired" }
   /api/v1/ai-direct-hiring/jobs:
     get:
       tags: [Jobs]
-      summary: List organization Jobs using a stable cursor
+      summary: 使用稳定游标查询组织 Jobs
       operationId: listDesktopJobs
       parameters:
         - {
@@ -713,15 +887,10 @@ paths:
             schema: { type: integer, minimum: 1, maximum: 50, default: 20 },
           }
         - { name: cursor, in: query, schema: { type: string } }
-        - {
-            name: status,
-            in: query,
-            description: Comma-separated statuses,
-            schema: { type: string },
-          }
+        - { name: status, in: query, description: 以逗号分隔的状态列表, schema: { type: string } }
       responses:
         "200":
-          description: Cursor page of Jobs; newest runs first
+          description: Jobs 游标分页，按最新运行优先排序
           content: { application/json: { schema: { $ref: "#/components/schemas/JobPage" } } }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
@@ -729,27 +898,65 @@ paths:
   /api/v1/ai-direct-hiring/jobs/{runId}:
     get:
       tags: [Jobs]
-      summary: Read a Job and its ordered step projection
+      summary: 读取 Job 及其有序步骤投影
       operationId: getDesktopJob
       parameters:
         - { name: runId, in: path, required: true, schema: { type: string, maxLength: 36 } }
       responses:
         "200":
-          description: Job detail
+          description: Job 详情
           content: { application/json: { schema: { $ref: "#/components/schemas/JobDetail" } } }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/ai-direct-hiring/jobs/{runId}/cancel:
+    post:
+      tags: [Jobs]
+      summary: 取消排队中或运行中的 Job
+      description: 必须提供取消原因；成功后 Job 进入不可逆的 cancelled 终态。
+      operationId: cancelDesktopJob
+      parameters:
+        - { name: runId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 1, maxLength: 500 }
+      responses:
+        "200": { description: Job 已取消 }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/v1/ai-direct-hiring/jobs/{runId}/retry:
+    post:
+      tags: [Jobs]
+      summary: 重试失败或已取消的 Job
+      description: 服务端使用原始输入克隆一个新的排队 Job，原 Job 保持不可变。
+      operationId: retryDesktopJob
+      parameters:
+        - { name: runId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      responses:
+        "201": { description: 新 Job 已创建 }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /api/v1/ai-direct-hiring/jobs/{runId}/artifacts:
     get:
       tags: [Jobs]
-      summary: List visible Job artifact metadata without storage paths
+      summary: 查询可见的 Job 产物元数据（不含存储路径）
       operationId: listDesktopJobArtifacts
       parameters:
         - { name: runId, in: path, required: true, schema: { type: string, maxLength: 36 } }
       responses:
         "200":
-          description: Artifact metadata with authorized content URLs
+          description: 包含已授权内容 URL 的产物元数据
           content:
             {
               application/json:
@@ -772,23 +979,23 @@ paths:
   /api/v1/ai-direct-hiring/jobs/{runId}/artifacts/{artifactId}/content:
     get:
       tags: [Jobs]
-      summary: Stream a verified artifact after visibility authorization
+      summary: 通过可见性授权后下载已校验的产物
       operationId: downloadDesktopJobArtifact
       parameters:
         - { name: runId, in: path, required: true, schema: { type: string, maxLength: 36 } }
         - { name: artifactId, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         "200":
-          description: Verified artifact byte stream
+          description: 已校验的产物二进制流
           content: { application/octet-stream: { schema: { type: string, format: binary } } }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
         "404": { $ref: "#/components/responses/NotFound" }
-        "503": { description: Artifact download is disabled }
+        "503": { description: 产物下载已禁用 }
   /api/v1/ai-direct-hiring/interviews:
     post:
-      tags: [Interviews]
-      summary: Create an organization-scoped remote interview conversation
+      tags: [面试]
+      summary: 创建组织范围的远程面试会话
       operationId: createInterviewConversation
       requestBody:
         required: true
@@ -804,13 +1011,13 @@ paths:
                 participantUserIds:
                   { type: array, maxItems: 20, items: { type: string, maxLength: 191 } }
       responses:
-        "201": { description: Conversation created }
+        "201": { description: 会话已创建 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/interviews/{conversationId}/model-consent:
     put:
-      tags: [Interviews]
-      summary: Let a participant opt out of organization-enabled remote model use
+      tags: [面试]
+      summary: 允许参与者退出组织启用的远程模型处理
       operationId: updateInterviewModelConsent
       parameters:
         - {
@@ -829,15 +1036,15 @@ paths:
               required: [optedOut]
               properties: { optedOut: { type: boolean } }
       responses:
-        "200": { description: Consent updated }
+        "200": { description: 模型处理同意设置已更新 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/interviews/{conversationId}/messages:
     parameters:
       - { name: conversationId, in: path, required: true, schema: { type: string, maxLength: 36 } }
     get:
-      tags: [Interviews]
-      summary: Reconcile messages through a monotonic sequence cursor
+      tags: [面试]
+      summary: 使用单调序列游标增量同步面试消息
       operationId: listInterviewMessages
       parameters:
         - { name: afterSequence, in: query, schema: { type: integer, minimum: 0, default: 0 } }
@@ -847,12 +1054,12 @@ paths:
             schema: { type: integer, minimum: 1, maximum: 100, default: 50 },
           }
       responses:
-        "200": { description: Ordered messages; deleted bodies are null }
+        "200": { description: 按序排列的消息；已删除消息的正文为 null }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
     post:
-      tags: [Interviews]
-      summary: Append a text-only interview message with a 90-day retention deadline
+      tags: [面试]
+      summary: 追加保留期为 90 天的纯文本面试消息
       operationId: createInterviewMessage
       requestBody:
         required: true
@@ -864,13 +1071,13 @@ paths:
               required: [body]
               properties: { body: { type: string, minLength: 1, maxLength: 10000 } }
       responses:
-        "201": { description: Message appended }
+        "201": { description: 消息已追加 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/interviews/{conversationId}/messages/{messageId}:
     delete:
-      tags: [Interviews]
-      summary: Hide the caller's message and enqueue deletion subject to legal hold
+      tags: [面试]
+      summary: 隐藏调用者消息，并在法务保留约束下排队删除
       operationId: deleteInterviewMessage
       parameters:
         - {
@@ -881,14 +1088,14 @@ paths:
           }
         - { name: messageId, in: path, required: true, schema: { type: string, maxLength: 36 } }
       responses:
-        "204": { description: Message hidden and deletion requested }
+        "204": { description: 消息已隐藏并已请求删除 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
         "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/ai-direct-hiring/interviews/{conversationId}/read-cursor:
     put:
-      tags: [Interviews]
-      summary: Advance the caller's read cursor without decreasing it
+      tags: [面试]
+      summary: 单调推进调用者的已读游标
       operationId: advanceInterviewReadCursor
       parameters:
         - {
@@ -907,28 +1114,26 @@ paths:
               required: [sequence]
               properties: { sequence: { type: integer, minimum: 0 } }
       responses:
-        "200": { description: Cursor advanced }
+        "200": { description: 已读游标已推进 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/interview-retention-policies/{organizationId}:
     parameters:
       - { name: organizationId, in: path, required: true, schema: { type: string, maxLength: 36 } }
     get:
-      tags: [Interviews]
-      summary: Read the organization interview retention policy
+      tags: [面试]
+      summary: 读取组织的面试数据保留策略
       operationId: getInterviewRetentionPolicy
       responses:
         "200":
           {
-            description: Policy defaults to 90-day text retention,
-            organization-default model opt-in,
-            and image/PDF attachments up to 10 MiB,
+            description: 默认保留 90 天文本、组织默认启用模型处理，并允许最大 10 MiB 的图片或 PDF 附件,
           }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
     put:
-      tags: [Interviews]
-      summary: Confirm the fixed v1 interview retention policy
+      tags: [面试]
+      summary: 确认固定的 v1 面试数据保留策略
       operationId: putInterviewRetentionPolicy
       requestBody:
         required: true
@@ -944,34 +1149,50 @@ paths:
                 attachmentPolicy: { type: string, const: image_pdf_only }
                 attachmentMaxBytes: { type: integer, const: 10485760 }
       responses:
-        "200": { description: Policy confirmed }
+        "200": { description: 策略已确认 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/interview-legal-holds:
     post:
-      tags: [Interviews]
-      summary: Create an organization-admin legal hold for a conversation or message
+      tags: [面试]
+      summary: 为会话或消息创建组织管理员法务保留
       operationId: createInterviewLegalHold
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [organizationId, reason]
+              anyOf:
+                - required: [conversationId]
+                - required: [messageId]
+              properties:
+                organizationId: { type: string, minLength: 1, maxLength: 36 }
+                conversationId: { type: string, minLength: 1, maxLength: 36 }
+                messageId: { type: string, minLength: 1, maxLength: 36 }
+                reason: { type: string, minLength: 1, maxLength: 500 }
       responses:
-        "201": { description: Legal hold created }
+        "201": { description: 法务保留已创建 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/interview-legal-holds/{holdId}:
     delete:
-      tags: [Interviews]
-      summary: Release an active organization-admin legal hold
+      tags: [面试]
+      summary: 解除有效的组织管理员法务保留
       operationId: releaseInterviewLegalHold
       parameters:
         - { name: holdId, in: path, required: true, schema: { type: string, maxLength: 36 } }
       responses:
-        "204": { description: Legal hold released }
+        "204": { description: 法务保留已解除 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
         "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/ai-direct-hiring/catalog/agents:
     get:
-      tags: [Candidate Catalog]
-      summary: List catalog-safe candidates visible to the selected organization
+      tags: [候选目录]
+      summary: 查询所选组织可见且字段安全的候选 Agent
       operationId: listCandidateCatalogAgents
       parameters:
         - {
@@ -990,19 +1211,13 @@ paths:
             schema: { type: integer, minimum: 1, maximum: 50, default: 20 },
           }
       responses:
-        "200":
-          {
-            description: Digest-backed candidate page; excludes prompts,
-            execution policy,
-            review notes,
-            and employment records,
-          }
+        "200": { description: 基于摘要的候选分页；不包含 Prompt、执行策略、审核备注和雇佣记录 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/catalog/agents/{agentId}:
     get:
-      tags: [Candidate Catalog]
-      summary: Read one catalog-safe candidate with organization-scoped disclosure
+      tags: [候选目录]
+      summary: 读取带组织范围披露的候选 Agent
       operationId: getCandidateCatalogAgent
       parameters:
         - { name: agentId, in: path, required: true, schema: { type: string, maxLength: 36 } }
@@ -1013,14 +1228,14 @@ paths:
             schema: { type: string, maxLength: 36 },
           }
       responses:
-        "200": { description: Digest-backed candidate detail }
+        "200": { description: 基于摘要的候选详情 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
         "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/ai-direct-hiring/catalog/categories:
     get:
-      tags: [Candidate Catalog]
-      summary: List categories and visible candidate counts
+      tags: [候选目录]
+      summary: 查询候选分类及可见候选数量
       operationId: listCandidateCatalogCategories
       parameters:
         - {
@@ -1030,17 +1245,16 @@ paths:
             schema: { type: string, maxLength: 36 },
           }
       responses:
-        "200": { description: Digest-backed category counts }
+        "200": { description: 基于摘要的分类数量 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/workforce/employees:
     get:
-      tags: [Workforce]
-      summary: List current company AI employees from the workforce digest
+      tags: [企业人员]
+      summary: 从企业人员摘要中查询当前 AI 员工
       description: >-
-        Requires recruiter-level access to companyId. This endpoint reads only
-        current Employment digest rows, not the candidate catalog. It excludes
-        prompts, model policy, credentials, execution records, and audit data.
+        需要 companyId 对应企业的招聘人员级权限。此接口仅读取当前雇佣关系摘要，
+        不读取候选目录，并排除 Prompt、模型策略、凭据、执行记录和审计数据。
       operationId: listWorkforceEmployees
       parameters:
         - { name: companyId, in: query, required: true, schema: { type: string, maxLength: 36 } }
@@ -1060,61 +1274,135 @@ paths:
             schema: { type: integer, minimum: 1, maximum: 50, default: 20 },
           }
       responses:
-        "200":
-          {
-            description: Company-scoped employee digest page with an opaque updatedAt/employmentId cursor,
-          }
+        "200": { description: 企业范围的员工摘要分页，使用不透明的 updatedAt/employmentId 游标 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
   /api/v1/ai-direct-hiring/workforce/departments:
     get:
-      tags: [Workforce]
-      summary: List company departments with an opaque cursor
+      tags: [企业人员]
+      summary: 使用不透明游标查询企业部门
       operationId: listWorkforceDepartments
       parameters:
         - { name: companyId, in: query, required: true, schema: { type: string, maxLength: 36 } }
         - { name: cursor, in: query, required: false, schema: { type: string } }
       responses:
-        "200": { description: Company-scoped department page }
+        "200": { description: 企业范围的部门分页 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
     post:
-      tags: [Workforce]
-      summary: Create a company-owned department
+      tags: [企业人员]
+      summary: 创建企业所属部门
       operationId: createWorkforceDepartment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [companyId, name]
+              properties:
+                companyId: { type: string, minLength: 1, maxLength: 36 }
+                name: { type: string, minLength: 1, maxLength: 160 }
+                sortOrder: { type: integer, minimum: 0, maximum: 1000000, default: 0 }
       responses:
-        "201": { description: Department created }
+        "201": { description: 部门已创建 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
+  /api/v1/ai-direct-hiring/workforce/departments/{departmentId}:
+    patch:
+      tags: [企业人员]
+      summary: 更新部门信息或转换部门状态
+      operationId: updateWorkforceDepartment
+      parameters:
+        - { name: departmentId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              minProperties: 1
+              properties:
+                name: { type: string, minLength: 1, maxLength: 160 }
+                sortOrder: { type: integer, minimum: 0, maximum: 1000000 }
+                toStatus: { type: string, enum: [active, inactive, archived] }
+      responses:
+        "200": { description: 部门已更新 }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /api/v1/ai-direct-hiring/workforce/positions:
     get:
-      tags: [Workforce]
-      summary: List department positions with an opaque cursor
+      tags: [企业人员]
+      summary: 使用不透明游标查询部门岗位
       operationId: listWorkforcePositions
       parameters:
         - { name: departmentId, in: query, required: true, schema: { type: string, maxLength: 36 } }
         - { name: cursor, in: query, required: false, schema: { type: string } }
       responses:
-        "200": { description: Department-scoped position page with headcount projections }
+        "200": { description: 部门范围的岗位分页，包含编制人数投影 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
     post:
-      tags: [Workforce]
-      summary: Create a draft position
+      tags: [企业人员]
+      summary: 创建草稿岗位
       operationId: createWorkforcePosition
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [departmentId, name]
+              properties:
+                departmentId: { type: string, minLength: 1, maxLength: 36 }
+                name: { type: string, minLength: 1, maxLength: 160 }
+                headcountTarget: { type: integer, minimum: 1, maximum: 1000000, default: 1 }
+                requirementsSummary: { type: object }
+                sortOrder: { type: integer, minimum: 0, maximum: 1000000, default: 0 }
       responses:
-        "201": { description: Position created }
+        "201": { description: 岗位已创建 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
+  /api/v1/ai-direct-hiring/workforce/positions/{positionId}:
+    patch:
+      tags: [企业人员]
+      summary: 更新岗位信息或转换岗位状态
+      operationId: updateWorkforcePosition
+      parameters:
+        - { name: positionId, in: path, required: true, schema: { type: string, maxLength: 36 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              minProperties: 1
+              properties:
+                name: { type: string, minLength: 1, maxLength: 160 }
+                headcountTarget: { type: integer, minimum: 1, maximum: 1000000 }
+                requirementsSummary: { type: object }
+                sortOrder: { type: integer, minimum: 0, maximum: 1000000 }
+                toStatus: { type: string, enum: [draft, open, paused, closed, archived] }
+      responses:
+        "200": { description: 岗位已更新 }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "403": { $ref: "#/components/responses/ForbiddenScope" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /api/v1/ai-direct-hiring/workforce/positions/{positionId}/candidate-matches:
     get:
-      tags: [Candidate Catalog, Workforce]
-      summary: Rank catalog-safe candidates for an authorized open position
+      tags: [候选目录, 企业人员]
+      summary: 为已授权开放岗位匹配字段安全的候选 Agent
       description: >-
-        Requires recruiter-level access to the Position's Company and the owning
-        organization's candidateCatalog flag. The server derives organization scope
-        from the Position; clients cannot override it. Only digest-safe fields and
-        a viewer-scoped employment disclosure are returned.
+        需要岗位所属企业的招聘人员级权限，且所属组织必须启用 candidateCatalog。
+        服务端从岗位推导组织范围，客户端无法覆盖。响应仅包含摘要安全字段和
+        当前查看者范围内的雇佣披露。
       operationId: listPositionCandidateMatches
       parameters:
         - { name: positionId, in: path, required: true, schema: { type: string, maxLength: 36 } }
@@ -1126,12 +1414,7 @@ paths:
             schema: { type: integer, minimum: 1, maximum: 50, default: 20 },
           }
       responses:
-        "200":
-          {
-            description: Candidate digest matches with capability coverage score,
-            viewer-scoped employment disclosure,
-            and an opaque cursor,
-          }
+        "200": { description: 候选摘要匹配结果，包含能力覆盖评分、查看者范围的雇佣披露和不透明游标 }
         "401": { $ref: "#/components/responses/AuthRequired" }
         "403": { $ref: "#/components/responses/ForbiddenScope" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -1165,26 +1448,83 @@ components:
       example: '"sidebar-2"'
   headers:
     AppearanceEtag:
-      description: Strong optimistic-concurrency tag for the appearance revision
+      description: Agent 形象修订版本的强乐观并发控制标签
       schema: { type: string, pattern: '^"appearance-[0-9]+"$' }
     SidebarEtag:
-      description: Strong optimistic-concurrency tag for the sidebar revision
+      description: 侧栏修订版本的强乐观并发控制标签
       schema: { type: string, pattern: '^"sidebar-[0-9]+"$' }
   schemas:
+    CapabilityStatus:
+      type: string
+      enum: [available, documented_disabled, planned, deprecated]
+    CapabilityDescriptor:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status: { $ref: "#/components/schemas/CapabilityStatus" }
+        reason: { type: string }
+        replacedBy: { type: string }
+    AgentCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, promptSpec, modelPolicy]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        description: { type: string, minLength: 1, maxLength: 2000 }
+        publisherId: { type: string, minLength: 1, maxLength: 191 }
+        promptSpec:
+          type: object
+          description: 私有 Prompt 定义，仅用于受控执行和审核，不进入公开候选目录。
+        modelPolicy:
+          type: object
+          description: AgentVersion 模型策略；服务端会在提交与运行前重新校验。
+    AgentVersionCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [promptSpec, modelPolicy]
+      properties:
+        promptSpec: { type: object }
+        modelPolicy: { type: object }
+        executionPolicy: { type: object, default: {} }
     ContractMetadata:
       type: object
-      required: [contract, version, openapi, documentation, purchaseSupported, paidHiringSupported]
+      required:
+        [
+          contract,
+          product,
+          version,
+          openapi,
+          documentation,
+          capabilityStatusDefinitions,
+          capabilities,
+          purchaseSupported,
+          paidHiringSupported,
+        ]
       properties:
-        contract: { type: string, const: clawhub-desktop-client }
-        version: { type: string, const: 1.2.0 }
+        contract: { type: string, const: ai-direct-hiring-desktop-client }
+        product: { type: string, const: AI直聘 }
+        version: { type: string, const: 1.3.0 }
         openapi: { type: string }
         documentation: { type: string }
-        purchaseSupported: { type: boolean, const: false }
+        capabilityStatusDefinitions:
+          type: object
+          additionalProperties: { type: string }
+        capabilities:
+          type: object
+          additionalProperties: { $ref: "#/components/schemas/CapabilityDescriptor" }
+        purchaseSupported:
+          type: boolean
+          const: false
+          deprecated: true
+          description: 兼容旧客户端；新客户端应读取 capabilities.desktopTemplatePurchase。
         paidHiringSupported:
           type: boolean
           default: false
-          description: True only when the paid hiring production release gate is explicitly enabled.
+          deprecated: true
+          description: 兼容旧客户端；新客户端应读取 capabilities.paidHiring。
         auth:
+          description: 仅当 capabilities.auth.status 为 available 时返回完整元数据。
           $ref: "#/components/schemas/DesktopAuthDiscovery"
     DesktopAuthDiscovery:
       type: object
@@ -1199,8 +1539,9 @@ components:
           revocationEndpoint,
           clientId,
           audience,
+          redirectUris,
           scopes,
-          codeChallengeMethods,
+          pkceMethods,
         ]
       properties:
         issuer: { type: string, format: uri }
@@ -1211,11 +1552,18 @@ components:
         revocationEndpoint: { type: string, format: uri }
         clientId: { type: string, minLength: 1 }
         audience: { type: string, format: uri }
+        redirectUris:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string, format: uri }
         scopes:
           type: array
           items: { type: string }
-        codeChallengeMethods:
+        pkceMethods:
           type: array
+          minItems: 1
+          maxItems: 1
           items: { type: string, enum: [S256] }
     DesktopSession:
       type: object
@@ -1631,32 +1979,32 @@ components:
         currency: { type: [string, "null"], pattern: "^[A-Z]{3}$" }
   responses:
     AuthRequired:
-      description: Missing, invalid, or expired JWT
+      description: JWT 缺失、无效或已过期
       content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     ForbiddenScope:
-      description: The authenticated user lacks the required resource scope
+      description: 当前登录用户缺少所需的资源权限范围
       content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     NotFound:
-      description: Resource not found or not visible to this account
+      description: 资源不存在，或当前账号不可见
       content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     ValidationError:
-      description: Request validation failed
+      description: 请求参数校验失败
       content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     Conflict:
-      description: State, ownership, uniqueness, limit, or in-use conflict
+      description: 状态、所有权、唯一性、数量限制或资源占用冲突
       content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     RevisionConflict:
-      description: If-Match revision is stale; details contains currentRevision and etag
+      description: If-Match 修订版本已过期；details 包含 currentRevision 和 etag
       content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     PreconditionRequired:
-      description: A valid If-Match header is required
+      description: 必须提供有效的 If-Match 请求头
       content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     AssetTooLarge:
-      description: Upload exceeds the policy for its resource kind
+      description: 上传内容超过该资源类型的大小限制
       content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     UnsupportedMediaType:
-      description: Declared type, extension, or detected magic bytes are not allowed
+      description: 声明的类型、扩展名或检测到的文件魔数不受支持
       content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     EntitlementRequired:
-      description: Paid template download requires an active entitlement; online purchase is unavailable
+      description: 下载付费模板需要有效权益；在线购买当前不可用
       content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }

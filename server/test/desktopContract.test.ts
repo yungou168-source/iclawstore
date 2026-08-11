@@ -73,11 +73,24 @@ describe("desktop client contract", () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({
-      contract: "clawhub-desktop-client",
+    expect(response.json()).toMatchObject({
+      contract: "ai-direct-hiring-desktop-client",
+      product: "AI直聘",
       version: DESKTOP_CLIENT_CONTRACT_VERSION,
       openapi: "/api/v1/desktop/openapi.yaml",
       documentation: "/api-docs/desktop",
+      capabilities: {
+        auth: { status: "documented_disabled" },
+        paidHiring: { status: "documented_disabled" },
+        jobs: { status: "available" },
+        jobControl: { status: "available" },
+        agentPublication: { status: "available" },
+        jinshaModelPolicy: { status: "planned" },
+        legacyInterviewRead: {
+          status: "deprecated",
+          replacedBy: "PUT /api/v1/ai-direct-hiring/interviews/{conversationId}/read-cursor",
+        },
+      },
       purchaseSupported: false,
       paidHiringSupported: false,
     });
@@ -118,7 +131,7 @@ describe("desktop client contract", () => {
     expect(extractOpenApiRoutes(document)).toEqual(manifestRoutes);
   });
 
-  it("accepts the complete 1.2.0 runtime route surface", async () => {
+  it("accepts the complete 1.3.0 runtime route surface", async () => {
     const app = await createCompleteContractApp();
 
     expect(missingDesktopContractRoutes(app)).toEqual([]);
@@ -142,6 +155,8 @@ describe("desktop client contract", () => {
         CONVEX_DESKTOP_AUTH_ISSUER: "https://example.com/convex/oauth/desktop/",
         AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID: "desktop-client",
         CONVEX_DESKTOP_AUTH_AUDIENCE: "https://api.example.com/desktop",
+        AI_DIRECT_DESKTOP_OAUTH_REDIRECT_URIS:
+          "com.example.desktop:/oauth/callback,http://127.0.0.1:19873/oauth/callback",
       }),
     ).toEqual({
       issuer: "https://example.com/convex/oauth/desktop",
@@ -152,8 +167,12 @@ describe("desktop client contract", () => {
       revocationEndpoint: "https://example.com/convex/oauth/desktop/revoke",
       clientId: "desktop-client",
       audience: "https://api.example.com/desktop",
+      redirectUris: [
+        "com.example.desktop:/oauth/callback",
+        "http://127.0.0.1:19873/oauth/callback",
+      ],
       scopes: ["openid", "profile", "email", "offline_access"],
-      codeChallengeMethods: ["S256"],
+      pkceMethods: ["S256"],
     });
   });
 

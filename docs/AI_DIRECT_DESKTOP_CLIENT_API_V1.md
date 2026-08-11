@@ -1,11 +1,24 @@
-# AI Direct / Desktop Client API v1
+# AI直聘桌面客户端 API v1
 
-> Contract version: production discovery 为 `1.2.0`
-> Release status: **`1.2.0` 机器契约与生产迁移已发布；付费雇佣业务能力因真实身份和支付宝门禁未完成而保持关闭**
+> 当前源码契约版本：`1.3.0`（生产部署后以 `GET /api/v1/desktop/contract` 返回值为准）
+> 发布状态：**`1.3.0` 增加中文文档、显式能力状态、完整 OAuth 发现字段、Jobs 控制、开发者最小发布流程及 workforce 写入契约；付费招聘生产门禁仍保持关闭**
 > OpenAPI: `https://www.iclawstore.com/api/v1/desktop/openapi.yaml`
-> Interactive documentation: `https://www.iclawstore.com/api-docs/desktop`
-> Runtime discovery: `GET /api/v1/desktop/contract`
-> Scope: Agent appearance, desktop sidebar synchronization, desktop templates, Session capability negotiation, Jobs/artifacts, interviews, candidate catalog, workforce, and the `1.2.0` paid-hiring endpoints listed by OpenAPI.
+> 交互式文档：`https://www.iclawstore.com/api-docs/desktop`
+> 运行时发现：`GET /api/v1/desktop/contract`
+> 范围：Agent 形象、开发者发布、桌面侧栏同步、桌面模板、Session 能力协商、Jobs/产物、面试、候选目录、企业人员及 OpenAPI 中列出的付费招聘契约。
+
+## `1.3.0` 能力状态与客户端判断规则
+
+桌面客户端不得再根据“OpenAPI 是否出现某条路径”判断业务可用性。启动时必须按以下顺序读取：
+
+1. `GET /api/v1/desktop/contract` 的 `capabilities`，识别 `available`、`documented_disabled`、`planned`、`deprecated`；
+2. 当 `capabilities.auth.status === "available"` 时，才可使用完整 `auth` 元数据启动 Authorization Code + PKCE `S256`；
+3. 获得 Token 后读取 `GET /api/v1/ai-direct-hiring/session`，以组织 feature flags、`runtimeCapabilities` 和 `grantVersion` 决定当前账号可执行的操作；
+4. 旧字段 `purchaseSupported`、`paidHiringSupported` 仅为兼容保留，新客户端不得把它们当作完整能力矩阵。
+
+OAuth `auth` 元数据只有在 issuer、client ID、redirect URIs 与 audience 配置完整时才返回；否则 `capabilities.auth` 明确为 `documented_disabled`。文档右上角手工填写 Bearer Token 只用于调试，不代表原生登录已发布。
+
+本版补齐了三个创建请求体（面试法务保留、部门、岗位），明确了对账和模板提交的无请求体命令语义，并为模板审批增加可选审核原因。已挂载的 Jobs 取消/重试、部门/岗位更新以及 Agent 创建、版本创建、提交、审核、发布进入机器契约。尚无完整后端闭环的设备管理、金沙模型策略、实时事件、团队市场、迁移、消息渠道、持久记忆、皮肤市场和集中治理继续标记为 `planned`，不会伪装为可调用接口。
 
 ## 当前生产 `1.2.0` 付费雇佣契约
 

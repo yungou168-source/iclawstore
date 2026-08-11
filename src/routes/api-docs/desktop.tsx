@@ -30,7 +30,7 @@ function DesktopApiDocsPage() {
           <div className="max-w-3xl">
             <div className="mb-3 flex items-center gap-2 text-sm font-medium text-[var(--accent)]">
               <FileCode2 size={17} />
-              Desktop Client API v1
+              AI直聘桌面客户端 API v1
             </div>
             <h1 className="text-3xl font-semibold tracking-tight text-[var(--ink)] sm:text-4xl">
               AI直聘桌面客户端 API 文档
@@ -62,6 +62,29 @@ function DesktopApiDocsPage() {
           </div>
         </div>
       </section>
+      <section className="mx-auto max-w-[1536px] px-4 pt-6 sm:px-6 lg:px-8">
+        <div className="rounded-lg border border-[var(--border-ui)] bg-[var(--bg-soft)] p-4 text-sm leading-6 text-[var(--ink-soft)]">
+          <p className="font-semibold text-[var(--ink)]">生产能力状态说明</p>
+          <div className="mt-2 grid gap-x-6 gap-y-1 md:grid-cols-2">
+            <p>
+              <code>available</code>：生产已启用，调用时仍需满足鉴权、组织权限和会话能力。
+            </p>
+            <p>
+              <code>documented_disabled</code>：契约已定义，但生产开关或运行配置关闭。
+            </p>
+            <p>
+              <code>planned</code>：规划能力，尚无可调用的生产接口。
+            </p>
+            <p>
+              <code>deprecated</code>：兼容保留，新客户端不得继续依赖。
+            </p>
+          </div>
+          <p className="mt-2">
+            OpenAPI 中出现某个接口不代表业务已启用。客户端必须先读取“契约发现”和会话能力；手工填写
+            Bearer Token 仅用于调试，不等于 OAuth 登录已经可用。
+          </p>
+        </div>
+      </section>
       <section className="mx-auto max-w-[1536px] px-2 pt-6 sm:px-4 lg:px-6">
         {createElement("rapi-doc", {
           "allow-authentication": "true",
@@ -77,6 +100,7 @@ function DesktopApiDocsPage() {
           "show-header": "false",
           "spec-url": OPENAPI_URL,
           "text-color": "#f7fffe",
+          lang: "zh-CN",
           theme: "dark",
           "update-route": "false",
         })}

@@ -49,9 +49,7 @@ export function desktopAuthDiscoveryFromEnvironment(
   };
 }
 
-export function paidHiringSupportedFromEnvironment(
-  env: NodeJS.ProcessEnv = process.env,
-): boolean {
+export function paidHiringSupportedFromEnvironment(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.PAID_HIRING_RELEASE_READY === "true";
 }
 
@@ -69,7 +67,7 @@ export async function desktopContractRoutes(fastify: FastifyInstance): Promise<v
       contract: "clawhub-desktop-client",
       version: DESKTOP_CLIENT_CONTRACT_VERSION,
       openapi: DESKTOP_CLIENT_OPENAPI_PATH,
-      documentation: "/docs/AI_DIRECT_DESKTOP_CLIENT_API_V1.md",
+      documentation: "/api-docs/desktop",
       purchaseSupported: false,
       paidHiringSupported: paidHiringSupportedFromEnvironment(),
       ...(auth ? { auth } : {}),

@@ -2,7 +2,8 @@
 
 > Contract version: production discovery 为 `1.2.0`
 > Release status: **`1.2.0` 机器契约与生产迁移已发布；付费雇佣业务能力因真实身份和支付宝门禁未完成而保持关闭**
-> OpenAPI: `server/openapi/desktop-client-v1.yaml`
+> OpenAPI: `https://www.iclawstore.com/api/v1/desktop/openapi.yaml`
+> Interactive documentation: `https://www.iclawstore.com/api-docs/desktop`
 > Runtime discovery: `GET /api/v1/desktop/contract`
 > Scope: Agent appearance, desktop sidebar synchronization, desktop templates, Session capability negotiation, Jobs/artifacts, interviews, candidate catalog, workforce, and the `1.2.0` paid-hiring endpoints listed by OpenAPI.
 

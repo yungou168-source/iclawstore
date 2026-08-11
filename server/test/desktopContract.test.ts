@@ -77,7 +77,7 @@ describe("desktop client contract", () => {
       contract: "clawhub-desktop-client",
       version: DESKTOP_CLIENT_CONTRACT_VERSION,
       openapi: "/api/v1/desktop/openapi.yaml",
-      documentation: "/docs/AI_DIRECT_DESKTOP_CLIENT_API_V1.md",
+      documentation: "/api-docs/desktop",
       purchaseSupported: false,
       paidHiringSupported: false,
     });
@@ -85,15 +85,11 @@ describe("desktop client contract", () => {
 
   it("enables paid hiring discovery only after the explicit release gate", () => {
     expect(paidHiringSupportedFromEnvironment({})).toBe(false);
-    expect(
-      paidHiringSupportedFromEnvironment({ PAID_HIRING_RELEASE_READY: "false" }),
-    ).toBe(false);
-    expect(
-      paidHiringSupportedFromEnvironment({ PAID_HIRING_RELEASE_READY: "invalid" }),
-    ).toBe(false);
-    expect(
-      paidHiringSupportedFromEnvironment({ PAID_HIRING_RELEASE_READY: "true" }),
-    ).toBe(true);
+    expect(paidHiringSupportedFromEnvironment({ PAID_HIRING_RELEASE_READY: "false" })).toBe(false);
+    expect(paidHiringSupportedFromEnvironment({ PAID_HIRING_RELEASE_READY: "invalid" })).toBe(
+      false,
+    );
+    expect(paidHiringSupportedFromEnvironment({ PAID_HIRING_RELEASE_READY: "true" })).toBe(true);
   });
 
   it("serves the same OpenAPI version declared by discovery", async () => {

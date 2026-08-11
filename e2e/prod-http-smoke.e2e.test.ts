@@ -129,6 +129,13 @@ describe("prod http smoke", () => {
     expect(html).not.toContain("Something went wrong!");
   });
 
+  it("serves the interactive desktop API documentation", async () => {
+    const html = await fetchHtml("/api-docs/desktop");
+
+    expect(html).toContain("AI直聘桌面客户端 API 文档");
+    expect(html).toContain("/api/v1/desktop/openapi.yaml");
+  });
+
   it("serves the site og image", async () => {
     const response = await fetchWithRetry(new URL("/og.svg", getSiteBase()));
 
@@ -151,10 +158,9 @@ describe("package registry production ownership", () => {
   }
 
   it("routes the package catalog list to the Convex cursor contract", async () => {
-    const response = await fetchWithRetry(
-      new URL("/api/v1/packages?limit=1", getSiteBase()),
-      { headers: { Accept: "application/json" } },
-    );
+    const response = await fetchWithRetry(new URL("/api/v1/packages?limit=1", getSiteBase()), {
+      headers: { Accept: "application/json" },
+    });
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("application/json");

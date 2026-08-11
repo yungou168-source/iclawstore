@@ -31,6 +31,7 @@ import { Route as OwnerSlugRouteImport } from './routes/$owner/$slug'
 import { Route as AiWorkAdminAuditRouteImport } from './routes/ai-work-admin.audit'
 import { Route as AiWorkAdminOrganizationsRouteImport } from './routes/ai-work-admin.organizations'
 import { Route as AiWorkAdminTemplatesRouteImport } from './routes/ai-work-admin.templates'
+import { Route as ApiDocsDesktopRouteImport } from './routes/api-docs/desktop'
 import { Route as CliAuthRouteImport } from './routes/cli/auth'
 import { Route as CliDeviceRouteImport } from './routes/cli/device'
 import { Route as DocsAuthRouteImport } from './routes/docs/auth'
@@ -172,6 +173,11 @@ const AiWorkAdminOrganizationsRoute =
 const AiWorkAdminTemplatesRoute = AiWorkAdminTemplatesRouteImport.update({
   id: '/ai-work-admin/templates',
   path: '/ai-work-admin/templates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDocsDesktopRoute = ApiDocsDesktopRouteImport.update({
+  id: '/api-docs/desktop',
+  path: '/api-docs/desktop',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CliAuthRoute = CliAuthRouteImport.update({
@@ -358,6 +364,7 @@ export interface FileRoutesByFullPath {
   '/ai-work-admin/audit': typeof AiWorkAdminAuditRoute
   '/ai-work-admin/organizations': typeof AiWorkAdminOrganizationsRoute
   '/ai-work-admin/templates': typeof AiWorkAdminTemplatesRoute
+  '/api-docs/desktop': typeof ApiDocsDesktopRoute
   '/cli/auth': typeof CliAuthRoute
   '/cli/device': typeof CliDeviceRoute
   '/docs/auth': typeof DocsAuthRoute
@@ -413,6 +420,7 @@ export interface FileRoutesByTo {
   '/ai-work-admin/audit': typeof AiWorkAdminAuditRoute
   '/ai-work-admin/organizations': typeof AiWorkAdminOrganizationsRoute
   '/ai-work-admin/templates': typeof AiWorkAdminTemplatesRoute
+  '/api-docs/desktop': typeof ApiDocsDesktopRoute
   '/cli/auth': typeof CliAuthRoute
   '/cli/device': typeof CliDeviceRoute
   '/docs/auth': typeof DocsAuthRoute
@@ -469,6 +477,7 @@ export interface FileRoutesById {
   '/ai-work-admin/audit': typeof AiWorkAdminAuditRoute
   '/ai-work-admin/organizations': typeof AiWorkAdminOrganizationsRoute
   '/ai-work-admin/templates': typeof AiWorkAdminTemplatesRoute
+  '/api-docs/desktop': typeof ApiDocsDesktopRoute
   '/cli/auth': typeof CliAuthRoute
   '/cli/device': typeof CliDeviceRoute
   '/docs/auth': typeof DocsAuthRoute
@@ -526,6 +535,7 @@ export interface FileRouteTypes {
     | '/ai-work-admin/audit'
     | '/ai-work-admin/organizations'
     | '/ai-work-admin/templates'
+    | '/api-docs/desktop'
     | '/cli/auth'
     | '/cli/device'
     | '/docs/auth'
@@ -581,6 +591,7 @@ export interface FileRouteTypes {
     | '/ai-work-admin/audit'
     | '/ai-work-admin/organizations'
     | '/ai-work-admin/templates'
+    | '/api-docs/desktop'
     | '/cli/auth'
     | '/cli/device'
     | '/docs/auth'
@@ -636,6 +647,7 @@ export interface FileRouteTypes {
     | '/ai-work-admin/audit'
     | '/ai-work-admin/organizations'
     | '/ai-work-admin/templates'
+    | '/api-docs/desktop'
     | '/cli/auth'
     | '/cli/device'
     | '/docs/auth'
@@ -692,6 +704,7 @@ export interface RootRouteChildren {
   AiWorkAdminAuditRoute: typeof AiWorkAdminAuditRoute
   AiWorkAdminOrganizationsRoute: typeof AiWorkAdminOrganizationsRoute
   AiWorkAdminTemplatesRoute: typeof AiWorkAdminTemplatesRoute
+  ApiDocsDesktopRoute: typeof ApiDocsDesktopRoute
   CliAuthRoute: typeof CliAuthRoute
   CliDeviceRoute: typeof CliDeviceRoute
   DocsAuthRoute: typeof DocsAuthRoute
@@ -871,6 +884,13 @@ declare module '@tanstack/react-router' {
       path: '/ai-work-admin/templates'
       fullPath: '/ai-work-admin/templates'
       preLoaderRoute: typeof AiWorkAdminTemplatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api-docs/desktop': {
+      id: '/api-docs/desktop'
+      path: '/api-docs/desktop'
+      fullPath: '/api-docs/desktop'
+      preLoaderRoute: typeof ApiDocsDesktopRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cli/auth': {
@@ -1171,6 +1191,7 @@ const rootRouteChildren: RootRouteChildren = {
   AiWorkAdminAuditRoute: AiWorkAdminAuditRoute,
   AiWorkAdminOrganizationsRoute: AiWorkAdminOrganizationsRoute,
   AiWorkAdminTemplatesRoute: AiWorkAdminTemplatesRoute,
+  ApiDocsDesktopRoute: ApiDocsDesktopRoute,
   CliAuthRoute: CliAuthRoute,
   CliDeviceRoute: CliDeviceRoute,
   DocsAuthRoute: DocsAuthRoute,

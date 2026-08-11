@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 
-export const DESKTOP_CLIENT_CONTRACT_VERSION = "1.2.0";
+export const DESKTOP_CLIENT_CONTRACT_VERSION = "1.3.0";
 export const DESKTOP_CLIENT_OPENAPI_PATH = "/api/v1/desktop/openapi.yaml";
 
 export type DesktopContractRoute = {
@@ -31,6 +31,13 @@ const publicRoute = (openApiPath: string): DesktopContractRoute => ({
 export const DESKTOP_CLIENT_CONTRACT_ROUTES = [
   publicRoute("/api/v1/desktop/contract"),
   publicRoute("/api/v1/desktop/openapi.yaml"),
+  protectedRoute("GET", "/api/v1/ai-direct-hiring/agents"),
+  protectedRoute("POST", "/api/v1/ai-direct-hiring/agents"),
+  protectedRoute("GET", "/api/v1/ai-direct-hiring/agents/{agentId}/versions"),
+  protectedRoute("POST", "/api/v1/ai-direct-hiring/agents/{agentId}/versions"),
+  protectedRoute("POST", "/api/v1/ai-direct-hiring/agent-versions/{versionId}/submit"),
+  protectedRoute("POST", "/api/v1/ai-direct-hiring/agent-versions/{versionId}/review"),
+  protectedRoute("POST", "/api/v1/ai-direct-hiring/agent-versions/{versionId}/publish"),
   protectedRoute("GET", "/api/v1/ai-direct-hiring/agents/{agentId}/appearance"),
   protectedRoute("PATCH", "/api/v1/ai-direct-hiring/agents/{agentId}/appearance"),
   protectedRoute("POST", "/api/v1/ai-direct-hiring/agents/{agentId}/appearance/assets"),
@@ -66,6 +73,8 @@ export const DESKTOP_CLIENT_CONTRACT_ROUTES = [
   protectedRoute("GET", "/api/v1/ai-direct-hiring/session"),
   protectedRoute("GET", "/api/v1/ai-direct-hiring/jobs"),
   protectedRoute("GET", "/api/v1/ai-direct-hiring/jobs/{runId}"),
+  protectedRoute("POST", "/api/v1/ai-direct-hiring/jobs/{runId}/cancel"),
+  protectedRoute("POST", "/api/v1/ai-direct-hiring/jobs/{runId}/retry"),
   protectedRoute("GET", "/api/v1/ai-direct-hiring/jobs/{runId}/artifacts"),
   protectedRoute("GET", "/api/v1/ai-direct-hiring/jobs/{runId}/artifacts/{artifactId}/content"),
   protectedRoute("POST", "/api/v1/ai-direct-hiring/interviews"),
@@ -87,8 +96,10 @@ export const DESKTOP_CLIENT_CONTRACT_ROUTES = [
   protectedRoute("GET", "/api/v1/ai-direct-hiring/workforce/employees"),
   protectedRoute("GET", "/api/v1/ai-direct-hiring/workforce/departments"),
   protectedRoute("POST", "/api/v1/ai-direct-hiring/workforce/departments"),
+  protectedRoute("PATCH", "/api/v1/ai-direct-hiring/workforce/departments/{departmentId}"),
   protectedRoute("GET", "/api/v1/ai-direct-hiring/workforce/positions"),
   protectedRoute("POST", "/api/v1/ai-direct-hiring/workforce/positions"),
+  protectedRoute("PATCH", "/api/v1/ai-direct-hiring/workforce/positions/{positionId}"),
   protectedRoute(
     "GET",
     "/api/v1/ai-direct-hiring/workforce/positions/{positionId}/candidate-matches",

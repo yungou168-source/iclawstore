@@ -1,7 +1,6 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { Bot, CalendarDays } from "lucide-react";
 import { useEffect, useState } from "react";
-import { api } from "../../../convex/_generated/api";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
 import {
   Card,
@@ -14,27 +13,11 @@ import {
   aiDirectPaidHiringApi,
   type CandidateCatalogItemDto,
 } from "../../lib/aiDirectPaidHiringApi";
-
-type PublicProfile = {
-  user: {
-    _id: string;
-    _creationTime: number;
-    handle?: string;
-    name?: string;
-    displayName?: string;
-    image?: string;
-    bio?: string;
-  };
-  profileSlug: string;
-  publisher: { handle: string; displayName: string } | null;
-};
+import { getPublicProfile, type PublicProfile } from "../../lib/publicProfileApi";
 
 export const Route = createFileRoute("/profile/$slug")({
   loader: async ({ params }) => {
-    const { convexHttp } = await import("../../convex/client");
-    const profile = (await convexHttp.query(api.users.getPublicProfileBySlug, {
-      slug: params.slug,
-    })) as PublicProfile | null;
+    const profile = await getPublicProfile(params.slug);
     if (!profile) throw notFound();
     return { profile };
   },

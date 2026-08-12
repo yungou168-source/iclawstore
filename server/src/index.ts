@@ -17,6 +17,7 @@ import { desktopContractRoutes } from "./routes/desktopContract.js";
 import { createDesktopPreferencesRoutes } from "./routes/desktopPreferences.js";
 import { desktopTemplateReviewRoutes } from "./routes/desktopTemplateReview.js";
 import { createDesktopTemplateRoutes } from "./routes/desktopTemplates.js";
+import { publicProfilesRoutes } from "./routes/publicProfiles.js";
 // Routes
 import { skillsRoutes } from "./routes/skills.js";
 import { usersRoutes } from "./routes/users.js";
@@ -113,6 +114,7 @@ fastify.get("/health", async () => {
     status: "ok",
     timestamp: new Date().toISOString(),
     version: "1.0.0",
+    buildSha: process.env.APP_BUILD_SHA ?? null,
   };
 });
 
@@ -149,6 +151,9 @@ fastify.setErrorHandler((error: unknown, _request: FastifyRequest, reply: Fastif
 // 注册路由
 await fastify.register(skillsRoutes, { prefix: "/api/skills" });
 await fastify.register(usersRoutes, { prefix: "/api/users" });
+if (process.env.DATABASE_URL?.startsWith("mysql") && (process.env.CONVEX_URL ?? process.env.VITE_CONVEX_URL)) {
+  await fastify.register(publicProfilesRoutes, { prefix: "/api" });
+}
 await fastify.register(aiDirectMemoryRoutes, { prefix: "/api/v1" });
 await fastify.register(desktopContractRoutes, { prefix: "/api/v1/desktop" });
 if (process.env.DATABASE_URL?.startsWith("mysql")) {

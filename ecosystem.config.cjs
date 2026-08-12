@@ -1,4 +1,15 @@
-const { existsSync, readFileSync } = require("node:fs");
+const { existsSync, readFileSync } = require('node:fs');
+const { join } = require('node:path');
+
+const releaseRoot = __dirname;
+const serverRoot = join(releaseRoot, 'server');
+const serverDist = join(serverRoot, 'dist');
+const releaseSha = process.env.RELEASE_SHA || 'unknown';
+const serverProcess = (entrypoint) => ({
+  script: join(serverDist, entrypoint),
+  cwd: serverRoot,
+  interpreter: '/usr/bin/node',
+});
 
 const aiDirectFeatureFlags = JSON.stringify({
   organizations: {
@@ -46,11 +57,10 @@ const executorApps =
     ? [
         {
           name: "iclawstore-provider-executor",
-          script: "/home/ubuntu/.local/bin/bun",
-          args: "--smol src/workerExecutorProcess.ts",
-          cwd: "/www/wwwroot/iclawstore.com/server",
+          ...serverProcess('workerExecutorProcess.js'),
           env: {
-            NODE_ENV: "production",
+            NODE_ENV: 'production',
+            APP_BUILD_SHA: releaseSha,
             ...executorEnvironment,
           },
           instances: 1,
@@ -74,11 +84,10 @@ const auditExportApps =
     ? [
         {
           name: "iclawstore-audit-export",
-          script: "/home/ubuntu/.local/bin/bun",
-          args: "--smol src/auditExportWorkerProcess.ts",
-          cwd: "/www/wwwroot/iclawstore.com/server",
+          ...serverProcess('auditExportWorkerProcess.js'),
           env: {
-            NODE_ENV: "production",
+            NODE_ENV: 'production',
+            APP_BUILD_SHA: releaseSha,
             AUDIT_EXPORT_POLL_INTERVAL_MS: "5000",
             RUNTIME_METRICS_INTERVAL_MS: "60000",
             ...apiEnvironment,
@@ -105,11 +114,10 @@ const approvalTimeoutApps =
     ? [
         {
           name: "iclawstore-approval-timeout",
-          script: "/home/ubuntu/.local/bin/bun",
-          args: "--smol src/approvalTimeoutWorkerProcess.ts",
-          cwd: "/www/wwwroot/iclawstore.com/server",
+          ...serverProcess('approvalTimeoutWorkerProcess.js'),
           env: {
-            NODE_ENV: "production",
+            NODE_ENV: 'production',
+            APP_BUILD_SHA: releaseSha,
             APPROVAL_TIMEOUT_POLL_INTERVAL_MS: "30000",
             ...apiEnvironment,
             ...approvalTimeoutEnvironment,
@@ -130,11 +138,10 @@ const config = {
   apps: [
     {
       name: "iclawstore-api",
-      script: "/home/ubuntu/.local/bin/bun",
-      args: "--smol src/index.ts",
-      cwd: "/www/wwwroot/iclawstore.com/server",
+      ...serverProcess('index.js'),
       env: {
-        NODE_ENV: "production",
+        NODE_ENV: 'production',
+        APP_BUILD_SHA: releaseSha,
         PORT: 3002,
         HOST: "0.0.0.0",
         MYSQL_CONNECTION_LIMIT: "6",
@@ -152,11 +159,10 @@ const config = {
     },
     {
       name: "iclawstore-runtime-dispatcher",
-      script: "/home/ubuntu/.local/bin/bun",
-      args: "--smol src/outboxDispatcherProcess.ts",
-      cwd: "/www/wwwroot/iclawstore.com/server",
+      ...serverProcess('outboxDispatcherProcess.js'),
       env: {
-        NODE_ENV: "production",
+        NODE_ENV: 'production',
+        APP_BUILD_SHA: releaseSha,
         OUTBOX_BATCH_SIZE: "20",
         OUTBOX_POLL_INTERVAL_MS: "1000",
         ...dispatcherEnvironment,

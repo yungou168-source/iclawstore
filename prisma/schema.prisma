@@ -62,6 +62,102 @@ model users {
   @@index([phone])
 }
 
+model profileSnapshots {
+  id                             String   @id @db.VarChar(36)
+  legacyConvexId                 String   @unique @db.VarChar(191)
+  handle                         String?  @db.VarChar(191)
+  profileSlug                    String?  @unique @db.VarChar(40)
+  name                           String?  @db.VarChar(191)
+  displayName                    String?  @db.VarChar(191)
+  bio                            String?  @db.Text
+  image                          String?  @db.VarChar(2048)
+  imageStorageId                 String?  @db.VarChar(191)
+  developerStatus                String?  @db.VarChar(32)
+  developerAppliedAt             DateTime?
+  developerApprovedAt            DateTime?
+  role                           String?  @db.VarChar(32)
+  trustedPublisher               Boolean  @default(false)
+  publishedSkills                Int      @default(0)
+  totalStars                     Int      @default(0)
+  totalDownloads                 Int      @default(0)
+  personalPublisherLegacyConvexId String? @db.VarChar(191)
+  deletedAt                      DateTime?
+  deactivatedAt                  DateTime?
+  purgedAt                       DateTime?
+  banReason                      String?  @db.VarChar(500)
+  legacyCreationTime             BigInt
+  legacyCreatedAt                DateTime?
+  legacyUpdatedAt                DateTime?
+  sourceHash                     String   @db.Char(64)
+  syncedAt                       DateTime @default(now())
+  createdAt                      DateTime @default(now())
+  updatedAt                      DateTime @updatedAt
+  legacyIdMap                    profileLegacyIdMaps?
+
+  @@index([deletedAt, deactivatedAt, profileSlug], map: "profile_snapshots_active_slug_idx")
+  @@index([deletedAt, deactivatedAt, handle], map: "profile_snapshots_active_handle_idx")
+  @@map("profile_snapshots")
+}
+
+model profileLegacyIdMaps {
+  legacyConvexId String           @id @db.VarChar(191)
+  mysqlProfileId String           @unique @db.VarChar(36)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  profile        profileSnapshots @relation(fields: [mysqlProfileId], references: [id], onDelete: Cascade)
+
+  @@map("profile_legacy_id_maps")
+}
+
+model profileMigrationBatches {
+  id             String                     @id @db.VarChar(36)
+  source         String                     @db.VarChar(64)
+  status         String                     @db.VarChar(32)
+  requestedBy    String?                    @db.VarChar(191)
+  startedAt      DateTime                   @default(now())
+  completedAt    DateTime?
+  failedAt       DateTime?
+  failureCode    String?                    @db.VarChar(128)
+  sourceCount    Int?
+  upsertedCount  Int                        @default(0)
+  unchangedCount Int                        @default(0)
+  errorCount     Int                        @default(0)
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  cursors        profileMigrationCursors[]
+  differences    profileReconciliationRecords[]
+
+  @@index([status, startedAt], map: "profile_migration_batches_status_started_idx")
+  @@map("profile_migration_batches")
+}
+
+model profileMigrationCursors {
+  batchId     String                  @db.VarChar(36)
+  cursorName  String                  @db.VarChar(64)
+  cursorValue String?                 @db.Text
+  isComplete  Boolean                 @default(false)
+  updatedAt   DateTime                @updatedAt
+  batch       profileMigrationBatches @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@id([batchId, cursorName])
+  @@map("profile_migration_cursors")
+}
+
+model profileReconciliationRecords {
+  id             String                   @id @db.VarChar(36)
+  recordKey      String                   @unique @db.Char(64)
+  batchId        String?                  @db.VarChar(36)
+  legacyConvexId String                   @db.VarChar(191)
+  fieldName      String                   @db.VarChar(64)
+  differenceKind String                   @db.VarChar(64)
+  summary        String                   @db.VarChar(512)
+  observedAt     DateTime                 @default(now())
+  batch          profileMigrationBatches? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+
+  @@index([legacyConvexId, observedAt], map: "profile_reconciliation_legacy_observed_idx")
+  @@map("profile_reconciliation_records")
+}
+
 // ============================================
 // Publisher (User/Org) Tables
 // ============================================

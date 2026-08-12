@@ -2,14 +2,17 @@
 set -Eeuo pipefail
 
 APP_DIR='/www/wwwroot/iclawstore.com'
+RELEASES_DIR='/home/ubuntu/releases/iclawstore'
 BRANCH='main'
-SERVICE='iclawstore.service'
-HEALTH_URL='http://127.0.0.1:3000/plugins'
+SSR_SERVICE='iclawstore.service'
+SSR_HEALTH_URL='http://127.0.0.1:3000/plugins'
+API_HEALTH_URL='http://127.0.0.1:3002/health'
+API_ENVIRONMENT='/home/ubuntu/.config/iclawstore/api.env'
 MAX_ARTIFACT_BYTES=$((1024 * 1024 * 1024))
 REPOSITORY_SSH_KEY="${HOME}/.ssh/id_ed25519_iclawstore"
 REPOSITORY_SSH_KNOWN_HOSTS="${HOME}/.ssh/known_hosts"
 
-export PATH='/usr/local/bin:/usr/bin:/bin'
+export PATH="${HOME}/.local/bin:/usr/local/bin:/usr/bin:/bin"
 
 fail() {
   printf 'deployment failed: %s\n' "$*" >&2
@@ -21,23 +24,27 @@ require_deploy_command() {
   if [[ ! "$command" =~ ^deploy[[:space:]]+([[:xdigit:]]{40})[[:space:]]+([[:xdigit:]]{64})[[:space:]]+([1-9][0-9]*)$ ]]; then
     fail 'expected exactly: deploy <40-character-commit-sha> <artifact-sha256> <artifact-size>'
   fi
-  printf '%s %s %s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}"
+  printf '%s %s %s\n' "${BASH_REMATCH[1],,}" "${BASH_REMATCH[2],,}" "${BASH_REMATCH[3]}"
 }
 
-activate_release() {
-  local release_dir="$1"
-  ln -s "$release_dir" "$APP_DIR/.output.next"
-  mv -Tf "$APP_DIR/.output.next" "$APP_DIR/.output"
+activate_link() {
+  local target="$1"
+  local link="$2"
+  ln -s "$target" "${link}.next"
+  mv -Tf "${link}.next" "$link"
 }
 
 read -r requested_sha artifact_sha artifact_size < <(require_deploy_command)
-(( artifact_size <= MAX_ARTIFACT_BYTES )) || fail 'artifact exceeds the 1 GiB size limit'
+((artifact_size <= MAX_ARTIFACT_BYTES)) || fail 'artifact exceeds the 1 GiB size limit'
 exec 9>/tmp/iclawstore-deploy.lock
 flock -n 9 || fail 'another deployment is already running'
 
 [[ -d "$APP_DIR/.git" ]] || fail "missing Git worktree: $APP_DIR"
+[[ -d "$RELEASES_DIR" ]] || fail "missing release directory: $RELEASES_DIR"
 [[ -r "$REPOSITORY_SSH_KEY" ]] || fail "repository SSH key is unavailable: $REPOSITORY_SSH_KEY"
 [[ -r "$REPOSITORY_SSH_KNOWN_HOSTS" ]] || fail "repository known_hosts is unavailable: $REPOSITORY_SSH_KNOWN_HOSTS"
+[[ -r "$API_ENVIRONMENT" ]] || fail "API environment is unavailable: $API_ENVIRONMENT"
+command -v pm2 >/dev/null || fail 'pm2 is unavailable'
 
 GIT_SSH_COMMAND="ssh -i $REPOSITORY_SSH_KEY -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$REPOSITORY_SSH_KNOWN_HOSTS" \
   git -C "$APP_DIR" fetch --quiet origin "$BRANCH"
@@ -45,60 +52,75 @@ git -C "$APP_DIR" cat-file -e "$requested_sha^{commit}" || fail 'requested commi
 git -C "$APP_DIR" merge-base --is-ancestor "$requested_sha" "origin/$BRANCH" || \
   fail 'requested commit is not reachable from origin/main'
 
-artifact_file="$(mktemp "$APP_DIR/.output.artifact.XXXXXX")"
-staging_dir="$(mktemp -d "$APP_DIR/.output.staging.XXXXXX")"
+artifact_file="$(mktemp "$RELEASES_DIR/.artifact.XXXXXX")"
+staging_dir="$(mktemp -d "$RELEASES_DIR/.staging.XXXXXX")"
+pm2_dump_backup=''
 cleanup_temporary_files() {
   rm -f "$artifact_file"
   [[ -z "$staging_dir" ]] || rm -rf "$staging_dir"
+  [[ -z "$pm2_dump_backup" ]] || rm -f "$pm2_dump_backup"
 }
 trap cleanup_temporary_files EXIT
 
-cat > "$artifact_file"
+cat >"$artifact_file"
 [[ "$(stat --format='%s' "$artifact_file")" == "$artifact_size" ]] || fail 'artifact size does not match'
-echo "$artifact_sha  $artifact_file" | sha256sum --check --status || fail 'artifact checksum does not match'
+printf '%s  %s\n' "$artifact_sha" "$artifact_file" | sha256sum --check --status || \
+  fail 'artifact checksum does not match'
 
 while IFS= read -r archive_path; do
   case "$archive_path" in
-    /*|../*|*/../*|..)
-      fail 'artifact contains an unsafe archive path'
-      ;;
+    /*|../*|*/../*|..) fail 'artifact contains an unsafe archive path' ;;
   esac
 done < <(tar -tzf "$artifact_file")
 tar -xzf "$artifact_file" -C "$staging_dir" --no-same-owner --no-same-permissions
-[[ -f "$staging_dir/server/index.mjs" ]] || fail 'artifact is missing the Nitro server entrypoint'
+node "$staging_dir/verify-production-release.mjs" "$staging_dir" "$requested_sha"
 
-release_dir="$APP_DIR/.output.release-$(date -u +%Y%m%d-%H%M%S)-${requested_sha:0:7}"
+release_dir="$RELEASES_DIR/$(date -u +%Y%m%d-%H%M%S)-${requested_sha:0:7}"
 [[ ! -e "$release_dir" ]] || fail "release directory already exists: $release_dir"
 mv "$staging_dir" "$release_dir"
 staging_dir=''
 
-previous_release="$(readlink -f "$APP_DIR/.output")"
-[[ -d "$previous_release" ]] || fail 'current release directory is unavailable'
+node "$release_dir/run-production-migrations.mjs" "$release_dir" "$API_ENVIRONMENT"
 
-if [[ ! -L "$APP_DIR/.output" ]]; then
-  legacy_release="$APP_DIR/.output.release-legacy-$(date -u +%Y%m%d-%H%M%S)"
-  mv "$APP_DIR/.output" "$legacy_release"
-  previous_release="$legacy_release"
-fi
+previous_ssr="$(readlink -f "$APP_DIR/.output")"
+[[ -d "$previous_ssr" ]] || fail 'current SSR release is unavailable'
+previous_release="$(readlink -f "$APP_DIR/.release-current" 2>/dev/null || true)"
+pm2 save --force >/dev/null
+pm2_dump_backup="$(mktemp "$RELEASES_DIR/.pm2-dump.XXXXXX")"
+cp "${HOME}/.pm2/dump.pm2" "$pm2_dump_backup"
 
-release_active=false
+activation_started=false
 rollback() {
   local exit_code=$?
-  if [[ "$release_active" == true ]]; then
-    printf 'release verification failed; restoring %s\n' "$previous_release" >&2
-    activate_release "$previous_release" || true
-    sudo -n systemctl restart "$SERVICE" || true
+  if [[ "$activation_started" == true ]]; then
+    printf 'release verification failed; restoring previous processes and SSR\n' >&2
+    activate_link "$previous_ssr" "$APP_DIR/.output" || true
+    sudo -n systemctl restart "$SSR_SERVICE" || true
+    cp "$pm2_dump_backup" "${HOME}/.pm2/dump.pm2" || true
+    pm2 delete all >/dev/null 2>&1 || true
+    pm2 resurrect >/dev/null 2>&1 || true
+    if [[ -n "$previous_release" ]]; then
+      activate_link "$previous_release" "$APP_DIR/.release-current" || true
+    fi
   fi
   exit "$exit_code"
 }
 trap rollback ERR
 
-activate_release "$release_dir"
-release_active=true
-sudo -n systemctl restart "$SERVICE"
-sudo -n systemctl is-active --quiet "$SERVICE"
-curl --fail --silent --show-error --retry 5 --retry-connrefused "$HEALTH_URL" >/dev/null
+activation_started=true
+RELEASE_SHA="$requested_sha" pm2 startOrReload "$release_dir/ecosystem.config.cjs" --update-env
+node -e "const expected=['iclawstore-api','iclawstore-runtime-dispatcher'];const apps=JSON.parse(require('node:fs').readFileSync(0,'utf8'));for(const name of expected){const app=apps.find((item)=>item.name===name);if(!app||app.pm2_env?.status!=='online')throw new Error(name+' is not online')}" < <(pm2 jlist)
 
-release_active=false
+api_health="$(curl --fail --silent --show-error --retry 5 --retry-connrefused "$API_HEALTH_URL")"
+node -e "const health=JSON.parse(process.argv[1]);if(health.status!=='ok'||health.buildSha!==process.argv[2])throw new Error('API health SHA mismatch')" "$api_health" "$requested_sha"
+
+activate_link "$release_dir/ssr" "$APP_DIR/.output"
+sudo -n systemctl restart "$SSR_SERVICE"
+sudo -n systemctl is-active --quiet "$SSR_SERVICE"
+curl --fail --silent --show-error --retry 5 --retry-connrefused "$SSR_HEALTH_URL" >/dev/null
+
+activate_link "$release_dir" "$APP_DIR/.release-current"
+pm2 save --force >/dev/null
+activation_started=false
 trap - ERR
-printf 'deployed artifact for %s to %s\n' "$requested_sha" "$release_dir"
+printf 'deployed unified release for %s to %s\n' "$requested_sha" "$release_dir"

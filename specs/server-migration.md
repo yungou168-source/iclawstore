@@ -453,7 +453,7 @@ https://www.iclawstore.com/convex/api/auth/callback/wechat
 - `PRODUCTION_SSH_USER`
 - `PRODUCTION_SSH_PRIVATE_KEY`
 - `PRODUCTION_SSH_KNOWN_HOSTS`
-- `CONVEX_DEPLOY_KEY`
+- `CONVEX_SELF_HOSTED_ADMIN_KEY`
 - 可选的 `PLAYWRIGHT_AUTH_STORAGE_STATE_JSON`
 
 同时安装：
@@ -492,11 +492,14 @@ mysql --version
 
 ```text
 /www/wwwroot/iclawstore.com
+/home/ubuntu/releases/iclawstore
 /home/ubuntu/.config/iclawstore
 /home/ubuntu/.local/share/iclawstore
 ```
 
-如果必须更改路径，应先修改 systemd、PM2、Nginx 和环境变量中的绝对路径，不能依靠符号链接长期掩盖配置差异。
+`/home/ubuntu/releases/iclawstore` 必须在启用自动发布前创建并允许专用部署账号写入；统一制品的 staging、当前 release 和上一版回滚点都位于该目录。
+
+如果必须更改路径，应先修改 systemd、PM2、Nginx、forced-command 部署脚本和环境变量中的绝对路径，不能依靠符号链接长期掩盖配置差异。
 
 ## 11. 推荐迁移流程
 
@@ -506,7 +509,7 @@ mysql --version
 - [ ] 审计未提交和未跟踪文件，单独保存需要保留的内容。
 - [ ] 记录 Node、Bun、PM2、Docker、Nginx、MySQL 和 Convex 版本。
 - [ ] 准备新服务器用户、目录、软件、防火墙和安全组。
-- [ ] 从 Git 克隆项目并准备 SSR release。
+- [ ] 从 Git 克隆项目并准备统一 Fastify/Worker/SSR release 目录。
 - [ ] 恢复 systemd、PM2 和 Nginx 配置，但暂不对公网提供服务。
 - [ ] 加密迁移环境变量和密钥。
 - [ ] 执行并验证一次 MySQL 预备导入。

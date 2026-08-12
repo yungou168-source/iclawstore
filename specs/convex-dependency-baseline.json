@@ -1,0 +1,2851 @@
+{
+  "dependencies": [
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/DeploymentDriftBanner.tsx",
+      "line": 1
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/components/DeploymentDriftBanner.tsx",
+      "line": 3
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/DeploymentDriftBanner.tsx",
+      "line": 51
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillCommentsPanel.tsx",
+      "line": 1
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/components/SkillCommentsPanel.tsx",
+      "line": 4
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillCommentsPanel.tsx",
+      "line": 33
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillCommentsPanel.tsx",
+      "line": 34
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillCommentsPanel.tsx",
+      "line": 35
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillCommentsPanel.tsx",
+      "line": 44
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillOwnershipPanel.tsx",
+      "line": 2
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/components/SkillOwnershipPanel.tsx",
+      "line": 5
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillOwnershipPanel.tsx",
+      "line": 106
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillOwnershipPanel.tsx",
+      "line": 107
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/UserBootstrap.tsx",
+      "line": 1
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/components/UserBootstrap.tsx",
+      "line": 3
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/UserBootstrap.tsx",
+      "line": 8
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "src/components/SecurityAuditPage.tsx",
+      "line": 599
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "src/components/SecurityAuditPage.tsx",
+      "line": 600
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SoulDetailPage.tsx",
+      "line": 1
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/components/SoulDetailPage.tsx",
+      "line": 3
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SoulDetailPage.tsx",
+      "line": 57
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SoulDetailPage.tsx",
+      "line": 58
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SoulDetailPage.tsx",
+      "line": 59
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SoulDetailPage.tsx",
+      "line": 60
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SoulDetailPage.tsx",
+      "line": 61
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SoulDetailPage.tsx",
+      "line": 62
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SoulDetailPage.tsx",
+      "line": 72
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SoulDetailPage.tsx",
+      "line": 77
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SoulDetailPage.tsx",
+      "line": 82
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "src/components/SoulDetailPage.tsx",
+      "line": 143
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "src/components/SkillVersionsPanel.tsx",
+      "line": 21
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillFilesPanel.tsx",
+      "line": 1
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/components/SkillFilesPanel.tsx",
+      "line": 4
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillFilesPanel.tsx",
+      "line": 28
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/components/UserBadge.tsx",
+      "line": 3
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "src/components/SkillHeader.tsx",
+      "line": 155
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillDetailPage.tsx",
+      "line": 4
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/components/SkillDetailPage.tsx",
+      "line": 8
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillDetailPage.tsx",
+      "line": 188
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillDetailPage.tsx",
+      "line": 191
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillDetailPage.tsx",
+      "line": 196
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillDetailPage.tsx",
+      "line": 197
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillDetailPage.tsx",
+      "line": 198
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillDetailPage.tsx",
+      "line": 199
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillDetailPage.tsx",
+      "line": 200
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillDetailPage.tsx",
+      "line": 201
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillDetailPage.tsx",
+      "line": 235
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillDetailPage.tsx",
+      "line": 247
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillDetailPage.tsx",
+      "line": 254
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillDetailPage.tsx",
+      "line": 259
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillDetailPage.tsx",
+      "line": 302
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillDetailPage.tsx",
+      "line": 397
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillDetailPage.tsx",
+      "line": 401
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillDiffCard.tsx",
+      "line": 3
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/components/SkillDiffCard.tsx",
+      "line": 5
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/components/SkillDiffCard.tsx",
+      "line": 49
+    },
+    {
+      "category": "http-client",
+      "domain": "platform",
+      "file": "src/convex/client.ts",
+      "line": 1
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/convex/client.ts",
+      "line": 2
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "src/convex/client.ts",
+      "line": 5
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "src/lib/og.ts",
+      "line": 74
+    },
+    {
+      "category": "deployment-config",
+      "domain": "plugins-cli",
+      "file": "src/lib/packageApi.ts",
+      "line": 229
+    },
+    {
+      "category": "deployment-config",
+      "domain": "plugins-cli",
+      "file": "src/lib/packageApi.ts",
+      "line": 230
+    },
+    {
+      "category": "deployment-config",
+      "domain": "plugins-cli",
+      "file": "src/lib/packageApi.ts",
+      "line": 248
+    },
+    {
+      "category": "deployment-config",
+      "domain": "plugins-cli",
+      "file": "src/lib/packageApi.ts",
+      "line": 249
+    },
+    {
+      "category": "deployment-config",
+      "domain": "plugins-cli",
+      "file": "src/lib/packageApi.ts",
+      "line": 250
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/lib/useAuthStatus.ts",
+      "line": 1
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/lib/useAuthStatus.ts",
+      "line": 2
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/lib/useAuthStatus.ts",
+      "line": 7
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/lib/useAuthStatus.ts",
+      "line": 10
+    },
+    {
+      "category": "generated-api",
+      "domain": "skills-catalog",
+      "file": "src/lib/skillPage.ts",
+      "line": 1
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/cli/device.tsx",
+      "line": 2
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/routes/cli/device.tsx",
+      "line": 4
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/cli/device.tsx",
+      "line": 23
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/cli/device.tsx",
+      "line": 24
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "authentication",
+      "file": "src/routes/cli/auth.tsx",
+      "line": 2
+    },
+    {
+      "category": "generated-api",
+      "domain": "authentication",
+      "file": "src/routes/cli/auth.tsx",
+      "line": 5
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "authentication",
+      "file": "src/routes/cli/auth.tsx",
+      "line": 28
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "skills-catalog",
+      "file": "src/routes/skills/publish.tsx",
+      "line": 8
+    },
+    {
+      "category": "generated-api",
+      "domain": "skills-catalog",
+      "file": "src/routes/skills/publish.tsx",
+      "line": 22
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "skills-catalog",
+      "file": "src/routes/skills/publish.tsx",
+      "line": 85
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "skills-catalog",
+      "file": "src/routes/skills/publish.tsx",
+      "line": 86
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "skills-catalog",
+      "file": "src/routes/skills/publish.tsx",
+      "line": 89
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "skills-catalog",
+      "file": "src/routes/skills/publish.tsx",
+      "line": 92
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "skills-catalog",
+      "file": "src/routes/skills/publish.tsx",
+      "line": 96
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "skills-catalog",
+      "file": "src/routes/skills/publish.tsx",
+      "line": 154
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "skills-catalog",
+      "file": "src/routes/skills/publish.tsx",
+      "line": 260
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/stars.tsx",
+      "line": 2
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/routes/stars.tsx",
+      "line": 6
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/stars.tsx",
+      "line": 56
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/stars.tsx",
+      "line": 60
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "plugins-cli",
+      "file": "src/routes/plugins/$name/security-audit.tsx",
+      "line": 2
+    },
+    {
+      "category": "generated-api",
+      "domain": "plugins-cli",
+      "file": "src/routes/plugins/$name/security-audit.tsx",
+      "line": 3
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "plugins-cli",
+      "file": "src/routes/plugins/$name/security-audit.tsx",
+      "line": 114
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "plugins-cli",
+      "file": "src/routes/plugins/$name/security-audit.tsx",
+      "line": 115
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "plugins-cli",
+      "file": "src/routes/plugins/$name.tsx",
+      "line": 2
+    },
+    {
+      "category": "generated-api",
+      "domain": "plugins-cli",
+      "file": "src/routes/plugins/$name.tsx",
+      "line": 5
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "plugins-cli",
+      "file": "src/routes/plugins/$name.tsx",
+      "line": 341
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "plugins-cli",
+      "file": "src/routes/plugins/$name.tsx",
+      "line": 347
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "plugins-cli",
+      "file": "src/routes/plugins/$name.tsx",
+      "line": 351
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "plugins-cli",
+      "file": "src/routes/plugins/publish.tsx",
+      "line": 3
+    },
+    {
+      "category": "generated-api",
+      "domain": "plugins-cli",
+      "file": "src/routes/plugins/publish.tsx",
+      "line": 8
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "plugins-cli",
+      "file": "src/routes/plugins/publish.tsx",
+      "line": 188
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "plugins-cli",
+      "file": "src/routes/plugins/publish.tsx",
+      "line": 191
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "plugins-cli",
+      "file": "src/routes/plugins/publish.tsx",
+      "line": 192
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/routes/audits.tsx",
+      "line": 3
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/dashboard.tsx",
+      "line": 2
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/routes/dashboard.tsx",
+      "line": 18
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/dashboard.tsx",
+      "line": 128
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/dashboard.tsx",
+      "line": 160
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/dashboard.tsx",
+      "line": 164
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/dashboard.tsx",
+      "line": 462
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 2
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 33
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 232
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 233
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 234
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 235
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 237
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 238
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 239
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 240
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 243
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 244
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 245
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 246
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 247
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 248
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 249
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 250
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 311
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/settings.tsx",
+      "line": 317
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/user/$handle.tsx",
+      "line": 2
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/routes/user/$handle.tsx",
+      "line": 13
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/user/$handle.tsx",
+      "line": 105
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/user/$handle.tsx",
+      "line": 115
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/user/$handle.tsx",
+      "line": 119
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/user/$handle.tsx",
+      "line": 127
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/user/$handle.tsx",
+      "line": 134
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "security-moderation",
+      "file": "src/routes/$owner/$slug/security-audit.tsx",
+      "line": 2
+    },
+    {
+      "category": "generated-api",
+      "domain": "security-moderation",
+      "file": "src/routes/$owner/$slug/security-audit.tsx",
+      "line": 3
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "security-moderation",
+      "file": "src/routes/$owner/$slug/security-audit.tsx",
+      "line": 67
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "security-moderation",
+      "file": "src/routes/$owner/$slug/security-audit.tsx",
+      "line": 68
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "security-moderation",
+      "file": "src/routes/$owner/$slug/security-audit.tsx",
+      "line": 70
+    },
+    {
+      "category": "generated-api",
+      "domain": "profiles",
+      "file": "src/routes/profile/$slug.tsx",
+      "line": 4
+    },
+    {
+      "category": "generated-api",
+      "domain": "publishers-organizations",
+      "file": "src/routes/publishers/index.tsx",
+      "line": 4
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/routes/-management/managementShared.ts",
+      "line": 2
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 2
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 20
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 247
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 251
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 256
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 259
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 262
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 266
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 271
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 272
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 273
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 274
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 275
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 276
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 277
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 278
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 279
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 280
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 281
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 282
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 283
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 284
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 285
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 308
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 315
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/management.tsx",
+      "line": 320
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/import.tsx",
+      "line": 2
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "src/routes/import.tsx",
+      "line": 5
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/import.tsx",
+      "line": 55
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/import.tsx",
+      "line": 56
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/import.tsx",
+      "line": 57
+    },
+    {
+      "category": "browser-react-client",
+      "domain": "platform",
+      "file": "src/routes/import.tsx",
+      "line": 75
+    },
+    {
+      "category": "http-client",
+      "domain": "platform",
+      "file": "server/src/services/convexIdentityBridge.ts",
+      "line": 1
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "server/src/services/convexIdentityBridge.ts",
+      "line": 71
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "server/src/services/convexIdentityBridge.ts",
+      "line": 71
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "server/src/services/convexIdentityBridge.ts",
+      "line": 71
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "server/src/services/convexIdentityBridge.ts",
+      "line": 72
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "server/src/services/convexIdentityBridge.ts",
+      "line": 76
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "server/src/services/convexIdentityBridge.ts",
+      "line": 82
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "server/src/services/convexIdentityBridge.ts",
+      "line": 83
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "server/src/services/convexIdentityBridge.ts",
+      "line": 83
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "server/src/services/convexIdentityBridge.ts",
+      "line": 83
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "server/src/services/convexIdentityBridge.ts",
+      "line": 84
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "server/src/services/convexIdentityBridge.ts",
+      "line": 88
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "server/src/services/convexIdentityBridge.ts",
+      "line": 90
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "server/src/services/convexIdentityBridge.ts",
+      "line": 93
+    },
+    {
+      "category": "deployment-config",
+      "domain": "desktop-oauth",
+      "file": "server/src/routes/desktopContract.ts",
+      "line": 64
+    },
+    {
+      "category": "deployment-config",
+      "domain": "desktop-oauth",
+      "file": "server/src/routes/desktopContract.ts",
+      "line": 69
+    },
+    {
+      "category": "deployment-config",
+      "domain": "desktop-oauth",
+      "file": "server/src/routes/desktopContract.ts",
+      "line": 82
+    },
+    {
+      "category": "deployment-config",
+      "domain": "desktop-oauth",
+      "file": "server/src/routes/desktopContract.ts",
+      "line": 98
+    },
+    {
+      "category": "http-client",
+      "domain": "platform",
+      "file": "server/og/fetchPublisherOgMeta.ts",
+      "line": 1
+    },
+    {
+      "category": "generated-api",
+      "domain": "platform",
+      "file": "server/og/fetchPublisherOgMeta.ts",
+      "line": 2
+    },
+    {
+      "category": "deployment-config",
+      "domain": "plugins-cli",
+      "file": "server/routes/og/plugin.png.ts",
+      "line": 34
+    },
+    {
+      "category": "deployment-config",
+      "domain": "souls",
+      "file": "server/routes/og/soul.png.ts",
+      "line": 30
+    },
+    {
+      "category": "deployment-config",
+      "domain": "skills-catalog",
+      "file": "server/routes/og/skill.png.ts",
+      "line": 35
+    },
+    {
+      "category": "deployment-config",
+      "domain": "profiles",
+      "file": "server/routes/og/profile.png.ts",
+      "line": 33
+    },
+    {
+      "category": "deployment-config",
+      "domain": "profiles",
+      "file": "server/routes/og/profile.png.ts",
+      "line": 33
+    },
+    {
+      "category": "deployment-config",
+      "domain": "authentication",
+      "file": "server/routes/dev-auth/secret.ts",
+      "line": 7
+    },
+    {
+      "category": "deployment-config",
+      "domain": "authentication",
+      "file": "server/routes/dev-auth/secret.ts",
+      "line": 19
+    },
+    {
+      "category": "deployment-config",
+      "domain": "plugins-cli",
+      "file": "packages/clawhub-mod/README.md",
+      "line": 52
+    },
+    {
+      "category": "deployment-config",
+      "domain": "plugins-cli",
+      "file": "packages/clawhub-mod/README.md",
+      "line": 63
+    },
+    {
+      "category": "deployment-config",
+      "domain": "plugins-cli",
+      "file": "packages/clawhub-mod/README.md",
+      "line": 70
+    },
+    {
+      "category": "http-client",
+      "domain": "skills-catalog",
+      "file": "scripts/skill-cards/run-skill-card-worker.ts",
+      "line": 7
+    },
+    {
+      "category": "generated-api",
+      "domain": "skills-catalog",
+      "file": "scripts/skill-cards/run-skill-card-worker.ts",
+      "line": 8
+    },
+    {
+      "category": "deployment-config",
+      "domain": "skills-catalog",
+      "file": "scripts/skill-cards/run-skill-card-worker.ts",
+      "line": 150
+    },
+    {
+      "category": "deployment-config",
+      "domain": "skills-catalog",
+      "file": "scripts/skill-cards/run-skill-card-worker.ts",
+      "line": 454
+    },
+    {
+      "category": "deployment-config",
+      "domain": "skills-catalog",
+      "file": "scripts/skill-cards/run-skill-card-worker.ts",
+      "line": 454
+    },
+    {
+      "category": "deployment-config",
+      "domain": "skills-catalog",
+      "file": "scripts/skill-cards/run-skill-card-worker.ts",
+      "line": 455
+    },
+    {
+      "category": "deployment-config",
+      "domain": "skills-catalog",
+      "file": "scripts/skill-cards/run-skill-card-worker.ts",
+      "line": 455
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/ui-proof.mjs",
+      "line": 256
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/ui-proof.mjs",
+      "line": 257
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/ui-proof.mjs",
+      "line": 259
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/ui-proof.mjs",
+      "line": 260
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/ui-proof.mjs",
+      "line": 296
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/ui-proof.mjs",
+      "line": 298
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/ui-proof.mjs",
+      "line": 313
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/ui-proof.mjs",
+      "line": 318
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/ui-proof.mjs",
+      "line": 327
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/ui-proof.mjs",
+      "line": 327
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/ui-proof.mjs",
+      "line": 329
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/ui-proof.mjs",
+      "line": 329
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/ui-proof.mjs",
+      "line": 330
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/ui-proof.mjs",
+      "line": 330
+    },
+    {
+      "category": "deployment-config",
+      "domain": "security-moderation",
+      "file": "scripts/security-dataset/export-snapshot.ts",
+      "line": 99
+    },
+    {
+      "category": "deployment-config",
+      "domain": "security-moderation",
+      "file": "scripts/security-dataset/export-snapshot.ts",
+      "line": 325
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/export-convex-data.mjs",
+      "line": 12
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/export-convex-data.mjs",
+      "line": 12
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/export-convex-data.mjs",
+      "line": 71
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/export-convex-data.mjs",
+      "line": 103
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/export-convex-data.sh",
+      "line": 9
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/export-convex-data.sh",
+      "line": 9
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/export-convex-data.sh",
+      "line": 10
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/export-convex-data.sh",
+      "line": 10
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/export-convex-data.sh",
+      "line": 40
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/export-convex-data.sh",
+      "line": 41
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/export-convex-data.sh",
+      "line": 48
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/export-convex-data.sh",
+      "line": 80
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/setup-worktree.ts",
+      "line": 123
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/setup-worktree.ts",
+      "line": 124
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/setup-worktree.ts",
+      "line": 130
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/setup-worktree.ts",
+      "line": 133
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/setup-worktree.ts",
+      "line": 139
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/setup-worktree.ts",
+      "line": 142
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/setup-worktree.ts",
+      "line": 149
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/setup-worktree.ts",
+      "line": 150
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/setup-worktree.ts",
+      "line": 156
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/setup-worktree.ts",
+      "line": 157
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-worktree.ts",
+      "line": 18
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-worktree.ts",
+      "line": 19
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-worktree.ts",
+      "line": 79
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-worktree.ts",
+      "line": 105
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-worktree.ts",
+      "line": 292
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-worktree.ts",
+      "line": 395
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-worktree.ts",
+      "line": 472
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-worktree.ts",
+      "line": 474
+    },
+    {
+      "category": "deployment-config",
+      "domain": "authentication",
+      "file": "scripts/run-playwright-local-auth.ts",
+      "line": 353
+    },
+    {
+      "category": "deployment-config",
+      "domain": "authentication",
+      "file": "scripts/run-playwright-local-auth.ts",
+      "line": 353
+    },
+    {
+      "category": "deployment-config",
+      "domain": "authentication",
+      "file": "scripts/run-playwright-local-auth.ts",
+      "line": 354
+    },
+    {
+      "category": "deployment-config",
+      "domain": "authentication",
+      "file": "scripts/run-playwright-local-auth.ts",
+      "line": 361
+    },
+    {
+      "category": "deployment-config",
+      "domain": "authentication",
+      "file": "scripts/run-playwright-local-auth.ts",
+      "line": 362
+    },
+    {
+      "category": "deployment-config",
+      "domain": "authentication",
+      "file": "scripts/run-playwright-local-auth.ts",
+      "line": 367
+    },
+    {
+      "category": "deployment-config",
+      "domain": "authentication",
+      "file": "scripts/run-playwright-local-auth.ts",
+      "line": 377
+    },
+    {
+      "category": "deployment-config",
+      "domain": "authentication",
+      "file": "scripts/run-playwright-local-auth.ts",
+      "line": 378
+    },
+    {
+      "category": "deployment-config",
+      "domain": "authentication",
+      "file": "scripts/run-playwright-local-auth.ts",
+      "line": 386
+    },
+    {
+      "category": "deployment-config",
+      "domain": "authentication",
+      "file": "scripts/run-playwright-local-auth.ts",
+      "line": 387
+    },
+    {
+      "category": "deployment-config",
+      "domain": "authentication",
+      "file": "scripts/run-playwright-local-auth.ts",
+      "line": 418
+    },
+    {
+      "category": "http-client",
+      "domain": "security-moderation",
+      "file": "scripts/security/run-codex-scan-worker.ts",
+      "line": 7
+    },
+    {
+      "category": "generated-api",
+      "domain": "security-moderation",
+      "file": "scripts/security/run-codex-scan-worker.ts",
+      "line": 8
+    },
+    {
+      "category": "deployment-config",
+      "domain": "security-moderation",
+      "file": "scripts/security/run-codex-scan-worker.ts",
+      "line": 614
+    },
+    {
+      "category": "deployment-config",
+      "domain": "security-moderation",
+      "file": "scripts/security/run-codex-scan-worker.ts",
+      "line": 1093
+    },
+    {
+      "category": "deployment-config",
+      "domain": "security-moderation",
+      "file": "scripts/security/run-codex-scan-worker.ts",
+      "line": 1093
+    },
+    {
+      "category": "deployment-config",
+      "domain": "security-moderation",
+      "file": "scripts/security/run-codex-scan-worker.ts",
+      "line": 1094
+    },
+    {
+      "category": "deployment-config",
+      "domain": "security-moderation",
+      "file": "scripts/security/run-codex-scan-worker.ts",
+      "line": 1094
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-workers.ts",
+      "line": 40
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-workers.ts",
+      "line": 49
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-workers.ts",
+      "line": 152
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-workers.ts",
+      "line": 152
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-workers.ts",
+      "line": 153
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-workers.ts",
+      "line": 153
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-workers.ts",
+      "line": 154
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-workers.ts",
+      "line": 165
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-workers.ts",
+      "line": 165
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-workers.ts",
+      "line": 166
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-workers.ts",
+      "line": 166
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "scripts/dev-workers.ts",
+      "line": 167
+    },
+    {
+      "category": "storage",
+      "domain": "plugins-cli",
+      "file": "convex/packageInspectorNode.ts",
+      "line": 91
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpPreflight.ts",
+      "line": 26
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/httpApiV1/shared.ts",
+      "line": 402
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/httpApiV1/shared.ts",
+      "line": 479
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/httpApiV1/shared.ts",
+      "line": 483
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "convex/httpApiV1/shared.ts",
+      "line": 107
+    },
+    {
+      "category": "storage",
+      "domain": "plugins-cli",
+      "file": "convex/httpApiV1/packagesV1.ts",
+      "line": 712
+    },
+    {
+      "category": "storage",
+      "domain": "plugins-cli",
+      "file": "convex/httpApiV1/packagesV1.ts",
+      "line": 1145
+    },
+    {
+      "category": "storage",
+      "domain": "plugins-cli",
+      "file": "convex/httpApiV1/packagesV1.ts",
+      "line": 1178
+    },
+    {
+      "category": "storage",
+      "domain": "plugins-cli",
+      "file": "convex/httpApiV1/packagesV1.ts",
+      "line": 1247
+    },
+    {
+      "category": "storage",
+      "domain": "plugins-cli",
+      "file": "convex/httpApiV1/packagesV1.ts",
+      "line": 1361
+    },
+    {
+      "category": "storage",
+      "domain": "plugins-cli",
+      "file": "convex/httpApiV1/packagesV1.ts",
+      "line": 1901
+    },
+    {
+      "category": "storage",
+      "domain": "plugins-cli",
+      "file": "convex/httpApiV1/packagesV1.ts",
+      "line": 3584
+    },
+    {
+      "category": "storage",
+      "domain": "plugins-cli",
+      "file": "convex/httpApiV1/packagesV1.ts",
+      "line": 3605
+    },
+    {
+      "category": "storage",
+      "domain": "plugins-cli",
+      "file": "convex/httpApiV1/packagesV1.ts",
+      "line": 3638
+    },
+    {
+      "category": "storage",
+      "domain": "souls",
+      "file": "convex/httpApiV1/soulsV1.ts",
+      "line": 265
+    },
+    {
+      "category": "storage",
+      "domain": "skills-catalog",
+      "file": "convex/httpApiV1/skillsV1.ts",
+      "line": 2193
+    },
+    {
+      "category": "storage",
+      "domain": "skills-catalog",
+      "file": "convex/httpApiV1/skillsV1.ts",
+      "line": 2249
+    },
+    {
+      "category": "storage",
+      "domain": "skills-catalog",
+      "file": "convex/httpApiV1/skillsV1.ts",
+      "line": 3155
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApi.ts",
+      "line": 78
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApi.ts",
+      "line": 115
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApi.ts",
+      "line": 130
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApi.ts",
+      "line": 147
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApi.ts",
+      "line": 166
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApi.ts",
+      "line": 195
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApi.ts",
+      "line": 223
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApi.ts",
+      "line": 226
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApi.ts",
+      "line": 262
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApi.ts",
+      "line": 263
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApi.ts",
+      "line": 283
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApi.ts",
+      "line": 317
+    },
+    {
+      "category": "deployment-config",
+      "domain": "authentication",
+      "file": "convex/auth.config.ts",
+      "line": 1
+    },
+    {
+      "category": "storage",
+      "domain": "publishers-organizations",
+      "file": "convex/publishers.ts",
+      "line": 1754
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 50
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 51
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 52
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 53
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 54
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 55
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 56
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 57
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 58
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 59
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 60
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 61
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 62
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 63
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 65
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 66
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 67
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 68
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 69
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 70
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 71
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 72
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 73
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 74
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 75
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 76
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 77
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 79
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 80
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 81
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 82
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 83
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 85
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 86
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 87
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 89
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 90
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 91
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 92
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/httpApiV1.ts",
+      "line": 93
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/llmEval.ts",
+      "line": 283
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/llmEval.ts",
+      "line": 300
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/llmEval.ts",
+      "line": 494
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/llmEval.ts",
+      "line": 1471
+    },
+    {
+      "category": "storage",
+      "domain": "security-moderation",
+      "file": "convex/securityScan.ts",
+      "line": 1384
+    },
+    {
+      "category": "storage",
+      "domain": "security-moderation",
+      "file": "convex/securityScan.ts",
+      "line": 1994
+    },
+    {
+      "category": "storage",
+      "domain": "security-moderation",
+      "file": "convex/securityScan.ts",
+      "line": 2017
+    },
+    {
+      "category": "storage",
+      "domain": "security-moderation",
+      "file": "convex/securityDatasetNode.ts",
+      "line": 131
+    },
+    {
+      "category": "storage",
+      "domain": "security-moderation",
+      "file": "convex/securityDatasetNode.ts",
+      "line": 179
+    },
+    {
+      "category": "storage",
+      "domain": "security-moderation",
+      "file": "convex/securityDataset.ts",
+      "line": 337
+    },
+    {
+      "category": "storage",
+      "domain": "security-moderation",
+      "file": "convex/securityDataset.ts",
+      "line": 387
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/lib/changelog.ts",
+      "line": 247
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/lib/githubSoulBackup.ts",
+      "line": 294
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/lib/githubBackup.ts",
+      "line": 436
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "convex/lib/devAuth.ts",
+      "line": 2
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "convex/lib/devAuth.ts",
+      "line": 3
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "convex/lib/devAuth.ts",
+      "line": 14
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "convex/lib/devAuth.ts",
+      "line": 19
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "convex/lib/access.ts",
+      "line": 22
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "convex/lib/access.ts",
+      "line": 23
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "convex/lib/access.ts",
+      "line": 32
+    },
+    {
+      "category": "storage",
+      "domain": "souls",
+      "file": "convex/lib/soulChangelog.ts",
+      "line": 240
+    },
+    {
+      "category": "storage",
+      "domain": "souls",
+      "file": "convex/lib/soulPublish.ts",
+      "line": 241
+    },
+    {
+      "category": "storage",
+      "domain": "skills-catalog",
+      "file": "convex/lib/skillPublish.ts",
+      "line": 461
+    },
+    {
+      "category": "storage",
+      "domain": "plugins-cli",
+      "file": "convex/lib/packageRegistry.ts",
+      "line": 212
+    },
+    {
+      "category": "deployment-config",
+      "domain": "platform",
+      "file": "convex/lib/devSeed.ts",
+      "line": 3
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/vt.ts",
+      "line": 523
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/vt.ts",
+      "line": 630
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/vt.ts",
+      "line": 651
+    },
+    {
+      "category": "storage",
+      "domain": "profiles",
+      "file": "convex/users.ts",
+      "line": 984
+    },
+    {
+      "category": "http-routes",
+      "domain": "plugins-cli",
+      "file": "convex/packageInspectorHttp.ts",
+      "line": 59
+    },
+    {
+      "category": "http-routes",
+      "domain": "plugins-cli",
+      "file": "convex/packageInspectorHttp.ts",
+      "line": 105
+    },
+    {
+      "category": "storage",
+      "domain": "plugins-cli",
+      "file": "convex/packageInspectorHttp.ts",
+      "line": 127
+    },
+    {
+      "category": "storage",
+      "domain": "plugins-cli",
+      "file": "convex/packageInspectorHttp.ts",
+      "line": 145
+    },
+    {
+      "category": "http-routes",
+      "domain": "plugins-cli",
+      "file": "convex/packageInspectorHttp.ts",
+      "line": 163
+    },
+    {
+      "category": "http-routes",
+      "domain": "desktop-oauth",
+      "file": "convex/desktopOAuthHttp.ts",
+      "line": 217
+    },
+    {
+      "category": "http-routes",
+      "domain": "desktop-oauth",
+      "file": "convex/desktopOAuthHttp.ts",
+      "line": 225
+    },
+    {
+      "category": "http-routes",
+      "domain": "desktop-oauth",
+      "file": "convex/desktopOAuthHttp.ts",
+      "line": 233
+    },
+    {
+      "category": "http-routes",
+      "domain": "desktop-oauth",
+      "file": "convex/desktopOAuthHttp.ts",
+      "line": 243
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/http.ts",
+      "line": 69
+    },
+    {
+      "category": "storage",
+      "domain": "plugins-cli",
+      "file": "convex/packages.ts",
+      "line": 6139
+    },
+    {
+      "category": "deployment-config",
+      "domain": "plugins-cli",
+      "file": "convex/packages.ts",
+      "line": 7490
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/devSeed.ts",
+      "line": 744
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/devSeed.ts",
+      "line": 745
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/devSeed.ts",
+      "line": 746
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/devSeed.ts",
+      "line": 747
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/devSeed.ts",
+      "line": 1135
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/devSeed.ts",
+      "line": 3110
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/maintenance.ts",
+      "line": 391
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/maintenance.ts",
+      "line": 803
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/maintenance.ts",
+      "line": 816
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/maintenance.ts",
+      "line": 1781
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/devSeedExtra.ts",
+      "line": 525
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/githubImport.ts",
+      "line": 198
+    },
+    {
+      "category": "cron",
+      "domain": "platform",
+      "file": "convex/crons.ts",
+      "line": 4
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/downloads.ts",
+      "line": 89
+    },
+    {
+      "category": "http-routes",
+      "domain": "platform",
+      "file": "convex/downloads.ts",
+      "line": 134
+    },
+    {
+      "category": "storage",
+      "domain": "skills-catalog",
+      "file": "convex/skillCards.ts",
+      "line": 371
+    },
+    {
+      "category": "storage",
+      "domain": "skills-catalog",
+      "file": "convex/skillCards.ts",
+      "line": 525
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/uploads.ts",
+      "line": 11
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/uploads.ts",
+      "line": 27
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/uploads.ts",
+      "line": 46
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/seed.ts",
+      "line": 174
+    },
+    {
+      "category": "storage",
+      "domain": "platform",
+      "file": "convex/githubRestore.ts",
+      "line": 125
+    },
+    {
+      "category": "deployment-config",
+      "domain": "operations",
+      "file": ".github/workflows/ci.yml",
+      "line": 17
+    },
+    {
+      "category": "deployment-config",
+      "domain": "operations",
+      "file": ".github/workflows/deploy.yml",
+      "line": 48
+    },
+    {
+      "category": "deployment-config",
+      "domain": "operations",
+      "file": ".github/workflows/deploy.yml",
+      "line": 49
+    },
+    {
+      "category": "deployment-config",
+      "domain": "operations",
+      "file": ".github/workflows/deploy.yml",
+      "line": 49
+    },
+    {
+      "category": "deployment-config",
+      "domain": "operations",
+      "file": ".github/workflows/deploy.yml",
+      "line": 64
+    },
+    {
+      "category": "deployment-config",
+      "domain": "operations",
+      "file": ".github/workflows/deploy.yml",
+      "line": 65
+    },
+    {
+      "category": "deployment-config",
+      "domain": "operations",
+      "file": ".github/workflows/deploy.yml",
+      "line": 172
+    },
+    {
+      "category": "deployment-config",
+      "domain": "operations",
+      "file": ".github/workflows/deploy.yml",
+      "line": 173
+    },
+    {
+      "category": "deployment-config",
+      "domain": "operations",
+      "file": ".github/workflows/deploy.yml",
+      "line": 192
+    },
+    {
+      "category": "deployment-config",
+      "domain": "operations",
+      "file": ".github/workflows/deploy.yml",
+      "line": 193
+    },
+    {
+      "category": "deployment-config",
+      "domain": "security-moderation",
+      "file": ".github/workflows/security-scan-codex.yml",
+      "line": 39
+    },
+    {
+      "category": "deployment-config",
+      "domain": "security-moderation",
+      "file": ".github/workflows/security-scan-codex.yml",
+      "line": 39
+    },
+    {
+      "category": "deployment-config",
+      "domain": "security-moderation",
+      "file": ".github/workflows/security-scan-codex.yml",
+      "line": 39
+    },
+    {
+      "category": "deployment-config",
+      "domain": "operations",
+      "file": ".github/workflows/scheduled-live-checks.yml",
+      "line": 25
+    },
+    {
+      "category": "deployment-config",
+      "domain": "skills-catalog",
+      "file": ".github/workflows/skill-card-worker.yml",
+      "line": 36
+    },
+    {
+      "category": "deployment-config",
+      "domain": "skills-catalog",
+      "file": ".github/workflows/skill-card-worker.yml",
+      "line": 36
+    },
+    {
+      "category": "deployment-config",
+      "domain": "skills-catalog",
+      "file": ".github/workflows/skill-card-worker.yml",
+      "line": 36
+    },
+    {
+      "category": "generated-api",
+      "domain": "profiles",
+      "file": "src/lib/publicProfileApi.ts",
+      "line": 1
+    },
+    {
+      "category": "http-client",
+      "domain": "profiles",
+      "file": "server/src/domains/profiles/convexPublicProfileAdapter.ts",
+      "line": 2
+    },
+    {
+      "category": "http-client",
+      "domain": "profiles",
+      "file": "server/src/domains/profiles/profilePortFactory.ts",
+      "line": 1
+    },
+    {
+      "category": "http-client",
+      "domain": "profiles",
+      "file": "server/src/profileBackfillProcess.ts",
+      "line": 2
+    }
+  ],
+  "summary": {
+    "browser-react-client": {
+      "src/components/DeploymentDriftBanner.tsx": 2,
+      "src/components/SkillCommentsPanel.tsx": 5,
+      "src/components/SkillOwnershipPanel.tsx": 3,
+      "src/components/UserBootstrap.tsx": 2,
+      "src/components/SoulDetailPage.tsx": 10,
+      "src/components/SkillFilesPanel.tsx": 2,
+      "src/components/SkillDetailPage.tsx": 16,
+      "src/components/SkillDiffCard.tsx": 2,
+      "src/convex/client.ts": 1,
+      "src/lib/useAuthStatus.ts": 3,
+      "src/routes/cli/device.tsx": 3,
+      "src/routes/cli/auth.tsx": 2,
+      "src/routes/skills/publish.tsx": 8,
+      "src/routes/stars.tsx": 3,
+      "src/routes/plugins/$name/security-audit.tsx": 3,
+      "src/routes/plugins/$name.tsx": 4,
+      "src/routes/plugins/publish.tsx": 4,
+      "src/routes/dashboard.tsx": 5,
+      "src/routes/settings.tsx": 19,
+      "src/routes/user/$handle.tsx": 6,
+      "src/routes/$owner/$slug/security-audit.tsx": 4,
+      "src/routes/management.tsx": 25,
+      "src/routes/import.tsx": 5
+    },
+    "cron": {
+      "convex/crons.ts": 1
+    },
+    "deployment-config": {
+      "src/components/SecurityAuditPage.tsx": 2,
+      "src/components/SoulDetailPage.tsx": 1,
+      "src/components/SkillVersionsPanel.tsx": 1,
+      "src/components/SkillHeader.tsx": 1,
+      "src/convex/client.ts": 1,
+      "src/lib/og.ts": 1,
+      "src/lib/packageApi.ts": 5,
+      "server/src/services/convexIdentityBridge.ts": 13,
+      "server/src/routes/desktopContract.ts": 4,
+      "server/routes/og/plugin.png.ts": 1,
+      "server/routes/og/soul.png.ts": 1,
+      "server/routes/og/skill.png.ts": 1,
+      "server/routes/og/profile.png.ts": 2,
+      "server/routes/dev-auth/secret.ts": 2,
+      "packages/clawhub-mod/README.md": 3,
+      "scripts/skill-cards/run-skill-card-worker.ts": 5,
+      "scripts/ui-proof.mjs": 14,
+      "scripts/security-dataset/export-snapshot.ts": 2,
+      "scripts/export-convex-data.mjs": 4,
+      "scripts/export-convex-data.sh": 8,
+      "scripts/setup-worktree.ts": 10,
+      "scripts/dev-worktree.ts": 8,
+      "scripts/run-playwright-local-auth.ts": 11,
+      "scripts/security/run-codex-scan-worker.ts": 5,
+      "scripts/dev-workers.ts": 12,
+      "convex/httpApiV1/shared.ts": 1,
+      "convex/auth.config.ts": 1,
+      "convex/lib/devAuth.ts": 4,
+      "convex/lib/access.ts": 3,
+      "convex/lib/devSeed.ts": 1,
+      "convex/packages.ts": 1,
+      ".github/workflows/ci.yml": 1,
+      ".github/workflows/deploy.yml": 9,
+      ".github/workflows/security-scan-codex.yml": 3,
+      ".github/workflows/scheduled-live-checks.yml": 1,
+      ".github/workflows/skill-card-worker.yml": 3
+    },
+    "generated-api": {
+      "src/components/DeploymentDriftBanner.tsx": 1,
+      "src/components/SkillCommentsPanel.tsx": 1,
+      "src/components/SkillOwnershipPanel.tsx": 1,
+      "src/components/UserBootstrap.tsx": 1,
+      "src/components/SoulDetailPage.tsx": 1,
+      "src/components/SkillFilesPanel.tsx": 1,
+      "src/components/UserBadge.tsx": 1,
+      "src/components/SkillDetailPage.tsx": 1,
+      "src/components/SkillDiffCard.tsx": 1,
+      "src/lib/useAuthStatus.ts": 1,
+      "src/lib/skillPage.ts": 1,
+      "src/routes/cli/device.tsx": 1,
+      "src/routes/cli/auth.tsx": 1,
+      "src/routes/skills/publish.tsx": 1,
+      "src/routes/stars.tsx": 1,
+      "src/routes/plugins/$name/security-audit.tsx": 1,
+      "src/routes/plugins/$name.tsx": 1,
+      "src/routes/plugins/publish.tsx": 1,
+      "src/routes/audits.tsx": 1,
+      "src/routes/dashboard.tsx": 1,
+      "src/routes/settings.tsx": 1,
+      "src/routes/user/$handle.tsx": 1,
+      "src/routes/$owner/$slug/security-audit.tsx": 1,
+      "src/routes/profile/$slug.tsx": 1,
+      "src/lib/publicProfileApi.ts": 1,
+      "src/routes/publishers/index.tsx": 1,
+      "src/routes/-management/managementShared.ts": 1,
+      "src/routes/management.tsx": 1,
+      "src/routes/import.tsx": 1,
+      "server/og/fetchPublisherOgMeta.ts": 1,
+      "scripts/skill-cards/run-skill-card-worker.ts": 1,
+      "scripts/security/run-codex-scan-worker.ts": 1
+    },
+    "http-client": {
+      "src/convex/client.ts": 1,
+      "server/src/services/convexIdentityBridge.ts": 1,
+      "server/og/fetchPublisherOgMeta.ts": 1,
+      "scripts/skill-cards/run-skill-card-worker.ts": 1,
+      "scripts/security/run-codex-scan-worker.ts": 1,
+      "server/src/domains/profiles/convexPublicProfileAdapter.ts": 1,
+      "server/src/domains/profiles/profilePortFactory.ts": 1,
+      "server/src/profileBackfillProcess.ts": 1
+    },
+    "http-routes": {
+      "convex/httpPreflight.ts": 1,
+      "convex/httpApi.ts": 12,
+      "convex/httpApiV1.ts": 40,
+      "convex/packageInspectorHttp.ts": 3,
+      "convex/desktopOAuthHttp.ts": 4,
+      "convex/http.ts": 1,
+      "convex/downloads.ts": 1
+    },
+    "storage": {
+      "convex/packageInspectorNode.ts": 1,
+      "convex/httpApiV1/shared.ts": 3,
+      "convex/httpApiV1/packagesV1.ts": 9,
+      "convex/httpApiV1/soulsV1.ts": 1,
+      "convex/httpApiV1/skillsV1.ts": 3,
+      "convex/publishers.ts": 1,
+      "convex/llmEval.ts": 4,
+      "convex/securityScan.ts": 3,
+      "convex/securityDatasetNode.ts": 2,
+      "convex/securityDataset.ts": 2,
+      "convex/lib/changelog.ts": 1,
+      "convex/lib/githubSoulBackup.ts": 1,
+      "convex/lib/githubBackup.ts": 1,
+      "convex/lib/soulChangelog.ts": 1,
+      "convex/lib/soulPublish.ts": 1,
+      "convex/lib/skillPublish.ts": 1,
+      "convex/lib/packageRegistry.ts": 1,
+      "convex/vt.ts": 3,
+      "convex/users.ts": 1,
+      "convex/packageInspectorHttp.ts": 2,
+      "convex/packages.ts": 1,
+      "convex/devSeed.ts": 6,
+      "convex/maintenance.ts": 4,
+      "convex/devSeedExtra.ts": 1,
+      "convex/githubImport.ts": 1,
+      "convex/downloads.ts": 1,
+      "convex/skillCards.ts": 2,
+      "convex/uploads.ts": 3,
+      "convex/seed.ts": 1,
+      "convex/githubRestore.ts": 1
+    }
+  }
+}

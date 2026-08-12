@@ -1,22 +1,8 @@
 name: Deploy
 
 on:
-  workflow_dispatch:
-    inputs:
-      target:
-        description: "What to deploy"
-        required: true
-        default: full
-        type: choice
-        options:
-          - full
-          - backend
-          - frontend
-      allow_deleting_large_indexes:
-        description: "Allow Convex to delete large indexes"
-        required: true
-        default: false
-        type: boolean
+  push:
+    branches: [main]
 
 concurrency:
   group: deploy-production
@@ -43,33 +29,13 @@ jobs:
             exit 1
           fi
 
-      - name: Resolve deploy mode
+      - name: Resolve automatic deploy mode
         id: mode
         run: |
-          set -euo pipefail
-          target="${{ inputs.target }}"
-          case "$target" in
-            full)
-              echo "deploy_backend=true" >> "$GITHUB_OUTPUT"
-              echo "deploy_frontend=true" >> "$GITHUB_OUTPUT"
-              echo "run_smoke=true" >> "$GITHUB_OUTPUT"
-              ;;
-            backend)
-              echo "deploy_backend=true" >> "$GITHUB_OUTPUT"
-              echo "deploy_frontend=false" >> "$GITHUB_OUTPUT"
-              echo "run_smoke=true" >> "$GITHUB_OUTPUT"
-              ;;
-            frontend)
-              echo "deploy_backend=false" >> "$GITHUB_OUTPUT"
-              echo "deploy_frontend=true" >> "$GITHUB_OUTPUT"
-              echo "run_smoke=true" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "Unsupported deploy target: $target" >&2
-              exit 1
-              ;;
-          esac
-          echo "target=$target" >> "$GITHUB_OUTPUT"
+          echo "deploy_backend=true" >> "$GITHUB_OUTPUT"
+          echo "deploy_frontend=true" >> "$GITHUB_OUTPUT"
+          echo "run_smoke=true" >> "$GITHUB_OUTPUT"
+          echo "target=full" >> "$GITHUB_OUTPUT"
 
   deploy-production:
     runs-on: ubuntu-latest
@@ -79,7 +45,8 @@ jobs:
       name: Production
       url: https://www.iclawstore.com
     env:
-      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+      CONVEX_SELF_HOSTED_URL: https://www.iclawstore.com/convex
+      CONVEX_SELF_HOSTED_ADMIN_KEY: ${{ secrets.CONVEX_SELF_HOSTED_ADMIN_KEY }}
       PLAYWRIGHT_AUTH_STORAGE_STATE_JSON: ${{ secrets.PLAYWRIGHT_AUTH_STORAGE_STATE_JSON }}
       PRODUCTION_SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
       PRODUCTION_SSH_PORT: ${{ secrets.PRODUCTION_SSH_PORT }}
@@ -94,8 +61,8 @@ jobs:
           set -euo pipefail
           missing=()
 
-          if [[ "${{ needs.validate-deploy-request.outputs.deploy_backend }}" == "true" && -z "$CONVEX_DEPLOY_KEY" ]]; then
-            missing+=("CONVEX_DEPLOY_KEY")
+          if [[ "${{ needs.validate-deploy-request.outputs.deploy_backend }}" == "true" && -z "$CONVEX_SELF_HOSTED_ADMIN_KEY" ]]; then
+            missing+=("CONVEX_SELF_HOSTED_ADMIN_KEY")
           fi
 
           if [[ "${{ needs.validate-deploy-request.outputs.deploy_frontend }}" == "true" ]]; then
@@ -117,7 +84,7 @@ jobs:
           fi
 
           echo "Deploy target: ${{ needs.validate-deploy-request.outputs.target }}"
-          echo "Allow deleting large Convex indexes: ${{ inputs.allow_deleting_large_indexes }}"
+          echo "Allow deleting large Convex indexes: false"
 
           if [[ -z "$PLAYWRIGHT_AUTH_STORAGE_STATE_JSON" ]]; then
             echo "PLAYWRIGHT_AUTH_STORAGE_STATE_JSON not set; authenticated smoke will be skipped."
@@ -153,25 +120,33 @@ jobs:
 
       - name: Stamp Convex build SHA
         if: needs.validate-deploy-request.outputs.deploy_backend == 'true'
-        run: bunx convex env set APP_BUILD_SHA "${GITHUB_SHA}" --prod
+        run: bunx convex env set APP_BUILD_SHA "${GITHUB_SHA}"
 
       - name: Stamp Convex deploy time
         if: needs.validate-deploy-request.outputs.deploy_backend == 'true'
-        run: bunx convex env set APP_DEPLOYED_AT "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" --prod
+        run: bunx convex env set APP_DEPLOYED_AT "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
       - name: Deploy Convex
         if: needs.validate-deploy-request.outputs.deploy_backend == 'true'
-        run: |
-          set -euo pipefail
-          if [[ "${{ inputs.allow_deleting_large_indexes }}" == "true" ]]; then
-            bunx convex deploy --typecheck=enable --yes --allow-deleting-large-indexes
-          else
-            bun run convex:deploy
-          fi
+        run: bunx convex dev --once
 
       - name: Verify Convex contract
         if: needs.validate-deploy-request.outputs.deploy_backend == 'true'
-        run: bun run verify:convex-contract -- --prod
+        run: bun run verify:convex-contract
+
+      - name: Verify public Convex target
+        if: needs.validate-deploy-request.outputs.deploy_backend == 'true'
+        run: |
+          node --input-type=module <<'NODE'
+          import { ConvexHttpClient } from 'convex/browser';
+          import { makeFunctionReference } from 'convex/server';
+
+          const client = new ConvexHttpClient('https://www.iclawstore.com/convex');
+          const info = await client.query(makeFunctionReference('appMeta:getDeploymentInfo'), {});
+          if (info.appBuildSha !== process.env.GITHUB_SHA) {
+            throw new Error(`public Convex target SHA mismatch: ${info.appBuildSha ?? 'missing'}`);
+          }
+          NODE
 
       - name: Configure production SSH
         if: needs.validate-deploy-request.outputs.deploy_frontend == 'true'
@@ -187,7 +162,11 @@ jobs:
           printf '%s\n' "$PRODUCTION_SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/production-ssh/known_hosts"
           chmod 600 "$RUNNER_TEMP/production-ssh/id_ed25519"
 
-      - name: Build self-hosted SSR artifact
+      - name: Build Fastify and workers
+        if: needs.validate-deploy-request.outputs.deploy_frontend == 'true'
+        run: bun run --cwd server build
+
+      - name: Build unified production release
         if: needs.validate-deploy-request.outputs.deploy_frontend == 'true'
         env:
           VITE_CONVEX_URL: https://www.iclawstore.com/convex
@@ -220,19 +199,21 @@ jobs:
             }
           }
           NODE
-          tar -C .output -czf "$RUNNER_TEMP/iclawstore-ssr.tar.gz" .
-          sha256sum "$RUNNER_TEMP/iclawstore-ssr.tar.gz" | cut -d ' ' -f 1 > "$RUNNER_TEMP/iclawstore-ssr.tar.gz.sha256"
-          stat --format='%s' "$RUNNER_TEMP/iclawstore-ssr.tar.gz" > "$RUNNER_TEMP/iclawstore-ssr.tar.gz.size"
+          RELEASE_SHA="$GITHUB_SHA" RELEASE_OUTPUT_DIR="$RUNNER_TEMP/iclawstore-release" \
+            node scripts/build-production-release.mjs
+          tar -C "$RUNNER_TEMP/iclawstore-release" -czf "$RUNNER_TEMP/iclawstore-release.tar.gz" .
+          sha256sum "$RUNNER_TEMP/iclawstore-release.tar.gz" | cut -d ' ' -f 1 > "$RUNNER_TEMP/iclawstore-release.tar.gz.sha256"
+          stat --format='%s' "$RUNNER_TEMP/iclawstore-release.tar.gz" > "$RUNNER_TEMP/iclawstore-release.tar.gz.size"
 
-      - name: Deploy self-hosted SSR
+      - name: Deploy unified production release
         if: needs.validate-deploy-request.outputs.deploy_frontend == 'true'
         env:
           SSH_AUTH_SOCK: ""
         run: |
           set -euo pipefail
-          artifact="$RUNNER_TEMP/iclawstore-ssr.tar.gz"
-          artifact_sha="$(< "$RUNNER_TEMP/iclawstore-ssr.tar.gz.sha256")"
-          artifact_size="$(< "$RUNNER_TEMP/iclawstore-ssr.tar.gz.size")"
+          artifact="$RUNNER_TEMP/iclawstore-release.tar.gz"
+          artifact_sha="$(< "$RUNNER_TEMP/iclawstore-release.tar.gz.sha256")"
+          artifact_size="$(< "$RUNNER_TEMP/iclawstore-release.tar.gz.size")"
           timeout --foreground 30m ssh \
             -o RequestTTY=no \
             -i "$RUNNER_TEMP/production-ssh/id_ed25519" \

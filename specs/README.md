@@ -41,6 +41,7 @@ into `docs/` and leave only the design record here.
 - `mintlify.md`: docs publishing setup notes.
 - `openclaw-docs-extraction.md`: CLAW-89 extraction classification.
 - `deploy.md`: maintainer deploy checklist for the ClawHub project.
+- `convex-exit-migration.md`: 渐进移除 Convex 的目标架构、单写权威、数据/文件/认证迁移阶段、切流门禁与回滚约束。
 - `security-moderation.md`: detailed moderation implementation and scanner behavior notes.
 - `webhook.md`: removal decision and invariants for the retired Discord webhook integration.
 - `plans/plugins.md`: long-term OpenClaw plugin hosting plan.

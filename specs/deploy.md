@@ -1,5 +1,5 @@
 ---
-summary: "Maintainer deploy checklist: self-hosted SSR, Convex backend, CLI npm release, and /api rewrites."
+summary: "Maintainer deploy checklist: unified production release, self-hosted Convex, CLI npm release, and API routing."
 ---
 
 # Deploy
@@ -7,24 +7,31 @@ summary: "Maintainer deploy checklist: self-hosted SSR, Convex backend, CLI npm 
 This is a maintainer runbook for the ClawHub project. It is intentionally kept
 under `specs/` so it does not publish into the user-facing ClawHub docs tab.
 
-ClawHub is two deployables:
+ClawHub application production is one verified release boundary with four runtime components:
 
-- Web app (TanStack Start SSR) -> the iClawStore production server.
-- Convex backend -> Convex deployment (serves `/api/...` routes).
+- TanStack Start SSR (`iclawstore.service`).
+- Fastify API (`iclawstore-api`).
+- PM2 workers, including the outbox dispatcher and enabled audit/approval/executor processes.
+- Self-hosted Convex functions, which remain part of the release until the exit migration completes.
 
-## iClawStore self-hosted SSR release
+## iClawStore unified production release
 
 `www.iclawstore.com` runs the TanStack Start SSR bundle locally through the
 systemd unit `iclawstore.service`, listening on `127.0.0.1:3000`; Nginx proxies
-public HTTP(S) traffic to it. The Fastify API (`iclawstore-api`) and Nginx do
-not need a restart for web-only changes.
+public HTTP(S) traffic to it. Fastify listens on `127.0.0.1:3002`, while PM2
+runs the API and enabled workers. Even when a change appears web-only, the
+automatic release verifies and activates all application components from the
+same Git SHA so historical API/Worker releases cannot drift indefinitely.
 
-### GitHub Actions production-server boundary
+### Automatic production release boundary
 
-A manual `Deploy` workflow release is live only after the self-hosted SSR
-release completes and its public smoke tests pass. `full` deploys Convex and
-then the SSR server; `frontend` deploys only the SSR server; `backend` never
-connects to the production server.
+A push or merge to `main` automatically starts the `Deploy` workflow. The release
+is live only after self-hosted Convex target verification, unified API/Worker/SSR
+activation, and public smoke tests all pass. Every run deploys Convex first, then
+ships one checksummed release containing Fastify, enabled workers, Prisma
+migrations and SSR from the same Git SHA. Application releases must not use
+`workflow_dispatch`, `gh workflow run`, or the Actions UI's `Run workflow`
+button.
 
 GitHub Actions is not granted a general-purpose production shell or `sudo`.
 The `Production` environment contains only these server-release secrets:
@@ -46,7 +53,7 @@ command="/usr/local/sbin/iclawstore-deploy",no-agent-forwarding,no-port-forwardi
 
 Install the reviewed `ops/iclawstore-deploy` file as
 `/usr/local/sbin/iclawstore-deploy`, owned by `root:root` with mode `0755`.
-The forced command accepts only `deploy <40-character-commit-sha> <artifact-sha256> <artifact-size>`. GitHub Actions builds the SSR artifact on its isolated runner, streams it over the forced-command SSH connection, and the server verifies the SHA-256 digest, declared byte size, and that the requested commit is reachable from `origin/main`. It extracts only a valid Nitro output into a staging directory, switches `.output` atomically, restarts only `iclawstore.service`, and rolls back the output pointer when restart or local smoke verification fails. The server never runs dependency installation or application builds during a release.
+The forced command accepts only `deploy <40-character-commit-sha> <artifact-sha256> <artifact-size>`. GitHub Actions builds one archive containing SSR, `server/dist`, production server dependencies, Prisma schema/migrations, PM2 config and a release manifest. The server verifies the outer SHA-256 and size, verifies every manifest file and component entrypoint, and requires the commit to be reachable from `origin/main`. It then runs Prisma status/deploy/status, activates Fastify and enabled workers, requires `/health.buildSha` to match the requested SHA, switches SSR atomically, and records `.release-current`. If process or health verification fails, it restores the saved PM2 dump and prior SSR pointer. The server never installs dependencies or compiles application code during release.
 
 The dedicated account needs write access to the application worktree and this
 narrow `sudoers` entry only:
@@ -64,7 +71,7 @@ release script, although the current terminal key may also have repository
 write access for maintainer pushes. Do not reuse the GitHub Actions key for
 repository fetches, interactive administration, or any other host.
 
-Before enabling a manual `frontend` or `full` Deploy run, verify the repository
+Before enabling automatic production releases from `main`, verify the repository
 key without exposing its private contents:
 
 ```bash
@@ -150,55 +157,65 @@ switching `.output`, compare the selected SHA with the intended authentication
 UI and run signed-out login-dialog plus signed-in sign-out browser smoke checks.
 Never solve this by building the dirty production worktree.
 
-### Low-memory release design
+### Low-memory unified release design
 
-Production SSR builds run on the GitHub Actions runner, not on the self-hosted server. This keeps the live service and deployment reliability independent of transient server memory, Cursor sessions, or local background work. The server receives only a bounded, checksummed release archive and needs disk space only for the current, previous, and staged outputs.
+Production builds and production dependency installation run on the GitHub Actions runner, not on the self-hosted server. This keeps live SSR, Fastify and Worker reliability independent of transient server memory, Cursor sessions, or local background work. The server receives one bounded, checksummed release archive containing SSR, `server/dist`, production server dependencies, Prisma schema/migrations, PM2 config and verification scripts. Disk capacity must cover the current release, previous release, and one staging release under `/home/ubuntu/releases/iclawstore`.
 
-The deployment script serializes archive reception with its lock, rejects archives larger than 1 GiB, verifies the requested commit remains reachable from `origin/main`, verifies the exact archive size and SHA-256 digest, and requires `server/index.mjs` after extraction. It does not run `bun install`, `vite`, `tsc`, or `bun run build`; a low-memory server therefore cannot make the build nondeterministically fail.
+The deployment script serializes archive reception with its lock, rejects archives larger than 1 GiB, verifies the requested commit remains reachable from `origin/main`, and verifies the exact archive size and SHA-256 digest. After extraction it rejects unlisted, missing, changed, or unsafe files and symlinks by comparing the full tree with `release-manifest.json`; required SSR, API, Worker, Prisma and PM2 component entrypoints must all be listed. It does not run `bun install`, `npm install`, Vite, TypeScript, or Nitro compilation on the production server.
 
-The archive is extracted into a new staging directory. Only after all integrity checks pass does the script rename it into a timestamped release and atomically replace the `.output` symlink. If service restart or the localhost `/plugins` health check fails, it restores the prior symlink and restarts that known-good release. Source files are never reset or mutated by a release.
+The archive is extracted into a new staging directory. Before activation, the deployer reads `DATABASE_URL` from the restricted API environment and runs Prisma migration status/deploy/status with the packaged Prisma CLI. It then starts or reloads Fastify and enabled workers from the release, requires the API to be online and `/health.buildSha` to equal the requested SHA, atomically switches `.output` to the release SSR, and records `.release-current`. If process or health verification fails after activation begins, it restores the saved PM2 dump and previous SSR pointer. Already-applied database migrations are not rolled back, so routine migrations must remain expand-compatible. Source files are never reset or mutated by a release.
 
-To investigate a release failure, inspect the runner build logs, archive transfer/checksum error, or post-switch health check separately. Do not lower a memory threshold or terminate the live SSR process as a workaround; resource-intensive compilation belongs on the runner.
+To investigate a release failure, separate Runner build/dependency failures, archive transfer or manifest failures, migration failures, PM2/API SHA failures, SSR health failures, and public smoke failures. Do not lower a memory threshold or terminate live processes as a workaround; resource-intensive compilation and dependency installation belong on the Runner.
 
 ## 1) Deploy Convex
 
-From your local machine:
+Emergency local recovery for the self-hosted production deployment uses the
+local management port and keeps type checking enabled:
 
 ```bash
-bunx convex env set APP_BUILD_SHA "$(git rev-parse HEAD)" --prod
-bunx convex env set APP_DEPLOYED_AT "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" --prod
-bunx convex deploy
+CONVEX_SELF_HOSTED_URL=http://127.0.0.1:3210 \
+  bunx convex env set APP_BUILD_SHA "$(git rev-parse HEAD)"
+CONVEX_SELF_HOSTED_URL=http://127.0.0.1:3210 \
+  bunx convex env set APP_DEPLOYED_AT "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+CONVEX_SELF_HOSTED_URL=http://127.0.0.1:3210 \
+  bunx convex dev --once
 ```
 
-Or use the GitHub Actions pipeline:
+Production application releases are not started from a maintainer shell or the
+Actions UI. Pushing or merging a reviewed commit to `main` automatically starts
+`.github/workflows/deploy.yml` for `yungou168-source/iclawstore`.
 
-```bash
-gh workflow run deploy.yml \
-  --repo yungou168-source/iclawstore \
-  --ref main \
-  -f target=full
-```
-
-The workflow uses the npm registry directly, installs with a bounded download
-concurrency and retries failed dependency downloads. It builds
-`packages/schema` before Convex deployment because Convex imports its generated
-dist artifact. The Convex step always uses strict type checking; do not replace
-it with `--typecheck=disable`.
+Do not add `workflow_dispatch` to this workflow, run
+`gh workflow run deploy.yml`, or use the Actions UI's `Run workflow` button.
+The automatic workflow installs dependencies with bounded concurrency and
+retries, builds `packages/schema`, deploys Convex with strict type checking,
+verifies the remote contract, builds and deploys the unified Fastify/Worker/SSR
+release, and then runs production smoke checks.
 
 Production deploy notes:
 
-- `deploy.yml` is manual-only (`workflow_dispatch`). Merging to `main` does not deploy.
-- The workflow must be started from `main`.
-- Deploy targets:
-  - `full`: deploy Convex, verify its contract, deploy the selected `main` SHA to the self-hosted SSR server, then run smoke tests
-  - `backend`: deploy Convex, verify its contract, then run smoke tests against the current SSR release without connecting to the production server
-  - `frontend`: deploy the selected `main` SHA to the self-hosted SSR server, then run smoke tests
-- For `full` and `frontend`, the workflow connects only through the forced-command SSH key described above; it never receives an interactive shell or unrestricted `sudo`.
+- Every `main` update performs one full application release; partial `backend` and `frontend` release modes are intentionally unsupported.
+- Routine deployment always disallows deleting large Convex indexes. A destructive index migration requires a separately reviewed maintenance procedure.
+- For the server release, the workflow connects only through the forced-command SSH key described above; it never receives an interactive shell or unrestricted `sudo`.
 - The real deploy job uses the GitHub `Production` environment for deploy secrets, but it does not wait for a separate approval.
-- Required `Production` environment secret for backend deploys: `CONVEX_DEPLOY_KEY`, created from the **Production** Convex deployment settings. A development or preview key deploys to the wrong environment and cannot be converted by the CLI.
-- Required `Production` environment secrets for SSR deploys: `PRODUCTION_SSH_HOST`, `PRODUCTION_SSH_PORT`, `PRODUCTION_SSH_USER`, `PRODUCTION_SSH_PRIVATE_KEY`, and `PRODUCTION_SSH_KNOWN_HOSTS`.
+- Required `Production` environment secret `CONVEX_SELF_HOSTED_ADMIN_KEY` is the admin key for the self-hosted deployment reached through `https://www.iclawstore.com/convex`. Do not substitute a Convex Cloud deploy key.
+- Required `Production` environment secrets for unified releases: `PRODUCTION_SSH_HOST`, `PRODUCTION_SSH_PORT`, `PRODUCTION_SSH_USER`, `PRODUCTION_SSH_PRIVATE_KEY`, and `PRODUCTION_SSH_KNOWN_HOSTS`.
 - Optional `Production` environment secret: `PLAYWRIGHT_AUTH_STORAGE_STATE_JSON` for authenticated smoke coverage.
 - Convex application variables such as `JWT_PRIVATE_KEY`, `JWKS`, `SITE_URL`, and `CUSTOM_AUTH_SITE_URL` are configured in the Convex Production deployment itself; they are not GitHub Actions secrets.
+
+### Convex production target consistency
+
+Production Convex is the self-hosted runtime behind `https://www.iclawstore.com/convex` (historical deployment identifier `cheerful-schnauzer-269`). `dutiful-seal-277` is a Convex Cloud deployment that was accidentally selected by the former `CONVEX_DEPLOY_KEY`; it did not contain the production users and was never the active `/convex` upstream.
+
+The workflow now provides `CONVEX_SELF_HOSTED_URL=https://www.iclawstore.com/convex` with `CONVEX_SELF_HOSTED_ADMIN_KEY`, pushes once with `convex dev --once`, verifies the complete function spec against that same endpoint, and then queries `appMeta:getDeploymentInfo` through the public `/convex` boundary. The release fails unless `appBuildSha` exactly equals `GITHUB_SHA`; contract verification against a different deployment can no longer satisfy the gate.
+
+The mismatch was repaired on 2026-08-11 by pushing the missing functions through `127.0.0.1:3210` into the active self-hosted deployment. Evidence after repair:
+
+- `users:getPublicProfileBySlug({ slug: "ceo" })` returned the existing production `ceo` profile;
+- `https://www.iclawstore.com/profile/ceo` returned HTTP 200;
+- the production function contract matched 638 identifiers.
+
+Do not redirect `/convex` to `dutiful-seal-277` or copy production traffic to it. Remove the obsolete cloud deploy key after confirming no other workflow uses it.
 
 ## CLI npm release
 
@@ -287,50 +304,61 @@ Ensure Convex env is set (auth + embeddings):
 
 ## 2) Deploy MySQL-backed API changes
 
-Features served by the Fastify API must apply their Prisma migrations before the API and web releases that depend on them. For the friendly-link module, `prisma/migrations/20260819_friendly_links` is an additive migration: it creates `friendly_links`, its bounded-read indexes, and the initial links without modifying existing rows or tables.
-
-Run migrations only from a release environment that has the production `DATABASE_URL`; do not copy that credential into the repository or an interactive log:
-
-```bash
-bunx prisma migrate status
-bunx prisma migrate deploy
-bunx prisma migrate status
-```
+MySQL-backed API changes are part of the same unified release. The Runner packages the reviewed Prisma schema/migrations and production Prisma CLI; `/usr/local/sbin/iclawstore-deploy` reads `DATABASE_URL` from the existing restricted API environment and executes status/deploy/status before changing any process pointer. It never prints or transfers the credential.
 
 The required release order is:
 
-1. Confirm the target database and pending migration list.
-2. Run `prisma migrate deploy` and require a zero exit code.
-3. Deploy or restart the Fastify API containing `/friendly-links` and `/admin/friendly-links`.
-4. Deploy the SSR frontend.
-5. Verify anonymous footer reads and administrator create, update, enable/disable, and delete operations.
+1. Verify outer archive and every manifest record.
+2. Confirm the target database and apply only reviewed expand-compatible migrations.
+3. Activate Fastify and enabled workers, then require `/health.buildSha` to equal the release SHA.
+4. Switch SSR and verify `iclawstore.service` locally.
+5. Run public anonymous, authenticated and CLI smoke checks.
 
-Do not mark the release complete when `DATABASE_URL` is absent or migration status cannot be read. The footer fallback prevents a temporary empty public footer during rollout, but it does not make the administrator module usable before the table exists.
+Do not mark the release complete when `DATABASE_URL` is absent, migration status cannot be read, a PM2 process is offline, or any component reports a different SHA. Destructive/contract migrations require a separate maintenance procedure and cannot rely on automatic rollback.
 
-## 3) Deploy web app (self-hosted SSR)
+## 3) Deploy unified application release
 
-The GitHub Actions `Deploy` workflow builds the selected `main` SHA on its isolated runner, then streams the verified SSR artifact to `/usr/local/sbin/iclawstore-deploy`. The live `.output` symlink changes only after integrity checks, service restart, and local health verification succeed; the forced command restores the previous release if activation fails.
+The GitHub Actions `Deploy` workflow builds the selected `main` SHA on its isolated Runner, then streams the verified unified artifact to `/usr/local/sbin/iclawstore-deploy`. `.release-current`, PM2 entrypoints and `.output` converge on one timestamped release directory. Activation happens only after manifest and migration checks; failed process or health verification restores the previous PM2 dump and SSR pointer.
 
 The release order is:
 
-1. Convex deployment and contract verification for `full`.
-2. Isolated SSR build on the runner, artifact transfer, atomic activation, service restart, and local health check for `full` and `frontend`.
-3. Public HTTP smoke tests, then the cross-browser anonymous AI直聘 UI smoke suite. Authenticated storage state remains optional for any separate authenticated coverage; it is not required by the release gate.
+1. Self-hosted Convex push, full contract verification and public `appBuildSha` verification.
+2. Fastify/Worker build, SSR build, production dependency install and release manifest generation on the Runner.
+3. Server-side archive/manifest verification, Prisma migration, PM2 activation, API SHA check, SSR activation and local health check.
+4. Public HTTP smoke tests, then the cross-browser anonymous AI直聘 UI smoke suite. Authenticated storage state remains optional for separate authenticated coverage.
 
-The production process reads these application values from its existing server
-environment; the workflow must not transfer them over SSH:
+The SSR build embeds these public values on the Runner before the unified archive is created; they are not read from the server's restricted runtime environment and are not secrets:
 
 - `VITE_CONVEX_URL`
-- `VITE_CONVEX_SITE_URL` (Convex "site" URL)
-- `CONVEX_SITE_URL` (same value; used by auth provider config)
-- `SITE_URL` (web app URL)
-- `VITE_APP_BUILD_SHA` (set to the same commit SHA stamped into Convex)
+- `VITE_CONVEX_SITE_URL`
+- `VITE_SITE_URL`
+- `VITE_AI_WORK_SITE_URL`
+- `VITE_APP_BUILD_SHA` (set to the same commit SHA stamped into Convex and Fastify)
 
-## 4) Route `/api/*` to Convex
+Fastify and Workers load private runtime values from `/home/ubuntu/.config/iclawstore/*.env` through the packaged PM2 config. The workflow must not transfer `DATABASE_URL`, JWT secrets, provider credentials, or Worker secrets over SSH; only the release archive and forced-command arguments cross that boundary.
 
-The production Nginx configuration proxies `/api/*` to the configured Convex
-HTTP site. Keep that upstream and the registry discovery metadata aligned with
-the production Convex deployment.
+## 4) Public Profile MySQL read cutover
+
+This procedure applies only after the reviewed Profile code and expand-only migration have been merged. It does not change Profile write authority: Convex remains the only writer throughout `convex`, `compare`, and `mysql` read modes.
+
+1. Push the reviewed commit to `main`; do not manually dispatch Deploy. Confirm the automatic release applied `20260820_profile_domain_expand`, Fastify `/health` reports the release SHA, and known/unknown Profile API requests remain correct with `PROFILE_READ_MODE=convex`.
+2. In the restricted production API environment (`/home/ubuntu/.config/iclawstore/api.env`), confirm both `DATABASE_URL` and the Convex URL used by `db:profiles:backfill` are available. Run one process with an immutable, recorded ID and conservative page size:
+
+```bash
+PROFILE_BACKFILL_BATCH_ID=<recorded-uuid> \
+PROFILE_BACKFILL_BATCH_SIZE=100 \
+bun run --cwd server db:profiles:backfill
+```
+
+The command processes cursor pages until completion. Preserve the batch output, elapsed time, source count, batch counts and reconciliation SQL output. Rerun with the same completed ID to prove it does not reread or rewrite.
+3. Before compare mode, verify batch `completed`, `errorCount=0`, complete cursor, snapshot/map counts, and absence of map/snapshot orphans. Do not continue if any record is unexplained.
+4. Set `PROFILE_READ_MODE=compare` only in the restricted `api.env`, then perform the approved PM2 reload. Compare always serves Convex responses. Observe at least one normal traffic cycle and classify every `profile_reconciliation_records` difference. Sample active, avatar/no-avatar, handle fallback, deleted/deactivated, banned, and unknown slug through both `GET /api/profiles/<slug>` and `/profile/<slug>`; retain HTTP status/body and SSR/SEO evidence.
+5. Move to `PROFILE_READ_MODE=mysql` only after zero unexplained differences, no adapter/API availability failures, and completed data checks. Reload PM2, then verify MySQL hit behavior, missing/unknown behavior, MySQL-miss Convex fallback, frontend API-failure Convex fallback, and unchanged visibility filtering.
+6. On any regression in compare or mysql mode, immediately restore `PROFILE_READ_MODE=convex` in `api.env` and reload PM2. Do not roll back the applied DDL; use a later compatible migration for schema remediation. Record the observation window, discrepancy summary, health/API smoke evidence, and rollback drill before declaring a mode complete.
+
+## 5) Keep Convex-owned `/api/*` routes aligned
+
+Some registry and authentication-compatible `/api/*` paths are still served by the self-hosted Convex HTTP site during the exit migration, while Fastify owns its separately routed API surface. Do not treat `/api/*` as one interchangeable upstream. Keep Nginx ownership, registry discovery metadata, and the active production implementation aligned for each route family; moving a route from Convex to Fastify requires an explicit contract-preserving cutover.
 
 ## 5) Registry discovery
 
@@ -344,10 +372,11 @@ Keep production rewrites and discovery metadata aligned before release.
 
 ## 6) Post-deploy checks
 
-Run the contract verifier and smoke tests against production after deploy:
+Production application releases use `bun run verify:convex-contract` inside the workflow with the self-hosted URL and admin key already selected, then independently verify the public `/convex` build SHA. For an explicit post-deploy maintainer check, target the same self-hosted production deployment; do not fall back to a Convex Cloud `--prod` target.
+
+Run the remaining smoke tests against production after deploy:
 
 ```bash
-bun run verify:convex-contract -- --prod
 CLAWHUB_E2E_SITE=https://www.iclawstore.com \
 DESKTOP_API_BASE_URL=https://www.iclawstore.com \
 bun run test:e2e:prod-http

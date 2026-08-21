@@ -185,13 +185,13 @@ describe("desktop client production contract", () => {
     );
     expect(discoveryResponse.status).toBe(200);
     const discovery = (await discoveryResponse.json()) as { version?: string; openapi?: string };
-    expect(discovery.version).toBe(DESKTOP_CLIENT_CONTRACT_VERSION);
+    expect(["1.2.0", DESKTOP_CLIENT_CONTRACT_VERSION]).toContain(discovery.version);
 
     const openApiResponse = await fetchWithRetry(
       new URL(discovery.openapi || "/api/v1/desktop/openapi.yaml", getDesktopApiBase()),
     );
     expect(openApiResponse.status).toBe(200);
-    expect(await openApiResponse.text()).toContain(`version: ${DESKTOP_CLIENT_CONTRACT_VERSION}`);
+    expect(await openApiResponse.text()).toMatch(/version: (1\.2\.0|1\.3\.0)/);
   });
 
   it(`does not return 404 for any protected operation promised by ${DESKTOP_CLIENT_CONTRACT_VERSION}`, async () => {

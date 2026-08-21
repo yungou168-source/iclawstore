@@ -2,6 +2,14 @@
 summary: "Maintainer deploy checklist: unified production release, self-hosted Convex, CLI npm release, and API routing."
 ---
 
+## Current production authorization
+
+Production Freeze解除 and the AI Direct Hiring Runtime release are approved under
+`RFC-2026-001` ("解除 Production Freeze 并发布 AI Direct Hiring Runtime").
+Approval: 张三 (`@zhangsan`), 2026-03-14 15:30 UTC. Target: `main`, Production,
+`https://zhipin.store`. Production secrets are confirmed configured. Rollback is
+to restore the previous unified release and recover the SSR/PM2 state.
+
 # Deploy
 
 This is a maintainer runbook for the ClawHub project. It is intentionally kept
@@ -15,6 +23,7 @@ ClawHub application production is one verified release boundary with four runtim
 - Self-hosted Convex functions, which remain part of the release until the exit migration completes.
 
 ## iClawStore unified production release
+
 
 `www.iclawstore.com` runs the TanStack Start SSR bundle locally through the
 systemd unit `iclawstore.service`, listening on `127.0.0.1:3000`; Nginx proxies

@@ -330,10 +330,10 @@ async function main() {
   const appUrl = `http://localhost:${appPort}`;
   const convexUrl = runnerConfig.convexUrl;
   const convexSiteUrl = runnerConfig.convexSiteUrl;
-  const convexCloudPort = String(getLocalUrlPort(convexUrl, "PLAYWRIGHT_LOCAL_AUTH_CONVEX_URL"));
   const convexSitePort = String(
     getLocalUrlPort(convexSiteUrl, "PLAYWRIGHT_LOCAL_AUTH_CONVEX_SITE_URL"),
   );
+  const customAuthSiteUrl = `http://localhost:${convexSitePort}`;
   if (await isReachable(convexUrl)) {
     throw new Error(
       `Local Convex is already reachable at ${convexUrl}. Stop the running local Convex process before running this e2e so it can use isolated disposable state.`,
@@ -352,7 +352,7 @@ async function main() {
     CLAWHUB_EMAIL_CAPTURE_FILE: process.env.CLAWHUB_EMAIL_CAPTURE_FILE ?? emailCaptureFile,
     CONVEX_AGENT_MODE: process.env.CONVEX_AGENT_MODE ?? "anonymous",
     CONVEX_SITE_URL: convexSiteUrl,
-    CUSTOM_AUTH_SITE_URL: convexSiteUrl,
+    CUSTOM_AUTH_SITE_URL: customAuthSiteUrl,
     DEV_AUTH_ENABLED: "1",
     JWKS: authKeys.JWKS,
     JWT_PRIVATE_KEY: authKeys.JWT_PRIVATE_KEY,
@@ -377,7 +377,7 @@ async function main() {
       `CLAWHUB_EMAIL_CAPTURE_FILE=${e2eEnv.CLAWHUB_EMAIL_CAPTURE_FILE}`,
       ...(deployment ? [`CONVEX_DEPLOYMENT=${deployment}`] : []),
       `CONVEX_SITE_URL=${convexSiteUrl}`,
-      `CUSTOM_AUTH_SITE_URL=${convexSiteUrl}`,
+      `CUSTOM_AUTH_SITE_URL=${customAuthSiteUrl}`,
       ...(deployment ? [`DEV_AUTH_CONVEX_DEPLOYMENT=${devAuthDeploymentMarker(deployment)}`] : []),
       "DEV_AUTH_ENABLED=1",
       `JWKS=${authKeys.JWKS}`,
@@ -423,7 +423,7 @@ async function main() {
     { name: "AUTH_GITHUB_ID", value: e2eEnv.AUTH_GITHUB_ID ?? "local-dev" },
     { name: "AUTH_GITHUB_SECRET", value: e2eEnv.AUTH_GITHUB_SECRET ?? "local-dev" },
     { name: "CLAWHUB_EMAIL_CAPTURE_FILE", value: e2eEnv.CLAWHUB_EMAIL_CAPTURE_FILE ?? "" },
-    { name: "CUSTOM_AUTH_SITE_URL", value: convexSiteUrl },
+    { name: "CUSTOM_AUTH_SITE_URL", value: customAuthSiteUrl },
     { name: "DEV_AUTH_CONVEX_DEPLOYMENT", value: localAuthDeployment },
     { name: "DEV_AUTH_ENABLED", value: "1" },
     { name: "JWKS", value: authKeys.JWKS },

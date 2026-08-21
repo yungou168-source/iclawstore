@@ -35,7 +35,8 @@ jobs:
           echo "deploy_backend=true" >> "$GITHUB_OUTPUT"
           echo "deploy_frontend=true" >> "$GITHUB_OUTPUT"
           echo "run_smoke=true" >> "$GITHUB_OUTPUT"
-          echo "target=full" >> "$GITHUB_OUTPUT"
+          echo "target=production" >> "$GITHUB_OUTPUT"
+          echo "Production release approved under RFC-2026-001."
 
   deploy-production:
     runs-on: ubuntu-latest

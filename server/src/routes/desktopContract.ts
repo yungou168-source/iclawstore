@@ -1,5 +1,6 @@
+import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import type { FastifyInstance } from "fastify";
 import {
   DESKTOP_CLIENT_CONTRACT_VERSION,
@@ -80,7 +81,7 @@ export function desktopAuthDiscoveryFromEnvironment(
     clientId,
     audience:
       env.CONVEX_DESKTOP_AUTH_AUDIENCE?.trim() ||
-      "https://www.iclawstore.com/api/v1/ai-direct-hiring",
+      "https://zhipin.store/api/v1/ai-direct-hiring",
     redirectUris: desktopRedirectUrisFromEnvironment(env),
     scopes: ["openid", "profile", "email", "offline_access"],
     pkceMethods: ["S256"],
@@ -153,8 +154,16 @@ export function desktopCapabilitiesFromEnvironment(
 
 let openApiDocument: Promise<string> | undefined;
 
+const desktopOpenApiPath = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+  "openapi",
+  "desktop-client-v1.yaml",
+);
+
 function loadOpenApiDocument(): Promise<string> {
-  openApiDocument ??= readFile(join(process.cwd(), "openapi", "desktop-client-v1.yaml"), "utf8");
+  openApiDocument ??= readFile(desktopOpenApiPath, "utf8");
   return openApiDocument;
 }
 

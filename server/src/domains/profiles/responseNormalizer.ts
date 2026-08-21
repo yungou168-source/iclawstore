@@ -54,7 +54,16 @@ export const compareNormalizedProfiles = (
       },
     ];
   }
-  if (!source) return [];
+  if (!source) {
+    return [
+      {
+        stableId,
+        fieldName: 'profile',
+        differenceKind: 'missing',
+        summary: 'convex profile is absent while mysql profile remains visible',
+      },
+    ];
+  }
 
   const differences: ProfileDifference[] = [];
   for (const key of Object.keys(source) as Array<keyof typeof source>) {

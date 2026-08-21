@@ -1,0 +1,17 @@
+services:
+  soul-mysql-fixture:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: iclawstore_soul_fixture
+      MYSQL_USER: soul_fixture
+      MYSQL_PASSWORD: soul_fixture
+      MYSQL_ROOT_PASSWORD: root_fixture
+    ports:
+      - "${SOUL_FIXTURE_MYSQL_PORT:-33306}:3306"
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u soul_fixture -psoul_fixture"]
+      interval: 2s
+      timeout: 2s
+      retries: 30

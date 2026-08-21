@@ -25,7 +25,7 @@ export interface AuthenticatedUser {
   convexUserId?: string;
   issuer?: string;
   subject?: string;
-  authSource?: "convex";
+  sessionId?: string;
   role?: string;
   email?: string;
   name?: string;

@@ -717,6 +717,14 @@ export const syncGitHubProfileInternal = internalMutation({
     if (didChangeProfile) {
       updates.updatedAt = Date.now();
     }
+    if (updates.handle !== undefined) {
+      await syncProfileIdentityAliases(
+        ctx,
+        args.userId,
+        { handle: updates.handle, profileSlug: user.profileSlug },
+        updates.updatedAt ?? args.syncedAt,
+      );
+    }
     await ctx.db.patch(args.userId, updates);
     if (didChangeProfile) {
       await ctx.db.insert("auditLogs", {
@@ -774,6 +782,81 @@ export const ensure = mutation({
   args: {},
   handler: ensureHandler,
 });
+
+type ProfileAliasKind = "profile_slug" | "user_handle";
+
+type ProfileAliasState = Readonly<{
+  handle?: string;
+  profileSlug?: string;
+}>;
+
+const normalizedProfileAlias = (value: string | undefined) => {
+  const normalized = value?.trim().toLowerCase();
+  return normalized || undefined;
+};
+
+export async function syncProfileIdentityAliases(
+  ctx: Pick<MutationCtx, "db">,
+  userId: Id<"users">,
+  state: ProfileAliasState,
+  now: number,
+) {
+  const desired = [
+    ["profile_slug", normalizedProfileAlias(state.profileSlug)],
+    ["user_handle", normalizedProfileAlias(state.handle)],
+  ] as const;
+
+  for (const [aliasKind, aliasValue] of desired) {
+    const aliases = await ctx.db
+      .query("profileIdentityAliases")
+      .withIndex("by_user_and_alias_kind", (query) =>
+        query.eq("userId", userId).eq("aliasKind", aliasKind),
+      )
+      .collect();
+
+    for (const alias of aliases) {
+      if (alias.isCanonical && alias.aliasValue !== aliasValue) {
+        await ctx.db.patch(alias._id, {
+          isCanonical: false,
+          retiredAt: now,
+          updatedAt: now,
+        });
+      }
+    }
+
+    if (!aliasValue) continue;
+    const owners = await ctx.db
+      .query("profileIdentityAliases")
+      .withIndex("by_alias_kind_and_alias_value", (query) =>
+        query.eq("aliasKind", aliasKind).eq("aliasValue", aliasValue),
+      )
+      .collect();
+    const conflictingOwner = owners.find((alias) => alias.userId !== userId);
+    if (conflictingOwner) {
+      throw new ConvexError(`Profile ${aliasKind} alias is already in use`);
+    }
+
+    const existing = owners.find((alias) => alias.userId === userId);
+    if (existing) {
+      if (!existing.isCanonical || existing.retiredAt !== undefined) {
+        await ctx.db.patch(existing._id, {
+          isCanonical: true,
+          retiredAt: undefined,
+          updatedAt: now,
+        });
+      }
+      continue;
+    }
+    await ctx.db.insert("profileIdentityAliases", {
+      userId,
+      aliasKind: aliasKind as ProfileAliasKind,
+      aliasValue,
+      isCanonical: true,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+}
 
 function normalizeHandle(handle: string | undefined) {
   const normalized = handle?.trim();
@@ -881,6 +964,14 @@ export async function ensureHandler(ctx: MutationCtx) {
   const hasUpdates = Object.keys(updates).length > 0;
   if (Object.keys(updates).length > 0) {
     updates.updatedAt = Date.now();
+    if (typeof updates.handle === "string") {
+      await syncProfileIdentityAliases(
+        ctx,
+        userId,
+        { handle: updates.handle, profileSlug: user.profileSlug },
+        updates.updatedAt as number,
+      );
+    }
     await ctx.db.patch(userId, updates);
   }
   const ensuredUser = hasUpdates
@@ -933,6 +1024,12 @@ export const updateProfile = mutation({
       .withIndex("by_profile_slug", (q) => q.eq("profileSlug", profileSlug))
       .unique();
     if (slugOwner && slugOwner._id !== userId) throw new ConvexError("Profile slug is already in use");
+    await syncProfileIdentityAliases(
+      ctx,
+      userId,
+      { handle: user?.handle, profileSlug },
+      now,
+    );
     await ctx.db.patch(userId, {
       displayName,
       bio,
@@ -1046,6 +1143,7 @@ export const deleteAccount = mutation({
       deletedAt: now,
     });
     const cleanup = await hardDeleteSelfDeletedAccountState(ctx, user, now);
+    await syncProfileIdentityAliases(ctx, userId, {}, now);
 
     await ctx.db.patch(userId, {
       deactivatedAt: now,

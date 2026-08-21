@@ -1,4 +1,4 @@
-name: Deploy
+name: Production Release Hold
 
 on:
   push:
@@ -29,23 +29,25 @@ jobs:
             exit 1
           fi
 
-      - name: Resolve automatic deploy mode
+      - name: Record production release hold
         id: mode
         run: |
-          echo "deploy_backend=true" >> "$GITHUB_OUTPUT"
-          echo "deploy_frontend=true" >> "$GITHUB_OUTPUT"
-          echo "run_smoke=true" >> "$GITHUB_OUTPUT"
-          echo "target=full" >> "$GITHUB_OUTPUT"
+          echo "deploy_backend=false" >> "$GITHUB_OUTPUT"
+          echo "deploy_frontend=false" >> "$GITHUB_OUTPUT"
+          echo "run_smoke=false" >> "$GITHUB_OUTPUT"
+          echo "target=release-hold" >> "$GITHUB_OUTPUT"
+          echo "Production activation is frozen while the application exits Convex."
 
   deploy-production:
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: validate-deploy-request
     environment:
       name: Production
-      url: https://www.iclawstore.com
+      url: https://zhipin.store
     env:
-      CONVEX_SELF_HOSTED_URL: https://www.iclawstore.com/convex
+      CONVEX_SELF_HOSTED_URL: https://zhipin.store/convex
       CONVEX_SELF_HOSTED_ADMIN_KEY: ${{ secrets.CONVEX_SELF_HOSTED_ADMIN_KEY }}
       PLAYWRIGHT_AUTH_STORAGE_STATE_JSON: ${{ secrets.PLAYWRIGHT_AUTH_STORAGE_STATE_JSON }}
       PRODUCTION_SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
@@ -53,8 +55,8 @@ jobs:
       PRODUCTION_SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
       PRODUCTION_SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
       PRODUCTION_SSH_KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
-      PLAYWRIGHT_BASE_URL: https://www.iclawstore.com
-      CLAWHUB_E2E_SITE: https://www.iclawstore.com
+      PLAYWRIGHT_BASE_URL: https://zhipin.store
+      CLAWHUB_E2E_SITE: https://zhipin.store
     steps:
       - name: Check deploy configuration
         run: |
@@ -141,7 +143,7 @@ jobs:
           import { ConvexHttpClient } from 'convex/browser';
           import { makeFunctionReference } from 'convex/server';
 
-          const client = new ConvexHttpClient('https://www.iclawstore.com/convex');
+          const client = new ConvexHttpClient('https://zhipin.store/convex');
           const info = await client.query(makeFunctionReference('appMeta:getDeploymentInfo'), {});
           if (info.appBuildSha !== process.env.GITHUB_SHA) {
             throw new Error(`public Convex target SHA mismatch: ${info.appBuildSha ?? 'missing'}`);
@@ -169,10 +171,10 @@ jobs:
       - name: Build unified production release
         if: needs.validate-deploy-request.outputs.deploy_frontend == 'true'
         env:
-          VITE_CONVEX_URL: https://www.iclawstore.com/convex
-          VITE_CONVEX_SITE_URL: https://www.iclawstore.com
-          VITE_SITE_URL: https://www.iclawstore.com
-          VITE_AI_WORK_SITE_URL: https://www.iclawstore.com
+          VITE_CONVEX_URL: https://zhipin.store/convex
+          VITE_CONVEX_SITE_URL: https://zhipin.store
+          VITE_SITE_URL: https://zhipin.store
+          VITE_AI_WORK_SITE_URL: https://zhipin.store
           VITE_APP_BUILD_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
@@ -191,6 +193,8 @@ jobs:
           const requiredValues = [
             process.env.VITE_CONVEX_URL,
             process.env.VITE_CONVEX_SITE_URL,
+            process.env.VITE_SITE_URL,
+            process.env.VITE_AI_WORK_SITE_URL,
             process.env.VITE_APP_BUILD_SHA,
           ];
           for (const value of requiredValues) {
@@ -198,9 +202,26 @@ jobs:
               throw new Error('required production build value was not embedded');
             }
           }
+
+          const legacyOrigin = 'https://www.iclawstore.com';
+          const filesWithLegacyOrigin = [];
+          const inspectDirectory = (directory) => {
+            for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+              const path = `${directory}/${entry.name}`;
+              if (entry.isDirectory()) {
+                inspectDirectory(path);
+              } else if (fs.readFileSync(path).includes(legacyOrigin)) {
+                filesWithLegacyOrigin.push(path);
+              }
+            }
+          };
+          inspectDirectory('.output');
+          if (filesWithLegacyOrigin.length > 0) {
+            throw new Error(`legacy production origin embedded in: ${filesWithLegacyOrigin.join(', ')}`);
+          }
           NODE
           RELEASE_SHA="$GITHUB_SHA" RELEASE_OUTPUT_DIR="$RUNNER_TEMP/iclawstore-release" \
-            node scripts/build-production-release.mjs
+            node scripts/build-mysql-release.mjs
           tar -C "$RUNNER_TEMP/iclawstore-release" -czf "$RUNNER_TEMP/iclawstore-release.tar.gz" .
           sha256sum "$RUNNER_TEMP/iclawstore-release.tar.gz" | cut -d ' ' -f 1 > "$RUNNER_TEMP/iclawstore-release.tar.gz.sha256"
           stat --format='%s' "$RUNNER_TEMP/iclawstore-release.tar.gz" > "$RUNNER_TEMP/iclawstore-release.tar.gz.size"
@@ -248,7 +269,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [validate-deploy-request, deploy-production]
-    if: needs.validate-deploy-request.outputs.deploy_frontend == 'true'
+    if: ${{ false }}
     permissions:
       contents: write
     steps:

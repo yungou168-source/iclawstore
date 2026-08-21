@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { catalogApi, type CatalogEntry, type CatalogVersion } from '../../catalogApi.js';
 import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -287,6 +288,24 @@ export async function cmdExplorePackages(
   const spinner = createSpinner(trimmedQuery ? "Searching packages" : "Listing packages");
   try {
     const limit = clampLimit(options.limit ?? 25, 100);
+    if (!trimmedQuery && !options.family && !options.official && options.executesCode === undefined &&
+      !options.target && !options.os && !options.arch && !options.libc && !options.requiresBrowser &&
+      !options.requiresDesktop && !options.requiresNativeDeps && !options.requiresExternalService &&
+      !options.externalService && !options.binary && !options.osPermission && !options.artifactKind && !options.npmMirror) {
+      const result = await catalogApi.list(registry, 'package', { limit }, token);
+      spinner.stop();
+      if (options.json) {
+        console.log(JSON.stringify(result, null, 2));
+        return;
+      }
+      if (result.items.length === 0) {
+        console.log("No packages found.");
+        return;
+      }
+      for (const item of result.items) console.log(`${item.name}  ${item.displayName}`);
+      return;
+    }
+
     if (trimmedQuery) {
       const url = registryUrl(`${ApiRoutes.packages}/search`, registry);
       url.searchParams.set("q", trimmedQuery);
@@ -366,7 +385,7 @@ export async function cmdInspectPackage(
   const registry = await getRegistry(opts, { cache: true });
   const spinner = createSpinner("Fetching package");
   try {
-    const detail = await apiRequestPackageDetail(registry, trimmed, token);
+    const detail = await catalogPackageDetail(registry, trimmed, token);
     if (!detail.package) {
       spinner.fail("Package not found");
       return;
@@ -386,14 +405,14 @@ export async function cmdInspectPackage(
       const targetVersion = requestedVersion ?? latestVersion;
       if (!targetVersion) fail("Could not resolve latest version");
       spinner.text = `Fetching ${trimmed}@${targetVersion}`;
-      versionResult = await apiRequestPackageVersion(registry, trimmed, targetVersion, token);
+      versionResult = await catalogPackageVersion(registry, detail.package.name, targetVersion, token);
     }
 
     let versionsList: Awaited<ReturnType<typeof apiRequestPackageVersions>> | null = null;
     if (options.versions) {
       const limit = clampLimit(options.limit ?? 25, 100);
       spinner.text = `Fetching versions (${limit})`;
-      versionsList = await apiRequestPackageVersions(registry, trimmed, limit, token);
+      versionsList = await catalogPackageVersions(registry, detail.package.name, limit, token);
     }
 
     let fileContent: string | null = null;
@@ -916,6 +935,10 @@ export async function cmdDownloadPackage(
       version: options.version,
       tag: options.tag,
     });
+    const catalogVersion = await catalogApi.version(registry, 'package', trimmed, targetVersion, token);
+    if (catalogVersion.artifacts.some((artifact) => !artifact.available)) {
+      fail('Artifact download is unavailable until managed asset migration completes');
+    }
     spinnerText(spinner, `Resolving ${trimmed}@${targetVersion}`);
     const artifactResult = await apiRequestPackageArtifact(registry, trimmed, targetVersion, token);
     spinnerText(spinner, `Downloading ${trimmed}@${targetVersion}`);
@@ -1306,6 +1329,36 @@ export async function cmdPackageMigrationStatus(
   }
 }
 
+async function catalogPackageDetail(registry: string, name: string, token?: string): Promise<PackageResponse> {
+  const entry = await catalogApi.resolve(registry, 'package', name, token);
+  return {
+    package: {
+      ...entry,
+      latestVersion: entry.latestVersion?.version ?? null,
+      tags: Object.fromEntries(entry.tags.map((tag) => [tag, entry.latestVersion?.version ?? ''])),
+    },
+    owner: entry.owner,
+  } as unknown as PackageResponse;
+}
+
+async function catalogPackageVersion(
+  registry: string,
+  id: string,
+  version: string,
+  token?: string,
+): Promise<PackageVersionResponse> {
+  return { version: await catalogApi.version(registry, 'package', id, version, token) } as unknown as PackageVersionResponse;
+}
+
+async function catalogPackageVersions(
+  registry: string,
+  id: string,
+  limit: number,
+  token?: string,
+): Promise<Awaited<ReturnType<typeof apiRequestPackageVersions>>> {
+  const result = await catalogApi.versions(registry, 'package', id, { limit }, token);
+  return { items: result.versions } as unknown as Awaited<ReturnType<typeof apiRequestPackageVersions>>;
+}
 async function apiRequestPackageDetail(registry: string, name: string, token?: string) {
   return await apiRequest(
     registry,
@@ -1313,6 +1366,7 @@ async function apiRequestPackageDetail(registry: string, name: string, token?: s
     ApiV1PackageResponseSchema,
   );
 }
+
 
 async function apiRequestPackageArtifact(
   registry: string,
@@ -1381,7 +1435,7 @@ async function resolvePackageVersion(
   args: { token?: string; version?: string; tag?: string },
 ) {
   if (args.version?.trim()) return args.version.trim();
-  const detail = await apiRequestPackageDetail(registry, name, args.token);
+  const detail = await catalogPackageDetail(registry, name, args.token);
   if (!detail.package) fail("Package not found");
   const tags = normalizeTags(detail.package.tags);
   if (args.tag?.trim()) {

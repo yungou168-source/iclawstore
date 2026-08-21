@@ -14,48 +14,66 @@ datasource db {
 // Core Tables - User & Authentication
 // ============================================
 
+model authSessions {
+  id                  String    @id @db.VarChar(36)
+  userId              String    @db.VarChar(191)
+  issuer              String    @db.VarChar(255)
+  tokenId             String?   @db.VarChar(191)
+  expiresAt           DateTime
+  revokedAt           DateTime?
+  lastAuthenticatedAt DateTime
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  users               users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([issuer, tokenId], map: "auth_sessions_issuer_token_id_key")
+  @@index([userId, revokedAt, expiresAt], map: "auth_sessions_user_status_idx")
+  @@map("auth_sessions")
+}
+
 model users {
-  id                        String    @id @default(cuid())
-  name                      String?
-  image                     String?
-  email                     String?   @unique
-  emailVerificationTime     DateTime?
-  phone                     String?   @unique
-  phoneVerificationTime     DateTime?
-  isAnonymous               Boolean   @default(false)
-  handle                    String?   @unique
-  displayName               String?
-  bio                       String?
-  role                      String?   @default("user") // admin, moderator, user
-  githubCreatedAt           DateTime?
-  githubFetchedAt           DateTime?
-  githubProfileSyncedAt     DateTime?
-  trustedPublisher          Boolean   @default(false)
-  publishedSkills           Int       @default(0)
-  totalStars                Int       @default(0)
-  totalDownloads            Int       @default(0)
-  personalPublisherId       String?
-  requiresModerationAt      DateTime?
-  requiresModerationReason  String?
-  deactivatedAt             DateTime?
-  purgedAt                  DateTime?
-  deletedAt                 DateTime?
-  banReason                 String?
-  createdAt                 DateTime  @default(now())
-  updatedAt                 DateTime  @updatedAt
+  id                       String    @id @default(cuid())
+  name                     String?
+  image                    String?
+  email                    String?   @unique
+  emailVerificationTime    DateTime?
+  phone                    String?   @unique
+  phoneVerificationTime    DateTime?
+  isAnonymous              Boolean   @default(false)
+  handle                   String?   @unique
+  displayName              String?
+  bio                      String?
+  role                     String?   @default("user") // admin, moderator, user
+  githubCreatedAt          DateTime?
+  githubFetchedAt          DateTime?
+  githubProfileSyncedAt    DateTime?
+  trustedPublisher         Boolean   @default(false)
+  publishedSkills          Int       @default(0)
+  totalStars               Int       @default(0)
+  totalDownloads           Int       @default(0)
+  personalPublisherId      String?
+  requiresModerationAt     DateTime?
+  requiresModerationReason String?
+  deactivatedAt            DateTime?
+  purgedAt                 DateTime?
+  deletedAt                DateTime?
+  banReason                String?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 
   // Relations
-  ownedSkills               skills[]         @relation("SkillOwner")
-  ownedPublishers           publishers[]      @relation("PublisherOwner")
-  publishedPackages         packages[]        @relation("PackageOwner")
-  comments                  comments[]
-  stars                     stars[]
-  skillReports              skillReports[]
-  skillAppeals              skillAppeals[]
-  apiTokens                 apiTokens[]
-  publisherMemberships      publisherMembers[]
-  createdSkillVersions      skillVersions[]
-  createdBadges             skillBadges[]
+  ownedSkills          skills[]           @relation("SkillOwner")
+  ownedPublishers      publishers[]       @relation("PublisherOwner")
+  publishedPackages    packages[]         @relation("PackageOwner")
+  comments             comments[]
+  stars                stars[]
+  skillReports         skillReports[]
+  skillAppeals         skillAppeals[]
+  apiTokens            apiTokens[]
+  publisherMemberships publisherMembers[]
+  createdSkillVersions skillVersions[]
+  createdBadges        skillBadges[]
+  authSessions         authSessions[]
 
   @@index([handle])
   @@index([email])
@@ -63,36 +81,42 @@ model users {
 }
 
 model profileSnapshots {
-  id                             String   @id @db.VarChar(36)
-  legacyConvexId                 String   @unique @db.VarChar(191)
-  handle                         String?  @db.VarChar(191)
-  profileSlug                    String?  @unique @db.VarChar(40)
-  name                           String?  @db.VarChar(191)
-  displayName                    String?  @db.VarChar(191)
-  bio                            String?  @db.Text
-  image                          String?  @db.VarChar(2048)
-  imageStorageId                 String?  @db.VarChar(191)
-  developerStatus                String?  @db.VarChar(32)
-  developerAppliedAt             DateTime?
-  developerApprovedAt            DateTime?
-  role                           String?  @db.VarChar(32)
-  trustedPublisher               Boolean  @default(false)
-  publishedSkills                Int      @default(0)
-  totalStars                     Int      @default(0)
-  totalDownloads                 Int      @default(0)
-  personalPublisherLegacyConvexId String? @db.VarChar(191)
-  deletedAt                      DateTime?
-  deactivatedAt                  DateTime?
-  purgedAt                       DateTime?
-  banReason                      String?  @db.VarChar(500)
-  legacyCreationTime             BigInt
-  legacyCreatedAt                DateTime?
-  legacyUpdatedAt                DateTime?
-  sourceHash                     String   @db.Char(64)
-  syncedAt                       DateTime @default(now())
-  createdAt                      DateTime @default(now())
-  updatedAt                      DateTime @updatedAt
-  legacyIdMap                    profileLegacyIdMaps?
+  id                              String                       @id @db.VarChar(36)
+  legacyConvexId                  String                       @unique(map: "profile_snapshots_legacy_convex_id_key") @db.VarChar(191)
+  handle                          String?                      @db.VarChar(191)
+  profileSlug                     String?                      @unique(map: "profile_snapshots_profile_slug_key") @db.VarChar(40)
+  name                            String?                      @db.VarChar(191)
+  displayName                     String?                      @db.VarChar(191)
+  bio                             String?                      @db.Text
+  image                           String?                      @db.VarChar(2048)
+  imageStorageId                  String?                      @db.VarChar(191)
+  developerStatus                 String?                      @db.VarChar(32)
+  developerAppliedAt              DateTime?
+  developerApprovedAt             DateTime?
+  role                            String?                      @db.VarChar(32)
+  trustedPublisher                Boolean                      @default(false)
+  publishedSkills                 Int                          @default(0)
+  totalStars                      Int                          @default(0)
+  totalDownloads                  Int                          @default(0)
+  personalPublisherLegacyConvexId String?                      @db.VarChar(191)
+  deletedAt                       DateTime?
+  deactivatedAt                   DateTime?
+  purgedAt                        DateTime?
+  banReason                       String?                      @db.VarChar(500)
+  legacyCreationTime              BigInt
+  legacyCreatedAt                 DateTime?
+  legacyUpdatedAt                 DateTime?
+  sourceHash                      String                       @db.Char(64)
+  syncedAt                        DateTime                     @default(now())
+  createdAt                       DateTime                     @default(now())
+  updatedAt                       DateTime                     @updatedAt
+  legacyIdMap                     profileLegacyIdMaps?
+  avatarAsset                     profileAssetSnapshots?
+  identityAliases                 profileIdentityAliases[]
+  linkedPublisherSnapshots        publisherSnapshots[]         @relation("PublisherLinkedProfile")
+  publisherMembershipSnapshots    publisherMemberSnapshots[]   @relation("PublisherMemberProfile")
+  officialPublisherCreatedRows    officialPublisherSnapshots[] @relation("OfficialPublisherCreatedByProfile")
+  starredProjectionItems          profileStarredItems[]
 
   @@index([deletedAt, deactivatedAt, profileSlug], map: "profile_snapshots_active_slug_idx")
   @@index([deletedAt, deactivatedAt, handle], map: "profile_snapshots_active_handle_idx")
@@ -101,29 +125,29 @@ model profileSnapshots {
 
 model profileLegacyIdMaps {
   legacyConvexId String           @id @db.VarChar(191)
-  mysqlProfileId String           @unique @db.VarChar(36)
+  mysqlProfileId String           @unique(map: "profile_legacy_id_maps_mysql_profile_id_key") @db.VarChar(36)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
-  profile        profileSnapshots @relation(fields: [mysqlProfileId], references: [id], onDelete: Cascade)
+  profile        profileSnapshots @relation(fields: [mysqlProfileId], references: [id], onDelete: Cascade, map: "profile_legacy_id_maps_profile_fk")
 
   @@map("profile_legacy_id_maps")
 }
 
 model profileMigrationBatches {
-  id             String                     @id @db.VarChar(36)
-  source         String                     @db.VarChar(64)
-  status         String                     @db.VarChar(32)
-  requestedBy    String?                    @db.VarChar(191)
-  startedAt      DateTime                   @default(now())
+  id             String                         @id @db.VarChar(36)
+  source         String                         @db.VarChar(64)
+  status         String                         @db.VarChar(32)
+  requestedBy    String?                        @db.VarChar(191)
+  startedAt      DateTime                       @default(now())
   completedAt    DateTime?
   failedAt       DateTime?
-  failureCode    String?                    @db.VarChar(128)
+  failureCode    String?                        @db.VarChar(128)
   sourceCount    Int?
-  upsertedCount  Int                        @default(0)
-  unchangedCount Int                        @default(0)
-  errorCount     Int                        @default(0)
-  createdAt      DateTime                   @default(now())
-  updatedAt      DateTime                   @updatedAt
+  upsertedCount  Int                            @default(0)
+  unchangedCount Int                            @default(0)
+  errorCount     Int                            @default(0)
+  createdAt      DateTime                       @default(now())
+  updatedAt      DateTime                       @updatedAt
   cursors        profileMigrationCursors[]
   differences    profileReconciliationRecords[]
 
@@ -137,7 +161,7 @@ model profileMigrationCursors {
   cursorValue String?                 @db.Text
   isComplete  Boolean                 @default(false)
   updatedAt   DateTime                @updatedAt
-  batch       profileMigrationBatches @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batch       profileMigrationBatches @relation(fields: [batchId], references: [id], onDelete: Cascade, map: "profile_migration_cursors_batch_fk")
 
   @@id([batchId, cursorName])
   @@map("profile_migration_cursors")
@@ -145,17 +169,341 @@ model profileMigrationCursors {
 
 model profileReconciliationRecords {
   id             String                   @id @db.VarChar(36)
-  recordKey      String                   @unique @db.Char(64)
+  recordKey      String                   @unique(map: "profile_reconciliation_record_key") @db.Char(64)
   batchId        String?                  @db.VarChar(36)
   legacyConvexId String                   @db.VarChar(191)
   fieldName      String                   @db.VarChar(64)
   differenceKind String                   @db.VarChar(64)
   summary        String                   @db.VarChar(512)
   observedAt     DateTime                 @default(now())
-  batch          profileMigrationBatches? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  batch          profileMigrationBatches? @relation(fields: [batchId], references: [id], onDelete: SetNull, map: "profile_reconciliation_batch_fk")
 
   @@index([legacyConvexId, observedAt], map: "profile_reconciliation_legacy_observed_idx")
   @@map("profile_reconciliation_records")
+}
+
+model profileAssetSnapshots {
+  id              String                   @id @default(uuid()) @db.VarChar(36)
+  profileId       String                   @unique(map: "profile_asset_snapshots_profile_key") @db.VarChar(36)
+  sourceStorageId String?                  @db.VarChar(255)
+  targetAssetId   String?                  @db.VarChar(36)
+  sourceUrl       String?                  @db.Text
+  contentType     String?                  @db.VarChar(255)
+  byteLength      BigInt?
+  sha256          String?                  @db.Char(64)
+  acl             String?                  @db.VarChar(64)
+  visibility      String?                  @db.VarChar(64)
+  status          String                   @default("pending") @db.VarChar(64)
+  failureCode     String?                  @db.VarChar(128)
+  deletedAt       DateTime?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  profile         profileSnapshots         @relation(fields: [profileId], references: [id], onDelete: Cascade, map: "profile_asset_snapshots_profile_fk")
+  targetAsset     convexExitManagedAssets? @relation(fields: [targetAssetId], references: [id], onDelete: SetNull, map: "profile_asset_snapshots_target_asset_fk")
+
+  @@index([sourceStorageId], map: "profile_asset_snapshots_source_storage_idx")
+  @@index([targetAssetId], map: "profile_asset_snapshots_target_asset_idx")
+  @@index([status], map: "profile_asset_snapshots_status_idx")
+  @@map("profile_asset_snapshots")
+}
+
+model profileSyncCheckpoints {
+  id              String                     @id @default(uuid()) @db.VarChar(36)
+  batchId         String                     @unique(map: "profile_sync_checkpoints_batch_key") @db.VarChar(36)
+  watermark       BigInt
+  windowStart     BigInt
+  cursorAgeMs     BigInt?
+  retryCount      Int                        @default(0)
+  lastFailureCode String?                    @db.VarChar(128)
+  completedAt     DateTime?
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+  batch           convexExitMigrationBatches @relation(fields: [batchId], references: [id], onDelete: Cascade, map: "profile_sync_checkpoints_batch_fk")
+
+  @@index([watermark], map: "profile_sync_checkpoints_watermark_idx")
+  @@map("profile_sync_checkpoints")
+}
+
+model profileIdentityAliases {
+  id          String           @id @default(uuid()) @db.VarChar(36)
+  profileId   String           @db.VarChar(36)
+  aliasKind   String           @db.VarChar(32)
+  aliasValue  String           @db.VarChar(191)
+  isCanonical Boolean          @default(false)
+  retiredAt   DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  profile     profileSnapshots @relation(fields: [profileId], references: [id], onDelete: Cascade, map: "profile_identity_alias_profile_fk")
+
+  @@unique([aliasKind, aliasValue], map: "profile_identity_alias_kind_value_key")
+  @@index([profileId, aliasKind, retiredAt], map: "profile_identity_alias_profile_idx")
+  @@map("profile_identity_aliases")
+}
+
+// ============================================
+// Publisher Migration Candidate Tables
+// ============================================
+
+model publisherSnapshots {
+  id                         String                      @id @db.VarChar(36)
+  legacyConvexId             String                      @unique(map: "publisher_snapshots_legacy_convex_id_key") @db.VarChar(191)
+  kind                       String                      @db.VarChar(16)
+  handle                     String                      @unique(map: "publisher_snapshots_handle_key") @db.VarChar(40)
+  displayName                String                      @db.VarChar(191)
+  bio                        String?                     @db.Text
+  sourceImageUrl             String?                     @db.Text
+  sourceImageStorageId       String?                     @db.VarChar(191)
+  linkedProfileId            String?                     @db.VarChar(36)
+  linkedUserLegacyConvexId   String?                     @unique(map: "publisher_snapshots_linked_user_key") @db.VarChar(191)
+  trustedPublisher           Boolean                     @default(false)
+  publishedSkills            Int                         @default(0)
+  publishedPackages          Int                         @default(0)
+  totalInstalls              Int                         @default(0)
+  totalDownloads             Int                         @default(0)
+  totalStars                 Int                         @default(0)
+  skillTotalInstalls         Int                         @default(0)
+  skillTotalDownloads        Int                         @default(0)
+  skillTotalStars            Int                         @default(0)
+  deletedAt                  DateTime?                   @db.DateTime(3)
+  deactivatedAt              DateTime?                   @db.DateTime(3)
+  legacyCreationTime         BigInt
+  legacyCreatedAt            DateTime                    @db.DateTime(3)
+  legacyUpdatedAt            DateTime                    @db.DateTime(3)
+  sourceHash                 String                      @db.Char(64)
+  lastSeenBatchId            String                      @db.VarChar(36)
+  sourceMissingAt            DateTime?                   @db.DateTime(3)
+  syncedAt                   DateTime                    @default(now()) @db.DateTime(3)
+  createdAt                  DateTime                    @default(now()) @db.DateTime(3)
+  updatedAt                  DateTime                    @updatedAt @db.DateTime(3)
+  linkedProfile              profileSnapshots?           @relation("PublisherLinkedProfile", fields: [linkedProfileId], references: [id], onDelete: SetNull, map: "publisher_snapshots_linked_profile_fk")
+  members                    publisherMemberSnapshots[]
+  official                   officialPublisherSnapshots?
+  avatar                     publisherAvatarSnapshots?
+  projectionCatalogItems     profileCatalogItems[]
+  projectionCatalogManifests profileCatalogManifests[]
+
+  @@index([deletedAt, deactivatedAt, kind, totalDownloads, legacyUpdatedAt], map: "publisher_snapshots_active_kind_downloads_idx")
+  @@index([deletedAt, deactivatedAt, handle], map: "publisher_snapshots_active_handle_idx")
+  @@index([lastSeenBatchId, sourceMissingAt], map: "publisher_snapshots_seen_batch_idx")
+  @@index([linkedProfileId], map: "publisher_snapshots_linked_profile_idx")
+  @@map("publisher_snapshots")
+}
+
+model publisherMemberSnapshots {
+  id                       String             @id @db.VarChar(36)
+  legacyConvexId           String             @unique(map: "publisher_member_snapshots_legacy_convex_id_key") @db.VarChar(191)
+  publisherId              String             @db.VarChar(36)
+  memberProfileId          String             @db.VarChar(36)
+  memberUserLegacyConvexId String             @db.VarChar(191)
+  role                     String             @db.VarChar(16)
+  legacyCreationTime       BigInt
+  legacyCreatedAt          DateTime           @db.DateTime(3)
+  legacyUpdatedAt          DateTime           @db.DateTime(3)
+  sourceHash               String             @db.Char(64)
+  lastSeenBatchId          String             @db.VarChar(36)
+  syncedAt                 DateTime           @default(now()) @db.DateTime(3)
+  createdAt                DateTime           @default(now()) @db.DateTime(3)
+  updatedAt                DateTime           @updatedAt @db.DateTime(3)
+  publisher                publisherSnapshots @relation(fields: [publisherId], references: [id], onDelete: Cascade, map: "publisher_member_snapshots_publisher_fk")
+  memberProfile            profileSnapshots   @relation("PublisherMemberProfile", fields: [memberProfileId], references: [id], onDelete: Restrict, map: "publisher_member_snapshots_profile_fk")
+
+  @@unique([publisherId, memberUserLegacyConvexId], map: "publisher_member_snapshots_publisher_user_key")
+  @@index([memberUserLegacyConvexId, role, publisherId], map: "publisher_member_snapshots_user_role_idx")
+  @@index([publisherId, role, memberUserLegacyConvexId], map: "publisher_member_snapshots_publisher_role_idx")
+  @@index([memberProfileId], map: "publisher_member_snapshots_profile_idx")
+  @@index([lastSeenBatchId, publisherId], map: "publisher_member_snapshots_seen_batch_idx")
+  @@map("publisher_member_snapshots")
+}
+
+model officialPublisherSnapshots {
+  id                          String             @id @db.VarChar(36)
+  legacyConvexId              String             @unique(map: "official_publisher_snapshots_legacy_convex_id_key") @db.VarChar(191)
+  publisherId                 String             @unique(map: "official_publisher_snapshots_publisher_key") @db.VarChar(36)
+  reason                      String?            @db.VarChar(500)
+  createdByProfileId          String?            @db.VarChar(36)
+  createdByUserLegacyConvexId String?            @db.VarChar(191)
+  legacyCreationTime          BigInt
+  legacyCreatedAt             DateTime           @db.DateTime(3)
+  legacyUpdatedAt             DateTime           @db.DateTime(3)
+  sourceHash                  String             @db.Char(64)
+  lastSeenBatchId             String             @db.VarChar(36)
+  syncedAt                    DateTime           @default(now()) @db.DateTime(3)
+  createdAt                   DateTime           @default(now()) @db.DateTime(3)
+  updatedAt                   DateTime           @updatedAt @db.DateTime(3)
+  publisher                   publisherSnapshots @relation(fields: [publisherId], references: [id], onDelete: Cascade, map: "official_publisher_snapshots_publisher_fk")
+  createdByProfile            profileSnapshots?  @relation("OfficialPublisherCreatedByProfile", fields: [createdByProfileId], references: [id], onDelete: SetNull, map: "official_publisher_snapshots_created_by_profile_fk")
+
+  @@index([legacyCreatedAt, publisherId], map: "official_publisher_snapshots_created_idx")
+  @@index([createdByProfileId], map: "official_publisher_snapshots_created_by_profile_idx")
+  @@index([lastSeenBatchId, publisherId], map: "official_publisher_snapshots_seen_batch_idx")
+  @@map("official_publisher_snapshots")
+}
+
+model publisherSyncCheckpoints {
+  id              String                     @id @default(uuid()) @db.VarChar(36)
+  batchId         String                     @unique(map: "publisher_sync_checkpoints_batch_key") @db.VarChar(36)
+  watermark       BigInt
+  windowStart     BigInt
+  cursorAgeMs     BigInt?
+  retryCount      Int                        @default(0)
+  lastFailureCode String?                    @db.VarChar(128)
+  completedAt     DateTime?                  @db.DateTime(3)
+  createdAt       DateTime                   @default(now()) @db.DateTime(3)
+  updatedAt       DateTime                   @updatedAt @db.DateTime(3)
+  batch           convexExitMigrationBatches @relation(fields: [batchId], references: [id], onDelete: Cascade, map: "publisher_sync_checkpoints_batch_fk")
+
+  @@index([watermark], map: "publisher_sync_checkpoints_watermark_idx")
+  @@map("publisher_sync_checkpoints")
+}
+
+model publisherAvatarSnapshots {
+  id              String                   @id @default(uuid()) @db.VarChar(36)
+  publisherId     String                   @unique(map: "publisher_avatar_snapshots_publisher_key") @db.VarChar(36)
+  sourceStorageId String?                  @db.VarChar(191)
+  targetAssetId   String?                  @db.VarChar(36)
+  sourceUrl       String?                  @db.Text
+  contentType     String?                  @db.VarChar(255)
+  byteLength      BigInt?
+  sha256          String?                  @db.Char(64)
+  accessScope     String                   @default("public") @db.VarChar(32)
+  status          String                   @default("pending") @db.VarChar(64)
+  failureCode     String?                  @db.VarChar(128)
+  deletedAt       DateTime?                @db.DateTime(3)
+  createdAt       DateTime                 @default(now()) @db.DateTime(3)
+  updatedAt       DateTime                 @updatedAt @db.DateTime(3)
+  publisher       publisherSnapshots       @relation(fields: [publisherId], references: [id], onDelete: Cascade, map: "publisher_avatar_snapshots_publisher_fk")
+  targetAsset     convexExitManagedAssets? @relation(fields: [targetAssetId], references: [id], onDelete: SetNull, map: "publisher_avatar_snapshots_target_asset_fk")
+
+  @@index([sourceStorageId], map: "publisher_avatar_snapshots_source_storage_idx")
+  @@index([targetAssetId], map: "publisher_avatar_snapshots_target_asset_idx")
+  @@index([status, updatedAt], map: "publisher_avatar_snapshots_status_idx")
+  @@map("publisher_avatar_snapshots")
+}
+
+model profileCatalogItems {
+  id                   String                          @id @db.VarChar(36)
+  publisherId          String                          @db.VarChar(36)
+  legacyConvexId       String                          @unique(map: "profile_catalog_items_legacy_convex_id_key") @db.VarChar(191)
+  kind                 String                          @db.VarChar(16)
+  slug                 String?                         @db.VarChar(191)
+  displayName          String                          @db.VarChar(191)
+  summary              String?                         @db.Text
+  icon                 String?                         @db.VarChar(512)
+  sourceHref           String                          @db.VarChar(2048)
+  ownerHandle          String                          @db.VarChar(40)
+  isOfficial           Boolean                         @default(false)
+  downloads            BigInt                          @default(0)
+  stars                BigInt                          @default(0)
+  sourceGitHubId       String?                         @db.VarChar(191)
+  sourceRepo           String?                         @db.VarChar(512)
+  sourcePath           String?                         @db.VarChar(1024)
+  sourceVerifiedCommit String?                         @db.VarChar(191)
+  visibleAt            DateTime?                       @db.DateTime(3)
+  deletedAt            DateTime?                       @db.DateTime(3)
+  legacyUpdatedAt      DateTime                        @db.DateTime(3)
+  sourceHash           String                          @db.Char(64)
+  lastSeenBatchId      String                          @db.VarChar(36)
+  sourceMissingAt      DateTime?                       @db.DateTime(3)
+  syncedAt             DateTime                        @default(now()) @db.DateTime(3)
+  createdAt            DateTime                        @default(now()) @db.DateTime(3)
+  updatedAt            DateTime                        @updatedAt @db.DateTime(3)
+  publisher            publisherSnapshots              @relation(fields: [publisherId], references: [id], onDelete: Cascade, map: "profile_catalog_items_publisher_fk")
+  manifestEntries      profileCatalogManifestEntries[]
+
+  @@unique([publisherId, legacyConvexId], map: "profile_catalog_items_publisher_item_key")
+  @@unique([publisherId, id], map: "profile_catalog_items_publisher_target_key")
+  @@index([publisherId, kind, deletedAt, visibleAt, downloads, legacyUpdatedAt], map: "profile_catalog_items_public_page_idx")
+  @@index([sourceGitHubId, legacyUpdatedAt], map: "profile_catalog_items_source_idx")
+  @@index([lastSeenBatchId, sourceMissingAt], map: "profile_catalog_items_seen_batch_idx")
+  @@map("profile_catalog_items")
+}
+
+model profileStarredItems {
+  id                           String           @id @db.VarChar(36)
+  viewerProfileId              String           @db.VarChar(36)
+  viewerUserLegacyConvexId     String           @db.VarChar(191)
+  skillLegacyConvexId          String           @db.VarChar(191)
+  ownerPublisherLegacyConvexId String?          @db.VarChar(191)
+  ownerHandle                  String           @db.VarChar(40)
+  displayName                  String           @db.VarChar(191)
+  summary                      String?          @db.Text
+  icon                         String?          @db.VarChar(512)
+  sourceHref                   String           @db.VarChar(2048)
+  isOfficial                   Boolean          @default(false)
+  downloads                    BigInt           @default(0)
+  stars                        BigInt           @default(0)
+  starredAt                    DateTime         @db.DateTime(3)
+  skillUpdatedAt               DateTime         @db.DateTime(3)
+  visibleAt                    DateTime?        @db.DateTime(3)
+  deletedAt                    DateTime?        @db.DateTime(3)
+  sourceHash                   String           @db.Char(64)
+  lastSeenBatchId              String           @db.VarChar(36)
+  sourceMissingAt              DateTime?        @db.DateTime(3)
+  syncedAt                     DateTime         @default(now()) @db.DateTime(3)
+  createdAt                    DateTime         @default(now()) @db.DateTime(3)
+  updatedAt                    DateTime         @updatedAt @db.DateTime(3)
+  viewerProfile                profileSnapshots @relation(fields: [viewerProfileId], references: [id], onDelete: Cascade, map: "profile_starred_items_viewer_profile_fk")
+
+  @@unique([viewerUserLegacyConvexId, skillLegacyConvexId], map: "profile_starred_items_viewer_skill_key")
+  @@index([viewerProfileId, deletedAt, visibleAt, starredAt, downloads], map: "profile_starred_items_public_page_idx")
+  @@index([lastSeenBatchId, sourceMissingAt], map: "profile_starred_items_seen_batch_idx")
+  @@map("profile_starred_items")
+}
+
+model profileCatalogManifests {
+  id                         String                           @id @db.VarChar(36)
+  publisherId                String                           @db.VarChar(36)
+  sourceGitHubLegacyConvexId String                           @unique(map: "profile_catalog_manifests_source_key") @db.VarChar(191)
+  repo                       String                           @db.VarChar(512)
+  status                     String                           @db.VarChar(16)
+  manifestHash               String?                          @db.Char(64)
+  verifiedCommit             String?                          @db.VarChar(191)
+  notGrouped                 String?                          @db.VarChar(16)
+  legacyUpdatedAt            DateTime                         @db.DateTime(3)
+  sourceHash                 String                           @db.Char(64)
+  lastSeenBatchId            String                           @db.VarChar(36)
+  sourceMissingAt            DateTime?                        @db.DateTime(3)
+  syncedAt                   DateTime                         @default(now()) @db.DateTime(3)
+  createdAt                  DateTime                         @default(now()) @db.DateTime(3)
+  updatedAt                  DateTime                         @updatedAt @db.DateTime(3)
+  publisher                  publisherSnapshots               @relation(fields: [publisherId], references: [id], onDelete: Cascade, map: "profile_catalog_manifests_publisher_fk")
+  sections                   profileCatalogManifestSections[]
+
+  @@unique([publisherId, id], map: "profile_catalog_manifests_publisher_target_key")
+  @@index([publisherId, status, legacyUpdatedAt], map: "profile_catalog_manifests_publisher_idx")
+  @@index([lastSeenBatchId, sourceMissingAt], map: "profile_catalog_manifests_seen_batch_idx")
+  @@map("profile_catalog_manifests")
+}
+
+model profileCatalogManifestSections {
+  id          String                          @id @db.VarChar(36)
+  manifestId  String                          @db.VarChar(36)
+  publisherId String                          @db.VarChar(36)
+  position    Int
+  title       String                          @db.VarChar(191)
+  description String?                         @db.Text
+  manifest    profileCatalogManifests         @relation(fields: [publisherId, manifestId], references: [publisherId, id], onDelete: Cascade, map: "profile_catalog_manifest_sections_manifest_fk")
+  entries     profileCatalogManifestEntries[]
+
+  @@unique([manifestId, position], map: "profile_catalog_manifest_sections_position_key")
+  @@unique([publisherId, id], map: "profile_catalog_manifest_sections_publisher_target_key")
+  @@map("profile_catalog_manifest_sections")
+}
+
+model profileCatalogManifestEntries {
+  id               String                         @id @db.VarChar(36)
+  sectionId        String                         @db.VarChar(36)
+  publisherId      String                         @db.VarChar(36)
+  catalogItemId    String                         @db.VarChar(36)
+  position         Int
+  manifestSkillKey String                         @db.VarChar(191)
+  section          profileCatalogManifestSections @relation(fields: [publisherId, sectionId], references: [publisherId, id], onDelete: Cascade, map: "profile_catalog_manifest_entries_section_fk")
+  catalogItem      profileCatalogItems            @relation(fields: [publisherId, catalogItemId], references: [publisherId, id], onDelete: Restrict, map: "profile_catalog_manifest_entries_catalog_item_fk")
+
+  @@unique([sectionId, position], map: "profile_catalog_manifest_entries_position_key")
+  @@unique([sectionId, catalogItemId], map: "profile_catalog_manifest_entries_item_key")
+  @@index([publisherId], map: "profile_catalog_manifest_entries_publisher_idx")
+  @@map("profile_catalog_manifest_entries")
 }
 
 // ============================================
@@ -185,11 +533,11 @@ model publishers {
   updatedAt           DateTime  @updatedAt
 
   // Relations
-  owner               users?    @relation("PublisherOwner", fields: [linkedUserId], references: [id])
-  members             publisherMembers[]
-  skills              skills[]
-  packages            packages[]
-  officialPublishers   officialPublishers[]
+  owner              users?               @relation("PublisherOwner", fields: [linkedUserId], references: [id])
+  members            publisherMembers[]
+  skills             skills[]
+  packages           packages[]
+  officialPublishers officialPublishers[]
 
   @@index([handle])
   @@index([linkedUserId])
@@ -204,8 +552,8 @@ model publisherMembers {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  publisher   publishers @relation(fields: [publisherId], references: [id], onDelete: Cascade)
-  user        users      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  publisher publishers @relation(fields: [publisherId], references: [id], onDelete: Cascade)
+  user      users      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([publisherId, userId])
   @@index([publisherId])
@@ -213,14 +561,14 @@ model publisherMembers {
 }
 
 model officialPublishers {
-  id           String   @id @default(cuid())
-  publisherId  String   @unique
-  reason       String?
-  createdById  String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  publisherId String   @unique
+  reason      String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  publisher    publishers @relation(fields: [publisherId], references: [id], onDelete: Cascade)
+  publisher publishers @relation(fields: [publisherId], references: [id], onDelete: Cascade)
 
   @@index([publisherId])
 }
@@ -247,84 +595,84 @@ model friendlyLinks {
 // ============================================
 
 model skills {
-  id                       String    @id @default(cuid())
-  slug                     String
-  displayName              String
-  summary                  String?
-  icon                     String?
-  resourceId               String?
-  ownerUserId              String
-  ownerPublisherId         String?
-  canonicalSkillId         String?
-  forkOfSkillId            String?
-  forkOfKind               String?   // fork, duplicate
-  forkOfVersion            String?
-  forkOfAt                 DateTime?
-  installKind              String?   // github
-  githubSourceId           String?
-  githubPath               String?
-  githubHasSkillCard       Boolean?
-  githubCurrentCommit      String?
-  githubCurrentContentHash String?
-  githubCurrentStatus      String?   // present, missing, unknown
-  githubCurrentCheckedAt   DateTime?
-  githubScanStatus         String?   // clean, suspicious, malicious, pending, failed
-  githubRemovedAt          DateTime?
-  latestVersionId          String?
-  latestVersionSummary     Json?
-  tags                     Json?
-  capabilityTags           Json?     // Array of strings stored as JSON
-  softDeletedAt            DateTime?
-  moderationStatus         String?   // active, hidden, removed
-  moderationNotes          String?
-  moderationReason         String?
-  moderationVerdict        String?   // clean, suspicious, malicious
-  moderationReasonCodes    Json?     // Array of strings stored as JSON
-  moderationEvidence       Json?
-  moderationSummary        String?
-  moderationEngineVersion  String?
-  moderationEvaluatedAt    DateTime?
-  manualOverride           Json?
-  quality                  Json?
-  isSuspicious             Boolean?
-  moderationFlags          Json?     // Array of strings stored as JSON
-  lastReviewedAt           DateTime?
-  scanLastCheckedAt        DateTime?
-  scanCheckCount           Int?
-  hiddenAt                 DateTime?
-  hiddenBy                 String?
+  id                           String    @id @default(cuid())
+  slug                         String
+  displayName                  String
+  summary                      String?
+  icon                         String?
+  resourceId                   String?
+  ownerUserId                  String
+  ownerPublisherId             String?
+  canonicalSkillId             String?
+  forkOfSkillId                String?
+  forkOfKind                   String? // fork, duplicate
+  forkOfVersion                String?
+  forkOfAt                     DateTime?
+  installKind                  String? // github
+  githubSourceId               String?
+  githubPath                   String?
+  githubHasSkillCard           Boolean?
+  githubCurrentCommit          String?
+  githubCurrentContentHash     String?
+  githubCurrentStatus          String? // present, missing, unknown
+  githubCurrentCheckedAt       DateTime?
+  githubScanStatus             String? // clean, suspicious, malicious, pending, failed
+  githubRemovedAt              DateTime?
+  latestVersionId              String?
+  latestVersionSummary         Json?
+  tags                         Json?
+  capabilityTags               Json? // Array of strings stored as JSON
+  softDeletedAt                DateTime?
+  moderationStatus             String? // active, hidden, removed
+  moderationNotes              String?
+  moderationReason             String?
+  moderationVerdict            String? // clean, suspicious, malicious
+  moderationReasonCodes        Json? // Array of strings stored as JSON
+  moderationEvidence           Json?
+  moderationSummary            String?
+  moderationEngineVersion      String?
+  moderationEvaluatedAt        DateTime?
+  manualOverride               Json?
+  quality                      Json?
+  isSuspicious                 Boolean?
+  moderationFlags              Json? // Array of strings stored as JSON
+  lastReviewedAt               DateTime?
+  scanLastCheckedAt            DateTime?
+  scanCheckCount               Int?
+  hiddenAt                     DateTime?
+  hiddenBy                     String?
   unpublishedSlugReservedUntil DateTime?
-  unpublishedSlugReleasedAt     DateTime?
-  unpublishedOriginalSlug       String?
-  reportCount              Int       @default(0)
-  lastReportedAt           DateTime?
-  batch                    String?
-  
+  unpublishedSlugReleasedAt    DateTime?
+  unpublishedOriginalSlug      String?
+  reportCount                  Int       @default(0)
+  lastReportedAt               DateTime?
+  batch                        String?
+
   // Stats (canonical fields)
-  statsDownloads           Int       @default(0)
-  statsStars               Int       @default(0)
-  statsInstallsCurrent     Int       @default(0)
-  statsInstallsAllTime     Int       @default(0)
-  statsVersions            Int       @default(0)
-  statsComments            Int       @default(0)
-  
-  createdAt                DateTime  @default(now())
-  updatedAt                DateTime  @updatedAt
+  statsDownloads       Int @default(0)
+  statsStars           Int @default(0)
+  statsInstallsCurrent Int @default(0)
+  statsInstallsAllTime Int @default(0)
+  statsVersions        Int @default(0)
+  statsComments        Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  owner                    users      @relation("SkillOwner", fields: [ownerUserId], references: [id])
-  publisher                publishers? @relation(fields: [ownerPublisherId], references: [id])
-  canonicalSkill           skills?     @relation("SkillCanonical", fields: [canonicalSkillId], references: [id])
-  forks                    skills[]    @relation("SkillCanonical")
-  versions                 skillVersions[]
-  comments                 comments[]
-  stars                    stars[]
-  skillBadges              skillBadges[]
-  skillReports             skillReports[]
-  skillAppeals             skillAppeals[]
-  skillEmbeddings          skillEmbeddings[]
-  dailyStats               skillDailyStats[]
-  statEvents               skillStatEvents[]
+  owner           users             @relation("SkillOwner", fields: [ownerUserId], references: [id])
+  publisher       publishers?       @relation(fields: [ownerPublisherId], references: [id])
+  canonicalSkill  skills?           @relation("SkillCanonical", fields: [canonicalSkillId], references: [id])
+  forks           skills[]          @relation("SkillCanonical")
+  versions        skillVersions[]
+  comments        comments[]
+  stars           stars[]
+  skillBadges     skillBadges[]
+  skillReports    skillReports[]
+  skillAppeals    skillAppeals[]
+  skillEmbeddings skillEmbeddings[]
+  dailyStats      skillDailyStats[]
+  statEvents      skillStatEvents[]
 
   @@unique([ownerUserId, slug])
   @@index([ownerPublisherId])
@@ -337,34 +685,34 @@ model skills {
 }
 
 model skillVersions {
-  id                       String    @id @default(cuid())
-  skillId                  String
-  version                  String
-  fingerprint              String?
-  sourceProvenance         Json?
-  changelog                String    @default("")
-  changelogSource          String?   // auto, user
-  icon                     String?
-  files                    Json      // Array of file objects
-  parsed                   Json
-  createdBy                String
-  createdAt                DateTime  @default(now())
-  clawScanNote             String?
-  clawScanNoteUpdatedAt    DateTime?
-  softDeletedAt            DateTime?
-  sha256hash               String?
-  vtAnalysis               Json?
-  skillSpectorAnalysis     Json?
-  llmAnalysis              Json?
-  capabilityTags           Json?     // Array of strings stored as JSON
-  depRegistryAnalysis      Json?
-  depRegistryScanStatus    String?
-  staticScan               Json?
-  apiKeyRequired           Boolean?
+  id                    String    @id @default(cuid())
+  skillId               String
+  version               String
+  fingerprint           String?
+  sourceProvenance      Json?
+  changelog             String    @default("")
+  changelogSource       String? // auto, user
+  icon                  String?
+  files                 Json // Array of file objects
+  parsed                Json
+  createdBy             String
+  createdAt             DateTime  @default(now())
+  clawScanNote          String?
+  clawScanNoteUpdatedAt DateTime?
+  softDeletedAt         DateTime?
+  sha256hash            String?
+  vtAnalysis            Json?
+  skillSpectorAnalysis  Json?
+  llmAnalysis           Json?
+  capabilityTags        Json? // Array of strings stored as JSON
+  depRegistryAnalysis   Json?
+  depRegistryScanStatus String?
+  staticScan            Json?
+  apiKeyRequired        Boolean?
 
   // Relations
-  skill                    skills    @relation(fields: [skillId], references: [id], onDelete: Cascade)
-  creator                  users      @relation(fields: [createdBy], references: [id])
+  skill   skills @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  creator users  @relation(fields: [createdBy], references: [id])
 
   @@unique([skillId, version])
   @@index([skillId])
@@ -372,19 +720,19 @@ model skillVersions {
 }
 
 model skillEmbeddings {
-  id                 String   @id @default(cuid())
-  skillId            String
-  versionId          String
-  ownerId            String
-  ownerPublisherId   String?
-  embedding          Json     // Array of floats stored as JSON
-  isLatest           Boolean  @default(true)
-  isApproved         Boolean  @default(true)
-  visibility         String   @default("public")
-  updatedAt          DateTime @updatedAt
+  id               String   @id @default(cuid())
+  skillId          String
+  versionId        String
+  ownerId          String
+  ownerPublisherId String?
+  embedding        Json // Array of floats stored as JSON
+  isLatest         Boolean  @default(true)
+  isApproved       Boolean  @default(true)
+  visibility       String   @default("public")
+  updatedAt        DateTime @updatedAt
 
   // Relations
-  skill              skills   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  skill skills @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
   @@index([skillId])
   @@index([versionId])
@@ -393,12 +741,12 @@ model skillEmbeddings {
 model skillBadges {
   id       String   @id @default(cuid())
   skillId  String
-  kind     String   // highlighted, official, deprecated, redactionApproved
+  kind     String // highlighted, official, deprecated, redactionApproved
   byUserId String
   at       DateTime @default(now())
 
-  skill    skills   @relation(fields: [skillId], references: [id], onDelete: Cascade)
-  user     users    @relation(fields: [byUserId], references: [id])
+  skill skills @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  user  users  @relation(fields: [byUserId], references: [id])
 
   @@unique([skillId, kind])
   @@index([skillId])
@@ -410,26 +758,26 @@ model skillBadges {
 // ============================================
 
 model comments {
-  id                   String    @id @default(cuid())
-  skillId              String
-  userId               String
-  body                 String
-  reportCount          Int       @default(0)
-  lastReportedAt       DateTime?
-  scamScanVerdict      String?   // not_scam, likely_scam, certain_scam
-  scamScanConfidence   String?   // low, medium, high
-  scamScanExplanation  String?
-  scamScanEvidence     Json?     // Array of strings stored as JSON
-  scamScanModel        String?
-  scamScanCheckedAt    DateTime?
-  scamBanTriggeredAt   DateTime?
-  createdAt            DateTime  @default(now())
-  softDeletedAt        DateTime?
-  deletedBy            String?
+  id                  String    @id @default(cuid())
+  skillId             String
+  userId              String
+  body                String
+  reportCount         Int       @default(0)
+  lastReportedAt      DateTime?
+  scamScanVerdict     String? // not_scam, likely_scam, certain_scam
+  scamScanConfidence  String? // low, medium, high
+  scamScanExplanation String?
+  scamScanEvidence    Json? // Array of strings stored as JSON
+  scamScanModel       String?
+  scamScanCheckedAt   DateTime?
+  scamBanTriggeredAt  DateTime?
+  createdAt           DateTime  @default(now())
+  softDeletedAt       DateTime?
+  deletedBy           String?
 
-  skill                skills    @relation(fields: [skillId], references: [id], onDelete: Cascade)
-  user                 users     @relation(fields: [userId], references: [id])
-  reports              commentReports[]
+  skill   skills           @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  user    users            @relation(fields: [userId], references: [id])
+  reports commentReports[]
 
   @@index([skillId])
   @@index([userId])
@@ -443,7 +791,7 @@ model commentReports {
   reason    String?
   createdAt DateTime @default(now())
 
-  comment   comments @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  comment comments @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   @@index([commentId])
   @@index([skillId])
@@ -456,8 +804,8 @@ model stars {
   userId    String
   createdAt DateTime @default(now())
 
-  skill     skills   @relation(fields: [skillId], references: [id], onDelete: Cascade)
-  user      users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill skills @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  user  users  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([skillId, userId])
   @@index([skillId])
@@ -469,21 +817,21 @@ model stars {
 // ============================================
 
 model skillReports {
-  id            String    @id @default(cuid())
-  skillId       String
+  id             String    @id @default(cuid())
+  skillId        String
   skillVersionId String?
-  version       String?
-  userId        String
-  reason        String?
-  status        String?    @default("open") // open, confirmed, dismissed, triaged
-  triagedAt     DateTime?
-  triagedBy     String?
-  triageNote    String?
-  actionTaken   String?   // none, hide
-  createdAt     DateTime  @default(now())
+  version        String?
+  userId         String
+  reason         String?
+  status         String?   @default("open") // open, confirmed, dismissed, triaged
+  triagedAt      DateTime?
+  triagedBy      String?
+  triageNote     String?
+  actionTaken    String? // none, hide
+  createdAt      DateTime  @default(now())
 
-  skill         skills    @relation(fields: [skillId], references: [id], onDelete: Cascade)
-  reporter      users     @relation(fields: [userId], references: [id])
+  skill    skills @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  reporter users  @relation(fields: [userId], references: [id])
 
   @@index([skillId])
   @@index([userId])
@@ -491,21 +839,21 @@ model skillReports {
 }
 
 model skillAppeals {
-  id            String    @id @default(cuid())
-  skillId       String
+  id             String    @id @default(cuid())
+  skillId        String
   skillVersionId String?
-  version       String?
-  userId        String
-  message       String
-  status        String    @default("open") // open, accepted, rejected
-  resolvedAt    DateTime?
-  resolvedBy    String?
+  version        String?
+  userId         String
+  message        String
+  status         String    @default("open") // open, accepted, rejected
+  resolvedAt     DateTime?
+  resolvedBy     String?
   resolutionNote String?
-  actionTaken   String?   // none, restore
-  createdAt     DateTime  @default(now())
+  actionTaken    String? // none, restore
+  createdAt      DateTime  @default(now())
 
-  skill         skills    @relation(fields: [skillId], references: [id], onDelete: Cascade)
-  user          users     @relation(fields: [userId], references: [id])
+  skill skills @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  user  users  @relation(fields: [userId], references: [id])
 
   @@index([skillId])
   @@index([userId])
@@ -513,44 +861,121 @@ model skillAppeals {
 }
 
 // ============================================
+// Skill/Package migration snapshots
+// ============================================
+
+model skillPackageSnapshots {
+  id                           String                         @id @db.VarChar(36)
+  domain                       String                         @db.VarChar(16)
+  legacyConvexId               String                         @db.VarChar(191)
+  ownerPublisherLegacyConvexId String?                        @db.VarChar(191)
+  canonicalName                String                         @db.VarChar(255)
+  displayName                  String                         @db.VarChar(255)
+  summary                      String?                        @db.Text
+  visibility                   String                         @db.VarChar(32)
+  metadata                     Json
+  legacyUpdatedAt              DateTime
+  sourceHash                   String                         @db.Char(64)
+  lastSeenBatchId              String                         @db.VarChar(36)
+  sourceMissingAt              DateTime?
+  syncedAt                     DateTime                       @default(now())
+  createdAt                    DateTime                       @default(now())
+  updatedAt                    DateTime                       @updatedAt
+  versions                     skillPackageVersionSnapshots[]
+
+  @@unique([domain, legacyConvexId])
+  @@unique([domain, canonicalName])
+  @@index([ownerPublisherLegacyConvexId, visibility])
+  @@index([lastSeenBatchId, sourceMissingAt])
+  @@map("skill_package_snapshots")
+}
+
+model skillPackageVersionSnapshots {
+  id              String                          @id @db.VarChar(36)
+  snapshotId      String                          @db.VarChar(36)
+  legacyConvexId  String                          @unique @db.VarChar(191)
+  semanticVersion String                          @db.VarChar(191)
+  sourceHash      String                          @db.Char(64)
+  sourceMetadata  Json
+  scanSnapshot    Json?
+  legacyCreatedAt DateTime
+  legacyUpdatedAt DateTime
+  lastSeenBatchId String                          @db.VarChar(36)
+  sourceMissingAt DateTime?
+  syncedAt        DateTime                        @default(now())
+  createdAt       DateTime                        @default(now())
+  updatedAt       DateTime                        @updatedAt
+  snapshot        skillPackageSnapshots           @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  artifacts       skillPackageArtifactSnapshots[]
+
+  @@unique([snapshotId, semanticVersion])
+  @@index([lastSeenBatchId, sourceMissingAt])
+  @@map("skill_package_version_snapshots")
+}
+
+model skillPackageArtifactSnapshots {
+  id                String                       @id @db.VarChar(36)
+  versionSnapshotId String                       @db.VarChar(36)
+  legacyStorageId   String?                      @unique @db.VarChar(191)
+  path              String                       @db.VarChar(1024)
+  mimeType          String                       @db.VarChar(255)
+  sizeBytes         BigInt
+  sha256            String                       @db.Char(64)
+  copyStatus        String                       @default("pending") @db.VarChar(32)
+  targetAssetId     String?                      @db.VarChar(36)
+  claimToken        String?                      @db.VarChar(36)
+  claimExpiresAt    DateTime?
+  failureCode       String?                      @db.VarChar(128)
+  sourceHash        String                       @db.Char(64)
+  createdAt         DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
+  version           skillPackageVersionSnapshots @relation(fields: [versionSnapshotId], references: [id], onDelete: Cascade)
+
+  @@unique([versionSnapshotId, path])
+  @@unique([versionSnapshotId, sha256])
+  @@index([copyStatus, claimExpiresAt])
+  @@map("skill_package_artifact_snapshots")
+}
+
+// ============================================
 // Packages (OpenClaw)
 // ============================================
 
 model packages {
-  id                    String    @id @default(cuid())
-  name                  String
-  normalizedName        String    @unique
-  displayName           String
-  summary               String?
-  ownerUserId           String
-  ownerPublisherId      String?
-  family                String    @default("skill") // skill, code-plugin, bundle-plugin
-  channel               String    @default("community") // official, community, private
-  isOfficial            Boolean   @default(false)
-  runtimeId             String?
-  sourceRepo            String?
-  latestReleaseId       String?
-  latestVersionSummary  Json?
-  tags                  Json?
-  capabilityTags        Json?     // Array of strings stored as JSON
-  executesCode          Boolean?
-  compatibility         Json?
-  capabilities          Json?
-  verification          Json?
-  scanStatus            String    @default("pending") // clean, suspicious, malicious, pending, not-run
-  stats                 Json
-  reportCount           Int       @default(0)
-  lastReportedAt        DateTime?
-  softDeletedAt         DateTime?
-  softDeletedReason     String?
-  softDeletedBy         String?
-  softDeletedByRole     String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  id                   String    @id @default(cuid())
+  name                 String
+  normalizedName       String    @unique
+  displayName          String
+  summary              String?
+  ownerUserId          String
+  ownerPublisherId     String?
+  family               String    @default("skill") // skill, code-plugin, bundle-plugin
+  channel              String    @default("community") // official, community, private
+  isOfficial           Boolean   @default(false)
+  runtimeId            String?
+  sourceRepo           String?
+  latestReleaseId      String?
+  latestVersionSummary Json?
+  tags                 Json?
+  capabilityTags       Json? // Array of strings stored as JSON
+  executesCode         Boolean?
+  compatibility        Json?
+  capabilities         Json?
+  verification         Json?
+  scanStatus           String    @default("pending") // clean, suspicious, malicious, pending, not-run
+  stats                Json
+  reportCount          Int       @default(0)
+  lastReportedAt       DateTime?
+  softDeletedAt        DateTime?
+  softDeletedReason    String?
+  softDeletedBy        String?
+  softDeletedByRole    String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
-  owner                 users      @relation("PackageOwner", fields: [ownerUserId], references: [id])
-  publisher             publishers? @relation(fields: [ownerPublisherId], references: [id])
-  releases              packageReleases[]
+  owner     users             @relation("PackageOwner", fields: [ownerUserId], references: [id])
+  publisher publishers?       @relation(fields: [ownerPublisherId], references: [id])
+  releases  packageReleases[]
 
   @@index([normalizedName])
   @@index([ownerUserId])
@@ -560,47 +985,47 @@ model packages {
 }
 
 model packageReleases {
-  id                      String    @id @default(cuid())
-  packageId               String
-  version                 String
-  changelog               String    @default("")
-  summary                 String?
-  distTags                Json?     // Array of strings stored as JSON
-  files                   Json
-  integritySha256         String
-  artifactKind            String?   // legacy-zip, npm-pack
-  clawpackStorageId       String?
-  clawpackSha256          String?
-  clawpackSize            Int?
-  clawpackFormat          String?
-  npmIntegrity            String?
-  npmShasum               String?
-  npmTarballName          String?
-  npmUnpackedSize         Int?
-  npmFileCount            Int?
-  extractedPackageJson    Json?
-  extractedPluginManifest Json?
+  id                       String    @id @default(cuid())
+  packageId                String
+  version                  String
+  changelog                String    @default("")
+  summary                  String?
+  distTags                 Json? // Array of strings stored as JSON
+  files                    Json
+  integritySha256          String
+  artifactKind             String? // legacy-zip, npm-pack
+  clawpackStorageId        String?
+  clawpackSha256           String?
+  clawpackSize             Int?
+  clawpackFormat           String?
+  npmIntegrity             String?
+  npmShasum                String?
+  npmTarballName           String?
+  npmUnpackedSize          Int?
+  npmFileCount             Int?
+  extractedPackageJson     Json?
+  extractedPluginManifest  Json?
   normalizedBundleManifest Json?
-  compatibility           Json?
-  capabilities            Json?
-  runtimeId               String?
-  sourceRepo              String?
-  verification            Json?
-  sha256hash              String?
-  vtAnalysis              Json?
+  compatibility            Json?
+  capabilities             Json?
+  runtimeId                String?
+  sourceRepo               String?
+  verification             Json?
+  sha256hash               String?
+  vtAnalysis               Json?
   skillSpectorAnalysis     Json?
-  llmAnalysis             Json?
-  staticScan              Json?
-  manualModeration        Json?
-  source                  Json?
-  createdBy               String
-  publishActor            Json
-  createdAt               DateTime  @default(now())
-  clawScanNote            String?
-  clawScanNoteUpdatedAt   DateTime?
-  softDeletedAt           DateTime?
+  llmAnalysis              Json?
+  staticScan               Json?
+  manualModeration         Json?
+  source                   Json?
+  createdBy                String
+  publishActor             Json
+  createdAt                DateTime  @default(now())
+  clawScanNote             String?
+  clawScanNoteUpdatedAt    DateTime?
+  softDeletedAt            DateTime?
 
-  package                 packages  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  package packages @relation(fields: [packageId], references: [id], onDelete: Cascade)
 
   @@unique([packageId, version])
   @@index([packageId])
@@ -618,7 +1043,7 @@ model skillDailyStats {
   installs  Int      @default(0)
   updatedAt DateTime @updatedAt
 
-  skill     skills   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  skill skills @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
   @@unique([skillId, day])
   @@index([day])
@@ -627,22 +1052,22 @@ model skillDailyStats {
 model skillStatEvents {
   id          String    @id @default(cuid())
   skillId     String
-  kind        String    // download, star, unstar, comment, uncomment, install_new, etc.
+  kind        String // download, star, unstar, comment, uncomment, install_new, etc.
   delta       Json?
   occurredAt  DateTime  @default(now())
   processedAt DateTime?
 
-  skill       skills    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  skill skills @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
   @@index([processedAt])
   @@index([skillId])
 }
 
 model globalStats {
-  id                 String   @id @default(cuid())
-  key                String   @unique
-  activeSkillsCount  Int      @default(0)
-  updatedAt          DateTime @updatedAt
+  id                String   @id @default(cuid())
+  key               String   @unique
+  activeSkillsCount Int      @default(0)
+  updatedAt         DateTime @updatedAt
 }
 
 // ============================================
@@ -650,16 +1075,16 @@ model globalStats {
 // ============================================
 
 model apiTokens {
-  id          String    @id @default(cuid())
-  userId      String
-  label       String
-  prefix      String
-  tokenHash   String    @unique
-  createdAt   DateTime  @default(now())
-  lastUsedAt  DateTime?
-  revokedAt   DateTime?
+  id         String    @id @default(cuid())
+  userId     String
+  label      String
+  prefix     String
+  tokenHash  String    @unique
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
 
-  user        users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user users @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -686,10 +1111,10 @@ model rateLimits {
 // ============================================
 
 model reservedSlugs {
-  id                  String   @id @default(cuid())
-  slug                String   @unique
+  id                  String    @id @default(cuid())
+  slug                String    @unique
   originalOwnerUserId String
-  deletedAt           DateTime @default(now())
+  deletedAt           DateTime  @default(now())
   expiresAt           DateTime
   reason              String?
   releasedAt          DateTime?
@@ -699,13 +1124,13 @@ model reservedSlugs {
 }
 
 model reservedHandles {
-  id                  String   @id @default(cuid())
-  handle              String   @unique
+  id                  String    @id @default(cuid())
+  handle              String    @unique
   rightfulOwnerUserId String
   reason              String?
   releasedAt          DateTime?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   @@index([handle])
 }
@@ -754,15 +1179,15 @@ model aiDirectModelCatalog {
 }
 
 model aiDirectAgents {
-  id               String   @id @db.VarChar(36)
-  ownerUserId      String   @db.VarChar(191)
-  ownerPublisherId String?  @db.VarChar(191)
-  name             String   @db.VarChar(120)
-  description      String?  @db.Text
-  status           String   @default("draft") @db.VarChar(32)
-  activeVersionId  String?  @db.VarChar(36)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                String                           @id @db.VarChar(36)
+  ownerUserId       String                           @db.VarChar(191)
+  ownerPublisherId  String?                          @db.VarChar(191)
+  name              String                           @db.VarChar(120)
+  description       String?                          @db.Text
+  status            String                           @default("draft") @db.VarChar(32)
+  activeVersionId   String?                          @db.VarChar(36)
+  createdAt         DateTime                         @default(now())
+  updatedAt         DateTime                         @updatedAt
   appearanceProfile aiDirectAgentAppearanceProfiles?
   appearanceAssets  aiDirectAgentAppearanceAssets[]
 
@@ -772,16 +1197,16 @@ model aiDirectAgents {
 }
 
 model aiDirectAgentVersions {
-  id              String   @id @db.VarChar(36)
-  agentId         String   @db.VarChar(36)
+  id              String    @id @db.VarChar(36)
+  agentId         String    @db.VarChar(36)
   version         Int
-  status          String   @default("draft") @db.VarChar(32)
+  status          String    @default("draft") @db.VarChar(32)
   promptSpec      Json
   modelPolicy     Json
   executionPolicy Json
-  createdByUserId String   @db.VarChar(191)
+  createdByUserId String    @db.VarChar(191)
   publishedAt     DateTime?
-  createdAt       DateTime @default(now())
+  createdAt       DateTime  @default(now())
 
   @@unique([agentId, version])
   @@index([agentId])
@@ -841,22 +1266,22 @@ model aiDirectModelRunAudits {
 }
 
 model aiDirectUserCredentials {
-  id                 String    @id @db.VarChar(36)
-  userId             String    @db.VarChar(191)
-  provider           String    @default("jinsha-token") @db.VarChar(64)
-  label              String    @default("金沙") @db.VarChar(160)
-  fingerprint        String?   @db.Char(64)
-  cipherText         String    @db.MediumText
-  iv                 String    @db.VarChar(64)
-  authTag            String    @db.VarChar(64)
-  keyVersion         String    @default("v1") @db.VarChar(32)
-  credentialVersion  Int       @default(1)
-  validationStatus   String    @default("unvalidated") @db.VarChar(32)
-  validatedAt        DateTime?
-  lastUsedAt         DateTime?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  revokedAt          DateTime?
+  id                String    @id @db.VarChar(36)
+  userId            String    @db.VarChar(191)
+  provider          String    @default("jinsha-token") @db.VarChar(64)
+  label             String    @default("金沙") @db.VarChar(160)
+  fingerprint       String?   @db.Char(64)
+  cipherText        String    @db.MediumText
+  iv                String    @db.VarChar(64)
+  authTag           String    @db.VarChar(64)
+  keyVersion        String    @default("v1") @db.VarChar(32)
+  credentialVersion Int       @default(1)
+  validationStatus  String    @default("unvalidated") @db.VarChar(32)
+  validatedAt       DateTime?
+  lastUsedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  revokedAt         DateTime?
 
   @@unique([userId, provider])
   @@index([validationStatus, updatedAt])
@@ -935,26 +1360,26 @@ model aiDirectAuditEvents {
 }
 
 model aiDirectAuditExportJobs {
-  id                   String    @id @db.VarChar(36)
-  organizationId       String    @db.VarChar(36)
-  requestedByUserId    String    @db.VarChar(191)
-  status               String    @default("queued") @db.VarChar(32)
-  filters              Json
-  watermark            String    @db.VarChar(512)
-  requestId            String?   @db.VarChar(128)
-  attemptCount         Int       @default(0)
-  leaseOwner           String?   @db.VarChar(128)
-  leaseExpiresAt       DateTime?
-  artifact             Bytes?    @db.LongBlob
-  artifactMimeType     String?   @db.VarChar(255)
-  artifactFileName     String?   @db.VarChar(255)
-  artifactSizeBytes    BigInt?   @db.UnsignedBigInt
-  artifactSha256       String?   @db.Char(64)
-  failureCode          String?   @db.VarChar(128)
-  startedAt            DateTime?
-  completedAt          DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  id                String    @id @db.VarChar(36)
+  organizationId    String    @db.VarChar(36)
+  requestedByUserId String    @db.VarChar(191)
+  status            String    @default("queued") @db.VarChar(32)
+  filters           Json
+  watermark         String    @db.VarChar(512)
+  requestId         String?   @db.VarChar(128)
+  attemptCount      Int       @default(0)
+  leaseOwner        String?   @db.VarChar(128)
+  leaseExpiresAt    DateTime?
+  artifact          Bytes?    @db.LongBlob
+  artifactMimeType  String?   @db.VarChar(255)
+  artifactFileName  String?   @db.VarChar(255)
+  artifactSizeBytes BigInt?   @db.UnsignedBigInt
+  artifactSha256    String?   @db.Char(64)
+  failureCode       String?   @db.VarChar(128)
+  startedAt         DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([organizationId, createdAt, id], map: "ai_direct_audit_exports_org_created_idx")
   @@index([organizationId, requestedByUserId, createdAt, id], map: "ai_direct_audit_exports_org_requester_created_idx")
@@ -964,15 +1389,15 @@ model aiDirectAuditExportJobs {
 }
 
 model aiDirectAuditExportDownloadTokens {
-  id               String    @id @db.VarChar(36)
-  exportJobId      String    @db.VarChar(36)
-  organizationId   String    @db.VarChar(36)
-  tokenPrefix      String    @db.VarChar(12)
-  tokenHash        String    @unique(map: "ai_direct_audit_download_token_hash_key") @db.Char(64)
-  issuedToUserId   String    @db.VarChar(191)
-  expiresAt        DateTime
-  usedAt           DateTime?
-  createdAt        DateTime  @default(now())
+  id             String    @id @db.VarChar(36)
+  exportJobId    String    @db.VarChar(36)
+  organizationId String    @db.VarChar(36)
+  tokenPrefix    String    @db.VarChar(12)
+  tokenHash      String    @unique(map: "ai_direct_audit_download_token_hash_key") @db.Char(64)
+  issuedToUserId String    @db.VarChar(191)
+  expiresAt      DateTime
+  usedAt         DateTime?
+  createdAt      DateTime  @default(now())
 
   @@index([exportJobId, expiresAt, usedAt], map: "ai_direct_audit_download_job_expiry_idx")
   @@index([organizationId, issuedToUserId, createdAt], map: "ai_direct_audit_download_org_user_created_idx")
@@ -1071,17 +1496,17 @@ model aiDirectWorkerTokens {
 model aiDirectArtifacts {
   id                String   @id @db.VarChar(36)
   organizationId    String   @db.VarChar(36)
-  runId              String   @db.VarChar(36)
-  stepId             String?  @db.VarChar(36)
-  kind               String   @db.VarChar(64)
-  storagePath        String   @db.VarChar(1024)
-  storagePathHash    String   @db.Char(64)
-  mimeType           String   @db.VarChar(255)
-  sizeBytes          BigInt
-  sha256             String   @db.Char(64)
-  visibility         String   @default("organization") @db.VarChar(32)
-  createdByWorkerId  String   @db.VarChar(128)
-  createdAt          DateTime @default(now())
+  runId             String   @db.VarChar(36)
+  stepId            String?  @db.VarChar(36)
+  kind              String   @db.VarChar(64)
+  storagePath       String   @db.VarChar(1024)
+  storagePathHash   String   @db.Char(64)
+  mimeType          String   @db.VarChar(255)
+  sizeBytes         BigInt
+  sha256            String   @db.Char(64)
+  visibility        String   @default("organization") @db.VarChar(32)
+  createdByWorkerId String   @db.VarChar(128)
+  createdAt         DateTime @default(now())
 
   @@unique([runId, storagePathHash])
   @@index([organizationId, createdAt])
@@ -1100,14 +1525,14 @@ model aiDirectRuntimeMetrics {
 
 // P1: Companies, Projects, AgentRoles, CapabilityGrants, Offers, Employments, Approvals, WorkflowRuns
 model aiDirectCompanies {
-  id               String   @id @default(cuid())
-  organizationId   String   @db.VarChar(36)
-  name             String   @db.VarChar(160)
-  slug             String   @unique @db.VarChar(160)
-  status           String   @default("active") @db.VarChar(32)
-  createdByUserId  String   @db.VarChar(191)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String   @id @default(cuid())
+  organizationId  String   @db.VarChar(36)
+  name            String   @db.VarChar(160)
+  slug            String   @unique @db.VarChar(160)
+  status          String   @default("active") @db.VarChar(32)
+  createdByUserId String   @db.VarChar(191)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([organizationId, status])
   @@index([organizationId, updatedAt])
@@ -1115,13 +1540,13 @@ model aiDirectCompanies {
 }
 
 model aiDirectCompanyMembers {
-  id         String   @id @default(cuid()) @db.VarChar(36)
-  companyId  String   @db.VarChar(36)
-  userId     String   @db.VarChar(191)
-  role       String   @db.VarChar(32)
-  status     String   @default("active") @db.VarChar(32)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  companyId String   @db.VarChar(36)
+  userId    String   @db.VarChar(191)
+  role      String   @db.VarChar(32)
+  status    String   @default("active") @db.VarChar(32)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([companyId, userId])
   @@index([userId, status])
@@ -1130,16 +1555,16 @@ model aiDirectCompanyMembers {
 }
 
 model aiDirectProjects {
-  id                 String   @id @default(cuid())
-  companyId          String   @db.VarChar(36)
-  name               String   @db.VarChar(160)
-  slug               String   @db.VarChar(160)
-  status             String   @default("active") @db.VarChar(32)
-  budgetMicros       BigInt?  @default(0)
-  sensitivityLimit   String?  @db.VarChar(64)
-  createdByUserId    String   @db.VarChar(191)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id               String   @id @default(cuid())
+  companyId        String   @db.VarChar(36)
+  name             String   @db.VarChar(160)
+  slug             String   @db.VarChar(160)
+  status           String   @default("active") @db.VarChar(32)
+  budgetMicros     BigInt?  @default(0)
+  sensitivityLimit String?  @db.VarChar(64)
+  createdByUserId  String   @db.VarChar(191)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@unique([companyId, slug])
   @@index([companyId, status, updatedAt])
@@ -1147,17 +1572,17 @@ model aiDirectProjects {
 }
 
 model aiDirectAgentRoles {
-  id                    String   @id @default(cuid())
-  companyId             String   @db.VarChar(36)
-  projectId             String?  @db.VarChar(36)
-  name                  String   @db.VarChar(160)
-  responsibilities      Json
-  requiredCapabilities  Json
-  budgetMicros          BigInt?  @default(0)
-  status                String   @default("open") @db.VarChar(32)
-  createdByUserId       String   @db.VarChar(191)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  companyId            String   @db.VarChar(36)
+  projectId            String?  @db.VarChar(36)
+  name                 String   @db.VarChar(160)
+  responsibilities     Json
+  requiredCapabilities Json
+  budgetMicros         BigInt?  @default(0)
+  status               String   @default("open") @db.VarChar(32)
+  createdByUserId      String   @db.VarChar(191)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@index([companyId, status, updatedAt])
   @@index([projectId, status])
@@ -1165,19 +1590,19 @@ model aiDirectAgentRoles {
 }
 
 model aiDirectCapabilityGrants {
-  id               String    @id @default(cuid())
-  subjectType      String    @db.VarChar(32)
-  subjectId        String    @db.VarChar(191)
-  resourceType     String    @db.VarChar(64)
-  resourceId       String    @db.VarChar(191)
-  action           String    @db.VarChar(64)
-  scope            Json?
-  issuedByUserId   String    @db.VarChar(191)
-  issuedAt         DateTime  @default(now())
-  expiresAt        DateTime?
-  revokedAt        DateTime?
-  revokedByUserId  String?   @db.VarChar(191)
-  revokeReason     String?   @db.Text
+  id              String    @id @default(cuid())
+  subjectType     String    @db.VarChar(32)
+  subjectId       String    @db.VarChar(191)
+  resourceType    String    @db.VarChar(64)
+  resourceId      String    @db.VarChar(191)
+  action          String    @db.VarChar(64)
+  scope           Json?
+  issuedByUserId  String    @db.VarChar(191)
+  issuedAt        DateTime  @default(now())
+  expiresAt       DateTime?
+  revokedAt       DateTime?
+  revokedByUserId String?   @db.VarChar(191)
+  revokeReason    String?   @db.Text
 
   @@index([subjectType, subjectId, resourceType, resourceId, revokedAt])
   @@index([subjectType, subjectId, resourceType, resourceId, action, revokedAt, expiresAt], map: "ai_direct_capability_audit_permission_idx")
@@ -1212,33 +1637,33 @@ model aiDirectHiringIntents {
 }
 
 model aiDirectPaymentOrders {
-  id                  String    @id @db.VarChar(36)
-  outTradeNo          String    @unique(map: "ai_direct_payment_orders_out_trade_no_key") @db.VarChar(64)
-  hiringIntentId      String    @unique(map: "ai_direct_payment_orders_hiring_intent_key") @db.VarChar(36)
-  provider            String    @default("alipay") @db.VarChar(32)
-  currency            String    @default("CNY") @db.Char(3)
-  grossAmountFen      BigInt    @db.UnsignedBigInt
-  platformFeeFen      BigInt    @db.UnsignedBigInt
-  developerPayableFen BigInt    @db.UnsignedBigInt
-  developerUserId     String    @db.VarChar(191)
-  priceId             String    @db.VarChar(36)
-  priceVersion        Int
-  status              String    @default("pending") @db.VarChar(32)
-  providerTradeNo     String?   @db.VarChar(128)
-  rawNotifySha256     String?   @db.Char(64)
-  paidAt              DateTime?
-  fulfilledAt         DateTime?
-  offerId             String?   @db.VarChar(36)
-  employmentId        String?   @db.VarChar(36)
-  reconcileAttemptCount Int     @default(0)
-  lastReconciledAt    DateTime?
-  nextReconcileAt     DateTime?
-  lastProviderStatus  String?   @db.VarChar(64)
-  lastReconcileErrorCode String? @db.VarChar(128)
-  reconcileLeaseOwner String?   @db.VarChar(128)
+  id                      String    @id @db.VarChar(36)
+  outTradeNo              String    @unique(map: "ai_direct_payment_orders_out_trade_no_key") @db.VarChar(64)
+  hiringIntentId          String    @unique(map: "ai_direct_payment_orders_hiring_intent_key") @db.VarChar(36)
+  provider                String    @default("alipay") @db.VarChar(32)
+  currency                String    @default("CNY") @db.Char(3)
+  grossAmountFen          BigInt    @db.UnsignedBigInt
+  platformFeeFen          BigInt    @db.UnsignedBigInt
+  developerPayableFen     BigInt    @db.UnsignedBigInt
+  developerUserId         String    @db.VarChar(191)
+  priceId                 String    @db.VarChar(36)
+  priceVersion            Int
+  status                  String    @default("pending") @db.VarChar(32)
+  providerTradeNo         String?   @db.VarChar(128)
+  rawNotifySha256         String?   @db.Char(64)
+  paidAt                  DateTime?
+  fulfilledAt             DateTime?
+  offerId                 String?   @db.VarChar(36)
+  employmentId            String?   @db.VarChar(36)
+  reconcileAttemptCount   Int       @default(0)
+  lastReconciledAt        DateTime?
+  nextReconcileAt         DateTime?
+  lastProviderStatus      String?   @db.VarChar(64)
+  lastReconcileErrorCode  String?   @db.VarChar(128)
+  reconcileLeaseOwner     String?   @db.VarChar(128)
   reconcileLeaseExpiresAt DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
   @@unique([provider, providerTradeNo], map: "ai_direct_payment_orders_provider_trade_no_key")
   @@index([status, updatedAt], map: "ai_direct_payment_orders_status_updated_idx")
@@ -1248,32 +1673,32 @@ model aiDirectPaymentOrders {
 }
 
 model aiDirectAgentSales {
-  id                   String   @id @db.VarChar(36)
-  saleNo               String   @unique(map: "ai_direct_agent_sales_sale_no_key") @db.VarChar(64)
-  hiringIntentId       String   @unique(map: "ai_direct_agent_sales_intent_key") @db.VarChar(36)
-  employmentId         String   @unique(map: "ai_direct_agent_sales_employment_key") @db.VarChar(36)
-  offerId              String   @unique(map: "ai_direct_agent_sales_offer_key") @db.VarChar(36)
-  paymentOrderId       String?  @unique(map: "ai_direct_agent_sales_payment_order_key") @db.VarChar(36)
-  organizationId       String   @db.VarChar(36)
-  companyId            String   @db.VarChar(36)
-  projectId            String?  @db.VarChar(36)
-  roleId               String   @db.VarChar(36)
-  positionId           String   @db.VarChar(36)
-  buyerUserId          String   @db.VarChar(191)
-  developerUserId      String   @db.VarChar(191)
-  agentId              String   @db.VarChar(36)
-  agentVersionId       String   @db.VarChar(36)
-  priceId              String   @db.VarChar(36)
-  priceVersion         Int
-  pricingMode          String   @db.VarChar(16)
-  currency             String   @default("CNY") @db.Char(3)
-  grossAmountFen       BigInt   @db.UnsignedBigInt
-  platformRevenueFen   BigInt   @db.UnsignedBigInt
-  developerRevenueFen  BigInt   @db.UnsignedBigInt
-  refundedFen          BigInt   @default(0) @db.UnsignedBigInt
-  status               String   @default("completed") @db.VarChar(32)
-  completedAt          DateTime @default(now())
-  createdAt            DateTime @default(now())
+  id                  String   @id @db.VarChar(36)
+  saleNo              String   @unique(map: "ai_direct_agent_sales_sale_no_key") @db.VarChar(64)
+  hiringIntentId      String   @unique(map: "ai_direct_agent_sales_intent_key") @db.VarChar(36)
+  employmentId        String   @unique(map: "ai_direct_agent_sales_employment_key") @db.VarChar(36)
+  offerId             String   @unique(map: "ai_direct_agent_sales_offer_key") @db.VarChar(36)
+  paymentOrderId      String?  @unique(map: "ai_direct_agent_sales_payment_order_key") @db.VarChar(36)
+  organizationId      String   @db.VarChar(36)
+  companyId           String   @db.VarChar(36)
+  projectId           String?  @db.VarChar(36)
+  roleId              String   @db.VarChar(36)
+  positionId          String   @db.VarChar(36)
+  buyerUserId         String   @db.VarChar(191)
+  developerUserId     String   @db.VarChar(191)
+  agentId             String   @db.VarChar(36)
+  agentVersionId      String   @db.VarChar(36)
+  priceId             String   @db.VarChar(36)
+  priceVersion        Int
+  pricingMode         String   @db.VarChar(16)
+  currency            String   @default("CNY") @db.Char(3)
+  grossAmountFen      BigInt   @db.UnsignedBigInt
+  platformRevenueFen  BigInt   @db.UnsignedBigInt
+  developerRevenueFen BigInt   @db.UnsignedBigInt
+  refundedFen         BigInt   @default(0) @db.UnsignedBigInt
+  status              String   @default("completed") @db.VarChar(32)
+  completedAt         DateTime @default(now())
+  createdAt           DateTime @default(now())
 
   @@index([developerUserId, createdAt, id], map: "ai_direct_agent_sales_developer_created_idx")
   @@index([buyerUserId, createdAt, id], map: "ai_direct_agent_sales_buyer_created_idx")
@@ -1303,20 +1728,20 @@ model aiDirectRevenueLedgerEntries {
 }
 
 model aiDirectDeveloperSettlements {
-  id                   String    @id @db.VarChar(36)
-  developerUserId      String    @db.VarChar(191)
-  currency             String    @default("CNY") @db.Char(3)
-  amountFen            BigInt    @db.UnsignedBigInt
-  status               String    @default("pending") @db.VarChar(32)
-  externalReference    String?   @db.VarChar(191)
-  failureReason        String?   @db.VarChar(512)
-  processingByUserId   String?   @db.VarChar(191)
-  processingAt         DateTime?
-  createdByUserId      String    @db.VarChar(191)
-  completedByUserId    String?   @db.VarChar(191)
-  completedAt          DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  id                 String    @id @db.VarChar(36)
+  developerUserId    String    @db.VarChar(191)
+  currency           String    @default("CNY") @db.Char(3)
+  amountFen          BigInt    @db.UnsignedBigInt
+  status             String    @default("pending") @db.VarChar(32)
+  externalReference  String?   @db.VarChar(191)
+  failureReason      String?   @db.VarChar(512)
+  processingByUserId String?   @db.VarChar(191)
+  processingAt       DateTime?
+  createdByUserId    String    @db.VarChar(191)
+  completedByUserId  String?   @db.VarChar(191)
+  completedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   @@index([developerUserId, status, createdAt], map: "ai_direct_developer_settlements_developer_status_idx")
   @@index([status, createdAt], map: "ai_direct_developer_settlements_status_created_idx")
@@ -1324,10 +1749,10 @@ model aiDirectDeveloperSettlements {
 }
 
 model aiDirectDeveloperSettlementItems {
-  settlementId String   @db.VarChar(36)
-  ledgerEntryId String  @unique(map: "ai_direct_settlement_items_ledger_key") @db.VarChar(36)
-  amountFen    BigInt   @db.UnsignedBigInt
-  createdAt    DateTime @default(now())
+  settlementId  String   @db.VarChar(36)
+  ledgerEntryId String   @unique(map: "ai_direct_settlement_items_ledger_key") @db.VarChar(36)
+  amountFen     BigInt   @db.UnsignedBigInt
+  createdAt     DateTime @default(now())
 
   @@id([settlementId, ledgerEntryId])
   @@index([settlementId], map: "ai_direct_settlement_items_settlement_idx")
@@ -1335,15 +1760,15 @@ model aiDirectDeveloperSettlementItems {
 }
 
 model aiDirectPaidHiringOperationalAlerts {
-  id                String    @id @db.VarChar(36)
-  paymentOrderId    String    @db.VarChar(36)
-  code              String    @db.VarChar(128)
-  severity          String    @default("warning") @db.VarChar(16)
-  status            String    @default("open") @db.VarChar(16)
-  occurrenceCount   Int       @default(1)
-  firstObservedAt   DateTime  @default(now())
-  lastObservedAt    DateTime  @default(now())
-  resolvedAt        DateTime?
+  id              String    @id @db.VarChar(36)
+  paymentOrderId  String    @db.VarChar(36)
+  code            String    @db.VarChar(128)
+  severity        String    @default("warning") @db.VarChar(16)
+  status          String    @default("open") @db.VarChar(16)
+  occurrenceCount Int       @default(1)
+  firstObservedAt DateTime  @default(now())
+  lastObservedAt  DateTime  @default(now())
+  resolvedAt      DateTime?
 
   @@unique([paymentOrderId, code], map: "ai_direct_paid_hiring_alert_order_code_key")
   @@index([status, lastObservedAt], map: "ai_direct_paid_hiring_alert_status_time_idx")
@@ -1377,20 +1802,20 @@ model aiDirectOffers {
 }
 
 model aiDirectEmployments {
-  id               String    @id @default(cuid())
-  companyId        String    @db.VarChar(36)
-  agentId          String    @db.VarChar(36)
-  agentVersionId   String    @db.VarChar(36)
-  roleId           String    @db.VarChar(36)
-  projectId        String?   @db.VarChar(36)
-  offerId          String    @unique @db.VarChar(36)
-  paymentOrderId   String?   @unique(map: "ai_direct_employments_payment_order_key") @db.VarChar(36)
-  requestedByUserId String?  @db.VarChar(191)
-  status           String    @default("candidate") @db.VarChar(32)
-  startedAt        DateTime?
-  endedAt          DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  companyId         String    @db.VarChar(36)
+  agentId           String    @db.VarChar(36)
+  agentVersionId    String    @db.VarChar(36)
+  roleId            String    @db.VarChar(36)
+  projectId         String?   @db.VarChar(36)
+  offerId           String    @unique @db.VarChar(36)
+  paymentOrderId    String?   @unique(map: "ai_direct_employments_payment_order_key") @db.VarChar(36)
+  requestedByUserId String?   @db.VarChar(191)
+  status            String    @default("candidate") @db.VarChar(32)
+  startedAt         DateTime?
+  endedAt           DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([companyId, status, updatedAt])
   @@index([agentId, status])
@@ -1401,24 +1826,24 @@ model aiDirectEmployments {
 }
 
 model aiDirectWorkforceEmployeeDigests {
-  employmentId      String   @id @db.VarChar(36)
-  organizationId    String   @db.VarChar(36)
-  companyId         String   @db.VarChar(36)
-  departmentId      String   @db.VarChar(36)
-  positionId        String   @db.VarChar(36)
-  roleId            String   @db.VarChar(36)
-  agentId           String   @db.VarChar(36)
-  agentVersionId    String   @db.VarChar(36)
-  agentDisplayName  String   @db.VarChar(160)
-  avatarAssetId     String?  @db.VarChar(36)
-  departmentName    String   @db.VarChar(160)
-  positionName      String   @db.VarChar(160)
-  roleName          String   @db.VarChar(160)
-  employmentStatus  String   @db.VarChar(32)
-  startedAt         DateTime?
-  revision          String   @db.Char(64)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  employmentId     String    @id @db.VarChar(36)
+  organizationId   String    @db.VarChar(36)
+  companyId        String    @db.VarChar(36)
+  departmentId     String    @db.VarChar(36)
+  positionId       String    @db.VarChar(36)
+  roleId           String    @db.VarChar(36)
+  agentId          String    @db.VarChar(36)
+  agentVersionId   String    @db.VarChar(36)
+  agentDisplayName String    @db.VarChar(160)
+  avatarAssetId    String?   @db.VarChar(36)
+  departmentName   String    @db.VarChar(160)
+  positionName     String    @db.VarChar(160)
+  roleName         String    @db.VarChar(160)
+  employmentStatus String    @db.VarChar(32)
+  startedAt        DateTime?
+  revision         String    @db.Char(64)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([companyId, employmentStatus, updatedAt, employmentId], map: "workforce_employee_digests_company_cursor_idx")
   @@index([companyId, departmentId, updatedAt, employmentId], map: "workforce_employee_digests_company_department_cursor_idx")
@@ -1427,16 +1852,16 @@ model aiDirectWorkforceEmployeeDigests {
 }
 
 model aiDirectEmploymentEvents {
-  id            String    @id @default(cuid())
-  employmentId  String    @db.VarChar(36)
-  sequence      Int
-  fromStatus    String?   @db.VarChar(32)
-  toStatus      String    @db.VarChar(32)
-  actorUserId   String    @db.VarChar(191)
-  reason        String?   @db.Text
-  approvalId    String?   @db.VarChar(36)
-  metadata      Json?
-  occurredAt    DateTime  @default(now())
+  id           String   @id @default(cuid())
+  employmentId String   @db.VarChar(36)
+  sequence     Int
+  fromStatus   String?  @db.VarChar(32)
+  toStatus     String   @db.VarChar(32)
+  actorUserId  String   @db.VarChar(191)
+  reason       String?  @db.Text
+  approvalId   String?  @db.VarChar(36)
+  metadata     Json?
+  occurredAt   DateTime @default(now())
 
   @@unique([employmentId, sequence])
   @@index([employmentId, occurredAt])
@@ -1444,20 +1869,20 @@ model aiDirectEmploymentEvents {
 }
 
 model aiDirectApprovals {
-  id                  String    @id @default(cuid())
-  organizationId      String?   @db.VarChar(36)
-  targetType          String    @db.VarChar(64)
-  targetId            String    @db.VarChar(191)
-  requestedByUserId   String    @db.VarChar(191)
-  approverUserId      String?   @db.VarChar(191)
-  status              String    @default("pending") @db.VarChar(32)
-  decision            String?   @db.VarChar(32)
-  decisionReason     String?   @db.Text
-  expiresAt           DateTime?
-  decidedAt           DateTime?
-  metadata            Json?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  organizationId    String?   @db.VarChar(36)
+  targetType        String    @db.VarChar(64)
+  targetId          String    @db.VarChar(191)
+  requestedByUserId String    @db.VarChar(191)
+  approverUserId    String?   @db.VarChar(191)
+  status            String    @default("pending") @db.VarChar(32)
+  decision          String?   @db.VarChar(32)
+  decisionReason    String?   @db.Text
+  expiresAt         DateTime?
+  decidedAt         DateTime?
+  metadata          Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([organizationId, status, updatedAt])
   @@index([status, expiresAt, id], map: "ai_direct_approvals_pending_expiry_idx")
@@ -1467,15 +1892,15 @@ model aiDirectApprovals {
 }
 
 model aiDirectApprovalEvents {
-  id             String    @id @db.VarChar(36)
-  approvalId     String    @db.VarChar(36)
-  organizationId String?   @db.VarChar(36)
+  id             String   @id @db.VarChar(36)
+  approvalId     String   @db.VarChar(36)
+  organizationId String?  @db.VarChar(36)
   sequence       Int
-  eventType      String    @db.VarChar(64)
-  actorUserId    String?   @db.VarChar(191)
-  requestId      String    @db.VarChar(128)
+  eventType      String   @db.VarChar(64)
+  actorUserId    String?  @db.VarChar(191)
+  requestId      String   @db.VarChar(128)
   metadata       Json?
-  occurredAt     DateTime  @default(now())
+  occurredAt     DateTime @default(now())
 
   @@unique([approvalId, sequence], map: "ai_direct_approval_events_approval_sequence_key")
   @@index([approvalId, occurredAt, id], map: "ai_direct_approval_events_approval_occurred_idx")
@@ -1499,28 +1924,28 @@ model aiDirectApprovalDelegations {
 }
 
 model aiDirectInterviewRetentionPolicies {
-  organizationId      String   @id @db.VarChar(36)
-  bodyRetentionDays   Int      @default(90)
-  modelConsentMode    String   @default("organization_default_opt_in") @db.VarChar(64)
-  attachmentPolicy    String   @default("image_pdf_only") @db.VarChar(64)
-  attachmentMaxBytes  Int      @default(10485760)
-  version             Int      @default(1)
-  updatedByUserId     String   @db.VarChar(191)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  organizationId     String   @id @db.VarChar(36)
+  bodyRetentionDays  Int      @default(90)
+  modelConsentMode   String   @default("organization_default_opt_in") @db.VarChar(64)
+  attachmentPolicy   String   @default("image_pdf_only") @db.VarChar(64)
+  attachmentMaxBytes Int      @default(10485760)
+  version            Int      @default(1)
+  updatedByUserId    String   @db.VarChar(191)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@map("ai_direct_interview_retention_policies")
 }
 
 model aiDirectInterviewConversations {
-  id             String   @id @db.VarChar(36)
-  organizationId String   @db.VarChar(36)
-  agentVersionId String   @db.VarChar(36)
-  createdByUserId String  @db.VarChar(191)
-  status         String   @default("active") @db.VarChar(32)
-  latestSequence Int      @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @db.VarChar(36)
+  organizationId  String   @db.VarChar(36)
+  agentVersionId  String   @db.VarChar(36)
+  createdByUserId String   @db.VarChar(191)
+  status          String   @default("active") @db.VarChar(32)
+  latestSequence  Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([organizationId, status, updatedAt])
   @@map("ai_direct_interview_conversations")
@@ -1569,16 +1994,16 @@ model aiDirectInterviewReadCursors {
 }
 
 model aiDirectInterviewLegalHolds {
-  id             String    @id @db.VarChar(36)
-  organizationId String    @db.VarChar(36)
-  conversationId String?   @db.VarChar(36)
-  messageId      String?   @db.VarChar(36)
-  reason         String    @db.VarChar(500)
-  status         String    @default("active") @db.VarChar(32)
-  createdByUserId String   @db.VarChar(191)
-  releasedByUserId String? @db.VarChar(191)
-  releasedAt     DateTime?
-  createdAt      DateTime  @default(now())
+  id               String    @id @db.VarChar(36)
+  organizationId   String    @db.VarChar(36)
+  conversationId   String?   @db.VarChar(36)
+  messageId        String?   @db.VarChar(36)
+  reason           String    @db.VarChar(500)
+  status           String    @default("active") @db.VarChar(32)
+  createdByUserId  String    @db.VarChar(191)
+  releasedByUserId String?   @db.VarChar(191)
+  releasedAt       DateTime?
+  createdAt        DateTime  @default(now())
 
   @@index([organizationId, status])
   @@index([conversationId, status])
@@ -1603,43 +2028,43 @@ model aiDirectInterviewAttachments {
 }
 
 model aiDirectWorkflowRuns {
-  id                      String    @id @default(cuid())
-  organizationId          String?   @db.VarChar(36)
-  employmentId            String?   @db.VarChar(36)
-  agentVersionId          String?   @db.VarChar(36)
-  workflowKey             String    @db.VarChar(128)
-  workflowVersion         String?   @db.VarChar(64)
-  status                  String    @default("queued") @db.VarChar(32)
-  runAfter                DateTime?
-  leaseOwner              String?   @db.VarChar(128)
-  leaseExpiresAt          DateTime?
-  lastHeartbeatAt         DateTime?
-  requestedByUserId       String    @db.VarChar(191)
-  idempotencyKey          String?   @db.VarChar(128)
-  approvalId              String?   @db.VarChar(36)
-  requestedModelPolicy    Json?
-  resolvedModelCatalogId   String?   @db.VarChar(36)
-  resolvedModelKey        String?   @db.VarChar(255)
-  modelRunAuditIds        Json?
-  inputSummary            Json?
-  outputIndex             Json?
-  tokenUsage              Json?
-  costMicros              BigInt?
-  latencyMs               Int?
-  failureCode             String?   @db.VarChar(128)
-  failureReason           String?   @db.Text
-  metadata                Json?
-  startedAt               DateTime?
-  finishedAt              DateTime?
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  id                     String    @id @default(cuid())
+  organizationId         String?   @db.VarChar(36)
+  employmentId           String?   @db.VarChar(36)
+  agentVersionId         String?   @db.VarChar(36)
+  workflowKey            String    @db.VarChar(128)
+  workflowVersion        String?   @db.VarChar(64)
+  status                 String    @default("queued") @db.VarChar(32)
+  runAfter               DateTime?
+  leaseOwner             String?   @db.VarChar(128)
+  leaseExpiresAt         DateTime?
+  lastHeartbeatAt        DateTime?
+  requestedByUserId      String    @db.VarChar(191)
+  idempotencyKey         String?   @db.VarChar(128)
+  approvalId             String?   @db.VarChar(36)
+  requestedModelPolicy   Json?
+  resolvedModelCatalogId String?   @db.VarChar(36)
+  resolvedModelKey       String?   @db.VarChar(255)
+  modelRunAuditIds       Json?
+  inputSummary           Json?
+  outputIndex            Json?
+  tokenUsage             Json?
+  costMicros             BigInt?
+  latencyMs              Int?
+  failureCode            String?   @db.VarChar(128)
+  failureReason          String?   @db.Text
+  metadata               Json?
+  startedAt              DateTime?
+  finishedAt             DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
+  @@unique([requestedByUserId, idempotencyKey])
   @@index([organizationId, createdAt])
   @@index([organizationId, createdAt, id], map: "ai_direct_workflow_runs_organization_cursor_idx")
   @@index([employmentId, createdAt])
   @@index([status, updatedAt])
   @@index([requestedByUserId, status, updatedAt])
-  @@unique([requestedByUserId, idempotencyKey])
   @@index([status, runAfter, leaseExpiresAt, createdAt], map: "ai_direct_workflow_runs_queue_idx")
   @@index([leaseOwner, leaseExpiresAt])
   @@map("ai_direct_workflow_runs")
@@ -1673,15 +2098,15 @@ model aiDirectWorkflowRunSteps {
 }
 
 model aiDirectAgentAppearanceProfiles {
-  agentId                String   @id @db.VarChar(36)
-  avatarAssetId          String?  @db.VarChar(36)
-  defaultMode            String   @default("image_2d") @db.VarChar(32)
-  controllerEmploymentId String?  @unique(map: "appearance_profiles_controller_employment_key") @db.VarChar(36)
-  controllerCompanyId    String?  @db.VarChar(36)
-  revision               BigInt   @default(1)
-  updatedByUserId        String   @db.VarChar(191)
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  agentId                String         @id @db.VarChar(36)
+  avatarAssetId          String?        @db.VarChar(36)
+  defaultMode            String         @default("image_2d") @db.VarChar(32)
+  controllerEmploymentId String?        @unique(map: "appearance_profiles_controller_employment_key") @db.VarChar(36)
+  controllerCompanyId    String?        @db.VarChar(36)
+  revision               BigInt         @default(1)
+  updatedByUserId        String         @db.VarChar(191)
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
   agent                  aiDirectAgents @relation(fields: [agentId], references: [id], onDelete: Cascade)
 
   @@index([controllerCompanyId], map: "appearance_profiles_controller_company_idx")
@@ -1690,19 +2115,19 @@ model aiDirectAgentAppearanceProfiles {
 }
 
 model aiDirectAgentAppearanceAssets {
-  id               String    @id @db.VarChar(36)
-  agentId          String    @db.VarChar(36)
-  kind             String    @db.VarChar(32)
-  sortOrder        Int       @default(0)
-  status           String    @default("active") @db.VarChar(32)
-  storageKey       String    @unique(map: "appearance_assets_storage_key") @db.VarChar(512)
-  originalFileName String    @db.VarChar(255)
-  mimeType         String    @db.VarChar(128)
+  id               String         @id @db.VarChar(36)
+  agentId          String         @db.VarChar(36)
+  kind             String         @db.VarChar(32)
+  sortOrder        Int            @default(0)
+  status           String         @default("active") @db.VarChar(32)
+  storageKey       String         @unique(map: "appearance_assets_storage_key") @db.VarChar(512)
+  originalFileName String         @db.VarChar(255)
+  mimeType         String         @db.VarChar(128)
   sizeBytes        BigInt
-  sha256           String    @db.Char(64)
-  createdByUserId  String    @db.VarChar(191)
-  createdAt        DateTime  @default(now())
-  deletedByUserId  String?   @db.VarChar(191)
+  sha256           String         @db.Char(64)
+  createdByUserId  String         @db.VarChar(191)
+  createdAt        DateTime       @default(now())
+  deletedByUserId  String?        @db.VarChar(191)
   deletedAt        DateTime?
   agent            aiDirectAgents @relation(fields: [agentId], references: [id], onDelete: Cascade)
 
@@ -1873,13 +2298,13 @@ model desktopTemplateAuditEvents {
   id             String   @id @db.VarChar(36)
   organizationId String?  @db.VarChar(36)
   actorUserId    String   @db.VarChar(191)
-  action      String   @db.VarChar(128)
-  targetType  String   @db.VarChar(64)
-  targetId    String   @db.VarChar(191)
-  requestId   String   @db.VarChar(128)
-  outcome     String   @default("success") @db.VarChar(32)
-  metadata    Json?
-  createdAt   DateTime @default(now())
+  action         String   @db.VarChar(128)
+  targetType     String   @db.VarChar(64)
+  targetId       String   @db.VarChar(191)
+  requestId      String   @db.VarChar(128)
+  outcome        String   @default("success") @db.VarChar(32)
+  metadata       Json?
+  createdAt      DateTime @default(now())
 
   @@index([targetType, targetId, createdAt], map: "desktop_template_audit_target_created_idx")
   @@index([actorUserId, createdAt], map: "desktop_template_audit_actor_created_idx")
@@ -1889,4 +2314,317 @@ model desktopTemplateAuditEvents {
   @@index([organizationId, action, createdAt, id], map: "desktop_template_audit_org_action_time_cursor_idx")
   @@index([organizationId, requestId, createdAt, id], map: "desktop_template_audit_org_request_time_cursor_idx")
   @@map("desktop_template_audit_events")
+}
+
+model convexExitMigrationBatches {
+  id                  String                            @id @db.VarChar(36)
+  domain              String                            @db.VarChar(64)
+  source              String                            @db.VarChar(128)
+  status              String                            @db.VarChar(32)
+  approvalRef         String?                           @db.VarChar(191)
+  requestedBy         String?                           @db.VarChar(191)
+  sourceCursor        String?                           @db.Text
+  sourceCount         BigInt?
+  upsertedCount       BigInt                            @default(0)
+  unchangedCount      BigInt                            @default(0)
+  errorCount          BigInt                            @default(0)
+  startedAt           DateTime                          @default(now()) @db.DateTime(3)
+  completedAt         DateTime?                         @db.DateTime(3)
+  failedAt            DateTime?                         @db.DateTime(3)
+  failureCode         String?                           @db.VarChar(128)
+  createdAt           DateTime                          @default(now()) @db.DateTime(3)
+  updatedAt           DateTime                          @updatedAt @db.DateTime(3)
+  profileCheckpoint   profileSyncCheckpoints?
+  publisherCheckpoint publisherSyncCheckpoints?
+  reconciliations     convexExitReconciliationRecords[]
+
+  @@index([domain, status, startedAt], map: "convex_exit_batches_domain_status_idx")
+  @@map("convex_exit_migration_batches")
+}
+
+model convexExitLegacyIdMaps {
+  domain         String   @db.VarChar(64)
+  legacyConvexId String   @db.VarChar(191)
+  targetId       String   @db.VarChar(191)
+  createdAt      DateTime @default(now()) @db.DateTime(3)
+  updatedAt      DateTime @updatedAt @db.DateTime(3)
+
+  @@id([domain, legacyConvexId])
+  @@unique([domain, targetId], map: "convex_exit_legacy_target_key")
+  @@map("convex_exit_legacy_id_maps")
+}
+
+model convexExitReconciliationRecords {
+  id             String                      @id @db.VarChar(36)
+  recordKey      String                      @unique(map: "convex_exit_reconciliation_key") @db.Char(64)
+  domain         String                      @db.VarChar(64)
+  batchId        String?                     @db.VarChar(36)
+  legacyConvexId String                      @db.VarChar(191)
+  fieldName      String                      @db.VarChar(128)
+  differenceKind     String                      @db.VarChar(64)
+  classification     String                      @default("unclassified") @db.VarChar(64)
+  classificationReason String?                   @db.VarChar(512)
+  classifiedBy       String?                     @db.VarChar(191)
+  classifiedAt       DateTime?
+  waivedBy           String?                     @db.VarChar(191)
+  waivedAt           DateTime?
+  waiverReason       String?                     @db.VarChar(512)
+  closedBy           String?                     @db.VarChar(191)
+  closedAt           DateTime?
+  closureReason      String?                     @db.VarChar(512)
+  sourceEvidence     String?                     @db.Text
+  targetEvidence     String?                     @db.Text
+  evidenceHash       String?                     @db.Char(64)
+  summary            String                      @db.VarChar(512)
+  observedAt     DateTime                    @default(now()) @db.DateTime(3)
+  resolvedAt     DateTime?                   @db.DateTime(3)
+  batch          convexExitMigrationBatches? @relation(fields: [batchId], references: [id], onDelete: SetNull, map: "convex_exit_reconciliation_batch_fk")
+
+  @@index([domain, legacyConvexId, observedAt], map: "convex_exit_reconciliation_domain_legacy_idx")
+  @@index([domain, classification, resolvedAt], map: "convex_exit_reconciliation_gate_idx")
+  @@map("convex_exit_reconciliation_records")
+}
+
+model convexExitManagedAssets {
+  id                  String                     @id @db.VarChar(36)
+  legacyStorageId     String?                    @unique(map: "convex_exit_assets_legacy_storage_key") @db.VarChar(191)
+  ownerDomain         String                     @db.VarChar(64)
+  ownerLegacyConvexId String                     @db.VarChar(191)
+  accessScope         String                     @db.VarChar(32)
+  storageKey          String                     @unique(map: "convex_exit_assets_storage_key") @db.VarChar(1024)
+  originalFileName    String?                    @db.VarChar(512)
+  mimeType            String                     @db.VarChar(255)
+  sizeBytes           BigInt
+  sha256              String                     @db.Char(64)
+  status              String                     @default("active") @db.VarChar(32)
+  scannerStatus       String                     @default("clean") @db.VarChar(32)
+  createdByUserId     String?                    @db.VarChar(191)
+  targetId            String?                    @db.VarChar(191)
+  deletedAt           DateTime?                  @db.DateTime(3)
+  createdAt           DateTime                   @default(now()) @db.DateTime(3)
+  updatedAt           DateTime                   @updatedAt @db.DateTime(3)
+  profileSnapshots    profileAssetSnapshots[]
+  publisherSnapshots  publisherAvatarSnapshots[]
+
+  @@index([ownerDomain, ownerLegacyConvexId, status], map: "convex_exit_assets_owner_idx")
+  @@index([sha256], map: "convex_exit_assets_sha256_idx")
+  @@map("convex_exit_managed_assets")
+}
+
+model managedAssetUploadTickets {
+  id               String   @id @db.VarChar(36)
+  tokenHash        String   @db.Char(64)
+  userId           String   @db.VarChar(191)
+  assetKind        String   @db.VarChar(64)
+  targetId         String   @db.VarChar(191)
+  maxBytes         BigInt
+  allowedMimeTypes Json
+  expiresAt        DateTime @db.DateTime(3)
+  consumedAt       DateTime?
+  createdAt        DateTime @default(now()) @db.DateTime(3)
+
+  @@unique([tokenHash], map: "managed_asset_upload_tickets_token_hash_key")
+  @@index([userId, expiresAt, consumedAt], map: "managed_asset_upload_tickets_user_state_idx")
+  @@index([targetId, assetKind], map: "managed_asset_upload_tickets_target_kind_idx")
+  @@map("managed_asset_upload_tickets")
+}
+
+
+model convexExitOutboxEvents {
+  id               String    @id @db.VarChar(36)
+  domain           String    @db.VarChar(64)
+  aggregateId      String    @db.VarChar(191)
+  aggregateVersion BigInt
+  eventType        String    @db.VarChar(128)
+  idempotencyKey   String    @unique(map: "convex_exit_outbox_idempotency_key") @db.VarChar(191)
+  payload          Json
+  status           String    @default("pending") @db.VarChar(32)
+  attempts         Int       @default(0)
+  availableAt      DateTime  @default(now()) @db.DateTime(3)
+  claimedAt        DateTime? @db.DateTime(3)
+  claimToken       String?   @db.VarChar(36)
+  leaseExpiresAt   DateTime? @db.DateTime(3)
+  publishedAt      DateTime? @db.DateTime(3)
+  failedAt         DateTime? @db.DateTime(3)
+  failureReason    String?   @db.Text
+  occurredAt       DateTime  @default(now()) @db.DateTime(3)
+
+  @@index([status, availableAt], map: "convex_exit_outbox_status_available_idx")
+  @@index([status, leaseExpiresAt], map: "convex_exit_outbox_lease_idx")
+  @@index([domain, aggregateId, aggregateVersion], map: "convex_exit_outbox_aggregate_idx")
+  @@map("convex_exit_outbox_events")
+}
+
+model candidateFixtureRetentionRecords {
+  id                  String   @id @db.VarChar(36)
+  domain              String   @db.VarChar(64)
+  legacyConvexId      String   @db.VarChar(191)
+  snapshotId          String   @db.VarChar(36)
+  fixtureIdentifier   String   @db.VarChar(64)
+  fixtureMarker       String   @db.VarChar(128)
+  cleanupConfirmation String   @db.VarChar(128)
+  cleanupReason       String   @db.VarChar(512)
+  outboxEventId       String   @unique(map: "candidate_fixture_retention_outbox_key") @db.VarChar(36)
+  outboxFailureCode   String   @db.VarChar(128)
+  confirmedBy         String   @db.VarChar(191)
+  confirmedAt         DateTime @default(now()) @db.DateTime(3)
+  createdAt           DateTime @default(now()) @db.DateTime(3)
+
+  @@unique([domain, legacyConvexId], map: "candidate_fixture_retention_domain_legacy_key")
+  @@unique([domain, snapshotId], map: "candidate_fixture_retention_domain_snapshot_key")
+  @@index([domain, legacyConvexId, fixtureIdentifier], map: "candidate_fixture_retention_lookup_idx")
+  @@map("candidate_fixture_retention_records")
+}
+
+// P1 Skill/Package fact snapshots. These tables are additive and inactive.
+model skillPackageAliasFacts {
+  id              String    @id @db.VarChar(36)
+  snapshotId      String    @db.VarChar(36)
+  legacyConvexId  String    @db.VarChar(191)
+  aliasKind       String    @db.VarChar(32)
+  aliasValue      String    @db.VarChar(255)
+  isCanonical     Boolean   @default(false)
+  retiredAt       DateTime?
+  sourceHash      String    @db.Char(64)
+  lastSeenBatchId String    @db.VarChar(36)
+  sourceMissingAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([snapshotId, aliasKind, aliasValue], map: "skill_package_alias_fact_key")
+  @@index([aliasValue, aliasKind], map: "skill_package_alias_lookup_idx")
+  @@map("skill_package_alias_facts")
+}
+
+model skillPackageGithubFacts {
+  id                   String    @id @db.VarChar(36)
+  snapshotId           String    @unique(map: "skill_package_github_fact_snapshot_key") @db.VarChar(36)
+  sourceLegacyConvexId String?   @db.VarChar(191)
+  repository           String?   @db.VarChar(512)
+  path                 String?   @db.VarChar(1024)
+  commit               String?   @db.VarChar(191)
+  contentHash          String?   @db.Char(64)
+  status               String?   @db.VarChar(32)
+  sourceHash           String    @db.Char(64)
+  lastSeenBatchId      String    @db.VarChar(36)
+  sourceMissingAt      DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([repository, commit], map: "skill_package_github_fact_source_idx")
+  @@map("skill_package_github_facts")
+}
+
+model skillPackageOwnershipFacts {
+  id                           String    @id @db.VarChar(36)
+  snapshotId                   String    @db.VarChar(36)
+  legacyConvexId               String    @db.VarChar(191)
+  ownerUserLegacyConvexId      String?   @db.VarChar(191)
+  ownerPublisherLegacyConvexId String?   @db.VarChar(191)
+  eventKind                    String    @db.VarChar(32)
+  effectiveAt                  DateTime  @db.DateTime(3)
+  actorUserLegacyConvexId      String?   @db.VarChar(191)
+  sourceHash                   String    @db.Char(64)
+  lastSeenBatchId              String    @db.VarChar(36)
+  sourceMissingAt              DateTime?
+  createdAt                    DateTime  @default(now())
+
+  @@unique([snapshotId, legacyConvexId], map: "skill_package_ownership_fact_key")
+  @@index([ownerPublisherLegacyConvexId, effectiveAt], map: "skill_package_ownership_fact_owner_idx")
+  @@map("skill_package_ownership_facts")
+}
+
+model skillPackageVersionFileFacts {
+  id                    String   @id @db.VarChar(36)
+  versionSnapshotId     String   @db.VarChar(36)
+  path                  String   @db.VarChar(1024)
+  sizeBytes             BigInt
+  mimeType              String   @db.VarChar(255)
+  sha256                String   @db.Char(64)
+  storageLegacyConvexId String?  @db.VarChar(191)
+  sourceHash            String   @db.Char(64)
+  createdAt             DateTime @default(now())
+
+  @@unique([versionSnapshotId, path], map: "skill_package_version_file_fact_key")
+  @@index([sha256], map: "skill_package_version_file_fact_sha_idx")
+  @@map("skill_package_version_file_facts")
+}
+
+model packagePublishTokenFacts {
+  id               String    @id @db.VarChar(36)
+  snapshotId       String    @db.VarChar(36)
+  legacyConvexId   String    @unique(map: "package_publish_token_fact_legacy_key") @db.VarChar(191)
+  tokenHash        String    @db.VarChar(255)
+  provider         String    @db.VarChar(64)
+  repository       String    @db.VarChar(512)
+  workflowFilename String    @db.VarChar(512)
+  expiresAt        DateTime  @db.DateTime(3)
+  lastUsedAt       DateTime?
+  revokedAt        DateTime?
+  sourceHash       String    @db.Char(64)
+  lastSeenBatchId  String    @db.VarChar(36)
+  sourceMissingAt  DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([snapshotId, revokedAt, expiresAt], map: "package_publish_token_fact_state_idx")
+  @@map("package_publish_token_facts")
+}
+
+model packagePublishUploadTicketFacts {
+  id                         String    @id @db.VarChar(36)
+  snapshotId                 String    @db.VarChar(36)
+  legacyConvexId             String    @unique(map: "package_upload_ticket_fact_legacy_key") @db.VarChar(191)
+  kind                       String    @db.VarChar(32)
+  publishTokenLegacyConvexId String?   @db.VarChar(191)
+  userLegacyConvexId         String?   @db.VarChar(191)
+  createdAt                  DateTime  @db.DateTime(3)
+  expiresAt                  DateTime  @db.DateTime(3)
+  usedAt                     DateTime?
+  storageLegacyConvexId      String?   @db.VarChar(191)
+  sourceHash                 String    @db.Char(64)
+  lastSeenBatchId            String    @db.VarChar(36)
+  sourceMissingAt            DateTime?
+
+  @@index([snapshotId, expiresAt, usedAt], map: "package_upload_ticket_fact_state_idx")
+  @@map("package_publish_upload_ticket_facts")
+}
+
+model packageTrustedPublisherFacts {
+  id               String    @id @db.VarChar(36)
+  snapshotId       String    @db.VarChar(36)
+  legacyConvexId   String    @unique(map: "package_trusted_publisher_fact_legacy_key") @db.VarChar(191)
+  provider         String    @db.VarChar(64)
+  repository       String    @db.VarChar(512)
+  repositoryId     String    @db.VarChar(191)
+  workflowFilename String    @db.VarChar(512)
+  environment      String?
+  sourceHash       String    @db.Char(64)
+  lastSeenBatchId  String    @db.VarChar(36)
+  sourceMissingAt  DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([repository, workflowFilename], map: "package_trusted_publisher_fact_repo_idx")
+  @@map("package_trusted_publisher_facts")
+}
+
+model packageInspectorFacts {
+  id                    String    @id @db.VarChar(36)
+  snapshotId            String    @db.VarChar(36)
+  legacyConvexId        String    @unique(map: "package_inspector_fact_legacy_key") @db.VarChar(191)
+  releaseLegacyConvexId String    @db.VarChar(191)
+  status                String    @db.VarChar(32)
+  inspectorVersion      String?
+  targetRuntimeVersion  String?
+  findingCount          Int
+  findingsHash          String?   @db.Char(64)
+  observedAt            DateTime  @db.DateTime(3)
+  sourceHash            String    @db.Char(64)
+  lastSeenBatchId       String    @db.VarChar(36)
+  sourceMissingAt       DateTime?
+  createdAt             DateTime  @default(now())
+
+  @@index([releaseLegacyConvexId, observedAt], map: "package_inspector_fact_release_idx")
+  @@map("package_inspector_facts")
 }

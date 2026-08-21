@@ -141,12 +141,12 @@
 > - 该路线图记录已有基础、真实缺口、模块职责、依赖和完成定义；写入路线图不代表路由、页面、迁移或生产能力已经完成。
 > - 桌面与平台的数据边界仍以 `specs/ai-direct-desktop-platform-integration.md` 为准；生产事实仍以本进度文档顶部快照和实时行为为准。
 >
-> **桌面端文档对齐结论（2026-08-03）**
+> **桌面端文档对齐结论（源码 `1.3.0` / 生产 `1.2.0`）**
 >
 > - 已以 `AI直聘桌面端/docs/` 为产品真值完成服务器侧契约分层和差距盘点，新增 `specs/ai-direct-desktop-platform-integration.md`。
-> - 当前生产 discovery/OpenAPI 声明 `Desktop Client API 1.1.0`；`20260808` 至 `20260811` 迁移、当前 API 构建部署、启动 manifest 校验和逐 operation 非 `404` 烟测均已完成，原 Candidate Catalog、Workforce 与 Candidate Matching 的 8 个路由漂移已解除。该结论不代表组织能力已启用：`candidateCatalog` 默认关闭，相关带认证 `2xx` 业务烟测仍待专用 token 和隔离测试组织。
-> - 当前挂载服务已有组织、公司、项目、岗位、Offer、Employment、审批、能力授权、Jobs 和 Worker runtime，但这些能力并未全部进入桌面 OpenAPI；未挂载的 `aiDirectHiring.ts` 中 Agent 发布路由不算生产能力。
-> - 后端下一优先级已转为发布验收：应用付费雇佣迁移，使用真实 Bearer 身份验证权限矩阵，并完成支付宝沙箱/商户下单与通知联调；旧“非支付招聘闭环、支付继续后置”决策已作废。`/session`、OAuth/OIDC PKCE、按组织 feature flags、Jobs、Agent publication、候选目录与面试仍按各自门禁推进。
+> - 当前生产 discovery/OpenAPI 仍声明 Desktop Client API `1.2.0`；源码 `1.3.0` 已通过 PR #4 合并到 `main`，但自动生产部署尚未完成。`1.3.0` 继续以 manifest/OpenAPI 一致性测试、启动路由校验和逐 operation 非 `404` 作为发布门禁。该结论不代表组织能力已启用：`candidateCatalog` 默认关闭，相关带认证 `2xx` 业务烟测仍待专用 token 和隔离测试组织。
+> - Jobs 列表/详情/取消/重试、产物元数据与授权下载，Agent 创建/版本创建/提交/审核/发布，以及 Departments/Positions 创建和更新已进入源码 `1.3.0` 桌面 OpenAPI。旧 `aiDirectHiring.ts` 中未由独立模块挂载的其他路由仍不算生产能力。
+> - 客户端必须先读取 `/api/v1/desktop/contract.capabilities`，再读取 `/session` 的组织 feature flags、`runtimeCapabilities` 与 `grantVersion`；不得根据 OpenAPI 是否包含路径推断业务已启用。OAuth 元数据不完整时必须保持 `documented_disabled`，付费招聘继续受真实身份、支付宝和发布门禁约束。
 > - 桌面本地 `projectId`、队列、产物、审批责任标签、`.aidhbackup`、模板业务数据和本地记忆不得静默上传，也不得被解释为企业身份、授权或中央审计。
 > - 已识别两项需产品统一的桌面文档冲突：侧栏“账号跨设备同步”与“设备本地偏好”，以及 Electron `safeStorage` 设备 Key 与服务端跨端凭据。服务器保持已上线 v1，不扩大同步范围；任何设备 Key 上云都必须由用户显式提交。
 

@@ -73,14 +73,14 @@ while IFS= read -r archive_path; do
   esac
 done < <(tar -tzf "$artifact_file")
 tar -xzf "$artifact_file" -C "$staging_dir" --no-same-owner --no-same-permissions
-node "$staging_dir/verify-production-release.mjs" "$staging_dir" "$requested_sha"
+node "$staging_dir/artifact-verify.mjs" "$staging_dir" "$requested_sha"
 
 release_dir="$RELEASES_DIR/$(date -u +%Y%m%d-%H%M%S)-${requested_sha:0:7}"
 [[ ! -e "$release_dir" ]] || fail "release directory already exists: $release_dir"
 mv "$staging_dir" "$release_dir"
 staging_dir=''
 
-node "$release_dir/run-production-migrations.mjs" "$release_dir" "$API_ENVIRONMENT"
+node "$release_dir/artifact-migrate.mjs" "$release_dir" "$API_ENVIRONMENT"
 
 previous_ssr="$(readlink -f "$APP_DIR/.output")"
 [[ -d "$previous_ssr" ]] || fail 'current SSR release is unavailable'

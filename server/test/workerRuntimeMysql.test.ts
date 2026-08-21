@@ -52,6 +52,9 @@ integration("Worker runtime MySQL lease and artifact closure", () => {
       sequence: 1,
       status: "running",
     });
+    const heartbeat = await queue.heartbeat(runId, "worker-1");
+    expect(heartbeat).toEqual({ renewed: true });
+    expect(await queue.leaseNext("worker-2", "organization-1")).toBeNull();
 
     const otherLease = await queue.leaseNext("worker-1", "organization-missing");
     expect(otherLease).toBeNull();
@@ -106,7 +109,8 @@ integration("Worker runtime MySQL lease and artifact closure", () => {
        WHERE id = ?`,
       [runId],
     );
-    const reclaimed = await queue.leaseNext("worker-2", "organization-1");
+    const resumedQueue = new JobQueueService(pool, "worker-runtime-test-restarted");
+    const reclaimed = await resumedQueue.leaseNext("worker-2", "organization-1");
     expect(reclaimed?.currentStep).toMatchObject({ stepKey: "step.two", sequence: 2 });
 
     const [running] = await pool.query(

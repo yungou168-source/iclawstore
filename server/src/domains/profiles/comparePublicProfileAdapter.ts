@@ -1,7 +1,8 @@
-import { createHash } from 'node:crypto';
-import type { Pool } from 'mysql2/promise';
-import type { PublicProfile, PublicProfilePort } from './publicProfilePort.js';
-import { compareNormalizedProfiles, type ProfileDifference } from './responseNormalizer.js';
+import { createHash } from "node:crypto";
+import type { Pool } from "mysql2/promise";
+import type { ProfileReadObserver } from "./profileReadObservability.js";
+import type { PublicProfile, PublicProfilePort } from "./publicProfilePort.js";
+import { compareNormalizedProfiles, type ProfileDifference } from "./responseNormalizer.js";
 
 export type ProfileDifferenceSink = Readonly<{
   record: (differences: ProfileDifference[]) => Promise<void>;
@@ -11,9 +12,9 @@ export const createMysqlProfileDifferenceSink = (pool: Pool): ProfileDifferenceS
   Object.freeze({
     record: async (differences) => {
       for (const difference of differences) {
-        const recordKey = createHash('sha256')
+        const recordKey = createHash("sha256")
           .update(`${difference.stableId}:${difference.fieldName}:${difference.differenceKind}`)
-          .digest('hex');
+          .digest("hex");
         await pool.query(
           `INSERT INTO profile_reconciliation_records
              (id, recordKey, legacyConvexId, fieldName, differenceKind, summary)
@@ -35,7 +36,8 @@ export const createComparePublicProfileAdapter = (
   convex: PublicProfilePort,
   mysql: PublicProfilePort,
   sink: ProfileDifferenceSink,
-  log: Pick<Console, 'warn'> = console,
+  log: Pick<Console, "warn"> = console,
+  observer?: ProfileReadObserver,
 ): PublicProfilePort =>
   Object.freeze({
     getBySlug: async (slug): Promise<PublicProfile | null> => {
@@ -43,14 +45,20 @@ export const createComparePublicProfileAdapter = (
       if (!convexProfile) return null;
       try {
         const mysqlProfile = await mysql.getBySlug(slug);
-        await sink.record(
-          compareNormalizedProfiles(
-            { stableId: convexProfile.user._id, profile: convexProfile },
-            { stableId: convexProfile.user._id, profile: mysqlProfile },
-          ),
+        if (mysqlProfile) observer?.increment("mysqlHit");
+        const stableId = convexProfile.user._id;
+        const differences = compareNormalizedProfiles(
+          { stableId, profile: convexProfile },
+          { stableId, profile: mysqlProfile },
         );
+        if (differences.length > 0) observer?.increment("diff", differences.length);
+        await sink.record(differences);
       } catch (error) {
-        log.warn({ err: error, profileId: convexProfile.user._id }, 'profile compare failed closed');
+        observer?.increment("adapterError");
+        log.warn(
+          { err: error, profileId: convexProfile?.user._id ?? slug },
+          "profile compare failed closed",
+        );
       }
       return convexProfile;
     },

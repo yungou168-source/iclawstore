@@ -7,14 +7,21 @@ summary: "Maintainer deploy checklist: unified production release, self-hosted C
 This is a maintainer runbook for the ClawHub project. It is intentionally kept
 under `specs/` so it does not publish into the user-facing ClawHub docs tab.
 
-ClawHub application production is one verified release boundary with four runtime components:
+ClawHub application production activation is **frozen** while the application exits
+Convex. Existing SSR, Fastify, PM2 worker and self-hosted Convex processes remain
+unchanged. A push to `main` records the hold but must not publish Convex, run
+Prisma migrations, build or transfer a release artifact, reload processes, run
+production smoke tests, or create deployment tags.
 
-- TanStack Start SSR (`iclawstore.service`).
-- Fastify API (`iclawstore-api`).
-- PM2 workers, including the outbox dispatcher and enabled audit/approval/executor processes.
-- Self-hosted Convex functions, which remain part of the release until the exit migration completes.
+The freeze supersedes the Profile MySQL read-cutover procedure and the failed
+Convex management-API repair. Do not retry the failed workflow, alter
+`PROFILE_READ_MODE`, run Profile backfill, or change production routing.
 
-## iClawStore unified production release
+Each domain must be delivered with target-side reconciliation, candidate-environment network isolation, a documented observation period, and an approved irreversible source-destruction record. The historical archive/recovery language later in this document is superseded by this rule and must not be executed or used as a release gate.
+
+For the current authority hierarchy, use [`convex-exit-migration.md`](convex-exit-migration.md) for exit policy, [`convex-exit-domain-ledger.md`](convex-exit-domain-ledger.md) for domain state and deletion gates, and the Profile/Publisher handoff records for candidate-only execution gates. [`server-migration.md`](server-migration.md) is a historical server-relocation and continuity reference; it cannot authorize application migration, reconciliation, read/write cutover, source deletion, or release activation. Candidate variables belong in [`.env.migration.example`](../.env.migration.example); production environment ownership and deployment freeze rules remain in this document.
+
+## Historical unified release design
 
 `www.iclawstore.com` runs the TanStack Start SSR bundle locally through the
 systemd unit `iclawstore.service`, listening on `127.0.0.1:3000`; Nginx proxies
@@ -53,7 +60,7 @@ command="/usr/local/sbin/iclawstore-deploy",no-agent-forwarding,no-port-forwardi
 
 Install the reviewed `ops/iclawstore-deploy` file as
 `/usr/local/sbin/iclawstore-deploy`, owned by `root:root` with mode `0755`.
-The forced command accepts only `deploy <40-character-commit-sha> <artifact-sha256> <artifact-size>`. GitHub Actions builds one archive containing SSR, `server/dist`, production server dependencies, Prisma schema/migrations, PM2 config and a release manifest. The server verifies the outer SHA-256 and size, verifies every manifest file and component entrypoint, and requires the commit to be reachable from `origin/main`. It then runs Prisma status/deploy/status, activates Fastify and enabled workers, requires `/health.buildSha` to match the requested SHA, switches SSR atomically, and records `.release-current`. If process or health verification fails, it restores the saved PM2 dump and prior SSR pointer. The server never installs dependencies or compiles application code during release.
+The runner builds one archive containing SSR, `server/dist`, production server dependencies, Prisma schema/migrations, PM2 config, the artifact verifier and the migration executor from the same Git SHA. The server verifies the outer SHA-256 and size, verifies every manifest file and component entrypoint, and requires the commit to be reachable from `origin/main`. It then runs the packaged Prisma status/deploy/status sequence, activates Fastify and enabled workers, requires `/health` to expose the requested build SHA, switches SSR atomically, and records `.release-current`. If process or health verification fails, it restores the saved PM2 dump and prior SSR pointer. The server never installs dependencies or compiles application code during release.
 
 The dedicated account needs write access to the application worktree and this
 narrow `sudoers` entry only:
@@ -87,15 +94,16 @@ both be configured before a frontend release can succeed.
 ### Self-hosted Convex Auth
 
 Keep one canonical HTTPS web origin. The production configuration uses
-`https://www.iclawstore.com`; Nginx must redirect `https://iclawstore.com` to
-that origin before any login starts. OAuth state cookies are host-only, so a
-mixed `www`/bare-domain login flow loses the verifier and must not be supported.
+`https://zhipin.store`; Nginx must redirect `https://www.zhipin.store` to
+that origin before any login starts. The retired `iclawstore.com` domains do not
+redirect to the new site or serve an OAuth flow. OAuth state cookies are host-only,
+so a mixed `www`/bare-domain login flow loses the verifier and must not be supported.
 
 The HTTPS bare-domain redirect was verified on 2026-08-09: it returns `301` and
 preserves the request path and query string. External probes to both HTTP hosts
 on port 80 timed out, so HTTP-to-HTTPS redirect coverage is not currently
 verified. If port 80 is exposed, both HTTP hosts must redirect directly to the
-canonical HTTPS `www` origin; they must never serve the application or begin an
+canonical HTTPS bare origin; they must never serve the application or begin an
 OAuth flow.
 
 Convex's management API runs on `127.0.0.1:3210`, while its HTTP site routes
@@ -108,8 +116,8 @@ Set these values in the Convex deployment, then deploy functions with strict
 TypeScript checking:
 
 ```text
-SITE_URL=https://www.iclawstore.com
-CUSTOM_AUTH_SITE_URL=https://www.iclawstore.com/convex
+SITE_URL=https://zhipin.store
+CUSTOM_AUTH_SITE_URL=https://zhipin.store/convex
 AUTH_GITHUB_ID
 AUTH_GITHUB_SECRET
 AUTH_GOOGLE_ID
@@ -133,15 +141,32 @@ for `AUTH_RESEND_KEY`; they serve different paths.
 The OAuth callback URLs must be exactly:
 
 ```text
-https://www.iclawstore.com/convex/api/auth/callback/github
-https://www.iclawstore.com/convex/api/auth/callback/google
-https://www.iclawstore.com/convex/api/auth/callback/wechat
+https://zhipin.store/convex/api/auth/callback/github
+https://zhipin.store/convex/api/auth/callback/google
+https://zhipin.store/convex/api/auth/callback/wechat
 ```
 
 After any environment change, run `bunx convex dev --once` against the local
 management address. Do not disable type checking. Verify the public route
 returns an authentication-handler response rather than a proxy `404` before
 performing a browser login.
+
+#### Domain-cutover release gate
+
+Do not restore the automatic production release while any of these checks fail:
+
+- `GET /convex/api/auth/signin/github` must begin the configured provider flow
+  without a server error.
+- `GET /convex/api/auth/callback/github` must never redirect to an
+  `iclawstore.com` host; the final browser destination is `https://zhipin.store`.
+- A controlled OAuth or OTP login must return to the bare domain, establish an
+  authenticated session, and clear it after sign-out.
+- The candidate SSR and browser assets must contain no
+  `https://www.iclawstore.com` value.
+
+These are production-configuration gates. Correct them in the Convex deployment,
+OAuth provider consoles, mail-provider domain settings, or release environment;
+do not suppress them in application code or workflow conditions.
 
 A source edit is **not** live until both stages below complete. The running
 Node process loads `.output/server/index.mjs` at start-up and does not watch or
@@ -198,21 +223,23 @@ Production deploy notes:
 - Routine deployment always disallows deleting large Convex indexes. A destructive index migration requires a separately reviewed maintenance procedure.
 - For the server release, the workflow connects only through the forced-command SSH key described above; it never receives an interactive shell or unrestricted `sudo`.
 - The real deploy job uses the GitHub `Production` environment for deploy secrets, but it does not wait for a separate approval.
-- Required `Production` environment secret `CONVEX_SELF_HOSTED_ADMIN_KEY` is the admin key for the self-hosted deployment reached through `https://www.iclawstore.com/convex`. Do not substitute a Convex Cloud deploy key.
+- Required `Production` environment secret `CONVEX_SELF_HOSTED_ADMIN_KEY` is the admin key for the self-hosted deployment reached through `https://zhipin.store/convex`. Do not substitute a Convex Cloud deploy key.
 - Required `Production` environment secrets for unified releases: `PRODUCTION_SSH_HOST`, `PRODUCTION_SSH_PORT`, `PRODUCTION_SSH_USER`, `PRODUCTION_SSH_PRIVATE_KEY`, and `PRODUCTION_SSH_KNOWN_HOSTS`.
 - Optional `Production` environment secret: `PLAYWRIGHT_AUTH_STORAGE_STATE_JSON` for authenticated smoke coverage.
 - Convex application variables such as `JWT_PRIVATE_KEY`, `JWKS`, `SITE_URL`, and `CUSTOM_AUTH_SITE_URL` are configured in the Convex Production deployment itself; they are not GitHub Actions secrets.
 
 ### Convex production target consistency
 
-Production Convex is the self-hosted runtime behind `https://www.iclawstore.com/convex` (historical deployment identifier `cheerful-schnauzer-269`). `dutiful-seal-277` is a Convex Cloud deployment that was accidentally selected by the former `CONVEX_DEPLOY_KEY`; it did not contain the production users and was never the active `/convex` upstream.
+Production Convex is the self-hosted runtime behind `https://zhipin.store/convex` (historical deployment identifier `cheerful-schnauzer-269`). `dutiful-seal-277` is a Convex Cloud deployment that was accidentally selected by the former `CONVEX_DEPLOY_KEY`; it did not contain the production users and was never the active `/convex` upstream.
 
-The workflow now provides `CONVEX_SELF_HOSTED_URL=https://www.iclawstore.com/convex` with `CONVEX_SELF_HOSTED_ADMIN_KEY`, pushes once with `convex dev --once`, verifies the complete function spec against that same endpoint, and then queries `appMeta:getDeploymentInfo` through the public `/convex` boundary. The release fails unless `appBuildSha` exactly equals `GITHUB_SHA`; contract verification against a different deployment can no longer satisfy the gate.
+The workflow now provides `CONVEX_SELF_HOSTED_URL=https://zhipin.store/convex` with `CONVEX_SELF_HOSTED_ADMIN_KEY`, pushes once with `convex dev --once`, verifies the complete function spec against that same endpoint, and then queries `appMeta:getDeploymentInfo` through the public `/convex` boundary. The release fails unless `appBuildSha` exactly equals `GITHUB_SHA`; contract verification against a different deployment can no longer satisfy the gate.
+
+For local type generation, public/browser configuration remains `CONVEX_SELF_HOSTED_URL=https://zhipin.store/convex`; the retired `www.iclawstore.com` host must never be used. The current Nginx `/convex` proxy does not expose the CLI management path `/api/get_config_hashes`, so `bunx convex codegen` must instead run on the server with the explicit management override `CONVEX_SELF_HOSTED_URL=http://127.0.0.1:3210`. Convex CLI reports an `Uploading functions to Convex` preparation step during generation, so treat this as a production-management operation: run it only under the applicable release/freeze approval, and never mistake successful binding generation for authorization of a Profile read cutover. Do not hand-edit `convex/_generated` after a failed generation.
 
 The mismatch was repaired on 2026-08-11 by pushing the missing functions through `127.0.0.1:3210` into the active self-hosted deployment. Evidence after repair:
 
 - `users:getPublicProfileBySlug({ slug: "ceo" })` returned the existing production `ceo` profile;
-- `https://www.iclawstore.com/profile/ceo` returned HTTP 200;
+- `https://zhipin.store/profile/ceo` returned HTTP 200;
 - the production function contract matched 638 identifiers.
 
 Do not redirect `/convex` to `dutiful-seal-277` or copy production traffic to it. Remove the obsolete cloud deploy key after confirming no other workflow uses it.
@@ -285,7 +312,7 @@ Ensure Convex env is set (auth + embeddings):
   `ClawHub Security <noreply@notifications.openclaw.ai>` on the verified Resend
   domain
 - `SITE_URL` (your canonical web app URL)
-- `CUSTOM_AUTH_SITE_URL` (the externally reachable Convex HTTP URL; self-hosted production uses `https://www.iclawstore.com/convex`)
+- `CUSTOM_AUTH_SITE_URL` (the externally reachable Convex HTTP URL; self-hosted production uses `https://zhipin.store/convex`)
 - `AUTH_RESEND_KEY` and `AUTH_EMAIL_FROM` for 4-digit, 2-minute email OTP sign-in.
   `AUTH_EMAIL_FROM` defaults to `AI直聘 <no-reply@iclawstore.com>` and may override
   only the sender; the subject, HTML, and plain-text body remain branded as
@@ -337,24 +364,9 @@ The SSR build embeds these public values on the Runner before the unified archiv
 
 Fastify and Workers load private runtime values from `/home/ubuntu/.config/iclawstore/*.env` through the packaged PM2 config. The workflow must not transfer `DATABASE_URL`, JWT secrets, provider credentials, or Worker secrets over SSH; only the release archive and forced-command arguments cross that boundary.
 
-## 4) Public Profile MySQL read cutover
+## 4) Historical Profile MySQL read-cutover procedure
 
-This procedure applies only after the reviewed Profile code and expand-only migration have been merged. It does not change Profile write authority: Convex remains the only writer throughout `convex`, `compare`, and `mysql` read modes.
-
-1. Push the reviewed commit to `main`; do not manually dispatch Deploy. Confirm the automatic release applied `20260820_profile_domain_expand`, Fastify `/health` reports the release SHA, and known/unknown Profile API requests remain correct with `PROFILE_READ_MODE=convex`.
-2. In the restricted production API environment (`/home/ubuntu/.config/iclawstore/api.env`), confirm both `DATABASE_URL` and the Convex URL used by `db:profiles:backfill` are available. Run one process with an immutable, recorded ID and conservative page size:
-
-```bash
-PROFILE_BACKFILL_BATCH_ID=<recorded-uuid> \
-PROFILE_BACKFILL_BATCH_SIZE=100 \
-bun run --cwd server db:profiles:backfill
-```
-
-The command processes cursor pages until completion. Preserve the batch output, elapsed time, source count, batch counts and reconciliation SQL output. Rerun with the same completed ID to prove it does not reread or rewrite.
-3. Before compare mode, verify batch `completed`, `errorCount=0`, complete cursor, snapshot/map counts, and absence of map/snapshot orphans. Do not continue if any record is unexplained.
-4. Set `PROFILE_READ_MODE=compare` only in the restricted `api.env`, then perform the approved PM2 reload. Compare always serves Convex responses. Observe at least one normal traffic cycle and classify every `profile_reconciliation_records` difference. Sample active, avatar/no-avatar, handle fallback, deleted/deactivated, banned, and unknown slug through both `GET /api/profiles/<slug>` and `/profile/<slug>`; retain HTTP status/body and SSR/SEO evidence.
-5. Move to `PROFILE_READ_MODE=mysql` only after zero unexplained differences, no adapter/API availability failures, and completed data checks. Reload PM2, then verify MySQL hit behavior, missing/unknown behavior, MySQL-miss Convex fallback, frontend API-failure Convex fallback, and unchanged visibility filtering.
-6. On any regression in compare or mysql mode, immediately restore `PROFILE_READ_MODE=convex` in `api.env` and reload PM2. Do not roll back the applied DDL; use a later compatible migration for schema remediation. Record the observation window, discrepancy summary, health/API smoke evidence, and rollback drill before declaring a mode complete.
+> **冻结**：本节仅保留历史设计。发布冻结期间禁止应用 Profile migration、运行 backfill、改变 `PROFILE_READ_MODE` 或 PM2 reload。只有整卷归档与隔离恢复演练通过、发布冻结被明确解除，并且 Profile 作为独立整体迁移切片重新获批后，才能重写并执行本节的步骤。
 
 ## 5) Keep Convex-owned `/api/*` routes aligned
 
@@ -377,10 +389,10 @@ Production application releases use `bun run verify:convex-contract` inside the 
 Run the remaining smoke tests against production after deploy:
 
 ```bash
-CLAWHUB_E2E_SITE=https://www.iclawstore.com \
-DESKTOP_API_BASE_URL=https://www.iclawstore.com \
+CLAWHUB_E2E_SITE=https://zhipin.store \
+DESKTOP_API_BASE_URL=https://zhipin.store \
 bun run test:e2e:prod-http
-PLAYWRIGHT_BASE_URL=https://www.iclawstore.com \
+PLAYWRIGHT_BASE_URL=https://zhipin.store \
 bunx playwright test --workers=1 \
   e2e/menu-smoke.pw.test.ts \
   e2e/publish-entry-workflows.pw.test.ts \

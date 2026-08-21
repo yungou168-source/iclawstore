@@ -8,31 +8,33 @@ import multipart from "@fastify/multipart";
 import Fastify, { FastifyReply, FastifyRequest } from "fastify";
 import { MeiliSearch } from "meilisearch";
 import { createPool } from "mysql2/promise";
-import { PrismaClient } from "../../node_modules/.prisma/client/index.js";
+import { PrismaClient } from "@prisma/client";
 import { assertDesktopContractRoutes } from "./desktopContractManifest.js";
-import { AuthRequiredError, type AuthenticatedUser } from "./middleware/aiDirectAuth.js";
+import { AuthRequiredError } from "./middleware/aiDirectAuth.js";
+import { createJwtAuthenticator, jwtConfigFromEnvironment } from "./services/jwtAuthenticator.js";
 import { createAiDirectCoreRoutes } from "./routes/aiDirectCore.js";
 import { aiDirectMemoryRoutes } from "./routes/aiDirectMemory.js";
 import { desktopContractRoutes } from "./routes/desktopContract.js";
 import { createDesktopPreferencesRoutes } from "./routes/desktopPreferences.js";
 import { desktopTemplateReviewRoutes } from "./routes/desktopTemplateReview.js";
 import { createDesktopTemplateRoutes } from "./routes/desktopTemplates.js";
-import { publicProfilesRoutes } from "./routes/publicProfiles.js";
-// Routes
 import { skillsRoutes } from "./routes/skills.js";
+import { packagesRoutes } from "./routes/packages.js";
+import { managedAssetRoutes } from "./routes/managedAssets.js";
+import { createPrismaManagedAssetRepository } from "./services/prismaManagedAssetRepository.js";
 import { usersRoutes } from "./routes/users.js";
+import { publicProfilesRoutes, publicProfileAssetRoutes } from "./routes/publicProfiles.js";
+import { publicPublishersRoutes, publicPublisherAssetRoutes } from "./routes/publicPublishers.js";
 import { AiDirectHiringError, errorResponse } from "./services/aiDirectErrors.js";
 import { ArtifactStore } from "./services/artifactStore.js";
-import {
-  createConvexIdentityBridge,
-  identityBridgeConfigFromEnvironment,
-} from "./services/convexIdentityBridge.js";
 import { ManagedAssetStore } from "./services/managedAssetStore.js";
 import {
   createRuntimeObserver,
   parseBoundedPositiveInteger,
   type RuntimeObserver,
 } from "./services/runtimeObservability.js";
+import { createMysqlSoulFactsRepository } from "./domains/souls/mysqlSoulFactsRepository.js";
+import { soulRoutes } from "./routes/souls.js";
 
 export const prisma = new PrismaClient();
 export const meili = new MeiliSearch({
@@ -60,15 +62,15 @@ await fastify.register(multipart, {
 
 fastify.decorate("prisma", prisma);
 
-let authenticateBusinessIdentity:
-  | ((authorization: string | undefined) => Promise<AuthenticatedUser>)
-  | null = null;
+// Protected routes remain fail-closed when JWT/JWKS configuration is absent.
 fastify.decorateRequest("user", null);
+const jwtConfig = jwtConfigFromEnvironment();
+const jwtAuthenticator = jwtConfig ? createJwtAuthenticator(prisma, jwtConfig) : null;
 fastify.decorate("authenticate", async function (request: FastifyRequest) {
-  if (!authenticateBusinessIdentity) {
-    throw new AuthRequiredError("Convex identity bridge is not configured");
+  if (!jwtAuthenticator) {
+    throw new AuthRequiredError("Authentication is not configured");
   }
-  request.user = await authenticateBusinessIdentity(request.headers.authorization);
+  request.user = await jwtAuthenticator.authenticate(request.headers.authorization);
 });
 
 let runtimeObserver: RuntimeObserver | null = null;
@@ -90,18 +92,6 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith("mysql")) {
   });
   runtimeObserver = createRuntimeObserver({ role: "api", mysqlConnectionLimit });
   fastify.decorate("mysql", pool);
-  try {
-    const identityBridge = await createConvexIdentityBridge(
-      pool,
-      identityBridgeConfigFromEnvironment(),
-    );
-    authenticateBusinessIdentity = identityBridge.authenticate;
-  } catch (error) {
-    fastify.log.error(
-      { err: error },
-      "Convex identity bridge unavailable; protected AI Direct Hiring routes remain fail-closed",
-    );
-  }
   fastify.addHook("onClose", async () => {
     runtimeObserver?.close();
     await pool.end();
@@ -150,10 +140,10 @@ fastify.setErrorHandler((error: unknown, _request: FastifyRequest, reply: Fastif
 
 // 注册路由
 await fastify.register(skillsRoutes, { prefix: "/api/skills" });
+await fastify.register(packagesRoutes, { prefix: "/api/packages" });
 await fastify.register(usersRoutes, { prefix: "/api/users" });
-if (process.env.DATABASE_URL?.startsWith("mysql") && (process.env.CONVEX_URL ?? process.env.VITE_CONVEX_URL)) {
-  await fastify.register(publicProfilesRoutes, { prefix: "/api" });
-}
+// The Convex-backed profile, publisher and projection routes are intentionally
+// disabled until their replacement contracts are implemented.
 await fastify.register(aiDirectMemoryRoutes, { prefix: "/api/v1" });
 await fastify.register(desktopContractRoutes, { prefix: "/api/v1/desktop" });
 if (process.env.DATABASE_URL?.startsWith("mysql")) {
@@ -161,6 +151,16 @@ if (process.env.DATABASE_URL?.startsWith("mysql")) {
   const artifactStore = ArtifactStore.fromEnvironment();
   await managedAssetStore.initialize();
   await artifactStore?.initialize();
+  const managedAssetRepository = createPrismaManagedAssetRepository(prisma);
+  if (process.env.SOUL_READ_MODE === "candidate") {
+    const soulRepository = createMysqlSoulFactsRepository(fastify.mysql);
+    await fastify.register(soulRoutes, { prefix: "/api", repository: soulRepository });
+  }
+  await fastify.register(managedAssetRoutes, { prefix: "/api/assets", access: managedAssetRepository, completion: managedAssetRepository, store: managedAssetStore });
+  await fastify.register(publicProfilesRoutes, { prefix: "/api" });
+  await fastify.register(publicPublishersRoutes, { prefix: "/api" });
+  await publicProfileAssetRoutes(fastify, { store: managedAssetStore });
+  await publicPublisherAssetRoutes(fastify, { store: managedAssetStore });
   await fastify.register(createAiDirectCoreRoutes(managedAssetStore, artifactStore), {
     prefix: "/api/v1/ai-direct-hiring",
   });

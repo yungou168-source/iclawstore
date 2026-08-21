@@ -10,5 +10,22 @@
     "rootDir": "./src"
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src/routes/aiDirectHiring.ts"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/routes/aiDirectHiring.ts",
+    "src/routes/publicProfiles.ts",
+    "src/routes/publicPublishers.ts",
+    "src/routes/publicProfileProjections.ts",
+    "src/domains/profiles/**",
+    "src/domains/publishers/**",
+    "src/domains/profile-projections/**",
+    "src/domains/identities/**",
+    "src/domains/migration/**",
+    "src/profileBackfillProcess.ts",
+    "src/profile*ReconciliationProcess.ts",
+    "src/profileProjection*Process.ts",
+    "src/publisher*Process.ts",
+    "src/services/convexIdentityBridge.ts"
+  ]
 }

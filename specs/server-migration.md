@@ -4,16 +4,20 @@ summary: "iClawStore 生产服务器迁移手册：MySQL、自建 Convex、托�
 
 # iClawStore 生产服务器迁移手册
 
+> **文档性质**：历史服务器迁移/灾备参考，不是日常发布手册，也不是 Convex 退出执行规范。当前 Convex 退出政策以 [`convex-exit-migration.md`](convex-exit-migration.md) 和 [`convex-exit-domain-ledger.md`](convex-exit-domain-ledger.md) 为准；若两者冲突，以当前退出政策和最新批准记录为准。
+
 本文用于将当前 iClawStore 生产环境迁移到另一台服务器。它记录的是生产数据边界和迁移约束，不替代日常发布流程。日常发布方式参见 [`specs/deploy.md`](./deploy.md)。
 
 > 基线日期：2026-08-07。迁移前必须重新核对服务、路径和容量，不能假设本文中的运行态快照永久不变。
+>
+> **执行文档边界**：服务器搬迁仅使用本文中经独立审批的连续性步骤。应用领域退出、候选数据操作和读写切换必须分别遵循 [`convex-exit-migration.md`](convex-exit-migration.md)、[`convex-exit-domain-ledger.md`](convex-exit-domain-ledger.md)、[`profile-migration-handoff.md`](profile-migration-handoff.md) 与 [`publisher-migration-handoff.md`](publisher-migration-handoff.md)。生产发布或冻结解除只以 [`deploy.md`](deploy.md) 和已批准的发布记录为准；候选环境字段仅以仓库模板 [`../.env.migration.example`](../.env.migration.example) 与服务器受限环境文件为准。
 
 ## 1. 目标与原则
 
 迁移目标：
 
 - 保留全部业务数据、上传文件、认证密钥和运行配置。
-- 保持 `https://www.iclawstore.com` 为唯一规范 Web Origin。
+- 保持 `https://zhipin.store` 为唯一规范 Web Origin。
 - 尽量缩短停止写入的时间。
 - 新服务器验收失败时，可以快速将流量切回旧服务器。
 
@@ -245,78 +249,80 @@ mysql iclawstore < iclawstore-final.sql
 
 不要无条件重新执行 `prisma/migrations/` 中全部初始化 SQL。应根据数据库内已有迁移状态决定后续动作。
 
-## 6. 自建 Convex 迁移
+## 6. 自建 Convex 卷归档与隔离恢复演练
 
-### 6.1 权威数据位置
+> **状态**：对应用退出 Convex 而言，本节的归档与隔离恢复演练已废止，禁止执行，也不构成发布、Profile 迁移、切换或源数据销毁门槛。只有完成目标侧对账、阻断 Convex 网络的候选回归、观察期和不可逆销毁批准后，方可删除对应 Convex 数据与 Storage。
+>
+> 本文若被用于“整台服务器搬迁”，则迁移仍在运行的 Convex 卷属于业务连续性操作，必须经独立服务器迁移审批；不得将其与应用退出策略混同。
 
-当前 Convex 容器将以下宿主机目录挂载为 `/convex/data`：
+### 6.1 不可变范围、执行记录与中止条件
 
-```text
-/var/lib/docker/volumes/convex-self-hosted_data/_data
-```
+归档范围是目标 Convex Docker **实际数据卷**中的完整内容：`db.sqlite3`、`storage/` 和 `tmp/`。`db.sqlite3` 与 `storage/` 是一个业务整体，不得以逐表 JSON、HTTP 导出或单独复制 SQLite 取代整卷归档。
 
-其中至少包含：
+每次执行开始前，在脱敏执行记录中填写审批引用、窗口、操作人、归档 ID、源容器 ID、源卷名和 mountpoint、镜像 digest、加密存放位置、归档 SHA-256、恢复环境以及最终结论。不得记录密钥、token、用户记录或 Storage 内容。
 
-```text
-db.sqlite3
-storage/
-tmp/                 # 临时运行数据，不是主要业务数据，但整体卷迁移时一并处理
-```
+任一情况立即中止并保持发布冻结：无法确认容器与卷的对应关系或镜像 digest；空间不足；任一写入者未静默；归档、解密或解包校验失败；恢复环境使用生产凭据、生产卷、生产 Nginx/DNS 或公网入口。
 
-`db.sqlite3` 和 `storage/` 是一个业务整体，不能只迁移数据库而遗漏文件存储。
+### 6.2 归档前的只读运行时发现
 
-### 6.2 一致性备份
+不要信任硬编码的 Docker data-root 或卷路径。使用运行时 Docker 信息确认：目标容器的挂载 `Type=volume`、容器内 `Destination=/convex/data`、卷名与 `docker volume inspect` 返回的实际 `Mountpoint` 一致；记录容器 ID 和不可变镜像 digest（而非浮动 tag）。
 
-正式备份顺序：
+同时记录容器状态、磁盘容量、SSR/API/worker/cron 状态和归档目标可用性。只采集身份和状态信息；不得打印环境变量、SQLite 内容、用户数据、文件内容或密钥。
 
-1. 停止 SSR、API 和所有 worker 的外部写入。
-2. 确认没有仍在执行的发布、上传、认证回调或后台任务。
-3. 停止 Convex 容器。
-4. 归档整个数据卷。
-5. 生成 SHA-256 校验和。
-6. 完成后可保持旧 Convex 停止，等待切换或回滚决定。
+### 6.3 批准窗口内的一致性归档
 
-示例：
+1. 在边界层拒绝所有写入，并停止 SSR、Fastify、dispatcher、audit/approval/provider worker、外部扫描 worker、直接 Convex HTTP 写入口及任何 cron/CI 写入者。
+2. 确认发布、上传、认证 callback 和后台任务均已停止；停止目标 Convex 容器，并在观察期内证明数据库和 Storage 元数据不再变化。无法证明静默即中止。
+3. 在 `umask 077` 的受限工作目录中，仅对已核验的实际卷归档。归档必须保留数字 owner、权限和扩展属性，并以流式加密方式写入经批准的生产机外位置；不得在项目目录、共享临时目录或 shell history 中保留长期明文归档。
+4. 对密文归档和脱敏 manifest 分别计算 SHA-256。manifest 仅保留审批 ID、源容器/卷/镜像身份、时间、内容清单和大小、校验和。
+5. 按维护窗口将原服务恢复到原状态；确认没有发生函数发布、路由切换、Profile 操作或应用制品激活。归档成功不解除发布冻结。
+
+不得在 Convex 正在写 SQLite 时以 `rsync` 或普通复制处理 `db.sqlite3`。
+
+### 6.4 隔离恢复演练
+
+1. 恢复仅在独立主机或独立 Docker daemon、隔离网络、空卷和非生产管理密钥下进行。不得连接生产 Nginx、DNS、OAuth callback、worker、GitHub Actions 或任何生产凭据。
+2. 解密前校验密文 SHA-256；确认目标卷不同于生产卷且为空。使用记录的不可变镜像 digest，保持容器停止状态解包整卷，并按源数字 owner/权限及目标镜像运行 UID/GID 校验。
+3. 仅开放 loopback/隔离网络。启动恢复容器后只执行无写入验证：管理端可见 deployment/表，关键表记录数可采集，抽样 `_storage` 文件可读取并匹配归档内 SHA-256，必要环境变量**名称**存在。
+4. 禁止 `bunx convex dev --once`、导入、migration、worker、HTTP 写入或任何改变恢复数据的命令。验证完成后停止容器、销毁隔离卷和明文工作目录，只留加密归档、checksums、脱敏 manifest 和恢复报告。
+
+启动失败、SQLite/Storage 缺失、权限拒绝或任一校验不符，均为演练失败；不得以该归档作为迁移数据源，需记录原因并重新审批窗口。
+
+### 6.5 运行时发现记录与当前阻塞
+
+> **状态**：发现阶段已完成；整卷归档与隔离恢复尚未执行。发现结果不构成备份、恢复成功或解除发布冻结的证据。
+
+已核验的生产身份：后端容器 `convex-self-hosted-backend-1` 运行正常，容器 ID 为 `3a5ec1f3082336bc9955f1f63d92ec087c548a75536b884596729cd4ea836048`；它以 `volume` 将 `convex-self-hosted_data` 挂载到 `/convex/data`，实际 mountpoint 为 `/var/lib/docker/volumes/convex-self-hosted_data/_data`。镜像必须在恢复时固定为 `ghcr.io/get-convex/convex-backend@sha256:705b8d89a7f812c5ef49937be8154bf8e5c803d596cc980fa53fc33dc7380d0c`。当前卷用量约 121 MiB，生产根文件系统可用空间约 7.9 GiB；SSR、Fastify、runtime dispatcher 和 audit export 均处于运行状态，因此尚未满足写入静默门槛。
+
+本次在停止、归档前中止：只发现生产 Docker daemon 的 `default` context，未提供独立主机或独立 Docker daemon；同时没有经批准的加密异机接收端或可用于非交互加密的公钥。不得在生产 daemon 恢复、不得创建明文长期归档，也不得停止任何服务以绕过这些条件。
+
+重新开始前必须记录新的维护窗口，并由运维提供：(1) 已验证为隔离且不含生产凭据/公网入口的恢复主机或 Docker daemon；(2) 已验证的加密接收端和公钥/密钥管理流程；(3) 归档接收端的可用空间、保留策略和访问控制。满足三项后，从 6.2 的运行时发现重新开始，重新核验容器、卷、镜像、空间和全部写入者状态。
+
+### 6.6 隔离恢复环境预检工具
+
+仓库中的 `scripts/convex-volume-drill-preflight.mjs` 仅验证调用方明确指定的**隔离** Docker daemon、internal IPv4 bridge network、未附着的空目标卷和已存在的固定镜像 digest。它拒绝默认 Docker socket，且不接受、读取或输出生产凭据、生产容器/卷路径、SQLite 内容或 Storage 内容。
+
+运行该工具前，运维必须在隔离环境准备以下非秘密配置：归档 ID、审批引用、操作人、恢复环境标识、隔离 daemon endpoint、internal network、空目标卷和镜像 digest。归档完成后可选地传入密文归档与脱敏 manifest 的本地路径，以重新计算其 SHA-256；这不是解密、归档或恢复操作。
 
 ```bash
-sudo tar \
-  -C /var/lib/docker/volumes/convex-self-hosted_data/_data \
-  -czf convex-self-hosted-data.tar.gz .
+bun run test:convex-volume-drill
 
-sha256sum convex-self-hosted-data.tar.gz \
-  > convex-self-hosted-data.tar.gz.sha256
+CONVEX_DRILL_ARCHIVE_ID='<approved-id>' \
+CONVEX_DRILL_APPROVAL_REF='<approved-reference>' \
+CONVEX_DRILL_OPERATOR='<operator>' \
+CONVEX_DRILL_RECOVERY_ENVIRONMENT='<isolated-environment>' \
+CONVEX_DRILL_DOCKER_HOST='unix:///path/to/isolated/docker.sock' \
+CONVEX_DRILL_NETWORK='<internal-network>' \
+CONVEX_DRILL_TARGET_VOLUME='<empty-recovery-volume>' \
+CONVEX_DRILL_IMAGE_DIGEST='ghcr.io/get-convex/convex-backend@sha256:<digest>' \
+CONVEX_DRILL_ARCHIVE_RECEIVER_REFERENCE='<approved-receiver-reference>' \
+CONVEX_DRILL_RETENTION_POLICY_REFERENCE='<approved-retention-policy-reference>' \
+CONVEX_DRILL_ACCESS_CONTROL_REFERENCE='<approved-access-control-reference>' \
+CONVEX_DRILL_ENCRYPTION_RECIPIENT_FINGERPRINT='<40-hex-gpg-fingerprint>' \
+bun scripts/convex-volume-drill-preflight.mjs
 ```
 
-不要在 Convex 正在写 SQLite 时直接进行普通 `rsync` 或复制 `db.sqlite3`。
-
-### 6.3 恢复
-
-1. 在新服务器安装与旧环境兼容的 Convex 容器版本。
-2. 创建 `convex-self-hosted_data` 卷。
-3. 保持 Convex 容器停止。
-4. 将归档恢复到卷的 `_data` 目录。
-5. 恢复正确的属主和权限。
-6. 启动 Convex。
-7. 检查 `3210` 和 `3211` 监听状态。
-8. 使用管理端确认部署、表、文件和环境变量存在。
-9. 使用严格 TypeScript 检查重新推送函数：`bunx convex dev --once`，不得禁用 typecheck。
-
-迁移后必须核对 Convex deployment 环境变量，尤其是：
-
-```text
-SITE_URL
-CUSTOM_AUTH_SITE_URL
-AUTH_GITHUB_ID
-AUTH_GITHUB_SECRET
-AUTH_GOOGLE_ID
-AUTH_GOOGLE_SECRET
-AUTH_WECHAT_APP_ID
-AUTH_WECHAT_APP_SECRET
-AUTH_RESEND_KEY
-AUTH_EMAIL_FROM
-JWT_PRIVATE_KEY
-JWKS
-```
+该检查成功只表示恢复环境的静态前置满足；它不授权生产归档，也不构成恢复演练成功。执行记录必须从 `scripts/convex-volume-drill.execution-record.example.json` 复制到受控、非仓库的证据目录，并在审批窗口内补齐运行时发现、传输校验、只读恢复验证和清理结论。
 
 ## 7. 托管资产迁移
 
@@ -427,7 +433,7 @@ ACME challenge 文件通常不需要保留，但新服务器必须正确配置 `
 生产规范 Origin 必须保持：
 
 ```text
-https://www.iclawstore.com
+https://zhipin.store
 ```
 
 裸域名 `https://iclawstore.com` 应在登录流程开始前重定向到 `www`。OAuth state cookie 是 host-only；不能让登录流程在裸域名和 `www` 之间混用。
@@ -437,9 +443,9 @@ https://www.iclawstore.com
 如果域名不变，回调地址保持：
 
 ```text
-https://www.iclawstore.com/convex/api/auth/callback/github
-https://www.iclawstore.com/convex/api/auth/callback/google
-https://www.iclawstore.com/convex/api/auth/callback/wechat
+https://zhipin.store/convex/api/auth/callback/github
+https://zhipin.store/convex/api/auth/callback/google
+https://zhipin.store/convex/api/auth/callback/wechat
 ```
 
 仍需在 GitHub、Google、微信等平台核对回调白名单。
@@ -594,11 +600,11 @@ pm2 status
 ```bash
 bun run verify:convex-contract -- --prod
 
-CLAWHUB_E2E_SITE=https://www.iclawstore.com \
-DESKTOP_API_BASE_URL=https://www.iclawstore.com \
+CLAWHUB_E2E_SITE=https://zhipin.store \
+DESKTOP_API_BASE_URL=https://zhipin.store \
 bun run test:e2e:prod-http
 
-PLAYWRIGHT_BASE_URL=https://www.iclawstore.com \
+PLAYWRIGHT_BASE_URL=https://zhipin.store \
 bunx playwright test --workers=1 \
   e2e/menu-smoke.pw.test.ts \
   e2e/publish-entry-workflows.pw.test.ts \

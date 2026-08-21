@@ -1,36 +1,71 @@
 ---
-summary: "在功能、数据、身份和文件不丢失前提下，将 iClawStore 从 Convex 渐进迁移到 Fastify、MySQL 与独立基础设施。"
+summary: "在不丢失功能、数据、身份和文件的前提下，将应用从 Convex 渐进迁移到 Fastify、MySQL 与独立存储。"
 read_when:
   - 新增或修改仍依赖 Convex 的业务功能
   - 迁移 Convex 表、函数、认证、文件或搜索能力
-  - 设计生产切流、回滚、数据对账或 Convex 下线
+  - 设计候选环境切换、数据对账或 Convex 下线
 ---
 
 # Convex 渐进退出规划
 
-> **状态**：规划基线，尚未进入整体迁移实施
-> **目标**：功能不丢失、数据不丢失、权限不放宽、URL 与客户端契约尽量稳定，最终移除应用对 Convex Runtime、Convex Auth、Convex Storage 和 Convex 部署流程的依赖。
-> **非目标**：不以一次性重写替代现有生产系统；不因退出 Convex 顺带重做全部 UI、业务规则或历史数据模型。
+> **状态**：发布冻结；所有生产领域仍由 Convex 权威。
+>
+> **立即约束**：不得发布 Convex 函数或 schema、重试失败部署、改变 `PROFILE_READ_MODE`、执行 Profile 同步/回填/切流，或激活任何 Fastify/Worker/SSR 生产制品。当前 Convex 仅保留为现网运行依赖和只读迁移源。
+>
+> **数据处置决策**：不再创建 Convex 加密归档或执行恢复演练。每个领域在目标侧完成关系、资产、权限、历史 ID、契约与观察期验证后，记录不可逆销毁批准并直接删除对应 Convex 数据和 Storage；不得把旧的归档/恢复要求作为迁移或发布前置条件。
+>
+> **目标**：功能不丢失、权限不放宽、URL 与客户端契约尽量稳定，最终由 MySQL 成为唯一写权威，并移除应用对 Convex Runtime、Auth、Storage 和部署流程的依赖。
 
-## 1. 决策摘要
+## 文档层级
+
+本文件是渐进退出的总体约束；领域级事实和运行交接分别记录在：
+
+- [`convex-exit-domain-ledger.md`](convex-exit-domain-ledger.md)：所有领域的源/目标边界、状态和删除门禁；
+- [`profile-migration-handoff.md`](profile-migration-handoff.md)：Profile 与头像候选迁移；
+- [`publisher-migration-handoff.md`](publisher-migration-handoff.md)：Publisher/组织候选迁移；
+- [`convex-exit-functional-matrix.md`](convex-exit-functional-matrix.md)：功能与兼容契约矩阵。
+
+这些文档描述候选代码和验收要求，不代表迁移已经执行。若交接记录、代码状态和运行证据不一致，以实时运行行为和最新候选验证结果为准；在没有真实批次、对账和候选阻断回归证据时，领域仍视为 `convex_authoritative`。
 
 迁移采用 **Strangler Fig（绞杀者）模式**：在现有 Fastify/MySQL 旁建立稳定的领域接口，按业务域逐步把读取和写入从 Convex 切到 MySQL、对象存储、搜索服务和后台 Worker。Convex 在迁移期间继续运行，但每个业务对象在任一时刻只能有一个写入权威。
 
 核心顺序为：
 
-1. 固化功能清单、数据契约和生产基线；
-2. 建立领域服务、稳定 ID、导出/回放/对账能力；
-3. 先迁公开只读页面；
-4. 再迁用户资料、组织和文件；
-5. 再迁技能、插件、Soul、社交、审核、Token、统计和搜索；
-6. 最后迁移 Web/桌面认证并拆除 Convex 身份桥；
-7. Convex 进入只读观察期，完成归档后下线。
+1. 保持生产发布冻结，盘点调用、源表、Storage 引用和公开契约；
+2. 建立领域服务、稳定 ID、可恢复增量同步、目标侧对账与 outbox；
+3. 迁移公开读取、资料、组织和文件；
+4. 迁移技能、插件、Soul、社交、审核、Token、统计和搜索；
+5. 最后迁移 Web/桌面认证并拆除 Convex 身份桥；
+6. 完成阻断 Convex 网络回归与观察期后，记录不可逆销毁并下线基础设施。
 
-认证最后迁移。当前 Convex Auth 同时影响 Web 登录、Fastify Bearer 身份桥、组织权限和桌面 OAuth，提前替换会把所有业务域同时置于风险中。
+本文件中历史的“归档”“隔离恢复”“导出原件”措辞不再是执行要求；它们仅用于解释旧方案，不能作为任何迁移门禁、发布冻结解除条件或数据处置前置。源侧数据的删除只能发生在对应领域目标侧对账、候选环境无 Convex 网络回归、观察期和不可逆销毁批准均已完成后。
 
-## 2. 当前架构基线
 
-当前系统已经是混合架构：
+### Candidate reconciliation evidence status (2026-03-14)
+
+- Candidate remains `convex_authoritative`; this status is not a migration or release approval.
+- The preflight gate counts open records by their persisted `classification`: `expected_retired_fixture` is retained evidence and is excluded from `unresolvedDifferences`; every other open record remains unresolved. The count must be read from the same `convex_exit_reconciliation_records` query used by the gate, not inferred from an earlier report.
+- The current candidate database contains 27 open `unclassified` Profile alias records and one open `expected_retired_fixture` Profile record. The fixture may remain only with its exact marker, snapshot, and `profile_avatar_source_missing` outbox evidence.
+- Each alias difference is designed to persist source alias state, target alias state, and an evidence hash. Classification through the lifecycle API is prohibited until the source and target states are captured and reviewed record by record.
+- This evidence work does not authorize Prisma migration, Profile/Publisher read cutover, write restoration, Soul migration, production access, or Convex cleanup. Those stages still require their independent approvals and gates.
+
+### Candidate expand-only Prisma migration checkpoint (2026-03-14)
+
+- Candidate database `iclawstore_candidate` received migrations `20260828` through `20260905`; Prisma reports 39/39 migrations applied and the schema is up to date.
+- Validation evidence: `prisma validate`, `prisma generate`, `prisma migrate status`, and `git diff --check` passed. No production database, production read mode, route, or write authority was changed.
+- Two MySQL index-length failures occurred during candidate execution: `20260831` on `(versionSnapshotId, path)` and `20260902` on `(versionSnapshotId, path)` plus the trusted-publisher repository lookup. Recovery used `prisma migrate resolve --rolled-back`, idempotent replay protection for already-created tables, and bounded prefix indexes; no tables were manually dropped and no migration history was directly edited.
+- The prefix-index repair is candidate evidence only. It must be reconciled with the Prisma `@@unique` declarations before production migration, preferably by introducing an explicit hash-key column/constraint rather than relying on a truncated path or workflow index. Until that review is complete, production migration is blocked.
+- Managed-asset scanner transitions, real asset byte/SHA-256 checks, reconciliation clearance, candidate read cutover, production backup/approval, and production migration remain outstanding. This checkpoint does not authorize any of them.
+
+
+### Candidate Soul/social/runtime foundation checkpoint (2026-03-14)
+
+- Soul candidate now has a MySQL transaction repository for snapshot/version/file facts, a cursor-and-watermark source port, SHA/size-verifying managed-asset copy consumer, public Fastify read routes (`/api/souls/:slug` and legacy-ID lookup), and a typed catalog client suitable for fixed CLI protocol tests.
+- Candidate social/moderation facts now persist reports, evidence and audit events. `moderationPermissions` is server-side role based; it is a policy matrix, not an authorization bypass or production approval. Scan, appeal workflow, and all role rejection cases remain outstanding.
+- Candidate runtime now has row-locked MySQL leases and checkpoints plus a controlled worker process. It does not start production work by itself and has no authority to change domain ownership.
+- Migration `20260907_convex_exit_runtime_social_foundation` is expand-only and has not been applied to production. No source import, asset copy, lock write, final sync, unified release activation, domain cutover, observation period or Convex retirement has occurred.
+- The newly added routes and worker remain candidate implementation until real source pages, asset storage credentials, fixed Web/Desktop/CLI clients, network-block regression, CI/E2E/Smoke evidence and reconciliation reports are collected. Any unresolved or unclassified difference blocks readiness.
+
 
 ```text
 Browser / Desktop Client
@@ -41,8 +76,9 @@ Nginx
   |     `-- Convex client/query/mutation/auth/storage
   |
   |-- Fastify API
+  |     |-- JWT/JWKS verifier
   |     |-- MySQL / Prisma
-  |     `-- Convex identity bridge
+  |     `-- domain services
   |
   `-- /convex
         `-- Convex functions/auth/storage
@@ -52,15 +88,15 @@ Nginx
 
 - `convex/schema.ts` 包含 60 多张业务表及认证表；
 - `convex/` 至少有 54 个公开或内部函数模块；
-- `src/` 至少有 34 个文件、136 处 Convex 客户端或函数调用集成；
+- `specs/convex-dependency-baseline.json` 是当前机器口径：共 450 条静态依赖、涉及 102 个生产文件；其中受 CI 精确守护的 browser/http client、generated API 与 identity bridge 共 178 条、涉及 37 个文件。分类数量以该 JSON 的 `summary` 为准，不再维护独立人工估算；
 - `prisma/schema.prisma` 已覆盖用户、发布者、技能、插件、评论、收藏、审核、Token、统计及 AI 直聘等大量模型；
 - Fastify 已承接 AI 直聘、组织/公司、钱包、销售、雇佣、运行时、审计和桌面端 API；
 - Prisma 中虽已有用户、发布者、技能等同名模型，但字段覆盖并不完整，例如公开资料后缀、Convex Storage ID 和开发者状态仍需正式字段映射，不能把“同名表存在”等同于已完成迁移；
-- Web 登录仍由 Convex Auth 签发 Token，Fastify 通过 `convexIdentityBridge` 验签并映射到 MySQL 身份；
+- **Server 运行边界**：`server/` 已移除 Convex runtime、Convex HTTP client 和 `convexIdentityBridge`。Fastify 受保护路由在独立身份实现完成前 fail-closed；历史 Convex source/迁移进程不属于当前启动链。
 - 生产业务数据与 `/convex` 流量位于自托管 Convex，历史 deployment 标识为 `cheerful-schnauzer-269`；`dutiful-seal-277` 是曾被错误配置到 Actions 的空云 deployment，不得作为生产权威；
 - 2026-08-11 已通过本机管理端向自托管生产 Convex 单次推送缺失函数并验证 `/profile/ceo` 恢复 HTTP 200；自动发布必须继续验证公网 `appMeta:getDeploymentInfo.appBuildSha`，防止再次部署到无流量目标；
 - 当前 SSR 由 `iclawstore.service` 运行 `.output`，Fastify API、dispatcher 和 audit worker 仍暂时从 `/home/ubuntu/releases/iclawstore/...` 的历史 release 运行；仓库已建立统一 release 机制，首次正式激活后它们必须收敛到同一 release manifest 与 Git SHA；
-- `.github/workflows/deploy.yml` 已改为构建 SSR、`server/dist`、Worker、Prisma schema/migrations 和生产依赖的统一制品，并在激活前执行逐文件校验与 Prisma migration preflight。
+- `.github/workflows/deploy.yml` 已改为构建 SSR、`server/dist`、Worker、Prisma schema/migrations 和生产依赖的统一制品；`scripts/build-mysql-release.mjs` 生成逐文件 SHA-256 manifest，`ops/artifact-verify.mjs` 在服务端拒绝未列出、缺失、篡改和符号链接文件，`ops/artifact-migrate.mjs` 以打包 Prisma CLI 执行 status/deploy/status。
 
 `docs/superpowers/plans/2026-06-27-convex-to-mysql-migration.md` 是早期整体迁移设想，可作为表结构参考，但其“一次开发、一次切换”的阶段划分不作为生产执行规范。本文件是渐进迁移和发布门禁的权威约束。
 
@@ -148,8 +184,7 @@ Nginx
 - `_storage` 文件必须同时迁移元数据和二进制，不能只复制数据库字段；
 - 统计字段迁移必须遵守当前 canonical stat 与 legacy nested stat 的兼容规则，完成对账前不得只取一套字段；
 - 每批迁移记录源游标、数量、校验和、开始/结束时间、错误和重试次数；
-- 导出原件只读保存，转换产物与导入产物分开保存；
-- 删除 Convex 前必须完成至少一次全量备份恢复演练。
+- 源侧数据处置不使用归档或恢复演练；只有目标侧关系、资产、历史 ID、权限和契约对账完成，且候选环境与观察期均证明零运行时依赖后，才可按批准记录不可逆销毁对应 Convex 数据和 Storage。
 
 ### 4.3 权限与安全
 
@@ -251,6 +286,7 @@ worker
 - 权限样本和拒绝样本；
 - 最近增量窗口的事件连续性；
 - 面向用户的 API 响应语义比较。
+- 每次运行生成批次报告，记录源/目标/比较计数、失败状态、差异总数与从未解决记录重新统计的未分类差异数；报告不能代替真实执行证据。
 
 差异按 `expected_transform`、`source_bug`、`migration_bug`、`concurrent_change` 分类。未分类差异不能进入切流。
 
@@ -260,23 +296,18 @@ worker
 
 ### 阶段 0：稳定生产基线
 
-目标：先解决当前 Convex 环境漂移，建立可信生产源。
+目标：在发布冻结下取得可信、可审计的生产源清单；不得通过修复 Convex 发布链实现此目标，也不以归档或恢复演练作为前置条件。
 
 工作项：
 
-- 确认承载真实用户、认证、文件和业务数据的唯一 Convex deployment；
-- 统一运行时 `/convex` 目标与自动部署 `CONVEX_SELF_HOSTED_ADMIN_KEY`；
-- 增加通过网站 `/convex` 边界调用新函数的发布烟测；
+- 核验当前运行时身份、源访问边界和只读迁移凭据的最小权限；
 - 生成当前表、索引、函数、环境变量名和文件存储清单；
-- 完成全量 Convex 数据与文件备份，并验证可恢复；
 - 冻结新增 Convex 业务域：新业务默认进入 Fastify/MySQL。
 
 退出门禁：
 
-- `/profile/ceo` 等新函数在真实生产环境可用；
-- 部署日志目标与网站运行目标一致；
-- 备份恢复演练成功；
-- 功能矩阵和数据清单有负责人。
+- 源清单、功能矩阵和数据负责人均已确认，且候选迁移凭据不具备业务写入权限；
+- 后续领域的目标侧关系、资产、历史 ID、权限和契约对账可独立形成证据。
 
 ### 阶段 1：建立迁移底座
 
@@ -304,23 +335,36 @@ worker
 已完成、不改变生产流量或写入权威的底座工作：
 
 - 已新增流式静态扫描器 `scripts/scan-convex-dependencies.ts`，覆盖 `src/`、`server/`、`packages/`、`scripts/`、`convex/` 和 `.github/workflows/`，排除测试、generated、fixture 与构建产物；机器可读结果提交在 `specs/convex-dependency-baseline.json`。
-- 扫描基线包含浏览器 React client、一次性 HTTP client、生成 API、Convex Storage、HTTP routes、cron 与部署配置依赖。它是迁移盘点事实，不表示任何运行时迁移已完成。
-- `bun run check:no-new-convex-client-usage` 已接入 `ci:static`，只允许减少直接 `convex/react`、`convex/browser` 与 generated API 生产依赖；新增文件、类别或调用数量会失败。该门禁不阻止既有 runtime、Storage、HTTP、cron 或部署依赖，避免把清理计划误当成立即下线。
-- 已建立 `specs/convex-exit-functional-matrix.md`，定义域级读写权威、身份/文件边界、兼容契约和退出门禁；首个实施切片仍是公开用户资料影子读取，尚未创建 port、adapter、数据回填或 feature flag。
+- 扫描基线当前记录 450 条静态依赖、涉及 102 个生产文件，包含浏览器 React client、一次性 HTTP client、生成 API、Fastify identity bridge、Convex Storage、HTTP routes、cron 与部署配置依赖。它是迁移盘点事实，不表示任何运行时迁移已完成；分类数量只从 JSON `summary` 读取。
+- `bun run check:no-new-convex-client-usage` 已接入 `ci:static`，对直接 `convex/react`、`convex/browser`、generated API 与 identity bridge 执行 `category:file` 精确计数匹配：新增文件、类别或调用数量会失败，调用减少但未同步下调已提交基线也会失败。该门禁不阻止既有 Storage、HTTP route、cron 或部署依赖，避免把清理计划误当成立即下线。
+- 已建立 `specs/convex-exit-functional-matrix.md`，定义域级读写权威、身份/文件边界、兼容契约和退出门禁；公开用户资料的 port、Convex/MySQL/compare adapters 与一次性快照回填准备已落地，但生产仍为 `convex_authoritative`。
+- Profile 下一阶段的权威交接记录在 `specs/profile-migration-handoff.md`：现有快照回填不是持续同步，头像尚未复制/核验，`/profile/:slug` 和 `/user/:handle` 仍未完全脱离 Convex。
+- Publisher/组织候选切片已具备独立 snapshot 模型、分页原子同步、权限事实/对账、组织头像 consumer、候选公共详情/目录/成员读取、compare/fallback、读取指标、cutover readiness gate、Fastify Publisher routes，以及前端 `/publishers` 与 `/user/:handle` 的 Publisher core HTTP 接入；交接记录在 `specs/publisher-migration-handoff.md`。这些代码不改变生产读写权威，也未执行 migration、真实同步、资产复制、生产对账、真实非生产候选 HTTP/浏览器回归或切流。
 
-仍未完成：完整数据与 `_storage` 备份恢复演练、每个业务域负责人，以及除公开 Profile 外的迁移状态表/outbox/差异记录、资料域 MySQL 字段映射与回填、任何其他域的影子读取或读写切流。这些缺口持续阻止阶段 0/1 退出。
+仍未完成：Profile 持续增量同步、目标侧状态/资产 SHA-256 对账、个人 Publisher DTO 等价、所有公开资料读取的 Fastify 收敛，以及阻断 Convex 网络的候选回归；Publisher 的真实 migration/同步/头像复制/生产对账、真实非生产候选 HTTP/浏览器阻断回归、观察期和切流仍未完成。Publisher core Fastify routes、公开成员读取、前端 `/publishers` 与 `/user/:handle` HTTP 接入及阻断回归代码已经落地，但没有显式非生产候选 URL/fixtures，因此尚无真实触网证据。成员/组织/official/trusted 管理写入和任何生产授权迁移继续后置。以上缺口持续阻止任何 Profile 或 Publisher 读切换、写权威变更或 Convex 依赖删除。历史归档/恢复演练不属于当前策略，也不再构成阶段退出条件。
 
-### 6.1.1 公开 Profile 读迁移准备（未在生产执行）
+### 候选环境基础设施检查点（2026-08-17）
 
-公开 Profile 是首个可部署切片，当前代码已具备但尚未改变任何生产读写权威：
+候选环境仅用于迁移验证，严禁复用生产路径或凭据：
 
-- expand-only migration `20260820_profile_domain_expand` 定义 snapshot、legacy ID map、batch/cursor 与 reconciliation 表；
-- `server/src/domains/profiles/` 提供 Convex、MySQL 和 compare port adapter；`PROFILE_READ_MODE=convex|compare|mysql` 默认且未知值均为 `convex`；
-- `compare` 始终返回 Convex，并把规范化差异写入 `profile_reconciliation_records`；`mysql` 优先读取 MySQL，缺失或错误时回退 Convex；
-- `db:profiles:backfill` 使用固定 batch ID 串行运行 cursor 至完成，每页成功持久化进度，重复完成批次不重读；
-- 前端先调用 Fastify `/api/profiles/:slug`，API 不可用时保持 Convex fallback，因而 Nginx 必须先把该 API 路由明确交给 Fastify 后才能实际观察 MySQL/compare 模式。
+- `candidate.iclawstore.com` 已解析到候选服务器；独立 HTTP vhost 仅服务 `/\.well-known/acme-challenge/` 或跳转 HTTPS，HTTPS vhost 使用独立证书且其余请求返回 `503`，不会代理到生产服务；
+- 候选 MySQL schema 与最小权限账号已创建，但尚未应用 Prisma migration；候选资产根目录固定为 `/www/iclawstore-candidate/assets`，与生产资产目录隔离；
+- 系统 Nginx 是实际监听进程；已通过其配置语法检查并平滑重载。候选证书已从工作区移除，只保留在受限证书目录，私钥权限为 `0600 root:root`；
+- 候选 SSR/Fastify 构建产物已生成在 `/www/iclawstore-candidate/releases/candidate-bootstrap`，并定义了使用 `3100`/`3102` 回环端口的禁用 systemd 单元；受限环境文件为 `/etc/iclawstore-candidate.env`，权限为 `0600 root:root`。候选 MySQL `DATABASE_URL`、只读 Convex 迁移凭据以及 Profile/Publisher 的 canonical、alias、handle 真实 fixtures 尚未通过受限方式配置，因此服务不得启动，migration、同步、头像复制、对账或候选回归均不得执行，也不能把候选环境作为切流证据。
 
-仍未发生的生产操作是 migration 应用、回填、SQL 对账、compare 观察、MySQL 读切换和回退演练。生产状态仍为 `convex_authoritative`；在这些证据齐全前，禁止把该域标记为 `backfilling`、`shadow_reading` 或已迁移。Profile 仍以 Convex 为唯一写入权威，禁止新增双写。
+### 6.1.1 Profile 与个人 Publisher 迁移准备（未在生产执行）
+
+公开 Profile 是首个迁移试点，当前代码已具备但尚未改变任何生产读写权威：
+
+- expand-only migration `20260820_profile_domain_expand` 定义 snapshot、legacy ID map、batch/cursor 与 reconciliation 表；通用迁移底座位于 `server/src/domains/migration/migrationPort.ts`。
+- `server/src/domains/profiles/` 提供 Convex、MySQL 和 compare port adapter；`PROFILE_READ_MODE=convex|compare|mysql|mysql_authoritative`，默认且未知值为 `convex`。`mysql_authoritative` 是 fail-closed 的候选模式：它要求 MySQL，且不允许 Convex fallback；禁止在生产启用。
+- 现有 `db:profiles:backfill` 是可重跑的全量快照 cursor 过程，不是连续增量同步：它没有 source watermark、重叠窗口、页级原子进度、删除扫描或同步 lag 指标。不得将已完成批次视为后续更新已同步。
+- 当前 MySQL Profile 投影保留删除/停用/purge/ban、handle、slug 与头像 Storage 引用；但尚未复制头像二进制、保存资产字节/SHA-256，或对改名历史、源缺失 tombstone 和个人 publisher DTO 做完整对账。
+- 公开资料的源可见性契约只按 `deletedAt`/`deactivatedAt` 判断；MySQL adapter 必须保持该规则，不能将单独 `banReason` 扩大为额外过滤条件。封禁状态仍必须作为原始事实参与同步与对账。
+- compare 始终返回 Convex 主读结果。受保护的 `/health/runtime` 暴露 `profileReads.mysqlHit`、`fallback`、`diff` 与 `adapterError` 进程累计计数，但尚不包含 cursor age、watermark lag、资产队列或未分类对账差异。
+- 前端 `/profile/:slug` 先请求 Fastify `/api/profiles/:slug`，API 不可用时仍回退 Convex；`/user/:handle` 的 loader、reactive profile/member/catalog/star reads 仍直接访问 Convex。两类页面尚未满足“无 Convex 网络”的候选环境验收。
+
+继续实施必须遵循 [`specs/profile-migration-handoff.md`](profile-migration-handoff.md) 的顺序、数据契约和验收清单。
 
 ### 阶段 2：迁移公开只读查询
 

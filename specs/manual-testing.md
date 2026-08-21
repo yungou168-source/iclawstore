@@ -29,7 +29,7 @@ read_when:
 - Public prod smoke via Vitest:
   - `bun run test:e2e:prod-http`
 - Optional overrides:
-  - `CLAWHUB_E2E_SITE=https://www.iclawstore.com`
+  - `CLAWHUB_E2E_SITE=https://zhipin.store`
   - `CLAWHUB_E2E_SKILL_OWNER=steipete`
   - `CLAWHUB_E2E_SKILL_SLUG=gifgrep`
 

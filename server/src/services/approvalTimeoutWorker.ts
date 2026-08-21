@@ -33,7 +33,8 @@ export async function expireDueApprovals(pool: Pool, limit = 20): Promise<number
         error instanceof AiDirectHiringError &&
         error.code === ErrorCodes.INVALID_TRANSITION &&
         details &&
-        !("offerId" in details)
+        !("offerId" in details) &&
+        !("hiringIntentId" in details)
       ) {
         continue;
       }

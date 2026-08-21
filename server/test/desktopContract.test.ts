@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import Fastify, { type FastifyInstance } from "fastify";
 import {
   assertDesktopContractRoutes,
@@ -119,11 +120,14 @@ describe("desktop client contract", () => {
     expect(response.headers["content-type"]).toContain("application/vnd.oai.openapi");
     expect(response.body).toContain("openapi: 3.1.0");
     expect(response.body).toContain(`version: ${DESKTOP_CLIENT_CONTRACT_VERSION}`);
-    expect(response.body).toContain("  - url: https://www.iclawstore.com");
+    expect(response.body).toContain("  - url: https://zhipin.store");
   });
 
   it("keeps every OpenAPI operation synchronized with the release manifest", async () => {
-    const document = await readFile("openapi/desktop-client-v1.yaml", "utf8");
+    const document = await readFile(
+      fileURLToPath(new URL("../openapi/desktop-client-v1.yaml", import.meta.url)),
+      "utf8",
+    );
     const manifestRoutes = DESKTOP_CLIENT_CONTRACT_ROUTES.map(({ method, openApiPath }) =>
       routeKey(method, openApiPath),
     ).sort();

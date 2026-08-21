@@ -10,6 +10,7 @@
 
 import type * as appMeta from "../appMeta.js";
 import type * as auth from "../auth.js";
+import type * as candidateE2eFixtures from "../candidateE2eFixtures.js";
 import type * as cliDeviceAuth from "../cliDeviceAuth.js";
 import type * as commentModeration from "../commentModeration.js";
 import type * as comments from "../comments.js";
@@ -137,8 +138,10 @@ import type * as packageInspectorHttp from "../packageInspectorHttp.js";
 import type * as packageInspectorNode from "../packageInspectorNode.js";
 import type * as packagePublishTokens from "../packagePublishTokens.js";
 import type * as packages from "../packages.js";
+import type * as profileMigration from "../profileMigration.js";
 import type * as publisherAbuse from "../publisherAbuse.js";
 import type * as publisherAbuseDevSeed from "../publisherAbuseDevSeed.js";
+import type * as publisherMigration from "../publisherMigration.js";
 import type * as publishers from "../publishers.js";
 import type * as rateLimits from "../rateLimits.js";
 import type * as search from "../search.js";
@@ -172,6 +175,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   appMeta: typeof appMeta;
   auth: typeof auth;
+  candidateE2eFixtures: typeof candidateE2eFixtures;
   cliDeviceAuth: typeof cliDeviceAuth;
   commentModeration: typeof commentModeration;
   comments: typeof comments;
@@ -299,8 +303,10 @@ declare const fullApi: ApiFromModules<{
   packageInspectorNode: typeof packageInspectorNode;
   packagePublishTokens: typeof packagePublishTokens;
   packages: typeof packages;
+  profileMigration: typeof profileMigration;
   publisherAbuse: typeof publisherAbuse;
   publisherAbuseDevSeed: typeof publisherAbuseDevSeed;
+  publisherMigration: typeof publisherMigration;
   publishers: typeof publishers;
   rateLimits: typeof rateLimits;
   search: typeof search;

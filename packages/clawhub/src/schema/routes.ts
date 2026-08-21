@@ -20,6 +20,8 @@ export const ApiRoutes = {
   skills: "/api/v1/skills",
   skillScans: "/api/v1/skills/-/scan",
   packages: "/api/v1/packages",
+  catalogSkills: "/api/skills",
+  catalogPackages: "/api/packages",
   codePlugins: "/api/v1/code-plugins",
   bundlePlugins: "/api/v1/bundle-plugins",
   stars: "/api/v1/stars",

@@ -198,7 +198,21 @@ const users = defineTable({
   .index("by_profile_slug", ["profileSlug"])
   .index("by_ban_reason_deleted_at", ["banReason", "deletedAt"])
   .index("by_deactivated_purged_at", ["deactivatedAt", "purgedAt"])
-  .index("by_active_handle", ["deletedAt", "deactivatedAt", "handle"]);
+  .index("by_active_handle", ["deletedAt", "deactivatedAt", "handle"])
+  .index("by_updated_at", ["updatedAt"]);
+
+const profileIdentityAliases = defineTable({
+  userId: v.id("users"),
+  aliasKind: v.union(v.literal("profile_slug"), v.literal("user_handle")),
+  aliasValue: v.string(),
+  isCanonical: v.boolean(),
+  retiredAt: v.optional(v.number()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+})
+  .index("by_user_and_alias_kind", ["userId", "aliasKind"])
+  .index("by_alias_kind_and_alias_value", ["aliasKind", "aliasValue"])
+  .index("by_updated_at", ["updatedAt"]);
 
 const publishers = defineTable({
   kind: v.union(v.literal("user"), v.literal("org")),
@@ -720,6 +734,7 @@ const skills = defineTable({
   .index("by_owner_publisher_slug", ["ownerPublisherId", "slug"])
   .index("by_owner_active_updated", ["ownerUserId", "softDeletedAt", "updatedAt"])
   .index("by_owner_publisher_active_updated", ["ownerPublisherId", "softDeletedAt", "updatedAt"])
+  .index("by_active_updated", ["softDeletedAt", "updatedAt"])
   .index("by_owner_publisher_active_downloads", [
     "ownerPublisherId",
     "softDeletedAt",
@@ -2137,6 +2152,7 @@ const stars = defineTable({
 })
   .index("by_skill", ["skillId"])
   .index("by_user", ["userId"])
+  .index("by_user_createdAt", ["userId", "createdAt"])
   .index("by_skill_user", ["skillId", "userId"]);
 
 const soulStars = defineTable({
@@ -2543,6 +2559,7 @@ export default defineSchema({
   ...authTables,
   desktopOAuthTokenFamilies,
   users,
+  profileIdentityAliases,
   publishers,
   publisherMembers,
   officialPublishers,

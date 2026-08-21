@@ -11,7 +11,7 @@ export default {
       ? [
           {
             domain: `${desktopOAuthBase.replace(/\/$/, "")}/oauth/desktop`,
-            applicationID: "https://www.iclawstore.com/api/v1/ai-direct-hiring",
+            applicationID: "https://zhipin.store/api/v1/ai-direct-hiring",
           },
         ]
       : []),

@@ -3,7 +3,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { api, components } from "./_generated/api";
 import { requiredEnvironment } from "./lib/oauthEnvironment";
 
-export const DESKTOP_OAUTH_AUDIENCE = "https://www.iclawstore.com/api/v1/ai-direct-hiring";
+export const DESKTOP_OAUTH_AUDIENCE = "https://zhipin.store/api/v1/ai-direct-hiring";
 export const DESKTOP_OAUTH_PREFIX = "/oauth/desktop";
 export const DESKTOP_OAUTH_CLIENT_NAME = "AI Direct Hiring Desktop";
 export const DESKTOP_OAUTH_SCOPES = ["openid", "profile", "email", "offline_access"] as const;

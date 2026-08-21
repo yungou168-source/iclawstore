@@ -14,7 +14,7 @@ info:
     能力状态：available（生产已启用）、documented_disabled（已定义但关闭）、
     planned（规划中、尚未实现）、deprecated（兼容保留）。
 servers:
-  - url: https://www.iclawstore.com
+  - url: https://zhipin.store
     description: AI直聘生产环境
 security:
   - bearerAuth: []

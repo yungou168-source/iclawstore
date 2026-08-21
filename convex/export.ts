@@ -2,8 +2,12 @@ import { api } from "./_generated/api";
 import { query, action } from "./_generated/server";
 
 /**
- * Export queries for Convex data migration
- * These queries return all records from each table for export to MySQL
+ * Historical logical-table export queries.
+ *
+ * They do not export `_storage` or create a consistent, recoverable backup.
+ * During the release freeze, do not deploy functions to expose these queries;
+ * the approved production recovery path is the volume archive and isolated
+ * drill defined in specs/server-migration.md.
  */
 
 export const export_users = query({

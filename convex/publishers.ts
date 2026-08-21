@@ -7,6 +7,7 @@ import { internalMutation, internalQuery, mutation, query } from "./functions";
 import { assertAdmin, getOptionalActiveAuthUserId, requireUser } from "./lib/access";
 import { isOfficialPublisher, toPublicPublisherWithOfficial } from "./lib/officialPublishers";
 import { toPublicPublisher } from "./lib/public";
+import { getPublicPublisherVisibility } from "./lib/publicPublisherVisibility";
 import {
   formatReservedPublicOwnerHandleMessage,
   isReservedPublicOwnerHandle,
@@ -157,45 +158,6 @@ function hasPublisherStats(publisher: Doc<"publishers">) {
     typeof publisher.totalDownloads === "number" &&
     typeof publisher.totalStars === "number"
   );
-}
-
-type PublicPublisherVisibility = {
-  publisher: Doc<"publishers">;
-  linkedUser: Doc<"users"> | null;
-};
-
-async function getPublicPublisherVisibility(
-  ctx: Pick<QueryCtx, "db">,
-  publisher: Doc<"publishers"> | null | undefined,
-): Promise<PublicPublisherVisibility | null> {
-  if (!publisher || publisher.deletedAt || publisher.deactivatedAt) return null;
-  if (publisher.kind !== "user") {
-    return { publisher, linkedUser: null };
-  }
-  if (!publisher.linkedUserId) {
-    const legacyOwner = await getLegacyPersonalPublisherOwner(ctx, publisher._id);
-    return legacyOwner ? { publisher, linkedUser: legacyOwner } : null;
-  }
-
-  const linkedUser = await ctx.db.get(publisher.linkedUserId);
-  if (!linkedUser || linkedUser.deletedAt || linkedUser.deactivatedAt) return null;
-  return { publisher, linkedUser };
-}
-
-async function getLegacyPersonalPublisherOwner(
-  ctx: Pick<QueryCtx, "db">,
-  publisherId: Id<"publishers">,
-) {
-  const memberships = await ctx.db
-    .query("publisherMembers")
-    .withIndex("by_publisher", (q) => q.eq("publisherId", publisherId))
-    .collect();
-  for (const membership of memberships) {
-    if (membership.role !== "owner") continue;
-    const user = await ctx.db.get(membership.userId);
-    if (user && !user.deletedAt && !user.deactivatedAt) return user;
-  }
-  return null;
 }
 
 function getPublisherDenormalizedStats(publisher: Doc<"publishers">): PublisherListStats {

@@ -1,3 +1,4 @@
+import { catalogApi, type CatalogEntry } from '../../catalogApi.js';
 import { apiRequest, fetchText, registryUrl } from "../../http.js";
 import {
   ApiRoutes,
@@ -117,33 +118,17 @@ export async function cmdInspect(opts: GlobalOpts, slug: string, options: Inspec
       const targetVersion = requestedVersion ?? latestVersion;
       if (!targetVersion) fail("Could not resolve latest version");
       spinner.text = `Fetching ${trimmed}@${targetVersion}`;
-      versionResult = await apiRequest(
-        registry,
-        {
-          method: "GET",
-          path: `${ApiRoutes.skills}/${encodeURIComponent(trimmed)}/versions/${encodeURIComponent(
-            targetVersion,
-          )}`,
-          token,
-        },
-        ApiV1SkillVersionResponseSchema,
-      );
+      versionResult = {
+        version: await catalogApi.version(registry, 'skill', skillResult.skill.slug, targetVersion, token),
+        skill: skillResult.skill,
+      };
+
     }
 
     let versionsList: { items?: unknown[]; nextCursor?: string | null } | null = null;
     if (options.versions) {
       const limit = clampLimit(options.limit ?? 25, 25);
-      const url = registryUrl(
-        `${ApiRoutes.skills}/${encodeURIComponent(trimmed)}/versions`,
-        registry,
-      );
-      url.searchParams.set("limit", String(limit));
-      spinner.text = `Fetching versions (${limit})`;
-      versionsList = await apiRequest(
-        registry,
-        { method: "GET", url: url.toString(), token },
-        ApiV1SkillVersionListResponseSchema,
-      );
+      versionsList = { items: Array.from((await catalogApi.versions(registry, 'skill', skillResult.skill.slug, { limit }, token)).versions) };
     }
 
     let fileContent: string | null = null;
@@ -279,12 +264,34 @@ export async function cmdVerifySkill(
   }
 }
 
-function fetchSkillDetail(registry: string, slug: string, token: string | undefined) {
-  return apiRequest(
-    registry,
-    { method: "GET", path: `${ApiRoutes.skills}/${encodeURIComponent(slug)}`, token },
-    ApiV1SkillResponseSchema,
-  );
+async function fetchSkillDetail(registry: string, slug: string, _token: string | undefined) {
+  const entry = await catalogApi.resolve(registry, 'skill', slug);
+  return catalogEntryToLegacyDetail(entry);
+}
+
+function catalogEntryToLegacyDetail(entry: CatalogEntry) {
+  const toTimestamp = (value: string) => Date.parse(value);
+  return {
+    skill: {
+      slug: entry.name,
+      displayName: entry.displayName,
+      summary: entry.summary,
+      tags: Object.fromEntries((entry.tags ?? []).map((tag) => [tag, entry.latestVersion?.version ?? ''])),
+      stats: entry.stats,
+      createdAt: toTimestamp(entry.updatedAt),
+      updatedAt: toTimestamp(entry.updatedAt),
+    },
+    latestVersion: entry.latestVersion
+      ? {
+          version: entry.latestVersion.version,
+          createdAt: toTimestamp(entry.latestVersion.createdAt),
+          changelog: entry.latestVersion.changelog,
+          license: null,
+        }
+      : null,
+    owner: entry.owner,
+    moderation: null,
+  };
 }
 
 async function fetchModerationDiagnostics(

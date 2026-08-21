@@ -1,11 +1,11 @@
 import { mkdir, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 import semver from "semver";
+import { catalogApi } from '../../catalogApi.js';
 import { apiRequest, downloadZip, fetchBinary, registryUrl } from "../../http.js";
 import {
   ApiRoutes,
   ApiV1SkillInstallResolveResponseSchema,
-  ApiV1SearchResponseSchema,
   ApiV1SkillListResponseSchema,
   ApiV1SkillReportListResponseSchema,
   ApiV1SkillReportResponseSchema,
@@ -98,6 +98,26 @@ function formatPinnedDetails(entry?: { pinReason?: string }) {
   return entry?.pinReason ? ` (${entry.pinReason})` : "";
 }
 
+type LegacySkillSearchEntry = Readonly<{
+  slug: string;
+  displayName: string;
+  version: string | null;
+  ownerHandle?: string | null;
+  owner?: { displayName?: string | null } | null;
+  score?: number;
+}>;
+
+type CatalogSkillSearchResponse = Readonly<{
+  items: readonly {
+    name: string;
+    displayName: string;
+    owner: { handle: string | null; displayName: string | null };
+    latestVersion: { version: string } | null;
+  }[];
+}>;
+
+type SkillSearchResponse = CatalogSkillSearchResponse | Readonly<{ results: readonly LegacySkillSearchEntry[] }>;
+
 function formatSearchOwner(entry: {
   ownerHandle?: string | null;
   owner?: { handle?: string | null; displayName?: string | null } | null;
@@ -107,6 +127,24 @@ function formatSearchOwner(entry: {
   return entry.owner?.displayName ?? "unknown owner";
 }
 
+function printLegacySkillSearchResults(results: readonly LegacySkillSearchEntry[]) {
+  for (const entry of results) {
+    const version = entry.version ? ` v${entry.version}` : "";
+    const owner = entry.ownerHandle ? `@${entry.ownerHandle}` : entry.owner?.displayName ?? "unknown owner";
+    const score = typeof entry.score === "number" ? `  (${entry.score.toFixed(3)})` : "";
+    console.log(`${entry.slug}${version}  ${owner}  ${entry.displayName}${score}`);
+  }
+}
+
+function printCatalogSkillSearchResults(items: CatalogSkillSearchResponse["items"]) {
+  for (const entry of items) {
+    const version = entry.latestVersion ? ` v${entry.latestVersion.version}` : "";
+    console.log(
+      `${entry.name}${version}  ${formatSearchOwner({ owner: entry.owner })}  ${entry.displayName}`,
+    );
+  }
+}
+
 export async function cmdSearch(opts: GlobalOpts, query: string, limit?: number) {
   if (!query) fail("Query required");
 
@@ -114,24 +152,19 @@ export async function cmdSearch(opts: GlobalOpts, query: string, limit?: number)
   const registry = await getRegistry(opts, { cache: true });
   const spinner = createSpinner("Searching");
   try {
-    const url = registryUrl(ApiRoutes.search, registry);
-    url.searchParams.set("q", query);
     const effectiveLimit = typeof limit === "number" && Number.isFinite(limit) ? limit : 25;
-    url.searchParams.set("limit", String(effectiveLimit));
-    const result = await apiRequest(
+    const result = await catalogApi.list(
       registry,
-      { method: "GET", url: url.toString(), token },
-      ApiV1SearchResponseSchema,
-    );
+      'skill',
+      { q: query, limit: effectiveLimit },
+      token,
+    ) as SkillSearchResponse;
 
     spinner.stop();
-    for (const entry of result.results) {
-      const slug = entry.slug ?? "unknown";
-      const name = entry.displayName ?? slug;
-      const version = entry.version ? ` v${entry.version}` : "";
-      console.log(
-        `${slug}${version}  ${formatSearchOwner(entry)}  ${name}  (${entry.score.toFixed(3)})`,
-      );
+    if ('results' in result) {
+      printLegacySkillSearchResults(result.results);
+    } else {
+      printCatalogSkillSearchResults(result.items);
     }
   } catch (error) {
     spinner.fail(formatError(error));
@@ -166,34 +199,7 @@ export async function cmdInstall(
 
   const spinner = createSpinner(`Resolving ${trimmed}`);
   try {
-    // Fetch skill metadata including moderation status
-    const skillMeta = await apiRequest(
-      registry,
-      { method: "GET", path: `${ApiRoutes.skills}/${encodeURIComponent(trimmed)}`, token },
-      ApiV1SkillResponseSchema,
-    );
-
-    // Check moderation status before proceeding
-    if (skillMeta.moderation?.isMalwareBlocked) {
-      spinner.fail(`Blocked: ${trimmed} is flagged as malicious`);
-      fail("This skill has been flagged as malware and cannot be installed.");
-    }
-
-    if (skillMeta.moderation?.isSuspicious && !force) {
-      spinner.stop();
-      console.log(
-        `\n⚠️  Warning: "${trimmed}" is flagged for ClawHub security review.\n` +
-          "   This skill may contain risky patterns (crypto keys, external APIs, eval, etc.)\n" +
-          "   Review the skill code before use.\n",
-      );
-      if (isInteractive()) {
-        const confirm = await promptConfirm("Install anyway?");
-        if (!confirm) fail("Installation cancelled");
-        spinner.start(`Resolving ${trimmed}`);
-      } else {
-        fail("Use --force to install suspicious skills in non-interactive mode");
-      }
-    }
+    const skillMeta = await catalogApi.resolve(registry, 'skill', trimmed, token);
 
     let resolvedVersion = versionFlag ?? skillMeta.latestVersion?.version ?? null;
     let githubInstall: GitHubInstallResolution | null = null;
@@ -211,17 +217,8 @@ export async function cmdInstall(
     if (!resolvedVersion && !githubInstall) fail("Could not resolve latest version");
 
     if (versionFlag) {
-      await apiRequest(
-        registry,
-        {
-          method: "GET",
-          path: `${ApiRoutes.skills}/${encodeURIComponent(trimmed)}/versions/${encodeURIComponent(
-            versionFlag,
-          )}`,
-          token,
-        },
-        ApiV1SkillVersionResponseSchema,
-      );
+      await catalogApi.version(registry, 'skill', skillMeta.id ?? trimmed, versionFlag, token);
+
     }
 
     if (force) {

@@ -5,7 +5,7 @@ describe("ResendOtp branding", () => {
   it("uses AI直聘 for the default sender, subject and message bodies", () => {
     const content = verificationEmailContent("1234");
 
-    expect(DEFAULT_AUTH_EMAIL_FROM).toBe("AI直聘 <no-reply@iclawstore.com>");
+    expect(DEFAULT_AUTH_EMAIL_FROM).toBe("AI直聘 <hi@zhipin.store>");
     expect(content.subject).toBe("AI直聘登录验证码");
     expect(content.html).toContain("登录 AI直聘");
     expect(content.html).toContain("1234");

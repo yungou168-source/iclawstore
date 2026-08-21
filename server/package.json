@@ -4,16 +4,26 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "db:generate": "../node_modules/.bin/prisma generate --schema ../prisma/schema.prisma",
-    "db:migrate": "../node_modules/.bin/prisma migrate deploy --schema ../prisma/schema.prisma",
+    "types-build": "tsc --noEmit && bun run build",
+    "check:no-new-convex-client-usage": "node ../scripts/check-convex-dependency-baseline.mjs",
+    "ci:static": "bun run check:no-new-convex-client-usage",
+    "ci:unit": "bun run test:soul",
+    "ci:types-build": "bun run types-build",
+    "test:soul": "vitest run --no-file-parallelism test/fileSoulMigrationSource.test.ts test/configuredSoulMigrationSource.test.ts test/soulMigrationRuntime.test.ts test/soulRuntimeWorkerRecovery.test.ts test/soulsMigrationFoundation.test.ts test/soulIndependentOps.test.ts test/soulObjectStorageFixture.test.ts test/soulMysqlFixture.test.ts test/soulMysqlImportAssetReconciliation.test.ts test/soulSecurityFacts.test.ts test/mysqlSoulSecurityFacts.test.ts",
+    "db:generate": "prisma generate --schema ../prisma/schema.prisma",
+    "db:migrate": "prisma migrate deploy --schema ../prisma/schema.prisma",
+    "db:preflight:profile": "tsx src/profileMigrationPreflightProcess.ts",
     "db:preflight:appearance": "tsx src/preflightAgentAppearanceMigration.ts",
-    "db:profiles:backfill": "tsx src/profileBackfillProcess.ts",
-    "db:push": "../node_modules/.bin/prisma db push --schema ../prisma/schema.prisma",
+    "db:push": "prisma db push --schema ../prisma/schema.prisma",
     "dev": "tsx watch src/index.ts",
+    "runtime:managed-asset-scan": "tsx src/managedAssetScannerWorkerProcess.ts",
     "runtime:audit-export": "NODE_OPTIONS='--max-old-space-size=128' tsx src/auditExportWorkerProcess.ts",
     "runtime:dispatch": "tsx src/outboxDispatcherProcess.ts",
     "runtime:interview-retention-cleanup": "NODE_OPTIONS='--max-old-space-size=128' tsx src/interviewRetentionCleanupProcess.ts",
     "runtime:paid-hiring-reconciliation": "NODE_OPTIONS='--max-old-space-size=128' tsx src/paidHiringReconciliationWorkerProcess.ts",
+    "runtime:migration": "tsx src/migrationRuntimeWorkerProcess.ts",
+    "soul:ops": "tsx src/soulMigrationOpsProcess.ts",
+    "bootstrap:candidate": "node ../scripts/bootstrap-candidate.mjs",
     "start": "node dist/index.js"
   },
   "dependencies": {
@@ -23,7 +33,6 @@
     "@fastify/swagger": "^9.0.0",
     "@fastify/swagger-ui": "^4.0.0",
     "@prisma/client": "^6.0.0",
-    "convex": "^1.43.0",
     "fastify": "^5.0.0",
     "jose": "^6.2.7",
     "meilisearch": "^0.45.0",
@@ -33,6 +42,7 @@
     "@types/node": "^22.0.0",
     "prisma": "^6.0.0",
     "tsx": "^4.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^4.1.11"
   }
 }

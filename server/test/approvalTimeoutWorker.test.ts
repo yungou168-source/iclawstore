@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "bun:test";
 import { expireDueApprovals } from "../src/services/approvalTimeoutWorker.js";
 
-function makeTimeoutHarness(lockedApproval: Record<string, unknown>, offerAffectedRows = 1) {
+function makeTimeoutHarness(lockedApproval: Record<string, unknown>, hiringIntentAffectedRows = 1) {
   const queries: Array<{ sql: string; values?: unknown[] }> = [];
   const connection = {
     beginTransaction: vi.fn(async () => undefined),
@@ -12,8 +12,8 @@ function makeTimeoutHarness(lockedApproval: Record<string, unknown>, offerAffect
       queries.push({ sql, values });
       if (sql.includes("FOR UPDATE")) return [[lockedApproval], []];
       if (sql.startsWith("UPDATE ai_direct_approvals")) return [{ affectedRows: 1 }, []];
-      if (sql.startsWith("UPDATE ai_direct_offers"))
-        return [{ affectedRows: offerAffectedRows }, []];
+      if (sql.includes("UPDATE ai_direct_hiring_intents"))
+        return [{ affectedRows: hiringIntentAffectedRows }, []];
       if (sql.includes("MAX(sequence)")) return [[{ nextSequence: 1 }], []];
       if (sql.startsWith("SELECT * FROM ai_direct_approvals")) {
         return [[{ ...lockedApproval, status: "expired", decision: "expired" }], []];
@@ -34,8 +34,8 @@ function makeTimeoutHarness(lockedApproval: Record<string, unknown>, offerAffect
 const pendingApproval = {
   id: "approval-1",
   organizationId: "org-1",
-  targetType: "offer",
-  targetId: "offer-1",
+  targetType: "hiring_intent",
+  targetId: "intent-1",
   requestedByUserId: "requester-1",
   approverUserId: null,
   status: "pending",
@@ -44,23 +44,19 @@ const pendingApproval = {
 };
 
 describe("approval timeout worker", () => {
-  it("expires the approval and linked offer through the unified transaction", async () => {
+  it("expires the approval and linked hiring intent through the unified transaction", async () => {
     const { pool, connection, queries } = makeTimeoutHarness(pendingApproval);
 
     const expired = await expireDueApprovals(pool as any);
 
     expect(expired).toBe(1);
-    const offerUpdate = queries.find(({ sql }) => sql.startsWith("UPDATE ai_direct_offers"));
-    expect(offerUpdate?.values?.[0]).toBe("expired");
+    const intentUpdate = queries.find(({ sql }) => sql.startsWith("UPDATE ai_direct_hiring_intents"));
+    expect(intentUpdate?.values?.[0]).toBe("cancelled");
     expect(queries.some(({ sql }) => sql.includes("INSERT INTO ai_direct_approval_events"))).toBe(
       true,
     );
-    expect(queries.some(({ sql }) => sql.includes("INSERT INTO ai_direct_audit_events"))).toBe(
-      true,
-    );
-    expect(queries.some(({ sql }) => sql.includes("INSERT INTO ai_direct_outbox_events"))).toBe(
-      true,
-    );
+    expect(queries.some(({ sql }) => sql.includes("INSERT INTO ai_direct_audit_events"))).toBe(true);
+    expect(queries.some(({ sql }) => sql.includes("INSERT INTO ai_direct_outbox_events"))).toBe(true);
     expect(connection.commit).toHaveBeenCalledTimes(1);
   });
 
@@ -75,7 +71,7 @@ describe("approval timeout worker", () => {
 
     expect(expired).toBe(0);
     expect(queries.some(({ sql }) => sql.startsWith("UPDATE ai_direct_approvals"))).toBe(false);
-    expect(queries.some(({ sql }) => sql.startsWith("UPDATE ai_direct_offers"))).toBe(false);
+    expect(queries.some(({ sql }) => sql.startsWith("UPDATE ai_direct_hiring_intents"))).toBe(false);
     expect(queries.some(({ sql }) => sql.includes("INSERT INTO ai_direct_approval_events"))).toBe(
       false,
     );
@@ -83,12 +79,12 @@ describe("approval timeout worker", () => {
     expect(connection.commit).not.toHaveBeenCalled();
   });
 
-  it("surfaces linked offer conflicts instead of counting a partial expiry", async () => {
+  it("surfaces linked hiring intent conflicts instead of counting a partial expiry", async () => {
     const { pool, connection } = makeTimeoutHarness(pendingApproval, 0);
 
     await expect(expireDueApprovals(pool as any)).rejects.toMatchObject({
       code: "INVALID_TRANSITION",
-      details: { approvalId: "approval-1", offerId: "offer-1" },
+      details: { approvalId: "approval-1", hiringIntentId: "intent-1", targetStatus: "cancelled" },
     });
 
     expect(connection.rollback).toHaveBeenCalledTimes(1);

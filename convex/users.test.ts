@@ -98,7 +98,9 @@ function makeCtx() {
     if (table === "users") {
       return {
         withIndex: (name: string) => {
-          if (name !== "handle") throw new Error(`Unexpected users index ${name}`);
+          if (name !== "handle" && name !== "by_profile_slug") {
+            throw new Error(`Unexpected users index ${name}`);
+          }
           return { unique: vi.fn(async () => null) };
         },
       };
@@ -1614,8 +1616,8 @@ describe("users profile audit logs", () => {
         targetType: "user",
         targetId: "users:self",
         metadata: {
-          previous: { displayName: "Old Name", bio: "Old bio" },
-          next: { displayName: "New Name", bio: "New bio" },
+          previous: { displayName: "Old Name", bio: "Old bio", profileSlug: null },
+          next: { displayName: "New Name", bio: "New bio", profileSlug: "self" },
         },
       }),
     );
@@ -1637,6 +1639,16 @@ describe("users profile audit logs", () => {
       createdAt: 1,
     });
     query.mockImplementation(((table: string) => {
+      if (table === "users") {
+        return {
+          withIndex: (name: string) => {
+            if (name !== "by_profile_slug") {
+              throw new Error(`Unexpected users index ${name}`);
+            }
+            return { unique: vi.fn(async () => null) };
+          },
+        };
+      }
       if (table === "publishers") {
         return {
           withIndex: (name: string) => {

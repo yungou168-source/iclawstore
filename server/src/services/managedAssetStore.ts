@@ -11,7 +11,8 @@ import {
   validateDeclaredMimeType,
   validateDetectedMimeType,
   validateOriginalFileName,
-} from "./managedAssetValidation.js";
+} from './managedAssetValidation.js';
+import type { ManagedAssetPort } from './managedAssetPort.js';
 
 export interface StoreManagedAssetInput {
   kind: ManagedAssetKind;
@@ -44,7 +45,7 @@ export interface ManagedAssetDownloadHeadersInput {
 const STORAGE_KEY_PATTERN =
   /^(avatar|image_2d|model_3d|sidebar_icon|template_screenshot|template_package)\/[a-f0-9]{2}\/[a-f0-9-]{36}\.[a-z0-9]+$/;
 
-export class ManagedAssetStore {
+export class ManagedAssetStore implements ManagedAssetPort {
   readonly root: string;
   private readonly temporaryRoot: string;
   private readonly trashRoot: string;

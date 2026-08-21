@@ -2,7 +2,7 @@ import { Email } from "@convex-dev/auth/providers/Email";
 
 const OTP_LENGTH = 4;
 const OTP_MAX_AGE_SECONDS = 2 * 60;
-export const DEFAULT_AUTH_EMAIL_FROM = "AI直聘 <no-reply@iclawstore.com>";
+export const DEFAULT_AUTH_EMAIL_FROM = "AI直聘 <hi@zhipin.store>";
 
 export function verificationEmailContent(code: string) {
   return {

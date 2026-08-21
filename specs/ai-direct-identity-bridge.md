@@ -30,9 +30,9 @@ Convex Auth JWT 的 `sub` 是会话级复合值 `userId|sessionId`，不能直�
 身份桥运行于 Fastify 服务，必须设置以下非秘密配置：
 
 ```text
-CONVEX_AUTH_ISSUER=https://www.iclawstore.com
+CONVEX_AUTH_ISSUER=https://zhipin.store
 CONVEX_AUTH_AUDIENCE=convex
-CONVEX_URL=https://www.iclawstore.com/convex
+CONVEX_URL=https://zhipin.store/convex
 ```
 
 登录 provider 运行于自托管 Convex 后端。仅设置到前端 `VITE_*` 变量或 Fastify `api.env` 不会启用 provider。当前支持的生产 provider 配置为：
@@ -54,7 +54,7 @@ OAuth provider 只有在对应 ID 与 Secret 都配置后才会在 Convex Auth �
 
 ## OAuth 与邮件回调不变量
 
-生产浏览器入口唯一为 `https://www.iclawstore.com`；裸域必须在 Nginx 的 HTTPS 层重定向到该域名，不能让两个域名同时承载登录流程。Convex Auth 的 verifier cookie 为 host-only cookie，混用裸域与 `www` 会使 OAuth 回调无法验证。
+生产浏览器入口唯一为 `https://zhipin.store`；`https://www.zhipin.store` 必须在 Nginx 的 HTTP 与 HTTPS 层单跳重定向到该域名，不能让两个新域名同时承载登录流程。旧 `iclawstore.com` 域名不跳转到新域，也不得承载 OAuth。Convex Auth 的 verifier cookie 为 host-only cookie，混用裸域与 `www` 会使 OAuth 回调无法验证。
 
 自托管部署中，管理 API 为 `127.0.0.1:3210`，HTTP site 服务为 `127.0.0.1:3211`。Nginx 的路由优先级必须为：
 
@@ -68,15 +68,15 @@ OAuth provider 只有在对应 ID 与 Secret 都配置后才会在 Convex Auth �
 Convex 部署必须设置：
 
 ```text
-SITE_URL=https://www.iclawstore.com
-CUSTOM_AUTH_SITE_URL=https://www.iclawstore.com/convex
+SITE_URL=https://zhipin.store
+CUSTOM_AUTH_SITE_URL=https://zhipin.store/convex
 JWT_PRIVATE_KEY=<与 JWKS 成对的 PKCS#8 PEM RSA 私钥>
 JWKS=<上述私钥对应的公钥 JWKS JSON>
 ```
 
 `JWT_PRIVATE_KEY` 与 `JWKS` 必须由同一 RSA 密钥对生成，并只保存在 Convex Production deployment 的环境变量中。私钥不得进入仓库、构建日志、截图或应用配置文件；任何疑似泄露都必须视为密钥轮换，重新生成并同时替换这两个值。
 
-`SITE_URL` 是 OAuth 完成后的浏览器目的地；邮箱 OTP 在站内输入并验证。`CUSTOM_AUTH_SITE_URL` 是 OAuth provider 回调进入 Convex HTTP 服务的外部地址。各 OAuth App 的 callback URL 必须精确为 `https://www.iclawstore.com/convex/api/auth/callback/<provider>`，其中 `<provider>` 为 `github`、`google` 或 `wechat`。
+`SITE_URL` 是 OAuth 完成后的浏览器目的地；邮箱 OTP 在站内输入并验证。`CUSTOM_AUTH_SITE_URL` 是 OAuth provider 回调进入 Convex HTTP 服务的外部地址。各 OAuth App 的 callback URL 必须精确为 `https://zhipin.store/convex/api/auth/callback/<provider>`，其中 `<provider>` 为 `github`、`google` 或 `wechat`。
 
 原生桌面身份协议的服务端实现使用独立 issuer `${CUSTOM_AUTH_SITE_URL}/oauth/desktop` 和固定 desktop audience。第一方 public client 仅允许 Authorization Code + PKCE `S256`，注册配置必须同时包含固定 custom URI 与 IP loopback callback；动态 client registration 关闭。Access Token 必须具有 `typ=at+jwt`、`client_id/cid` 和 `jti`，Fastify 以独立 issuer、audience、JWKS、client ID 和 15 分钟最大年龄验证，再调用 `desktopOAuth:getDesktopAccessIdentity` 二次确认授权及账号状态。Web Token 仍走原有复合 subject 链，两类 Token 不混用 subject 解析规则。
 
@@ -124,8 +124,8 @@ AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID=<locked-public-client-id>
 Fastify `/home/ubuntu/.config/iclawstore/api.env` 必须设置下列非秘密值，并与 Convex 注册保持一致：
 
 ```dotenv
-CONVEX_DESKTOP_AUTH_ISSUER=https://www.iclawstore.com/convex/oauth/desktop
-CONVEX_DESKTOP_AUTH_AUDIENCE=https://www.iclawstore.com/api/v1/ai-direct-hiring
+CONVEX_DESKTOP_AUTH_ISSUER=https://zhipin.store/convex/oauth/desktop
+CONVEX_DESKTOP_AUTH_AUDIENCE=https://zhipin.store/api/v1/ai-direct-hiring
 AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID=<locked-public-client-id>
 ```
 
@@ -159,7 +159,7 @@ AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID=<locked-public-client-id>
 
 ```bash
 curl -sS -H "Authorization: Bearer <短期访问令牌>" \
-  https://www.iclawstore.com/api/v1/ai-direct-hiring/session
+  https://zhipin.store/api/v1/ai-direct-hiring/session
 ```
 
 预期：有效登录会话返回 `200`，且响应包含当前用户与组织信息。无 token 返回正常 Bearer-required `401`；不能出现 identity bridge 未初始化或 provider 未配置错误。

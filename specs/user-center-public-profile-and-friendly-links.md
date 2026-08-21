@@ -19,11 +19,11 @@
 
 ## 公开资料边界
 
-公开资料后缀在 `users.profileSlug` 中唯一保存，通过 `by_profile_slug` 索引读取。公开页使用一次性 `ConvexHttpClient.query()` 加载用户资料，不建立响应式订阅。
+公开资料后缀在 `users.profileSlug` 中唯一保存，通过 `by_profile_slug` 索引读取。当前生产实现仍使用一次性 Convex 查询；迁移期间由 Fastify `GET /api/profiles/:slug` 作为目标 DTO 边界，禁止在页面新增响应式订阅。待 `specs/profile-migration-handoff.md` 的同步、对账与候选环境门槛完成后，页面必须只读取 Fastify DTO，不再回退 Convex。
 
 公开页只可返回明确筛选后的用户字段，以及 AI 员工公开目录接口返回的已发布、可用条目。不得泄露邮箱、手机号、身份令牌、私有 Agent 版本、内部审核记录或钱包数据。
 
-头像二进制保存在 Convex Storage；用户和发布者文档只保存 Storage ID 与可渲染 URL。上传完成后必须校验 MIME 类型和 5 MB 大小上限。组织头像更新必须再次校验当前用户的组织管理权限。
+头像当前保存在 Convex Storage；用户和发布者文档只保存 Storage ID 与可渲染 URL。Profile 迁移必须先将头像二进制复制到 ManagedAssetStore，并对 MIME、字节数、SHA-256、owner/ACL 与删除状态对账，之后 DTO 才可暴露站内 asset URL。复制任务由独立 worker 以 lease 与 claim token 领取；完成或失败回写必须验证该 token，防止已过期 worker 覆盖被回收任务。上传完成后必须校验 MIME 类型和 5 MB 大小上限。组织头像更新必须再次校验当前用户的组织管理权限。
 
 ## 招聘目录登录一致性
 

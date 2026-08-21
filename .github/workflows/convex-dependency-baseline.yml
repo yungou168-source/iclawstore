@@ -1,0 +1,40 @@
+name: Convex Dependency Baseline
+
+on:
+  push:
+    paths:
+      - 'convex/**'
+      - 'server/**'
+      - 'packages/**'
+      - 'src/**'
+      - 'scripts/check-convex-dependency-baseline.mjs'
+      - 'scripts/__tests__/check-convex-dependency-baseline.test.mjs'
+      - 'specs/convex-dependency-baseline.json'
+      - '.github/workflows/convex-dependency-baseline.yml'
+  pull_request:
+    paths:
+      - 'convex/**'
+      - 'server/**'
+      - 'packages/**'
+      - 'src/**'
+      - 'scripts/check-convex-dependency-baseline.mjs'
+      - 'scripts/__tests__/check-convex-dependency-baseline.test.mjs'
+      - 'specs/convex-dependency-baseline.json'
+      - '.github/workflows/convex-dependency-baseline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-convex-dependency-boundary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check Convex dependency baseline
+        run: node scripts/check-convex-dependency-baseline.mjs
+      - name: Test baseline checker
+        run: node --test scripts/__tests__/check-convex-dependency-baseline.test.mjs

@@ -330,6 +330,7 @@ async function main() {
   const appUrl = `http://localhost:${appPort}`;
   const convexUrl = runnerConfig.convexUrl;
   const convexSiteUrl = runnerConfig.convexSiteUrl;
+  const convexCloudPort = String(getLocalUrlPort(convexUrl, "PLAYWRIGHT_LOCAL_AUTH_CONVEX_URL"));
   const convexSitePort = String(
     getLocalUrlPort(convexSiteUrl, "PLAYWRIGHT_LOCAL_AUTH_CONVEX_SITE_URL"),
   );

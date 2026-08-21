@@ -1,0 +1,623 @@
+/* @vitest-environment jsdom */
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { SkillsIndex } from "../routes/skills/index";
+import {
+  convexHttpMock,
+  convexReactMocks,
+  resetConvexReactMocks,
+  setupDefaultConvexReactMocks,
+} from "./helpers/convexReactMocks";
+
+const navigateMock = vi.fn();
+let searchMock: Record<string, unknown> = {};
+
+vi.mock("@tanstack/react-router", () => ({
+  createFileRoute: () => (_config: { component: unknown; validateSearch: unknown }) => ({
+    useNavigate: () => navigateMock,
+    useSearch: () => searchMock,
+  }),
+  redirect: (options: unknown) => ({ redirect: options }),
+  Link: (props: { children: ReactNode }) => <a href="/">{props.children}</a>,
+}));
+
+vi.mock("convex/react", () => ({
+  ConvexReactClient: class {},
+  useAction: (...args: unknown[]) => convexReactMocks.useAction(...args),
+  useQuery: (...args: unknown[]) => convexReactMocks.useQuery(...args),
+}));
+
+vi.mock("../../src/convex/client", () => ({
+  convexHttp: {
+    query: (...args: unknown[]) => convexHttpMock.query(...args),
+  },
+}));
+
+describe("SkillsIndex", () => {
+  beforeEach(() => {
+    resetConvexReactMocks();
+    navigateMock.mockReset();
+    searchMock = {};
+    setupDefaultConvexReactMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("requests the first skills page", async () => {
+    render(<SkillsIndex />);
+    await act(async () => {});
+
+    const args = getLastListPageArgs();
+    expect(args).toEqual(
+      expect.objectContaining({
+        dir: "desc",
+        highlightedOnly: false,
+        cursor: undefined,
+        numItems: 25,
+      }),
+    );
+    expect(args).not.toHaveProperty("sort");
+    expect(screen.getByRole("radio", { name: "Recommended" }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
+  });
+
+  it("keeps downloads as an explicit browse sort", async () => {
+    searchMock = { sort: "downloads", dir: "desc" };
+    render(<SkillsIndex />);
+    await act(async () => {});
+
+    expect(getLastListPageArgs()).toEqual(
+      expect.objectContaining({
+        sort: "downloads",
+        dir: "desc",
+        highlightedOnly: false,
+        cursor: undefined,
+        numItems: 25,
+      }),
+    );
+  });
+
+  it("renders an empty state when no skills are returned", async () => {
+    render(<SkillsIndex />);
+    await act(async () => {});
+    expect(screen.getByText("No skills found")).toBeTruthy();
+  });
+
+  it("does not render the publish CTA on the skills browse page", async () => {
+    render(<SkillsIndex />);
+    await act(async () => {});
+
+    expect(screen.queryByRole("link", { name: "Publish" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Publish" })).toBeNull();
+  });
+
+  it("shows loading state before fetch completes", async () => {
+    // Never resolve the query to keep the component in loading state
+    convexHttpMock.query.mockReturnValue(new Promise(() => {}));
+    render(<SkillsIndex />);
+    await act(async () => {});
+    // Results area shows skeleton or dash while loading
+    expect(screen.getByText("\u2014")).toBeTruthy();
+    expect(screen.getByRole("status", { name: "Loading results" })).toBeTruthy();
+    expect(screen.queryByText("No skills found")).toBeNull();
+  });
+
+  it("uses grid as the canonical browse view URL value", async () => {
+    render(<SkillsIndex />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Grid" }));
+
+    const lastCall = navigateMock.mock.calls.at(-1)?.[0] as {
+      replace?: boolean;
+      search: (prev: Record<string, unknown>) => Record<string, unknown>;
+    };
+    expect(lastCall.replace).toBe(true);
+    expect(lastCall.search({})).toEqual({ view: "grid" });
+  });
+
+  it("keeps legacy cards URLs compatible with the grid view", async () => {
+    searchMock = { view: "cards" };
+    render(<SkillsIndex />);
+
+    const gridButton = screen.getByRole("button", { name: "Grid" });
+    expect(gridButton.className).toContain("is-active");
+
+    fireEvent.click(screen.getByRole("button", { name: "List" }));
+
+    const lastCall = navigateMock.mock.calls.at(-1)?.[0] as {
+      replace?: boolean;
+      search: (prev: Record<string, unknown>) => Record<string, unknown>;
+    };
+    expect(lastCall.replace).toBe(true);
+    expect(lastCall.search({ view: "cards" })).toEqual({ view: undefined });
+  });
+
+  it("shows empty state immediately when search returns no results", async () => {
+    searchMock = { q: "nonexistent-skill-xyz" };
+    const actionFn = vi.fn().mockResolvedValue([]);
+    convexReactMocks.useAction.mockReturnValue(actionFn);
+    vi.useFakeTimers();
+
+    render(<SkillsIndex />);
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    // Should show empty state, not loading
+    expect(screen.getByText("No skills found")).toBeTruthy();
+    expect(screen.queryByText(/Loading skills/)).toBeNull();
+  });
+
+  it("skips list fetch and calls search when query is set", async () => {
+    searchMock = { q: "remind" };
+    const actionFn = vi.fn().mockResolvedValue([]);
+    convexReactMocks.useAction.mockReturnValue(actionFn);
+    vi.useFakeTimers();
+
+    render(<SkillsIndex />);
+
+    // convexHttp.query should NOT be called for list when searching
+    const listCalls = convexHttpMock.query.mock.calls.filter((call: unknown[]) => {
+      const args = call[1] as Record<string, unknown> | undefined;
+      return args && "numItems" in args;
+    });
+    expect(listCalls).toHaveLength(0);
+
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+    expect(actionFn).toHaveBeenCalledWith({
+      query: "remind",
+      highlightedOnly: false,
+      limit: 25,
+    });
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+    expect(actionFn).toHaveBeenCalledWith({
+      query: "remind",
+      highlightedOnly: false,
+      limit: 25,
+    });
+  });
+
+  it("switches implicit recommended sorting back to relevance when entering search", async () => {
+    searchMock = { sort: "downloads" };
+    vi.useFakeTimers();
+
+    render(<SkillsIndex />);
+
+    const input = screen.getByPlaceholderText("Search skills...");
+    await act(async () => {
+      fireEvent.change(input, { target: { value: "cli-design-framework" } });
+      await vi.runAllTimersAsync();
+    });
+
+    expect(navigateMock).toHaveBeenCalled();
+    const lastCall = navigateMock.mock.calls.at(-1)?.[0] as {
+      replace?: boolean;
+      search: (prev: Record<string, unknown>) => Record<string, unknown>;
+    };
+    expect(lastCall.replace).toBe(true);
+    expect(lastCall.search({ sort: "downloads" })).toEqual({
+      q: "cli-design-framework",
+      sort: undefined,
+      dir: undefined,
+    });
+  });
+
+  it("preserves explicitly user-set downloads sort when entering search", async () => {
+    searchMock = { sort: "downloads", dir: "desc" };
+    vi.useFakeTimers();
+
+    render(<SkillsIndex />);
+
+    const input = screen.getByPlaceholderText("Search skills...");
+    await act(async () => {
+      fireEvent.change(input, { target: { value: "cli-design-framework" } });
+      await vi.runAllTimersAsync();
+    });
+
+    expect(navigateMock).toHaveBeenCalled();
+    const lastCall = navigateMock.mock.calls.at(-1)?.[0] as {
+      replace?: boolean;
+      search: (prev: Record<string, unknown>) => Record<string, unknown>;
+    };
+    expect(lastCall.replace).toBe(true);
+    expect(lastCall.search({ sort: "downloads", dir: "desc" })).toEqual({
+      q: "cli-design-framework",
+      sort: "downloads",
+      dir: "desc",
+    });
+  });
+
+  it("clears stale recommended sort aliases when entering search", async () => {
+    searchMock = { sort: "default", dir: "asc" };
+    vi.useFakeTimers();
+
+    render(<SkillsIndex />);
+
+    const input = screen.getByPlaceholderText("Search skills...");
+    await act(async () => {
+      fireEvent.change(input, { target: { value: "cli-design-framework" } });
+      await vi.runAllTimersAsync();
+    });
+
+    const lastCall = getLastNavigateCall();
+    expect(lastCall.replace).toBe(true);
+    expect(lastCall.search({ sort: "default", dir: "asc" })).toEqual({
+      q: "cli-design-framework",
+      sort: undefined,
+      dir: undefined,
+    });
+  });
+
+  it("does not reuse a stale recommended direction when choosing an explicit browse sort", async () => {
+    searchMock = { sort: "recommended", dir: "asc" };
+    render(<SkillsIndex />);
+
+    fireEvent.click(screen.getByRole("radio", { name: "Most downloaded" }));
+
+    const lastCall = getLastNavigateCall();
+    expect(lastCall.replace).toBe(true);
+    expect(lastCall.search({ sort: "recommended", dir: "asc" })).toEqual({
+      sort: "downloads",
+      dir: "desc",
+    });
+  });
+
+  it("does not reuse a stale relevance direction when choosing an explicit search sort", async () => {
+    searchMock = { q: "notion", sort: "relevance", dir: "asc" };
+    render(<SkillsIndex />);
+
+    fireEvent.click(screen.getByRole("radio", { name: "Most downloaded" }));
+
+    const lastCall = getLastNavigateCall();
+    expect(lastCall.replace).toBe(true);
+    expect(lastCall.search({ q: "notion", sort: "relevance", dir: "asc" })).toEqual({
+      q: "notion",
+      sort: "downloads",
+      dir: "desc",
+    });
+  });
+
+  it("clears direction when returning to recommended browse sort", async () => {
+    searchMock = { sort: "downloads", dir: "asc" };
+    render(<SkillsIndex />);
+
+    fireEvent.click(screen.getByRole("radio", { name: "Recommended" }));
+
+    const lastCall = getLastNavigateCall();
+    expect(lastCall.replace).toBe(true);
+    expect(lastCall.search({ sort: "downloads", dir: "asc" })).toEqual({
+      sort: "recommended",
+      dir: undefined,
+    });
+  });
+
+  it("loads more results when search pagination is requested", async () => {
+    searchMock = { q: "remind" };
+    vi.stubGlobal("IntersectionObserver", undefined);
+    const actionFn = vi
+      .fn()
+      .mockResolvedValueOnce(makeSearchResults(25))
+      .mockResolvedValueOnce(makeSearchResults(50));
+    convexReactMocks.useAction.mockReturnValue(actionFn);
+    vi.useFakeTimers();
+
+    render(<SkillsIndex />);
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    const loadMoreButton = screen.getByRole("button", { name: "Load more" });
+    await act(async () => {
+      fireEvent.click(loadMoreButton);
+      await vi.runAllTimersAsync();
+    });
+
+    expect(actionFn).toHaveBeenLastCalledWith({
+      query: "remind",
+      highlightedOnly: false,
+      limit: 50,
+    });
+  });
+
+  it("sorts search results by stars and breaks ties by updatedAt", async () => {
+    searchMock = { q: "remind", sort: "stars", dir: "desc" };
+    const actionFn = vi
+      .fn()
+      .mockResolvedValue([
+        makeSearchEntry({ slug: "skill-a", displayName: "Skill A", stars: 5, updatedAt: 100 }),
+        makeSearchEntry({ slug: "skill-b", displayName: "Skill B", stars: 5, updatedAt: 200 }),
+        makeSearchEntry({ slug: "skill-c", displayName: "Skill C", stars: 4, updatedAt: 999 }),
+      ]);
+    convexReactMocks.useAction.mockReturnValue(actionFn);
+    vi.useFakeTimers();
+
+    render(<SkillsIndex />);
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    const links = screen.getAllByRole("link").filter((link) => link.textContent?.includes("Skill"));
+    expect(links[0]?.textContent).toContain("Skill B");
+    expect(links[1]?.textContent).toContain("Skill A");
+    expect(links[2]?.textContent).toContain("Skill C");
+  });
+
+  it("uses relevance as default sort when searching", async () => {
+    searchMock = { q: "notion" };
+    const actionFn = vi
+      .fn()
+      .mockResolvedValue([
+        makeSearchResult("newer-low-score", "Newer Low Score", 0.1, 2000),
+        makeSearchResult("older-high-score", "Older High Score", 0.9, 1000),
+      ]);
+    convexReactMocks.useAction.mockReturnValue(actionFn);
+    vi.useFakeTimers();
+
+    render(<SkillsIndex />);
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    const titles = Array.from(document.querySelectorAll(".skill-list-item-name")).map(
+      (node) => node.textContent,
+    );
+
+    expect(titles[0]).toBe("Older High Score");
+    expect(titles[1]).toBe("Newer Low Score");
+  });
+
+  it("filters category browse results to the inferred skill category", async () => {
+    searchMock = { category: "dev-tools" };
+    convexHttpMock.query.mockResolvedValue({
+      page: [
+        makeListResult("web3-dev", "Blockscout for Web3 Dev", {
+          summary:
+            "Build web3 applications that need blockchain data via the Blockscout PRO API over HTTP.",
+        }),
+        makeListResult("developer-utils", "Developer Utils", {
+          summary: "Utilities for build and debug workflows.",
+        }),
+      ],
+      hasMore: false,
+      nextCursor: null,
+    });
+
+    render(<SkillsIndex />);
+    await act(async () => {});
+
+    const args = getLastListPageArgs();
+    expect(args).toEqual(
+      expect.objectContaining({
+        categorySlug: "dev-tools",
+        categoryKeywords: expect.arrayContaining(["dev"]),
+        excludeCategoryKeywords: undefined,
+      }),
+    );
+    expect(screen.queryByText("Blockscout for Web3 Dev")).toBeNull();
+    expect(screen.getByText("Developer Utils")).toBeTruthy();
+  });
+
+  it("does not render the warning filter", async () => {
+    convexHttpMock.query.mockResolvedValue({
+      page: [makeListResult("clean-skill", "Clean Skill")],
+      hasMore: false,
+      nextCursor: null,
+    });
+
+    render(<SkillsIndex />);
+    await act(async () => {});
+
+    expect(screen.queryByLabelText("Hide warnings")).toBeNull();
+  });
+
+  it("passes highlightedOnly to list query when filter is active", async () => {
+    searchMock = { highlighted: true };
+    render(<SkillsIndex />);
+    await act(async () => {});
+
+    const args = getLastListPageArgs();
+    expect(args).toEqual(
+      expect.objectContaining({
+        dir: "desc",
+        highlightedOnly: true,
+      }),
+    );
+    expect(args).not.toHaveProperty("sort");
+  });
+
+  it("shows load-more button when more results are available", async () => {
+    vi.stubGlobal("IntersectionObserver", undefined);
+    convexHttpMock.query.mockResolvedValue({
+      page: [makeListResult("skill-0", "Skill 0")],
+      hasMore: true,
+      nextCursor: "cursor-1",
+    });
+    render(<SkillsIndex />);
+    await act(async () => {});
+
+    expect(screen.getByRole("button", { name: "Load more" })).toBeTruthy();
+  });
+
+  it("shows skeletons during load-more", async () => {
+    vi.stubGlobal("IntersectionObserver", undefined);
+    convexHttpMock.query
+      .mockResolvedValueOnce({
+        page: [makeListResult("skill-0", "Skill 0")],
+        hasMore: true,
+        nextCursor: "cursor-1",
+      })
+      // Second call (load more) never resolves
+      .mockReturnValueOnce(new Promise(() => {}));
+
+    render(<SkillsIndex />);
+    await act(async () => {});
+
+    const loadMoreButton = screen.getByRole("button", { name: "Load more" });
+    await act(async () => {
+      fireEvent.click(loadMoreButton);
+    });
+
+    expect(screen.getByRole("status", { name: "Loading results" })).toBeTruthy();
+    expect(screen.queryByText(/Loading/)).toBeNull();
+  });
+});
+
+type NavigateSearchCall = {
+  replace?: boolean;
+  search: (prev: Record<string, unknown>) => Record<string, unknown>;
+};
+
+function getLastNavigateCall(): NavigateSearchCall {
+  const call = navigateMock.mock.calls.at(-1)?.[0];
+  if (!isNavigateSearchCall(call)) {
+    throw new Error("Expected a route navigation call with a search updater");
+  }
+  return call;
+}
+
+function isNavigateSearchCall(value: unknown): value is NavigateSearchCall {
+  if (!isRecord(value)) return false;
+  return typeof value.search === "function";
+}
+
+function getLastListPageArgs(): Record<string, unknown> {
+  let call: unknown[] | undefined;
+  for (let index = convexHttpMock.query.mock.calls.length - 1; index >= 0; index -= 1) {
+    const candidate = convexHttpMock.query.mock.calls[index];
+    const args = candidate[1];
+    if (isRecord(args) && "numItems" in args) {
+      call = candidate;
+      break;
+    }
+  }
+  if (!call) {
+    throw new Error("Expected a listPublicPageV4 query call");
+  }
+  const args = call[1];
+  if (!isRecord(args)) {
+    throw new Error("Expected listPublicPageV4 args to be an object");
+  }
+  return args;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function makeListResult(
+  slug: string,
+  displayName: string,
+  options: { isSuspicious?: boolean; summary?: string } = {},
+) {
+  return {
+    skill: {
+      _id: `skill_${slug}`,
+      slug,
+      displayName,
+      summary: options.summary ?? `${displayName} summary`,
+      tags: {},
+      stats: {
+        downloads: 0,
+        installsCurrent: 0,
+        installsAllTime: 0,
+        stars: 0,
+        versions: 1,
+        comments: 0,
+      },
+      isSuspicious: options.isSuspicious,
+      createdAt: 0,
+      updatedAt: 0,
+    },
+    latestVersion: null,
+    ownerHandle: null,
+  };
+}
+
+function makeSearchResults(count: number) {
+  return Array.from({ length: count }, (_, index) => ({
+    score: 0.9,
+    skill: {
+      _id: `skill_${index}`,
+      slug: `skill-${index}`,
+      displayName: `Skill ${index}`,
+      summary: `Summary ${index}`,
+      tags: {},
+      stats: {
+        downloads: 0,
+        installsCurrent: 0,
+        installsAllTime: 0,
+        stars: 0,
+        versions: 1,
+        comments: 0,
+      },
+      createdAt: 0,
+      updatedAt: 0,
+    },
+    version: null,
+  }));
+}
+
+function makeSearchResult(slug: string, displayName: string, score: number, createdAt: number) {
+  return {
+    score,
+    skill: {
+      _id: `skill_${slug}`,
+      slug,
+      displayName,
+      summary: `${displayName} summary`,
+      tags: {},
+      stats: {
+        downloads: 0,
+        installsCurrent: 0,
+        installsAllTime: 0,
+        stars: 0,
+        versions: 1,
+        comments: 0,
+      },
+      createdAt,
+      updatedAt: createdAt,
+    },
+    version: null,
+  };
+}
+
+function makeSearchEntry(params: {
+  slug: string;
+  displayName: string;
+  stars: number;
+  updatedAt: number;
+}) {
+  return {
+    score: 0.9,
+    skill: {
+      _id: `skill_${params.slug}`,
+      slug: params.slug,
+      displayName: params.displayName,
+      summary: `Summary ${params.slug}`,
+      tags: {},
+      stats: {
+        downloads: 0,
+        installsCurrent: 0,
+        installsAllTime: 0,
+        stars: params.stars,
+        versions: 1,
+        comments: 0,
+      },
+      createdAt: 0,
+      updatedAt: params.updatedAt,
+    },
+    version: null,
+  };
+}

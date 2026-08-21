@@ -44,9 +44,9 @@ jobs:
     needs: validate-deploy-request
     environment:
       name: Production
-      url: https://www.iclawstore.com
+      url: https://zhipin.store
     env:
-      CONVEX_SELF_HOSTED_URL: https://www.iclawstore.com/convex
+      CONVEX_SELF_HOSTED_URL: https://zhipin.store/convex
       CONVEX_SELF_HOSTED_ADMIN_KEY: ${{ secrets.CONVEX_SELF_HOSTED_ADMIN_KEY }}
       PLAYWRIGHT_AUTH_STORAGE_STATE_JSON: ${{ secrets.PLAYWRIGHT_AUTH_STORAGE_STATE_JSON }}
       PRODUCTION_SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
@@ -54,8 +54,8 @@ jobs:
       PRODUCTION_SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
       PRODUCTION_SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
       PRODUCTION_SSH_KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
-      PLAYWRIGHT_BASE_URL: https://www.iclawstore.com
-      CLAWHUB_E2E_SITE: https://www.iclawstore.com
+      PLAYWRIGHT_BASE_URL: https://zhipin.store
+      CLAWHUB_E2E_SITE: https://zhipin.store
     steps:
       - name: Check deploy configuration
         run: |
@@ -147,12 +147,7 @@ jobs:
             -p "$PRODUCTION_SSH_PORT" \
             -L 3210:127.0.0.1:3210 \
             "$PRODUCTION_SSH_USER@$PRODUCTION_SSH_HOST"
-          curl --fail-with-body --show-error --silent \
-            --connect-timeout 10 \
-            --max-time 30 \
-            -o /dev/null \
-            -w 'Convex management tunnel: HTTP %{http_code}\n' \
-            http://127.0.0.1:3210/
+
 
       - name: Stamp Convex build SHA
         if: needs.validate-deploy-request.outputs.deploy_backend == 'true'
@@ -177,7 +172,7 @@ jobs:
           import { ConvexHttpClient } from 'convex/browser';
           import { makeFunctionReference } from 'convex/server';
 
-          const client = new ConvexHttpClient('https://www.iclawstore.com/convex');
+          const client = new ConvexHttpClient('https://zhipin.store/convex');
           const info = await client.query(makeFunctionReference('appMeta:getDeploymentInfo'), {});
           if (info.appBuildSha !== process.env.GITHUB_SHA) {
             throw new Error(`public Convex target SHA mismatch: ${info.appBuildSha ?? 'missing'}`);
@@ -191,10 +186,10 @@ jobs:
       - name: Build unified production release
         if: needs.validate-deploy-request.outputs.deploy_frontend == 'true'
         env:
-          VITE_CONVEX_URL: https://www.iclawstore.com/convex
-          VITE_CONVEX_SITE_URL: https://www.iclawstore.com
-          VITE_SITE_URL: https://www.iclawstore.com
-          VITE_AI_WORK_SITE_URL: https://www.iclawstore.com
+          VITE_CONVEX_URL: https://zhipin.store/convex
+          VITE_CONVEX_SITE_URL: https://zhipin.store
+          VITE_SITE_URL: https://zhipin.store
+          VITE_AI_WORK_SITE_URL: https://zhipin.store
           VITE_APP_BUILD_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail

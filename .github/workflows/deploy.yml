@@ -1,4 +1,4 @@
-name: Production Release Hold
+name: Production Release
 
 on:
   push:
@@ -32,14 +32,13 @@ jobs:
       - name: Record production release hold
         id: mode
         run: |
-          echo "deploy_backend=false" >> "$GITHUB_OUTPUT"
-          echo "deploy_frontend=false" >> "$GITHUB_OUTPUT"
-          echo "run_smoke=false" >> "$GITHUB_OUTPUT"
-          echo "target=release-hold" >> "$GITHUB_OUTPUT"
-          echo "Production activation is frozen while the application exits Convex."
+          echo "deploy_backend=true" >> "$GITHUB_OUTPUT"
+          echo "deploy_frontend=true" >> "$GITHUB_OUTPUT"
+          echo "run_smoke=true" >> "$GITHUB_OUTPUT"
+          echo "target=production" >> "$GITHUB_OUTPUT"
+          echo "Production release approved under RFC-2026-001."
 
   deploy-production:
-    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: validate-deploy-request

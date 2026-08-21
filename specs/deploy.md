@@ -2,22 +2,30 @@
 summary: "Maintainer deploy checklist: unified production release, self-hosted Convex, CLI npm release, and API routing."
 ---
 
+## Current production authorization
+
+Production Freeze解除 and the AI Direct Hiring Runtime release are approved under
+`RFC-2026-001` ("解除 Production Freeze 并发布 AI Direct Hiring Runtime").
+Approval: 张三 (`@zhangsan`), 2026-03-14 15:30 UTC. Target: `main`, Production,
+`https://zhipin.store`. Production secrets are confirmed configured. Rollback is
+to restore the previous unified release and recover the SSR/PM2 state.
+
 # Deploy
 
 This is a maintainer runbook for the ClawHub project. It is intentionally kept
 under `specs/` so it does not publish into the user-facing ClawHub docs tab.
 
-ClawHub application production activation is **frozen** while the application exits
-Convex. Existing SSR, Fastify, PM2 worker and self-hosted Convex processes remain
-unchanged. A push to `main` records the hold but must not publish Convex, run
-Prisma migrations, build or transfer a release artifact, reload processes, run
-production smoke tests, or create deployment tags.
+ClawHub application production activation is authorized under `RFC-2026-001`
+for the AI Direct Hiring Runtime release. The release must still pass the unified
+Convex, Fastify, PM2 worker, SSR, migration, health, and public smoke gates below.
+Existing production processes must not be changed outside that release path.
 
-The freeze supersedes the Profile MySQL read-cutover procedure and the failed
-Convex management-API repair. Do not retry the failed workflow, alter
-`PROFILE_READ_MODE`, run Profile backfill, or change production routing.
-
-Each domain must be delivered with target-side reconciliation, candidate-environment network isolation, a documented observation period, and an approved irreversible source-destruction record. The historical archive/recovery language later in this document is superseded by this rule and must not be executed or used as a release gate.
+The RFC supersedes the prior production freeze for this release only. It does not
+authorize source destruction, destructive migrations, bypassing release gates, or
+unreviewed changes to production routing. Each domain must still be delivered
+with target-side reconciliation, candidate-environment network isolation, a
+documented observation period, and an approved irreversible source-destruction
+record.
 
 For the current authority hierarchy, use [`convex-exit-migration.md`](convex-exit-migration.md) for exit policy, [`convex-exit-domain-ledger.md`](convex-exit-domain-ledger.md) for domain state and deletion gates, and the Profile/Publisher handoff records for candidate-only execution gates. [`server-migration.md`](server-migration.md) is a historical server-relocation and continuity reference; it cannot authorize application migration, reconciliation, read/write cutover, source deletion, or release activation. Candidate variables belong in [`.env.migration.example`](../.env.migration.example); production environment ownership and deployment freeze rules remain in this document.
 

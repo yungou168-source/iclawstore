@@ -1,8 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const port = Number(process.env.PLAYWRIGHT_PORT || 4173);
-const baseURL = process.env.PLAYWRIGHT_BASE_URL || `http://127.0.0.1:${port}`;
+const baseURL = process.env.PLAYWRIGHT_BASE_URL;
 const workerCount = Number(process.env.PLAYWRIGHT_WORKERS ?? 2);
+const chromiumExecutablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -17,19 +17,13 @@ export default defineConfig({
     baseURL,
     trace: "retain-on-failure",
   },
-  webServer: process.env.PLAYWRIGHT_BASE_URL
-    ? undefined
-    : {
-        command: "bun run preview -- --host 127.0.0.1 --port 4173",
-        url: baseURL,
-        reuseExistingServer: !process.env.CI,
-        stdout: "ignore",
-        stderr: "pipe",
-      },
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        ...(chromiumExecutablePath ? { executablePath: chromiumExecutablePath } : {}),
+      },
     },
     {
       name: "mobile-chrome",

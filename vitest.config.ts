@@ -39,7 +39,6 @@ export default defineConfig({
       "**/.nitro/**",
       "**/dist/**",
       "**/coverage/**",
-      "**/convex/_generated/**",
       "packages/clawhub/**",
       "e2e/**",
       "**/*.e2e.test.ts",
@@ -55,10 +54,6 @@ export default defineConfig({
       },
       include: [
         "src/lib/**/*.{ts,tsx}",
-        "convex/lib/skills.ts",
-        "convex/lib/skillZip.ts",
-        "convex/lib/tokens.ts",
-        "convex/httpApi.ts",
         "packages/schema/src/**/*.ts",
       ],
       exclude: [
@@ -68,7 +63,6 @@ export default defineConfig({
         ".nitro/",
         "dist/",
         "coverage/",
-        "convex/_generated/",
         "packages/clawhub/**",
         "packages/schema/dist/",
         "e2e/**",

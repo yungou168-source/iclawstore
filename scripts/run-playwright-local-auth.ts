@@ -327,7 +327,7 @@ async function main() {
 
   const runnerConfig = resolveLocalAuthRunnerConfig(process.env, process.argv.slice(2));
   const appPort = await resolveAppPort();
-  const appUrl = `http://127.0.0.1:${appPort}`;
+  const appUrl = `http://localhost:${appPort}`;
   const convexUrl = runnerConfig.convexUrl;
   const convexSiteUrl = runnerConfig.convexSiteUrl;
   const convexCloudPort = String(getLocalUrlPort(convexUrl, "PLAYWRIGHT_LOCAL_AUTH_CONVEX_URL"));

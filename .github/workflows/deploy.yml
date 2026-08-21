@@ -119,17 +119,52 @@ jobs:
       - name: Build workspace schema
         run: bun run --cwd packages/schema build
 
+      - name: Configure production SSH
+        run: |
+          set -euo pipefail
+          if [[ ! "$PRODUCTION_SSH_PORT" =~ ^[0-9]{1,5}$ ]] || (( PRODUCTION_SSH_PORT < 1 || PRODUCTION_SSH_PORT > 65535 )); then
+            echo "::error::PRODUCTION_SSH_PORT must be a valid TCP port."
+            exit 1
+          fi
+
+          install -d -m 700 "$RUNNER_TEMP/production-ssh"
+          printf '%s\n' "$PRODUCTION_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/production-ssh/id_ed25519"
+          printf '%s\n' "$PRODUCTION_SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/production-ssh/known_hosts"
+          chmod 600 "$RUNNER_TEMP/production-ssh/id_ed25519"
+
+      - name: Open Convex management tunnel
+        if: needs.validate-deploy-request.outputs.deploy_backend == 'true'
+        run: |
+          set -euo pipefail
+          ssh -fNT \
+            -o ExitOnForwardFailure=yes \
+            -o RequestTTY=no \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/production-ssh/known_hosts" \
+            -i "$RUNNER_TEMP/production-ssh/id_ed25519" \
+            -p "$PRODUCTION_SSH_PORT" \
+            -L 3210:127.0.0.1:3210 \
+            "$PRODUCTION_SSH_USER@$PRODUCTION_SSH_HOST"
+          curl --fail-with-body --show-error --silent \
+            --connect-timeout 10 \
+            --max-time 30 \
+            -o /dev/null \
+            -w 'Convex management tunnel: HTTP %{http_code}\n' \
+            http://127.0.0.1:3210/
+
       - name: Stamp Convex build SHA
         if: needs.validate-deploy-request.outputs.deploy_backend == 'true'
-        run: bunx convex env set APP_BUILD_SHA "${GITHUB_SHA}"
+        run: CONVEX_SELF_HOSTED_URL=http://127.0.0.1:3210 bunx convex env set APP_BUILD_SHA "${GITHUB_SHA}"
 
       - name: Stamp Convex deploy time
         if: needs.validate-deploy-request.outputs.deploy_backend == 'true'
-        run: bunx convex env set APP_DEPLOYED_AT "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+        run: CONVEX_SELF_HOSTED_URL=http://127.0.0.1:3210 bunx convex env set APP_DEPLOYED_AT "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
       - name: Deploy Convex
         if: needs.validate-deploy-request.outputs.deploy_backend == 'true'
-        run: bunx convex dev --once
+        run: CONVEX_SELF_HOSTED_URL=http://127.0.0.1:3210 bunx convex dev --once
 
       - name: Verify Convex contract
         if: needs.validate-deploy-request.outputs.deploy_backend == 'true'
@@ -148,20 +183,6 @@ jobs:
             throw new Error(`public Convex target SHA mismatch: ${info.appBuildSha ?? 'missing'}`);
           }
           NODE
-
-      - name: Configure production SSH
-        if: needs.validate-deploy-request.outputs.deploy_frontend == 'true'
-        run: |
-          set -euo pipefail
-          if [[ ! "$PRODUCTION_SSH_PORT" =~ ^[0-9]{1,5}$ ]] || (( PRODUCTION_SSH_PORT < 1 || PRODUCTION_SSH_PORT > 65535 )); then
-            echo "::error::PRODUCTION_SSH_PORT must be a valid TCP port."
-            exit 1
-          fi
-
-          install -d -m 700 "$RUNNER_TEMP/production-ssh"
-          printf '%s\n' "$PRODUCTION_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/production-ssh/id_ed25519"
-          printf '%s\n' "$PRODUCTION_SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/production-ssh/known_hosts"
-          chmod 600 "$RUNNER_TEMP/production-ssh/id_ed25519"
 
       - name: Build Fastify and workers
         if: needs.validate-deploy-request.outputs.deploy_frontend == 'true'

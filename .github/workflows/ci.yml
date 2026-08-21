@@ -30,7 +30,18 @@ jobs:
       - uses: ./.github/actions/setup-bun
 
       - name: Static checks
-        run: bun run ci:static
+        run: bun run check:peers && bun run check:no-new-convex-client-usage && bun run audit:release && bun run lint && bun run deadcode:ci
+
+      - name: Check changed-file formatting
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          git diff --name-only -z --diff-filter=ACMR "${{ github.event.pull_request.base.sha }}...${{ github.sha }}" \
+            | xargs -0 -r bunx oxfmt --check
+
+      - name: Check full formatting on main
+        if: ${{ github.event_name != 'pull_request' }}
+        run: bun run format:check
 
   unit:
     name: unit

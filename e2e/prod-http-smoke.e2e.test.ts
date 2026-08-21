@@ -26,12 +26,12 @@ function getSiteBase() {
   return (
     process.env.CLAWHUB_E2E_SITE?.trim() ||
     process.env.CLAWHUB_SITE?.trim() ||
-    "https://www.iclawstore.com"
+    "https://zhipin.store"
   );
 }
 
 function getDesktopApiBase() {
-  return process.env.DESKTOP_API_BASE_URL?.trim() || "https://www.iclawstore.com";
+  return process.env.DESKTOP_API_BASE_URL?.trim() || "https://zhipin.store";
 }
 
 async function fetchWithTimeout(

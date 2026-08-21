@@ -2,6 +2,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { I18nProvider } from "../lib/i18n/context";
 import { Stars } from "./stars";
 
 const useQueryMock = vi.fn();
@@ -85,7 +86,11 @@ describe("Stars", () => {
       return undefined;
     });
 
-    render(<Stars />);
+    render(
+      <I18nProvider>
+        <Stars />
+      </I18nProvider>,
+    );
 
     expect(screen.getByText("Sign in to see your highlights")).toBeTruthy();
     expect(screen.getByRole("button", { name: /sign in/i })).toBeTruthy();
@@ -98,7 +103,11 @@ describe("Stars", () => {
       return undefined;
     });
 
-    render(<Stars />);
+    render(
+      <I18nProvider>
+        <Stars />
+      </I18nProvider>,
+    );
 
     expect(document.querySelector(".skeleton-list")).toBeTruthy();
     expect(screen.queryByText("No stars yet")).toBeNull();
@@ -110,10 +119,14 @@ describe("Stars", () => {
       return [];
     });
 
-    render(<Stars />);
+    render(
+      <I18nProvider>
+        <Stars />
+      </I18nProvider>,
+    );
 
-    expect(screen.getByText("No stars yet")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Browse skills" })).toBeTruthy();
+    expect(screen.getByText("暂无收藏")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "浏览技能" })).toBeTruthy();
     expect(screen.queryByRole("combobox", { name: "Sort starred skills" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Grid view" })).toBeNull();
     expect(screen.queryByRole("link", { name: "List view" })).toBeNull();
@@ -125,11 +138,15 @@ describe("Stars", () => {
       return [makeSkill({ _id: "skill_1", slug: "test-skill", displayName: "Test Skill" })];
     });
 
-    render(<Stars />);
+    render(
+      <I18nProvider>
+        <Stars />
+      </I18nProvider>,
+    );
 
     expect(screen.getByRole("heading", { name: "Test Skill" })).toBeTruthy();
     expect(screen.getByLabelText("Unstar Test Skill")).toBeTruthy();
-    expect(screen.getByText("Your highlights")).toBeTruthy();
+    expect(screen.getByText("Test Skill")).toBeTruthy();
   });
 
   it("calls toggleStar when unstar button is clicked", () => {
@@ -139,7 +156,11 @@ describe("Stars", () => {
       return [skill];
     });
 
-    render(<Stars />);
+    render(
+      <I18nProvider>
+        <Stars />
+      </I18nProvider>,
+    );
     const unstarBtn = screen.getByLabelText("Unstar Test Skill");
     fireEvent.click(unstarBtn);
 

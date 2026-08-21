@@ -13,23 +13,28 @@ vi.mock("convex/react", () => ({
   useAction: () => searchSkillsMock,
 }));
 
+vi.mock("./fastifyApi", () => ({
+  fastifyApi: {
+    search: (...args: unknown[]) => searchSkillsMock(...args),
+  },
+}));
+
 vi.mock("./packageApi", () => ({
   fetchPluginCatalog: (...args: unknown[]) => fetchPluginCatalogMock(...args),
 }));
 
 function makeSkill(slug: string) {
   return {
-    skill: {
-      _id: `skills:${slug}`,
-      slug,
-      displayName: slug,
-      ownerUserId: "users:owner",
-      stats: { downloads: 0, stars: 0 },
-      updatedAt: 1,
-      createdAt: 1,
-    },
-    ownerHandle: "owner",
-    score: 1,
+    id: `skills:${slug}`,
+    slug,
+    displayName: slug,
+    ownerUserId: "users:owner",
+    statsDownloads: 0,
+    statsStars: 0,
+    statsVersions: 1,
+    updatedAt: new Date(1).toISOString(),
+    createdAt: new Date(1).toISOString(),
+    _rankingScore: 1,
   };
 }
 
@@ -52,7 +57,9 @@ describe("useUnifiedSearch", () => {
   });
 
   it("requests one extra result and exposes hasMore without inflating counts", async () => {
-    searchSkillsMock.mockResolvedValue([makeSkill("one"), makeSkill("two"), makeSkill("three")]);
+    searchSkillsMock.mockResolvedValue({
+      hits: [makeSkill("one"), makeSkill("two"), makeSkill("three")],
+    });
     fetchPluginCatalogMock.mockResolvedValue({
       items: [makePlugin("one-plugin"), makePlugin("two-plugin"), makePlugin("three-plugin")],
       nextCursor: null,
@@ -70,8 +77,7 @@ describe("useUnifiedSearch", () => {
       expect(result.current.pluginCount).toBe(2);
     });
 
-    expect(searchSkillsMock).toHaveBeenCalledWith({
-      query: "ghost",
+    expect(searchSkillsMock).toHaveBeenCalledWith("ghost", {
       limit: 3,
     });
     expect(fetchPluginCatalogMock).toHaveBeenCalledWith(
@@ -87,7 +93,7 @@ describe("useUnifiedSearch", () => {
   });
 
   it("caps requested limits at the backend search maximum", async () => {
-    searchSkillsMock.mockResolvedValue([]);
+    searchSkillsMock.mockResolvedValue({ hits: [] });
     fetchPluginCatalogMock.mockResolvedValue({ items: [], nextCursor: null });
 
     renderHook(() =>
@@ -102,8 +108,7 @@ describe("useUnifiedSearch", () => {
       expect(fetchPluginCatalogMock).toHaveBeenCalled();
     });
 
-    expect(searchSkillsMock).toHaveBeenCalledWith({
-      query: "ghost",
+    expect(searchSkillsMock).toHaveBeenCalledWith("ghost", {
       limit: 101,
     });
     expect(fetchPluginCatalogMock).toHaveBeenCalledWith(

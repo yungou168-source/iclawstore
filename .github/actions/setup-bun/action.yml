@@ -11,3 +11,11 @@ runs:
     - name: Install dependencies
       shell: bash
       run: bun install --frozen-lockfile
+
+    - name: Install server dependencies
+      shell: bash
+      run: bun install --cwd server --frozen-lockfile
+
+    - name: Build workspace schema
+      shell: bash
+      run: bun run --cwd packages/schema build

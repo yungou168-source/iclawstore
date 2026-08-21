@@ -148,6 +148,12 @@ jobs:
             -L 3210:127.0.0.1:3210 \
             "$PRODUCTION_SSH_USER@$PRODUCTION_SSH_HOST"
 
+          curl --fail-with-body --show-error --silent \
+            --connect-timeout 10 \
+            --max-time 30 \
+            -o /dev/null \
+            -w 'Convex management tunnel: HTTP %{http_code}\n' \
+            http://127.0.0.1:3210/
 
       - name: Stamp Convex build SHA
         if: needs.validate-deploy-request.outputs.deploy_backend == 'true'

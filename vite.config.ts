@@ -1,8 +1,19 @@
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import { defineConfig, type Plugin } from "vite";
+
+const require = createRequire(import.meta.url);
+
+const convexEntry = require.resolve("convex");
+const convexRoot = dirname(dirname(dirname(convexEntry)));
+const convexReactPath = join(convexRoot, "dist/esm/react/index.js");
+const convexBrowserPath = join(convexRoot, "dist/esm/browser/index.js");
+const convexValuesPath = join(convexRoot, "dist/esm/values/index.js");
+const convexAuthReactPath = require.resolve("@convex-dev/auth/react");
 
 function handleRollupWarning(
   warning: { code?: string; message: string; id?: string },
@@ -157,12 +168,21 @@ function patchArkSafariInOperator(): Plugin {
 
 const config = defineConfig({
   resolve: {
-    dedupe: ["react", "react-dom"],
+    dedupe: ["convex", "@convex-dev/auth", "react", "react-dom"],
+    alias: {
+      "convex/react": convexReactPath,
+      "convex/browser": convexBrowserPath,
+      "convex/values": convexValuesPath,
+      "@convex-dev/auth/react": convexAuthReactPath,
+    },
     // Use native Vite tsconfig paths resolution instead of the plugin
     tsconfigPaths: true,
   },
+  optimizeDeps: {
+    include: ["convex/react", "convex/browser"],
+  },
   server: {
-    allowedHosts: ["zhipin.store", "www.zhipin.store"],
+    allowedHosts: ["www.iclawstore.com", "iclawstore.com"],
   },
   plugins: [
     patchArkSafariInOperator(),

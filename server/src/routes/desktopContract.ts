@@ -101,6 +101,7 @@ export function desktopCapabilitiesFromEnvironment(
   );
   const paidHiringSupported = paidHiringSupportedFromEnvironment(env);
   return {
+    profile: available(),
     auth: authConfigured
       ? available()
       : {

@@ -1,9 +1,9 @@
 # AI直聘桌面客户端 API v1
 
-> 当前源码契约版本：`1.3.0`（生产部署后以 `GET /api/v1/desktop/contract` 返回值为准）
-> 发布状态：**`1.3.0` 增加中文文档、显式能力状态、完整 OAuth 发现字段、Jobs 控制、开发者最小发布流程及 workforce 写入契约；付费招聘生产门禁仍保持关闭**
-> OpenAPI: `https://www.iclawstore.com/api/v1/desktop/openapi.yaml`
-> 交互式文档：`https://www.iclawstore.com/api-docs/desktop`
+> 当前源码契约版本：`1.4.0`（生产部署后以 `GET /api/v1/desktop/contract` 返回值为准）
+> 发布状态：**`1.4.0` 将当前账号资料纳入桌面契约，支持 ETag 并发写入与受管头像上传；原生 OAuth 仍须完成生产配置和验收后才会启用**
+> OpenAPI: `https://zhipin.store/api/v1/desktop/openapi.yaml`
+> 交互式文档：`https://zhipin.store/api-docs/desktop`
 > 运行时发现：`GET /api/v1/desktop/contract`
 > 范围：Agent 形象、开发者发布、桌面侧栏同步、桌面模板、Session 能力协商、Jobs/产物、面试、候选目录、企业人员及 OpenAPI 中列出的付费招聘契约。
 
@@ -161,6 +161,23 @@ otherwise the server selects its default and reports the choice in
   A capability must be true in both the relevant feature flag and runtime
   capability before the client calls its endpoint. Otherwise remain local-only:
   do not upload local projects, queues, chats, memories, or outputs.
+
+## 1.3 当前账号资料与跨端同步
+
+账号资料已纳入 Desktop API v1，不再调用旧的 `/api/users/me`：
+
+- `GET /api/v1/desktop/profile` 返回当前账号资料、`revision` 和响应 `ETag`。
+- `POST /api/v1/desktop/profile/avatar` 仅上传经服务端验证的 PNG、JPEG 或 WebP 头像，返回 `avatarAssetId`；上传本身不改变公开资料。
+- `PUT /api/v1/desktop/profile` 必须携带上次读取到的 `If-Match: "profile-<revision>"`，可更新 `displayName`、`bio` 和 `avatarAssetId`。提交 `avatarAssetId: null` 会移除头像。
+- 写入成功后服务端递增 `revision`；过期写入返回 `409 REVISION_CONFLICT` 及最新 ETag，客户端必须重新读取并让用户决定是否覆盖，不得静默重试。
+
+客户端在登录完成、应用回到前台、收到本地资料修改成功结果时读取 `/profile`。当前版本没有 SSE/WebSocket 实时事件；在多设备并行使用期间，客户端可在前台以不低于 60 秒的间隔条件刷新，或在涉及资料展示的关键页面重新验证 ETag。登出时必须清除按账号隔离的资料缓存。
+
+## 1.4 OAuth 生产启用与验收
+
+原生 OAuth 只有在 `GET /api/v1/desktop/contract` 返回 `capabilities.auth.status: "available"` 且包含完整 `auth` 元数据时才能启用。运维必须设置 `CONVEX_DESKTOP_AUTH_ISSUER`、`AI_DIRECT_DESKTOP_OAUTH_CLIENT_ID`、`AI_DIRECT_DESKTOP_OAUTH_REDIRECT_URIS`，并让 issuer、JWKS、audience 与注册的 public client 一致。
+
+上线验收使用可回收 QA 账号和隔离组织，顺序固定为：发现文档 → PKCE `S256` 授权与回调 → JWKS 验签 → token refresh/revoke → 已认证 `/session` → `/profile` 读写与跨设备冲突断言。未完成前客户端保持本地模式或使用平台注入的内存 TokenProvider，禁止持久化 access token、复用浏览器 Cookie 或把 token 传给无须访问它的渲染进程。
 
 ## 2. Candidate Jobs and artifacts
 

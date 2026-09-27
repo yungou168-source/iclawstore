@@ -15,6 +15,7 @@ import { createAiDirectCoreRoutes } from "./routes/aiDirectCore.js";
 import { aiDirectMemoryRoutes } from "./routes/aiDirectMemory.js";
 import { desktopContractRoutes } from "./routes/desktopContract.js";
 import { createDesktopPreferencesRoutes } from "./routes/desktopPreferences.js";
+import { createDesktopProfileRoutes } from "./routes/desktopProfile.js";
 import { desktopTemplateReviewRoutes } from "./routes/desktopTemplateReview.js";
 import { createDesktopTemplateRoutes } from "./routes/desktopTemplates.js";
 import { publicProfilesRoutes } from "./routes/publicProfiles.js";
@@ -165,6 +166,9 @@ if (process.env.DATABASE_URL?.startsWith("mysql")) {
     prefix: "/api/v1/ai-direct-hiring",
   });
   await fastify.register(createDesktopPreferencesRoutes(managedAssetStore), {
+    prefix: "/api/v1/desktop",
+  });
+  await fastify.register(createDesktopProfileRoutes(managedAssetStore), {
     prefix: "/api/v1/desktop",
   });
   await fastify.register(createDesktopTemplateRoutes(managedAssetStore), {

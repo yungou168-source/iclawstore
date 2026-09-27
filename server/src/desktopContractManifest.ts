@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 
-export const DESKTOP_CLIENT_CONTRACT_VERSION = "1.3.0";
+export const DESKTOP_CLIENT_CONTRACT_VERSION = "1.4.0";
 export const DESKTOP_CLIENT_OPENAPI_PATH = "/api/v1/desktop/openapi.yaml";
 
 export type DesktopContractRoute = {
@@ -24,7 +24,7 @@ const publicRoute = (openApiPath: string): DesktopContractRoute => ({
 });
 
 /**
- * Complete method/path surface promised by Desktop Client API 1.2.0.
+ * Complete method/path surface promised by Desktop Client API 1.4.0.
  * OpenAPI publication, server startup validation, and production smoke tests
  * must all agree with this manifest before the version can be released.
  */
@@ -52,6 +52,10 @@ export const DESKTOP_CLIENT_CONTRACT_ROUTES = [
   protectedRoute("GET", "/api/v1/ai-direct-hiring/offers"),
   protectedRoute("GET", "/api/v1/ai-direct-hiring/offers/{offerId}"),
   protectedRoute("POST", "/api/v1/ai-direct-hiring/employments/{employmentId}/transition"),
+  protectedRoute("GET", "/api/v1/desktop/profile"),
+  protectedRoute("PUT", "/api/v1/desktop/profile"),
+  protectedRoute("POST", "/api/v1/desktop/profile/avatar"),
+  publicRoute("/api/v1/desktop/profile/avatar/{assetId}/content"),
   protectedRoute("GET", "/api/v1/desktop/sidebar"),
   protectedRoute("PUT", "/api/v1/desktop/sidebar"),
   protectedRoute("DELETE", "/api/v1/desktop/sidebar"),

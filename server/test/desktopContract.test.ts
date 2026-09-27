@@ -14,6 +14,7 @@ import {
   paidHiringSupportedFromEnvironment,
 } from "../src/routes/desktopContract.js";
 import { createDesktopPreferencesRoutes } from "../src/routes/desktopPreferences.js";
+import { createDesktopProfileRoutes } from "../src/routes/desktopProfile.js";
 import { desktopTemplateReviewRoutes } from "../src/routes/desktopTemplateReview.js";
 import { createDesktopTemplateRoutes } from "../src/routes/desktopTemplates.js";
 import type { ManagedAssetStore } from "../src/services/managedAssetStore.js";
@@ -55,6 +56,7 @@ async function createCompleteContractApp(): Promise<FastifyInstance> {
     prefix: "/api/v1/ai-direct-hiring",
   });
   await app.register(createDesktopPreferencesRoutes(assetStore), { prefix: "/api/v1/desktop" });
+  await app.register(createDesktopProfileRoutes(assetStore), { prefix: "/api/v1/desktop" });
   await app.register(createDesktopTemplateRoutes(assetStore), { prefix: "/api/v1/desktop" });
   await app.register(desktopTemplateReviewRoutes, { prefix: "/api/v1/desktop" });
   await app.ready();
@@ -131,7 +133,7 @@ describe("desktop client contract", () => {
     expect(extractOpenApiRoutes(document)).toEqual(manifestRoutes);
   });
 
-  it("accepts the complete 1.3.0 runtime route surface", async () => {
+  it("accepts the complete 1.4.0 runtime route surface", async () => {
     const app = await createCompleteContractApp();
 
     expect(missingDesktopContractRoutes(app)).toEqual([]);

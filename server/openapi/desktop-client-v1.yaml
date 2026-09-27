@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: AI直聘桌面客户端 API
-  version: 1.3.0
+  version: 1.4.0
   description: |
     AI直聘桌面客户端的版本化生产契约，覆盖 Agent 形象、账号侧栏、桌面模板、
     会话能力协商、Jobs 与产物、面试、候选目录、企业人员以及付费招聘。
@@ -21,6 +21,8 @@ security:
 tags:
   - name: 契约发现
     description: 版本、能力状态与 OpenAPI 机器契约
+  - name: 账号资料
+    description: 当前用户的跨设备昵称、简介与受管头像
   - name: Agent 形象
     description: Agent 头像、2D/3D 资产与展示控制
   - name: 雇佣关系
@@ -39,6 +41,7 @@ x-capability-status-definitions:
   planned: 规划能力，尚未形成可调用的生产接口。
   deprecated: 兼容保留能力，新客户端不得继续依赖。
 x-capabilities:
+  profile: { status: available }
   auth: { status: documented_disabled, reason: 生产 OAuth/OIDC + PKCE 配置尚未发布 }
   session: { status: available }
   agentAppearance: { status: available }
@@ -95,6 +98,73 @@ paths:
             application/vnd.oai.openapi:
               schema:
                 type: string
+  /api/v1/desktop/profile:
+    get:
+      tags: [账号资料]
+      summary: 读取当前账号的跨设备资料
+      operationId: getDesktopProfile
+      responses:
+        "200":
+          description: 当前资料及版本
+          headers:
+            ETag: { schema: { type: string }, description: 用于后续资料更新的修订标记 }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DesktopProfile" }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+    put:
+      tags: [账号资料]
+      summary: 以乐观并发控制更新当前账号资料
+      operationId: putDesktopProfile
+      parameters:
+        - name: If-Match
+          in: header
+          required: true
+          schema: { type: string, example: '"profile-4"' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DesktopProfilePatch" }
+      responses:
+        "200":
+          description: 已更新的资料
+          headers:
+            ETag: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DesktopProfile" }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "409": { $ref: "#/components/responses/RevisionConflict" }
+        "428": { $ref: "#/components/responses/PreconditionRequired" }
+  /api/v1/desktop/profile/avatar:
+    post:
+      tags: [账号资料]
+      summary: 上传待关联的账号头像
+      operationId: uploadDesktopProfileAvatar
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        "201": { description: 已验证的头像资源 }
+        "401": { $ref: "#/components/responses/AuthRequired" }
+        "413": { $ref: "#/components/responses/AssetTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+  /api/v1/desktop/profile/avatar/{assetId}/content:
+    get:
+      tags: [账号资料]
+      summary: 读取已绑定到公开资料的头像资源
+      operationId: getDesktopProfileAvatarContent
+      security: []
+      responses:
+        "200": { description: 已绑定到公开资料的头像字节流 }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/ai-direct-hiring/agents:
     get:
       tags: [开发者发布]
@@ -1454,6 +1524,26 @@ components:
       description: 侧栏修订版本的强乐观并发控制标签
       schema: { type: string, pattern: '^"sidebar-[0-9]+"$' }
   schemas:
+    DesktopProfile:
+      type: object
+      additionalProperties: false
+      required: [id, handle, displayName, bio, image, revision, updatedAt]
+      properties:
+        id: { type: string }
+        handle: { type: [string, 'null'] }
+        displayName: { type: [string, 'null'], maxLength: 191 }
+        bio: { type: [string, 'null'], maxLength: 2000 }
+        image: { type: [string, 'null'] }
+        revision: { type: string, pattern: '^[0-9]+$' }
+        updatedAt: { type: [string, 'null'], format: date-time }
+    DesktopProfilePatch:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        displayName: { type: [string, 'null'], maxLength: 191 }
+        bio: { type: [string, 'null'], maxLength: 2000 }
+        avatarAssetId: { type: [string, 'null'], format: uuid }
     CapabilityStatus:
       type: string
       enum: [available, documented_disabled, planned, deprecated]
@@ -1504,7 +1594,7 @@ components:
       properties:
         contract: { type: string, const: ai-direct-hiring-desktop-client }
         product: { type: string, const: AI直聘 }
-        version: { type: string, const: 1.3.0 }
+        version: { type: string, const: 1.4.0 }
         openapi: { type: string }
         documentation: { type: string }
         capabilityStatusDefinitions:

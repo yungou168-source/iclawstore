@@ -198,10 +198,11 @@ Actions UI. Pushing or merging a reviewed commit to `main` automatically starts
 
 Do not add `workflow_dispatch` to this workflow, run
 `gh workflow run deploy.yml`, or use the Actions UI's `Run workflow` button.
-The automatic workflow installs dependencies with bounded concurrency and
-retries. When `convex/**` changed, it deploys Convex with strict type checking
-and verifies the remote contract; every release builds and deploys the unified
-Fastify/Worker/SSR release, then runs production smoke checks.
+The automatic workflow installs the root workspace and the separately locked
+`server` dependency graph with bounded concurrency and retries. When `convex/**`
+changed, it deploys Convex with strict type checking and verifies the remote
+contract; every release builds and deploys the unified Fastify/Worker/SSR
+release, then runs production smoke checks.
 
 Production deploy notes:
 

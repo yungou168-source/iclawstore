@@ -113,7 +113,7 @@ jobs:
         run: |
           set -euo pipefail
           for attempt in 1 2 3; do
-            if bun install --frozen-lockfile --network-concurrency=8; then
+            if bun install --frozen-lockfile --network-concurrency=8 && bun install --cwd server --frozen-lockfile --network-concurrency=8; then
               exit 0
             fi
 

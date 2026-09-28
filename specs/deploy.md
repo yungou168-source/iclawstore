@@ -35,12 +35,14 @@ same Git SHA so historical API/Worker releases cannot drift indefinitely.
 ### Automatic production release boundary
 
 A push or merge to `main` automatically starts the `Deploy` workflow. The release
-is live only after self-hosted Convex target verification, unified API/Worker/SSR
-activation, and public smoke tests all pass. Every run deploys Convex first, then
-ships one checksummed release containing Fastify, enabled workers, Prisma
-migrations and SSR from the same Git SHA. Application releases must not use
-`workflow_dispatch`, `gh workflow run`, or the Actions UI's `Run workflow`
-button.
+is live only after the components selected by the changed source paths complete
+verification, unified API/Worker/SSR activation, and public smoke tests. A
+change under `convex/` additionally deploys and verifies the self-hosted Convex
+target; releases without a Convex source change do not require its management
+plane. Every release ships one checksummed artifact containing Fastify, enabled
+workers, Prisma migrations and SSR from the same Git SHA. Application releases
+must not use `workflow_dispatch`, `gh workflow run`, or the Actions UI's `Run
+workflow` button.
 
 GitHub Actions is not granted a general-purpose production shell or `sudo`.
 The `Production` environment contains only these server-release secrets:
@@ -197,9 +199,9 @@ Actions UI. Pushing or merging a reviewed commit to `main` automatically starts
 Do not add `workflow_dispatch` to this workflow, run
 `gh workflow run deploy.yml`, or use the Actions UI's `Run workflow` button.
 The automatic workflow installs dependencies with bounded concurrency and
-retries, builds `packages/schema`, deploys Convex with strict type checking,
-verifies the remote contract, builds and deploys the unified Fastify/Worker/SSR
-release, and then runs production smoke checks.
+retries. When `convex/**` changed, it deploys Convex with strict type checking
+and verifies the remote contract; every release builds and deploys the unified
+Fastify/Worker/SSR release, then runs production smoke checks.
 
 Production deploy notes:
 

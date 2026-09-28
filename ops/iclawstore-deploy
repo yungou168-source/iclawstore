@@ -82,8 +82,10 @@ staging_dir=''
 
 node "$release_dir/run-production-migrations.mjs" "$release_dir" "$API_ENVIRONMENT"
 
-previous_ssr="$(readlink -f "$APP_DIR/.output")"
-[[ -d "$previous_ssr" ]] || fail 'current SSR release is unavailable'
+previous_ssr="$(readlink -f "$APP_DIR/.output" 2>/dev/null || true)"
+if [[ -n "$previous_ssr" && ! -d "$previous_ssr" ]]; then
+  fail 'current SSR release is invalid'
+fi
 previous_release="$(readlink -f "$APP_DIR/.release-current" 2>/dev/null || true)"
 pm2 save --force >/dev/null
 pm2_dump_backup="$(mktemp "$RELEASES_DIR/.pm2-dump.XXXXXX")"
@@ -94,8 +96,12 @@ rollback() {
   local exit_code=$?
   if [[ "$activation_started" == true ]]; then
     printf 'release verification failed; restoring previous processes and SSR\n' >&2
-    activate_link "$previous_ssr" "$APP_DIR/.output" || true
-    sudo -n systemctl restart "$SSR_SERVICE" || true
+    if [[ -n "$previous_ssr" ]]; then
+      activate_link "$previous_ssr" "$APP_DIR/.output" || true
+      sudo -n systemctl restart "$SSR_SERVICE" || true
+    else
+      rm -f "$APP_DIR/.output"
+    fi
     cp "$pm2_dump_backup" "${HOME}/.pm2/dump.pm2" || true
     pm2 delete all >/dev/null 2>&1 || true
     pm2 resurrect >/dev/null 2>&1 || true

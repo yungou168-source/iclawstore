@@ -66,6 +66,8 @@ Install the reviewed `ops/iclawstore-deploy` file as
 `/usr/local/sbin/iclawstore-deploy`, owned by `root:root` with mode `0755`.
 The forced command accepts only `deploy <40-character-commit-sha> <artifact-sha256> <artifact-size>`. GitHub Actions builds one archive containing SSR, `server/dist`, production server dependencies, Prisma schema/migrations, PM2 config and a release manifest. The server verifies the outer SHA-256 and size, verifies every manifest file and component entrypoint, and requires the commit to be reachable from `origin/main`. It then runs Prisma status/deploy/status, activates Fastify and enabled workers, requires `/health.buildSha` to match the requested SHA, switches SSR atomically, and records `.release-current`. If process or health verification fails, it restores the saved PM2 dump and prior SSR pointer. The server never installs dependencies or compiles application code during release.
 
+The first unified release is allowed to start without `.output` or `.release-current`; the deployment script activates the fully verified artifact as its baseline. Releases with an existing baseline retain rollback to the saved PM2 state and the prior SSR pointer.
+
 The dedicated account needs write access to the application worktree and this
 narrow `sudoers` entry only:
 
